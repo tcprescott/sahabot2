@@ -8,7 +8,6 @@ import asyncio
 import logging
 from typing import Optional
 from racetime_bot import Bot, RaceHandler, monitor_cmd
-from config import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -22,7 +21,7 @@ class SahaRaceHandler(RaceHandler):
     """
     
     @monitor_cmd
-    async def ex_test(self, args, message):
+    async def ex_test(self, _args, _message):
         """
         Test command for the racetime bot.
         
@@ -37,7 +36,7 @@ class SahaRaceHandler(RaceHandler):
         Use this to perform initial setup for the race.
         """
         logger.info("Race handler started for race: %s", self.data.get('name'))
-        # TODO: Implement initial setup logic
+    # Initial setup hook for race handler
     
     async def end(self):
         """
@@ -46,7 +45,7 @@ class SahaRaceHandler(RaceHandler):
         Use this to perform cleanup.
         """
         logger.info("Race handler ended for race: %s", self.data.get('name'))
-        # TODO: Implement cleanup logic
+    # Cleanup hook for race handler
     
     async def race_data(self, data):
         """
@@ -55,8 +54,8 @@ class SahaRaceHandler(RaceHandler):
         Args:
             data: Updated race data from racetime.gg
         """
-        # TODO: Implement race data update logic
-        pass
+    # Handle race data updates (placeholder)
+    logger.debug("Race data update received")
 
 
 class RacetimeBot(Bot):
@@ -85,7 +84,7 @@ class RacetimeBot(Bot):
         self.category_slug = category_slug
         logger.info("Racetime bot initialized for category: %s", category_slug)
     
-    async def should_handle(self, race_data: dict) -> bool:
+    def should_handle(self, race_data: dict) -> bool:
         """
         Determine if this bot should handle a specific race.
         
@@ -95,8 +94,7 @@ class RacetimeBot(Bot):
         Returns:
             bool: True if bot should handle this race
         """
-        # TODO: Implement race filtering logic
-        # For now, handle all races in the configured category
+    # Handle all races in the configured category
         return True
     
     async def make_handler(self, race_data: dict) -> SahaRaceHandler:
@@ -136,8 +134,6 @@ async def start_racetime_bot(
     Raises:
         RuntimeError: If bot for this category is already running
     """
-    global _racetime_bots, _racetime_bot_tasks
-    
     if category in _racetime_bots:
         raise RuntimeError("Racetime bot for category %s is already running" % category)
     
@@ -167,8 +163,6 @@ async def stop_racetime_bot(category: str) -> None:
     Args:
         category: The racetime.gg category slug
     """
-    global _racetime_bots, _racetime_bot_tasks
-    
     if category not in _racetime_bots:
         logger.warning("Racetime bot for category %s is not running", category)
         return

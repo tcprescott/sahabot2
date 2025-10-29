@@ -143,6 +143,16 @@ poetry run aerich upgrade
 poetry run aerich downgrade
 ```
 
+### Policy Checks
+
+Run the configuration policy checks locally to ensure no direct environment access is used (all settings must come from `config.py`):
+
+```bash
+python tools/check_config_policy.py
+```
+
+These checks also run in CI for every push and pull request.
+
 ### Adding New Features
 
 #### Adding a New Page
@@ -167,6 +177,8 @@ poetry run aerich downgrade
 ## Configuration
 
 Configuration is managed through environment variables in `.env`:
+
+All configuration is loaded centrally via `config.py` using Pydantic Settings. Do not read environment variables directly in application code, and never hard-code secrets or tokens. Import values from `from config import settings` and use `settings.<FIELD>` instead.
 
 ### Database
 - `DB_HOST` - Database host (default: localhost)
