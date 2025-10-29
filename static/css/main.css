@@ -159,6 +159,16 @@ body:not(.body--dark) .card-body {
 /* Content area padding to avoid sidebar overlap */
 .content-with-sidebar {
     transition: padding-left 0.3s ease, opacity 0.3s ease;
+    background-color: #ffffff;
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin: var(--spacing-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.body--dark .content-with-sidebar,
+.q-dark .content-with-sidebar {
+    background-color: var(--surface-color);
 }
 
 .content-sidebar-collapsed {

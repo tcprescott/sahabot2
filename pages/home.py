@@ -5,7 +5,19 @@ This module provides the main landing page for the application.
 """
 
 from nicegui import ui
-from components.base_page import BasePage
+from components import BasePage
+from views import (
+    OverviewView,
+    ScheduleView,
+    UsersView,
+    ReportsView,
+    SettingsView,
+    FavoritesView,
+    ToolsView,
+    HelpView,
+    AboutView,
+    ArchiveView,
+)
 
 
 def register():
@@ -18,31 +30,28 @@ def register():
         
         Displays welcome message and user dashboard if authenticated.
         """
-        # Define 10 example tabs with placeholder content
-        def make_tab_content(label: str):
-            async def _content():
-                with ui.element('div').classes('card bg-dynamic-surface'):
-                    with ui.element('div').classes('card-header'):
-                        ui.label(f'{label}').classes('text-dynamic-primary')
-                    with ui.element('div').classes('card-body'):
-                        ui.label(f'This is placeholder content for the {label} tab.')\
-                            .classes('text-dynamic-secondary')
-                # Also showcase a small paragraph for spacing
-                ui.label('Use this space to add real content later.')\
-                    .classes('text-dynamic-secondary mt-1')
+        # Create wrapper functions that call view render methods with the user
+        # Tab content functions may be called with a 'page' argument by BasePage
+        # We'll use authenticated_page which gives us access to user via page.user
+        def make_view_content(view_class):
+            async def _content(page: BasePage):
+                # Use the user from the page object
+                if page.user:
+                    await view_class.render(page.user)
             return _content
 
+        # Define tabs with dedicated view modules
         tabs = [
-            {"label": "Overview", "icon": "home", "content": make_tab_content("Overview")},
-            {"label": "Schedule", "icon": "event", "content": make_tab_content("Schedule")},
-            {"label": "Users", "icon": "people", "content": make_tab_content("Users")},
-            {"label": "Reports", "icon": "analytics", "content": make_tab_content("Reports")},
-            {"label": "Settings", "icon": "settings", "content": make_tab_content("Settings")},
-            {"label": "Favorites", "icon": "star", "content": make_tab_content("Favorites")},
-            {"label": "Tools", "icon": "build", "content": make_tab_content("Tools")},
-            {"label": "Help", "icon": "help", "content": make_tab_content("Help")},
-            {"label": "About", "icon": "info", "content": make_tab_content("About")},
-            {"label": "Archive", "icon": "inventory", "content": make_tab_content("Archive")},
+            {"label": "Overview", "icon": "home", "content": make_view_content(OverviewView)},
+            {"label": "Schedule", "icon": "event", "content": make_view_content(ScheduleView)},
+            {"label": "Users", "icon": "people", "content": make_view_content(UsersView)},
+            {"label": "Reports", "icon": "analytics", "content": make_view_content(ReportsView)},
+            {"label": "Settings", "icon": "settings", "content": make_view_content(SettingsView)},
+            {"label": "Favorites", "icon": "star", "content": make_view_content(FavoritesView)},
+            {"label": "Tools", "icon": "build", "content": make_view_content(ToolsView)},
+            {"label": "Help", "icon": "help", "content": make_view_content(HelpView)},
+            {"label": "About", "icon": "info", "content": make_view_content(AboutView)},
+            {"label": "Archive", "icon": "inventory", "content": make_view_content(ArchiveView)},
         ]
 
         base = BasePage.simple_page(title="SahaBot2", active_nav="home", tabs=tabs, default_tab="Overview")

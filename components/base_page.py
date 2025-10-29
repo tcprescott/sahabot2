@@ -16,6 +16,7 @@ The layout includes:
 from nicegui import app, ui
 from middleware.auth import DiscordAuthService
 from models import User
+from components.sidebar import Sidebar
 from typing import Optional, Callable, Awaitable
 import inspect
 
@@ -58,6 +59,7 @@ class BasePage:
             copyright_text: Copyright text for footer
             tabs: Optional list of tab configurations for tabbed interface
             default_tab: Default tab to show (if using tabs)
+            use_sidebar: Whether to use sidebar navigation instead of top tabs
         """
         self.title = title
         self.active_nav = active_nav
@@ -74,11 +76,10 @@ class BasePage:
         self.show_header = True
         self.use_sidebar = use_sidebar
         self._panels = None
-        self._mobile_drawer = None
-        self.sidebar_collapsed: bool = bool(app.storage.user.get('sidebar_collapsed', False))
-        self._sidebar_element = None
-        self._content_element = None
+        self._sidebar = None
         self._backdrop_element = None
+        self._rendered_tabs = set()
+        self._tab_containers = {}
 
     def _load_css(self) -> None:
         """Load the main CSS stylesheet."""
@@ -173,69 +174,6 @@ class BasePage:
             dark_btn_ref['btn'].props(f'flat color={header_color}')
             dark_btn_ref['btn'].tooltip('Toggle dark mode')
             header_buttons.append(dark_btn_ref['btn'])
-
-    def _toggle_drawer(self) -> None:
-        """Toggle the mobile sidebar expansion (icons-only vs full labels)."""
-        self.sidebar_collapsed = not self.sidebar_collapsed
-        app.storage.user['sidebar_collapsed'] = self.sidebar_collapsed
-        
-        # Update CSS classes dynamically without page reload
-        if self._sidebar_element and self._content_element:
-            # Update sidebar classes
-            sidebar_classes = 'sidebar sidebar-overlay' + (' collapsed' if self.sidebar_collapsed else '')
-            self._sidebar_element.classes(replace=sidebar_classes)
-            
-            # Update content classes  
-            content_classes = 'full-width content-with-sidebar' + (' content-sidebar-collapsed' if self.sidebar_collapsed else ' content-sidebar-expanded')
-            self._content_element.classes(replace=content_classes)
-            
-            # Toggle backdrop on mobile
-            if self._backdrop_element:
-                backdrop_classes = 'sidebar-backdrop' + ('' if self.sidebar_collapsed else ' active')
-                self._backdrop_element.classes(replace=backdrop_classes)
-            
-            # Clear and re-render sidebar buttons
-            self._sidebar_element.clear()
-            with self._sidebar_element:
-                self._render_sidebar_buttons()
-
-    def _toggle_sidebar_collapse(self) -> None:
-        """Toggle desktop sidebar collapsed state and persist preference."""
-        self.sidebar_collapsed = not self.sidebar_collapsed
-        app.storage.user['sidebar_collapsed'] = self.sidebar_collapsed
-        # No direct element refs here; classes are applied on render per state
-
-    def _render_sidebar_buttons(self) -> None:
-        """Render sidebar buttons based on collapsed state."""
-        # Menu button to toggle expansion
-        menu_icon = 'menu_open' if not self.sidebar_collapsed else 'menu'
-        ui.button(
-            icon=menu_icon,
-            on_click=self._toggle_drawer
-        ).props('flat').classes('q-mb-sm full-width justify-between')\
-             .tooltip('Toggle Menu')
-        
-        # Tab buttons
-        for tab in self.tabs:
-            if self.sidebar_collapsed:
-                # Icons only - stretch justified
-                ui.button(
-                    icon=tab.get('icon') or 'chevron_right',
-                    on_click=lambda lbl=tab['label']: self._on_select_tab(lbl)
-                ).props('flat').classes('q-mb-sm full-width justify-between')\
-                 .tooltip(tab['label'])
-            else:
-                # Full buttons with labels
-                ui.button(
-                    tab['label'],
-                    icon=tab.get('icon') or 'chevron_right',
-                    on_click=lambda lbl=tab['label']: self._on_select_tab(lbl)
-                ).props('flat').classes('sidebar-item full-width justify-between')
-
-    def _on_select_tab(self, label: str) -> None:
-        """Select a tab in the hidden tab panels via sidebar/drawer."""
-        if self._panels is not None:
-            self._panels.value = label
     
     def _render_footer(self) -> None:
         """Render the footer with copyright text."""
@@ -254,14 +192,6 @@ class BasePage:
             tabs: List of tab dictionaries with 'label', 'icon' (optional), and 'content' keys.
                   Content can be a callable or tuple of (callable, args, kwargs).
         """
-        def on_tab_change(event):
-            """Update URL query param when tab changes."""
-            ui.navigate.history.push(f'?tab={event.value}')
-
-        # Determine default tab
-        tab_labels = [tab['label'] for tab in tabs]
-        default_tab = self.default_tab if self.default_tab in tab_labels else tabs[0]['label']
-
         async def render_tab_content(tab):
             """Render content for a single tab, handling both sync and async callables."""
             content = tab['content']
@@ -273,7 +203,8 @@ class BasePage:
                 kwargs = content[2] if len(content) > 2 and content[2] is not None else {}
             else:
                 content_func = content
-                args = ()
+                # Pass self (the page) as first argument to tab content functions
+                args = (self,)
                 kwargs = {}
 
             # Call content function (async or sync)
@@ -282,13 +213,17 @@ class BasePage:
             else:
                 content_func(*args, **kwargs)
 
+        # Determine default tab
+        tab_labels = [tab['label'] for tab in tabs]
+        default_tab = self.default_tab if self.default_tab in tab_labels else tabs[0]['label']
+
         # Render tabs navigation (hidden when using sidebar)
-        with ui.tabs(on_change=on_tab_change).props('horizontal').classes('w-full' + (' hidden' if hide_tabs else '')) as panels:
+        with ui.tabs().props('horizontal').classes('w-full' + (' hidden' if hide_tabs else '')) as panels:
             for tab in tabs:
                 ui.tab(tab['label'], icon=tab.get('icon'))
         self._panels = panels
 
-        # Render tab panels content
+        # Render tab panels content - render all tabs immediately
         with ui.tab_panels(panels, value=default_tab):
             for tab in tabs:
                 with ui.tab_panel(tab['label']):
@@ -345,26 +280,31 @@ class BasePage:
                 await self.render_tabbed_page(self.tabs)
             elif self.tabs and self.use_sidebar:
                 # Responsive layout with overlay sidebar
+                
                 with ui.element('div').classes('page-container page-container-wide'):
-                    # Backdrop for mobile (dims content when menu is open)
-                    backdrop_classes = 'sidebar-backdrop' + ('' if self.sidebar_collapsed else ' active')
-                    self._backdrop_element = ui.element('div').classes(backdrop_classes)
-                    self._backdrop_element.on('click', self._toggle_drawer)
+                    # First render tabs to get panels reference
+                    # (Use a temporary container to determine structure)
+                    temp_default = self.default_tab if self.default_tab else (self.tabs[0]['label'] if self.tabs else None)
                     
-                    # Sidebar overlay (positioned absolutely) - store reference
-                    sidebar_classes = 'sidebar sidebar-overlay' + (' collapsed' if self.sidebar_collapsed else '')
-                    self._sidebar_element = ui.element('div').classes(sidebar_classes)
+                    # Create sidebar first (before content) with placeholder panels
+                    self._sidebar = Sidebar(tabs=self.tabs, panels=None)
                     
-                    with self._sidebar_element:
-                        # Container for buttons that will be regenerated
-                        self._render_sidebar_buttons()
+                    # Create content container
+                    content_container = ui.column()
                     
-                    # Content area (with left padding to avoid sidebar overlap) - store reference
-                    content_classes = 'full-width content-with-sidebar' + (' content-sidebar-collapsed' if self.sidebar_collapsed else ' content-sidebar-expanded')
-                    self._content_element = ui.column().classes(content_classes)
+                    # Render sidebar elements (backdrop and sidebar)
+                    self._sidebar.render(content_container)
                     
-                    with self._content_element:
+                    # Now render tab content (this creates self._panels)
+                    with content_container:
                         await self.render_tabbed_page(self.tabs, hide_tabs=True)
+                    
+                    # Update sidebar with actual panels reference
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info("Setting sidebar.panels to %s (from self._panels)", self._panels)
+                    self._sidebar.panels = self._panels
+                    logger.info("Sidebar.panels is now %s", self._sidebar.panels)
             else:
                 with ui.element('div').classes('page-container'):
                     with ui.element('div').classes('content-wrapper'):

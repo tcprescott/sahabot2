@@ -91,6 +91,10 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - Type hints on function parameters and returns
 - Descriptive variable names
 - Comments for complex logic
+- **Module Imports**: All imports at module level (top of file), never inline
+  - ✅ `from components.sidebar import Sidebar` at top of file
+  - ❌ `from components.sidebar import Sidebar` inside function
+  - Inline imports can cause issues with class identity, state persistence, and NiceGUI bindings
 - **Logging**: Use lazy % formatting in logging statements (not f-strings)
   - ✅ `logger.info("User %s logged in", user.id)`
   - ❌ `logger.info(f"User {user.id} logged in")`
@@ -391,6 +395,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't access ORM from bot commands
 - ❌ Don't put business logic in bot commands
 - ❌ Don't use f-strings in logging statements (use lazy % formatting)
+- ❌ Don't use inline imports (import inside functions) - always import at module level
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -400,6 +405,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do use application commands (slash commands) for Discord bot
 - ✅ Do delegate all bot logic to services
 - ✅ Do use lazy % formatting in logging: `logger.info("User %s", user_id)`
+- ✅ Do import all modules at the top of the file (module level)
 
 ## References
 - NiceGUI: https://nicegui.io
