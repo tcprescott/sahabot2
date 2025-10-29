@@ -1,0 +1,31 @@
+[run]
+source = .
+omit =
+    */tests/*
+    */migrations/*
+    */__pycache__/*
+    */venv/*
+    */env/*
+    .venv/*
+    */site-packages/*
+    conftest.py
+    */conftest.py
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @abstractmethod
+    @abc.abstractmethod
+    pass
+    \.\.\.
+
+precision = 2
+show_missing = True
+
+[html]
+directory = htmlcov

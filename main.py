@@ -9,7 +9,16 @@ from fastapi import FastAPI
 from nicegui import app as nicegui_app, ui
 from config import settings
 from database import init_db, close_db
+from bot.client import start_bot, stop_bot
 import frontend
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -23,19 +32,38 @@ async def lifespan(app: FastAPI):
         app: FastAPI application instance
     """
     # Startup
-    print("Starting SahaBot2...")
+    logger.info("Starting SahaBot2...")
+    
+    # Initialize database
     await init_db()
-    print("Database initialized")
+    logger.info("Database initialized")
     
     # Configure NiceGUI storage
     nicegui_app.storage.secret = settings.SECRET_KEY
     
+    # Start Discord bot
+    try:
+        await start_bot()
+        logger.info("Discord bot started")
+    except Exception as e:
+        logger.error(f"Failed to start Discord bot: {e}", exc_info=True)
+        logger.warning("Application will continue without Discord bot")
+    
     yield
     
     # Shutdown
-    print("Shutting down SahaBot2...")
+    logger.info("Shutting down SahaBot2...")
+    
+    # Stop Discord bot
+    try:
+        await stop_bot()
+        logger.info("Discord bot stopped")
+    except Exception as e:
+        logger.error(f"Error stopping Discord bot: {e}", exc_info=True)
+    
+    # Close database connections
     await close_db()
-    print("Database connections closed")
+    logger.info("Database connections closed")
 
 
 # Initialize FastAPI application

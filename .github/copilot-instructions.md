@@ -6,7 +6,7 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 ## Architecture & Key Components
 
 ### Core Files
-- **main.py**: FastAPI entry point; initializes database, configures NiceGUI, manages app lifespan
+- **main.py**: FastAPI entry point; initializes database, configures NiceGUI, manages app lifespan, starts/stops Discord bot
 - **frontend.py**: Registers all NiceGUI pages
 - **config.py**: Pydantic settings for environment configuration
 - **database.py**: Database initialization and connection management
@@ -15,6 +15,9 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
   - `audit_log.py`: AuditLog model for tracking user actions
 - **components/**: Reusable UI components and templates
   - `base_page.py`: Base page template with navbar and layout
+- **bot/**: Discord bot integration
+  - `client.py`: Discord bot singleton implementation with lifecycle management
+  - Commands should be in separate files (e.g., `commands/admin.py`, `commands/user.py`)
 
 ### Application Layer
 - **application/services/**: Business logic layer
@@ -37,6 +40,13 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
   - `auth.py`: Login, OAuth callback, logout pages
   - `admin.py`: Admin dashboard (requires ADMIN permission)
 - **static/css/main.css**: All application styles (no inline CSS allowed)
+
+### Discord Bot Layer
+- **bot/**: Discord bot integration (runs as singleton within the application)
+  - `client.py`: Core bot implementation extending `commands.Bot`
+  - Lifecycle managed by `main.py` lifespan (starts on app startup, stops on shutdown)
+  - Uses `get_bot_instance()` to access singleton from services or commands
+  - **Commands should be in separate modules** organized by feature (e.g., `commands/admin.py`)
 
 ### Database
 - **migrations/**: Aerich migration scripts and config
@@ -81,6 +91,16 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - Descriptive variable names
 - Comments for complex logic
 
+### 7. Discord Bot Architecture
+- **Bot as Presentation Layer**: Discord bot is part of the presentation layer (like UI pages)
+- **Never** access ORM models directly from bot commands - always use services
+- **Never** put business logic in bot commands - delegate to services
+- **Application Commands Only**: Use Discord's native application commands (slash commands, context menus)
+  - **Never** use chat-based (prefix) commands
+  - All commands must be registered as application commands via `@app_commands.command()`
+- **Singleton Pattern**: Bot runs as singleton, access via `get_bot_instance()` from `bot.client`
+- **Separation**: Bot commands should only handle Discord interaction (parsing, responding), delegate all logic to services
+
 ## Development Workflows
 
 ### Installation
@@ -101,7 +121,10 @@ poetry install
 ### Environment
 - Configuration in `.env` (see `.env.example`)
 - Settings loaded via Pydantic in `config.py`
-- Discord credentials required for OAuth2
+- Discord credentials required for OAuth2 and bot
+  - `DISCORD_CLIENT_ID`: OAuth2 application ID
+  - `DISCORD_CLIENT_SECRET`: OAuth2 secret
+  - `DISCORD_BOT_TOKEN`: Bot authentication token
 
 ## Patterns & Conventions
 
@@ -187,6 +210,47 @@ if not user:
 - Badges: `badge`, `badge-admin`, `badge-moderator`, `badge-user`
 - Utilities: `text-center`, `mt-1`, `mb-2`, `flex`, `gap-md`
 
+### Discord Bot Commands
+Bot commands follow the same separation of concerns as the rest of the application:
+
+```python
+# Example bot command (in bot/commands/user.py)
+from discord import app_commands
+from bot.client import get_bot_instance
+from application.services.user_service import UserService
+
+@app_commands.command(name="profile", description="View your profile")
+async def profile(interaction: discord.Interaction):
+    """Display user profile information."""
+    # Get service instance
+    user_service = UserService()
+    
+    # Fetch data via service (no direct ORM access)
+    user = await user_service.get_user_by_discord_id(interaction.user.id)
+    
+    if not user:
+        await interaction.response.send_message("User not found", ephemeral=True)
+        return
+    
+    # Format and respond
+    await interaction.response.send_message(
+        f"Username: {user.discord_username}\nPermission: {user.permission.name}",
+        ephemeral=True
+    )
+
+# Register command in bot setup
+bot = get_bot_instance()
+if bot:
+    bot.tree.add_command(profile)
+```
+
+**Key Points:**
+- Use `@app_commands.command()` for slash commands (never prefix commands)
+- Delegate all business logic to services
+- Never access ORM models directly
+- Handle Discord interactions (parsing, responding) only
+- Use `get_bot_instance()` to access bot singleton
+
 ## Models
 
 ### User
@@ -270,6 +334,36 @@ def register():
 7. Create repository in `application/repositories/`
 8. Create service in `application/services/`
 
+### New Discord Bot Command
+1. Create command file in `bot/commands/` (e.g., `bot/commands/user_commands.py`)
+2. Use `@app_commands.command()` decorator (never prefix commands)
+3. Delegate all business logic to services
+4. Handle only Discord interaction (parsing, responding)
+5. Register commands with bot tree in bot setup
+6. Add docstrings and type hints
+
+Example:
+```python
+# bot/commands/admin_commands.py
+from discord import app_commands
+import discord
+from application.services.user_service import UserService
+
+@app_commands.command(name="ban", description="Ban a user")
+@app_commands.describe(user="User to ban", reason="Reason for ban")
+async def ban_user(interaction: discord.Interaction, user: discord.User, reason: str):
+    """Ban a user from the system."""
+    # Use service for business logic
+    user_service = UserService()
+    result = await user_service.ban_user(user.id, reason)
+    
+    # Respond to interaction
+    await interaction.response.send_message(
+        f"User {user.mention} has been banned.",
+        ephemeral=True
+    )
+```
+
 ## Testing
 - Use pytest for testing
 - Test services independently of UI
@@ -283,11 +377,16 @@ def register():
 - ❌ Don't forget async/await
 - ❌ Don't skip docstrings
 - ❌ Don't mix authorization with business logic
+- ❌ Don't use prefix (chat-based) commands in Discord bot
+- ❌ Don't access ORM from bot commands
+- ❌ Don't put business logic in bot commands
 - ✅ Do use external CSS classes
 - ✅ Do use services for all business logic
 - ✅ Do use repositories for data access
 - ✅ Do enforce permissions server-side
 - ✅ Do test on mobile viewports
+- ✅ Do use application commands (slash commands) for Discord bot
+- ✅ Do delegate all bot logic to services
 
 ## References
 - NiceGUI: https://nicegui.io
