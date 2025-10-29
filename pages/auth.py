@@ -1,0 +1,102 @@
+"""
+Authentication pages for Discord OAuth2.
+
+This module handles login, callback, and logout pages.
+"""
+
+import secrets
+from nicegui import ui, app
+from middleware.auth import DiscordAuthService
+from components.base_page import BasePage
+
+
+def register():
+    """Register authentication routes."""
+    
+    auth_service = DiscordAuthService()
+    
+    @ui.page('/auth/login')
+    async def login_page():
+        """
+        Login page - redirects to Discord OAuth2.
+        """
+        # Generate CSRF state token
+        state = secrets.token_urlsafe(32)
+        app.storage.user['oauth_state'] = state
+        
+        # Redirect to Discord authorization
+        auth_url = auth_service.get_authorization_url(state)
+        ui.navigate.to(auth_url, new_tab=False)
+    
+    @ui.page('/auth/callback')
+    async def callback_page(code: str = None, state: str = None, error: str = None):
+        """
+        OAuth2 callback page.
+        
+        Args:
+            code: Authorization code from Discord
+            state: CSRF state token
+            error: Error message if authorization failed
+        """
+        base = BasePage.simple_page(title="SahaBot2", show_navbar=False)
+        
+        async def content(page: BasePage):
+            """Render the callback page content."""
+            with ui.element('div').classes('card text-center'):
+                # Check for errors
+                if error:
+                    ui.element('div').classes('card-header').text('Authentication Failed')
+                    with ui.element('div').classes('card-body'):
+                        ui.label(f'Error: {error}').classes('text-error')
+                        ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
+                    return
+                
+                # Verify CSRF state
+                stored_state = app.storage.user.get('oauth_state')
+                if not state or state != stored_state:
+                    ui.element('div').classes('card-header').text('Authentication Failed')
+                    with ui.element('div').classes('card-body'):
+                        ui.label('Invalid state token. Please try again.').classes('text-error')
+                        ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
+                    return
+                
+                # Exchange code for token and authenticate
+                if code:
+                    ui.element('div').classes('card-header').text('Authenticating...')
+                    ui.spinner(size='lg')
+                    
+                    try:
+                        # Get IP address (for audit log)
+                        ip_address = None
+                        
+                        # Authenticate user
+                        user = await auth_service.authenticate_user(code, ip_address)
+                        
+                        # Set user in session
+                        await auth_service.set_current_user(user)
+                        
+                        # Clear OAuth state
+                        app.storage.user.pop('oauth_state', None)
+                        
+                        # Redirect to requested page or home
+                        redirect_url = app.storage.user.pop('redirect_after_login', '/')
+                        ui.navigate.to(redirect_url)
+                        
+                    except Exception as e:
+                        ui.element('div').classes('card-header').text('Authentication Failed')
+                        with ui.element('div').classes('card-body'):
+                            ui.label(f'Error: {str(e)}').classes('text-error')
+                            ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
+                else:
+                    ui.element('div').classes('card-header').text('Authentication Failed')
+                    with ui.element('div').classes('card-body'):
+                        ui.label('No authorization code received.').classes('text-error')
+                        ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
+        
+        await base.render(content)()
+    
+    @ui.page('/auth/logout')
+    async def logout_page():
+        """Logout page - clears session and redirects to home."""
+        await auth_service.clear_current_user()
+        ui.navigate.to('/')

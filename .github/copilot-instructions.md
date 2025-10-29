@@ -1,0 +1,299 @@
+# Copilot Instructions for SahaBot2
+
+## Project Overview
+SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAuth2 authentication and Tortoise ORM for database access. The application follows strict architectural principles emphasizing separation of concerns, mobile-first design, and high code quality.
+
+## Architecture & Key Components
+
+### Core Files
+- **main.py**: FastAPI entry point; initializes database, configures NiceGUI, manages app lifespan
+- **frontend.py**: Registers all NiceGUI pages
+- **config.py**: Pydantic settings for environment configuration
+- **database.py**: Database initialization and connection management
+- **models/**: Database models package
+  - `user.py`: User model and Permission enum
+  - `audit_log.py`: AuditLog model for tracking user actions
+- **components/**: Reusable UI components and templates
+  - `base_page.py`: Base page template with navbar and layout
+
+### Application Layer
+- **application/services/**: Business logic layer
+  - `user_service.py`: User management business logic
+  - `authorization_service.py`: Permission checking and authorization logic (separate from other business logic)
+  - `audit_service.py`: Audit logging functionality
+- **application/repositories/**: Data access layer
+  - `user_repository.py`: User data access methods
+  - `audit_repository.py`: Audit log data access methods
+
+### Authentication & Authorization
+- **middleware/auth.py**: Discord OAuth2 integration (`DiscordAuthService`)
+  - Handles OAuth2 flow
+  - Manages user sessions via NiceGUI storage
+  - Provides `require_auth()` and `require_permission()` helpers
+
+### UI Layer
+- **pages/**: NiceGUI page modules
+  - `home.py`: Main landing page
+  - `auth.py`: Login, OAuth callback, logout pages
+  - `admin.py`: Admin dashboard (requires ADMIN permission)
+- **static/css/main.css**: All application styles (no inline CSS allowed)
+
+### Database
+- **migrations/**: Aerich migration scripts and config
+  - `tortoise_config.py`: Tortoise ORM configuration for Aerich
+
+## Core Principles
+
+### 1. Mobile-First Responsive Design
+- All UI must be functional on mobile devices
+- Use CSS media queries in `main.css` for responsive layouts
+- Test all features on mobile viewport sizes
+- Ensure feature parity between mobile and desktop
+
+### 2. Separation of Concerns
+- **UI pages** (`pages/`) - Presentation only, no business logic
+- **Services** (`application/services/`) - All business logic and rules
+- **Repositories** (`application/repositories/`) - Data access only
+- **Never** access ORM models directly from UI - always use services
+
+### 3. External CSS Only
+- **No** inline styles via `.style()` method
+- All CSS in `static/css/main.css`
+- Use semantic, human-friendly class names (e.g., `card`, `btn-primary`, `navbar`)
+- Include CSS in pages: `ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')`
+
+### 4. Discord OAuth2 Authentication
+- All users authenticate via Discord
+- OAuth flow handled in `middleware/auth.py`
+- User info synced to database on login
+- Session managed via NiceGUI `app.storage.user`
+
+### 5. Database-Driven Authorization
+- Authorization logic in `AuthorizationService` (separate from business logic)
+- Permissions stored in database (User.permission field)
+- Server-side enforcement via `require_permission()`
+- UI can conditionally show elements based on permissions, but must enforce server-side
+
+### 6. High Code Quality
+- **Always** use async/await
+- **All** public functions must have docstrings
+- Type hints on function parameters and returns
+- Descriptive variable names
+- Comments for complex logic
+
+## Development Workflows
+
+### Installation
+```bash
+poetry install
+```
+
+### Running
+- **Dev**: `./start.sh dev` (port 8080, auto-reload)
+- **Prod**: `./start.sh prod` (port 80, multi-worker)
+
+### Database Migrations
+- **Init**: `poetry run aerich init-db`
+- **Create**: `poetry run aerich migrate --name "description"`
+- **Apply**: `poetry run aerich upgrade`
+- **Rollback**: `poetry run aerich downgrade`
+
+### Environment
+- Configuration in `.env` (see `.env.example`)
+- Settings loaded via Pydantic in `config.py`
+- Discord credentials required for OAuth2
+
+## Patterns & Conventions
+
+### Async/Await
+- All database operations are async
+- All service methods are async
+- UI event handlers should be async functions
+- Use `await` for service calls, repository calls, and ORM queries
+
+### Page Structure (Using BasePage Template)
+All pages should use the `BasePage` component for consistent layout:
+
+```python
+from components.base_page import BasePage
+
+def register():
+    """Register page routes."""
+    
+    @ui.page('/path')
+    async def page_name():
+        """Page docstring."""
+        # Create base page (simple, authenticated, or admin)
+        base = BasePage.simple_page(title="Page Title", active_nav="home")
+        # or base = BasePage.authenticated_page(title="Page Title", active_nav="nav_item")
+        # or base = BasePage.admin_page(title="Admin Page", active_nav="admin")
+        
+        async def content(page: BasePage):
+            """Render page content - has access to page.user."""
+            with ui.element('div').classes('card'):
+                ui.label(f'Hello, {page.user.discord_username}!')
+        
+        await base.render(content)()
+```
+
+**BasePage Helper Methods:**
+- `BasePage.simple_page()` - No auth required, navbar shown
+- `BasePage.authenticated_page()` - Requires login
+- `BasePage.admin_page()` - Requires admin permissions
+- Custom: `BasePage(title, active_nav, require_permission=Permission.X)`
+
+**Benefits:**
+- Automatic CSS loading
+- Consistent navbar across all pages
+- Built-in authentication/authorization checks
+- Access to current user via `page.user`
+- Automatic logout handling
+
+### Service Usage
+```python
+# Initialize service
+user_service = UserService()
+
+# Call async methods
+users = await user_service.get_all_users()
+
+# Services handle all business logic
+user = await user_service.update_user_permission(user_id, Permission.ADMIN)
+```
+
+### Authorization
+```python
+# Check permissions in service
+from application.services.authorization_service import AuthorizationService
+auth_z = AuthorizationService()
+
+# Check if user can perform action
+if auth_z.can_access_admin_panel(user):
+    # Show admin features
+    pass
+
+# Enforce permissions in pages
+user = DiscordAuthService.require_permission(Permission.ADMIN, '/admin')
+if not user:
+    return  # Redirected to login or home
+```
+
+### CSS Classes
+- Container: `page-container`, `content-wrapper`
+- Cards: `card`, `card-header`, `card-body`
+- Buttons: `btn`, `btn-primary`, `btn-secondary`, `btn-danger`
+- Navigation: `navbar`, `navbar-brand`, `navbar-menu`, `navbar-link`
+- Tables: `data-table`
+- Badges: `badge`, `badge-admin`, `badge-moderator`, `badge-user`
+- Utilities: `text-center`, `mt-1`, `mb-2`, `flex`, `gap-md`
+
+## Models
+
+### User
+- **Fields**: discord_id, discord_username, discord_discriminator, discord_avatar, discord_email, permission, is_active
+- **Methods**: `has_permission()`, `is_admin()`, `is_moderator()`
+- **Permissions**: USER (0), MODERATOR (50), ADMIN (100), SUPERADMIN (200)
+
+### AuditLog
+- **Fields**: user (FK), action, details (JSON), ip_address, created_at
+- **Purpose**: Track user actions for security and compliance
+
+## Integration Points
+
+### Discord OAuth2
+- Authorization URL generated in `DiscordAuthService.get_authorization_url()`
+- Callback handled at `/auth/callback`
+- User info fetched from Discord API
+- User created/updated in database
+
+### Database
+- MySQL via Tortoise ORM
+- Connection configured in `config.py` via environment variables
+- Migrations managed by Aerich
+
+### NiceGUI Storage
+- User session in `app.storage.user`
+- OAuth state for CSRF protection
+- Redirect URL after login
+
+## Adding Features
+
+### New Page
+1. Create file in `pages/` (e.g., `pages/new_page.py`)
+2. Define `register()` function
+3. Use `@ui.page('/path')` decorator with `BasePage` template
+4. Add CSS classes to `static/css/main.css` (no inline styles!)
+5. Register in `frontend.py`
+
+Example:
+```python
+from nicegui import ui
+from components.base_page import BasePage
+
+def register():
+    @ui.page('/mypage')
+    async def my_page():
+        base = BasePage.simple_page(title="My Page", active_nav="mypage")
+        
+        async def content(page: BasePage):
+            with ui.element('div').classes('card'):
+                ui.label('My content here')
+        
+        await base.render(content)()
+```
+
+### New UI Component
+1. Create component file in `components/`
+2. Define reusable component class or function
+3. Export from `components/__init__.py`
+4. Add component-specific CSS to `static/css/main.css`
+5. Use in pages by importing from `components`
+
+### New Business Logic
+1. Create service in `application/services/`
+2. Create repository in `application/repositories/` for data access
+3. Use service from UI pages
+4. Add docstrings and type hints
+
+### New Authorization Check
+1. Add method to `AuthorizationService`
+2. Use in pages for conditional rendering
+3. Enforce server-side with `require_permission()`
+
+### New Model
+1. Define in `models/` directory (create new file or add to existing)
+2. Export from `models/__init__.py`
+3. Update `migrations/tortoise_config.py` to include new model module
+4. Update `database.py` to include new model module
+5. Create migration: `poetry run aerich migrate --name "add_model"`
+6. Apply migration: `poetry run aerich upgrade`
+7. Create repository in `application/repositories/`
+8. Create service in `application/services/`
+
+## Testing
+- Use pytest for testing
+- Test services independently of UI
+- Mock repositories in service tests
+- Test authorization logic thoroughly
+
+## Common Pitfalls to Avoid
+- ❌ Don't use `.style()` for inline CSS
+- ❌ Don't access ORM from UI pages
+- ❌ Don't put business logic in UI
+- ❌ Don't forget async/await
+- ❌ Don't skip docstrings
+- ❌ Don't mix authorization with business logic
+- ✅ Do use external CSS classes
+- ✅ Do use services for all business logic
+- ✅ Do use repositories for data access
+- ✅ Do enforce permissions server-side
+- ✅ Do test on mobile viewports
+
+## References
+- NiceGUI: https://nicegui.io
+- Tortoise ORM: https://tortoise.github.io
+- FastAPI: https://fastapi.tiangolo.com
+- Discord OAuth2: https://discord.com/developers/docs/topics/oauth2
+
+---
+Keep this file updated as architecture evolves. When adding new patterns or conventions, document them here for future reference.
