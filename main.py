@@ -12,6 +12,7 @@ from database import init_db, close_db
 from bot.client import start_bot, stop_bot
 from racetime.client import start_racetime_bot, stop_all_racetime_bots
 import frontend
+import api
 import logging
 
 # Configure logging
@@ -102,6 +103,9 @@ ui.run_with(
 
 # Register frontend routes
 frontend.register_routes()
+
+# Register API routers
+api.register_api(app)
 
 
 if __name__ in {"__main__", "__mp_main__"}:

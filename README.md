@@ -211,6 +211,23 @@ The application uses the following permission hierarchy:
 
 ## API Documentation
 
+### Base Path
+
+All API endpoints are mounted under `/api` and are part of the presentation layer. They must only call into the service layer and never access ORM models directly.
+
+### Endpoints (initial scaffolding)
+
+- `GET /api/health` — Health check
+- `GET /api/users/me` — Current authenticated user (requires session)
+- `GET /api/users` — List users (admin only)
+- `GET /api/users/search?q=...` — Search users (moderator+)
+
+Authentication for API endpoints uses Bearer tokens associated with users. Tokens inherit the user's permissions (e.g., moderator/admin). A UI for token management will be added, but tokens can already be generated/verified via the service layer.
+
+### Rate Limiting
+
+API requests are rate limited per-user using a sliding window (default 60 requests per 60 seconds). A user's limit can be customized via the `api_rate_limit_per_minute` field; otherwise, the default from settings is used. When exceeded, the API returns HTTP 429 with a `Retry-After` header.
+
 When running in development mode, API documentation is available at:
 - Swagger UI: http://localhost:8080/docs
 - ReDoc: http://localhost:8080/redoc

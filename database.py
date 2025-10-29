@@ -14,7 +14,7 @@ async def init_db() -> None:
     """
     await Tortoise.init(
         db_url=settings.database_url,
-        modules={'models': ['models.user', 'models.audit_log']},
+        modules={'models': ['models.user', 'models.audit_log', 'models.api_token']},
         use_tz=True,
         timezone='UTC'
     )

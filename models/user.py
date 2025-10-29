@@ -47,6 +47,8 @@ class User(Model):
     
     permission = fields.IntEnumField(Permission, default=Permission.USER)
     is_active = fields.BooleanField(default=True)
+    # Optional per-user API rate limit (requests per minute). If null, use default from settings.
+    api_rate_limit_per_minute = fields.IntField(null=True)
     
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

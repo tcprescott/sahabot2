@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     HOST: str = "0.0.0.0"
     PORT: int = 8080
 
+    # API Rate Limiting
+    API_RATE_LIMIT_WINDOW_SECONDS: int = 60
+    API_DEFAULT_RATE_LIMIT_PER_MINUTE: int = 60
+
     @property
     def database_url(self) -> str:
         """
