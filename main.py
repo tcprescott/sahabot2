@@ -12,7 +12,6 @@ from database import init_db, close_db
 from bot.client import start_bot, stop_bot
 from racetime.client import start_racetime_bot, stop_all_racetime_bots
 import frontend
-import api
 import logging
 
 # Configure logging
@@ -24,14 +23,14 @@ logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
     
     Handles startup and shutdown events for the application.
     
     Args:
-        _app: FastAPI application instance (unused)
+        app: FastAPI application instance
     """
     # Startup
     logger.info("Starting SahaBot2...")
@@ -50,21 +49,21 @@ async def lifespan(_app: FastAPI):
     except Exception as e:
         logger.error("Failed to start Discord bot: %s", e, exc_info=True)
         logger.warning("Application will continue without Discord bot")
-
-    # Start Racetime bots for configured categories
-    racetime_configs = settings.racetime_bot_configs
-    if racetime_configs:
-        logger.info("Starting %d racetime bot(s)", len(racetime_configs))
-        for category, client_id, client_secret in racetime_configs:
-            try:
-                await start_racetime_bot(category, client_id, client_secret)
-                logger.info("Racetime bot started for category: %s", category)
-            except Exception as e:
-                logger.error("Failed to start Racetime bot for category %s: %s", category, e, exc_info=True)
-                logger.warning("Application will continue without Racetime bot for %s", category)
-    else:
-        logger.info("No racetime bots configured")
     
+        # Start Racetime bots for configured categories
+        racetime_configs = settings.racetime_bot_configs
+        if racetime_configs:
+            logger.info("Starting %d racetime bot(s)", len(racetime_configs))
+            for category, client_id, client_secret in racetime_configs:
+                try:
+                    await start_racetime_bot(category, client_id, client_secret)
+                    logger.info("Racetime bot started for category: %s", category)
+                except Exception as racetime_error:
+                    logger.error("Failed to start Racetime bot for category %s: %s", category, racetime_error, exc_info=True)
+                    logger.warning("Application will continue without Racetime bot for %s", category)
+        else:
+            logger.info("No racetime bots configured")
+
     yield
     
     # Shutdown
@@ -72,7 +71,7 @@ async def lifespan(_app: FastAPI):
     
     # Stop all Racetime bots
     await stop_all_racetime_bots()
-    
+
     # Stop Discord bot
     try:
         await stop_bot()
@@ -103,9 +102,6 @@ ui.run_with(
 
 # Register frontend routes
 frontend.register_routes()
-
-# Register API routers
-api.register_api(app)
 
 
 if __name__ in {"__main__", "__mp_main__"}:

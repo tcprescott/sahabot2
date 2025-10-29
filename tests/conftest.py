@@ -9,7 +9,6 @@ import pytest
 import asyncio
 from typing import AsyncGenerator, Generator
 from tortoise import Tortoise
-from tortoise.contrib.test import initializer, finalizer
 
 
 # Configure pytest-asyncio
@@ -29,17 +28,7 @@ def pytest_configure(config):
     )
 
 
-@pytest.fixture(scope="session")
-def event_loop() -> Generator:
-    """
-    Create an event loop for the test session.
-    
-    Yields:
-        Event loop instance
-    """
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
+## Use pytest-asyncio's built-in event loop (configured via asyncio_mode=auto)
 
 
 @pytest.fixture(scope="function")
@@ -53,45 +42,37 @@ async def db() -> AsyncGenerator:
     Yields:
         Database connection
     """
-    # Initialize test database
-    await initializer(
-        modules=["models.user", "models.audit_log"],
-        db_url="sqlite://:memory:",
-        app_label="models"
+    # Initialize test database directly with explicit default connection and app mapping
+    await Tortoise.init(
+        config={
+            "connections": {"default": "sqlite://:memory:"},
+            "apps": {
+                "models": {
+                    "models": [
+                        "models.user",
+                        "models.audit_log",
+                        "models.api_token",
+                    ],
+                    "default_connection": "default",
+                }
+            },
+            "use_tz": True,
+            "timezone": "UTC",
+        }
     )
-    
+    await Tortoise.generate_schemas()
+
     yield
-    
+
     # Clean up
-    await finalizer()
+    await Tortoise.close_connections()
+
+
+## Removed db_cleaner fixture: db fixture uses per-test initializer/finalizer
 
 
 @pytest.fixture
-async def clean_db(db) -> AsyncGenerator:
-    """
-    Provide a clean database for each test.
-    
-    This fixture ensures each test starts with a fresh database state.
-    
-    Args:
-        db: Database fixture
-        
-    Yields:
-        Database connection
-    """
-    # Database is already initialized by db fixture
-    yield db
-    
-    # Clean up all tables after test
-    from models.user import User
-    from models.audit_log import AuditLog
-    
-    await User.all().delete()
-    await AuditLog.all().delete()
-
-
-@pytest.fixture
-def mock_discord_user():
+def discord_user_payload():
     """
     Create a mock Discord user for testing.
     
@@ -108,7 +89,7 @@ def mock_discord_user():
 
 
 @pytest.fixture
-async def sample_user(clean_db, mock_discord_user):
+async def sample_user(request):
     """
     Create a sample user in the database for testing.
     
@@ -119,14 +100,18 @@ async def sample_user(clean_db, mock_discord_user):
     Returns:
         Created user instance
     """
+    # Ensure DB is initialized and get discord payload without shadowing fixture names
+    _ = request.getfixturevalue('db')
+    payload = request.getfixturevalue('discord_user_payload')
+
     from models.user import User, Permission
-    
+
     user = await User.create(
-        discord_id=int(mock_discord_user["id"]),
-        discord_username=mock_discord_user["username"],
-        discord_discriminator=mock_discord_user["discriminator"],
-        discord_avatar=mock_discord_user["avatar"],
-        discord_email=mock_discord_user["email"],
+        discord_id=int(payload["id"]),
+        discord_username=payload["username"],
+        discord_discriminator=payload["discriminator"],
+        discord_avatar=payload["avatar"],
+        discord_email=payload["email"],
         permission=Permission.USER,
         is_active=True
     )
@@ -135,7 +120,7 @@ async def sample_user(clean_db, mock_discord_user):
 
 
 @pytest.fixture
-async def admin_user(clean_db, mock_discord_user):
+async def admin_user(request):
     """
     Create an admin user in the database for testing.
     
@@ -146,10 +131,14 @@ async def admin_user(clean_db, mock_discord_user):
     Returns:
         Created admin user instance
     """
+    # Ensure DB is initialized and get discord payload without shadowing fixture names
+    _ = request.getfixturevalue('db')
+    payload = request.getfixturevalue('discord_user_payload')
+
     from models.user import User, Permission
-    
+
     user = await User.create(
-        discord_id=int(mock_discord_user["id"]) + 1,
+        discord_id=int(payload["id"]) + 1,
         discord_username="admin_user",
         discord_discriminator="0002",
         discord_avatar="admin_avatar_hash",
@@ -162,7 +151,7 @@ async def admin_user(clean_db, mock_discord_user):
 
 
 @pytest.fixture
-def mock_discord_interaction(mock_discord_user):
+def mock_discord_interaction(request):
     """
     Create a mock Discord interaction for testing bot commands.
     
@@ -175,11 +164,12 @@ def mock_discord_interaction(mock_discord_user):
     from unittest.mock import MagicMock, AsyncMock
     
     # Create mock user
+    payload = request.getfixturevalue('discord_user_payload')
     user = MagicMock()
-    user.id = int(mock_discord_user["id"])
-    user.name = mock_discord_user["username"]
-    user.discriminator = mock_discord_user["discriminator"]
-    user.mention = f"<@{mock_discord_user['id']}>"
+    user.id = int(payload["id"])
+    user.name = payload["username"]
+    user.discriminator = payload["discriminator"]
+    user.mention = f"<@{payload['id']}>"
     
     # Create mock interaction
     interaction = MagicMock()
