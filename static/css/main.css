@@ -124,9 +124,19 @@ body:not(.body--dark) .card-body {
     border-radius: var(--radius-lg);
     background-color: #ffffff;
     box-shadow: var(--shadow-sm);
-    display: flex;
     flex-direction: column;
     gap: var(--spacing-sm);
+}
+
+/* Sidebar overlay positioning */
+.sidebar-overlay {
+    position: fixed;
+    top: 64px; /* Below header */
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    display: flex;
+    transition: width 0.3s ease;
 }
 
 .body--dark .sidebar,
@@ -137,6 +147,69 @@ body:not(.body--dark) .card-body {
 .sidebar.collapsed {
     width: 64px;
     align-items: center;
+    padding: var(--spacing-md) var(--spacing-xs);
+}
+
+/* Center buttons in collapsed sidebar */
+.sidebar.collapsed .q-btn {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* Content area padding to avoid sidebar overlap */
+.content-with-sidebar {
+    transition: padding-left 0.3s ease, opacity 0.3s ease;
+}
+
+.content-sidebar-collapsed {
+    padding-left: 80px; /* 64px sidebar + 16px spacing */
+}
+
+.content-sidebar-expanded {
+    padding-left: 256px; /* 240px sidebar + 16px spacing */
+}
+
+/* Backdrop overlay for mobile */
+.sidebar-backdrop {
+    position: fixed;
+    top: 64px; /* Below header */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 99; /* Below sidebar but above content */
+}
+
+.sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Mobile-specific behavior */
+@media (max-width: 768px) {
+    /* On mobile, when sidebar is expanded, dim the content */
+    .content-sidebar-expanded {
+        padding-left: 0;
+    }
+    
+    .content-sidebar-collapsed {
+        padding-left: 80px;
+    }
+    
+    /* Show backdrop only on mobile */
+    .sidebar-backdrop {
+        display: block;
+    }
+}
+
+/* Desktop: no backdrop needed */
+@media (min-width: 769px) {
+    .sidebar-backdrop {
+        display: none;
+    }
 }
 
 .sidebar .sidebar-item {
@@ -173,12 +246,79 @@ body:not(.body--dark) .card-body {
 .sidebar .spacer { flex: 1; }
 
 /* Responsive visibility helpers */
-.mobile-only { display: none; }
-.desktop-only { display: block; }
+/* Default (desktop): show desktop-only, hide mobile-only */
+.mobile-only { 
+    display: none; 
+}
+.desktop-only { 
+    display: flex; 
+}
 
+/* Sidebar needs display: flex when visible */
+.sidebar.mobile-only,
+.sidebar.desktop-only {
+    display: flex;
+}
+
+/* Mobile: show mobile-only, hide desktop-only */
 @media (max-width: 1024px) {
-    .mobile-only { display: block; }
-    .desktop-only { display: none; }
+    .mobile-only { 
+        display: flex; 
+    }
+    .desktop-only { 
+        display: none; 
+    }
+    
+    /* More specific rules for sidebars to override the above */
+    .sidebar.mobile-only {
+        display: flex;
+    }
+    .sidebar.desktop-only {
+        display: none;
+    }
+}
+
+/* Mobile Drawer Menu */
+.drawer-menu {
+    padding: 8px;
+}
+.drawer-menu .flyout-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 12px;
+    border-radius: 8px;
+}
+.drawer-menu .flyout-item + .flyout-item {
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+.body--dark .drawer-menu .flyout-item + .flyout-item,
+.q-dark .drawer-menu .flyout-item + .flyout-item {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.drawer-menu .flyout-item:hover {
+    background-color: rgba(0, 0, 0, 0.04);
+}
+.body--dark .drawer-menu .flyout-item:hover,
+.q-dark .drawer-menu .flyout-item:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+.drawer-menu .icon-col {
+    width: 36px;
+    min-width: 36px;
+    display: flex;
+    justify-content: center;
+}
+.drawer-menu .text-col {
+    flex: 1;
+}
+
+/* Mobile expand button (bottom-right) */
+.mobile-expand-fab {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    z-index: 1100;
 }
 
 /* NiceGUI Header/Footer Overrides */
