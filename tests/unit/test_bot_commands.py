@@ -6,7 +6,7 @@ Tests the bot command functionality.
 
 import pytest
 from unittest.mock import MagicMock, AsyncMock
-from bot.commands.test_commands import TestCommands
+from discordbot.commands.test_commands import TestCommands
 
 
 @pytest.mark.unit

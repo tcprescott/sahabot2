@@ -9,8 +9,9 @@ from fastapi import FastAPI
 from nicegui import app as nicegui_app, ui
 from config import settings
 from database import init_db, close_db
-from bot.client import start_bot, stop_bot
+from discordbot.client import start_bot, stop_bot
 from racetime.client import start_racetime_bot, stop_all_racetime_bots
+from api import register_api
 import frontend
 import logging
 
@@ -26,22 +27,22 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
-    
+
     Handles startup and shutdown events for the application.
-    
+
     Args:
         app: FastAPI application instance
     """
     # Startup
     logger.info("Starting SahaBot2...")
-    
+
     # Initialize database
     await init_db()
     logger.info("Database initialized")
-    
+
     # Configure NiceGUI storage
     nicegui_app.storage.secret = settings.SECRET_KEY
-    
+
     # Start Discord bot
     try:
         await start_bot()
@@ -49,7 +50,7 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("Failed to start Discord bot: %s", e, exc_info=True)
         logger.warning("Application will continue without Discord bot")
-    
+
         # Start Racetime bots for configured categories
         racetime_configs = settings.racetime_bot_configs
         if racetime_configs:
@@ -65,10 +66,10 @@ async def lifespan(app: FastAPI):
             logger.info("No racetime bots configured")
 
     yield
-    
+
     # Shutdown
     logger.info("Shutting down SahaBot2...")
-    
+
     # Stop all Racetime bots
     await stop_all_racetime_bots()
 
@@ -78,7 +79,7 @@ async def lifespan(app: FastAPI):
         logger.info("Discord bot stopped")
     except Exception as e:
         logger.error("Error stopping Discord bot: %s", e, exc_info=True)
-    
+
     # Close database connections
     await close_db()
     logger.info("Database connections closed")
@@ -86,10 +87,45 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI application
 app = FastAPI(
-    title="SahaBot2",
-    description="SahasrahBot2 - A NiceGUI + Tortoise ORM web application",
+    title="SahaBot2 API",
+    description="""
+SahasrahBot2 API - A modern web application with Discord integration.
+
+## Authentication
+
+API endpoints use **Bearer token authentication**. Tokens are associated with Discord users
+and inherit their permissions. Include your token in the `Authorization` header:
+
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+## Rate Limiting
+
+API requests are rate limited per-user using a sliding window (default 60 requests per 60 seconds).
+Per-user limits can be customized. When exceeded, the API returns HTTP 429 with a `Retry-After` header.
+
+## Permissions
+
+- **USER** (0) - Default permission for all authenticated users
+- **MODERATOR** (50) - Can perform moderation actions
+- **ADMIN** (100) - Can access admin panel and manage users
+- **SUPERADMIN** (200) - Can change user permissions
+    """,
     version="0.1.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {
+            "name": "health",
+            "description": "Health check endpoints for monitoring service status.",
+        },
+        {
+            "name": "users",
+            "description": "User management endpoints. Requires authentication via Bearer token.",
+        },
+    ],
 )
 
 # Initialize NiceGUI with FastAPI
@@ -102,6 +138,9 @@ ui.run_with(
 
 # Register frontend routes
 frontend.register_routes()
+
+# Register API routes
+register_api(app)
 
 
 if __name__ in {"__main__", "__mp_main__"}:

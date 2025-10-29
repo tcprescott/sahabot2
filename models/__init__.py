@@ -6,9 +6,11 @@ This package contains all Tortoise ORM models for the application.
 
 from models.user import User, Permission
 from models.audit_log import AuditLog
+from models.api_token import ApiToken
 
 __all__ = [
     'User',
     'Permission',
     'AuditLog',
+    'ApiToken',
 ]

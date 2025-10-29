@@ -16,7 +16,7 @@ To add new commands:
 2. Define a Cog class that inherits from `commands.Cog`
 3. Use `@app_commands.command()` decorator for slash commands
 4. Implement a `setup(bot)` async function to register the cog
-5. Load the extension in `bot/client.py` setup_hook
+5. Load the extension in `discordbot/client.py` setup_hook
 
 ### Example
 

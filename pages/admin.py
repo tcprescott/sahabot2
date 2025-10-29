@@ -30,14 +30,16 @@ def register():
             
             # Header
             with ui.element('div').classes('card'):
-                ui.element('div').classes('card-header').text('Admin Dashboard')
+                with ui.element('div').classes('card-header'):
+                    ui.label('Admin Dashboard')
                 with ui.element('div').classes('card-body'):
                     ui.label(f'Welcome, {page.user.discord_username}').classes('text-primary')
                     ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')
             
             # User management section
             with ui.element('div').classes('card'):
-                ui.element('div').classes('card-header').text('User Management')
+                with ui.element('div').classes('card-header'):
+                    ui.label('User Management')
                 
                 # User list
                 users = await user_service.get_all_users(include_inactive=True)
@@ -68,10 +70,12 @@ def register():
                                         ui.label(str(u.discord_id))
                                     with ui.element('td').props('data-label="Permission"'):
                                         badge_class = 'badge-admin' if u.is_admin() else 'badge-moderator' if u.is_moderator() else 'badge-user'
-                                        ui.element('span').classes(f'badge {badge_class}').text(u.permission.name)
+                                        with ui.element('span').classes(f'badge {badge_class}'):
+                                            ui.label(u.permission.name)
                                     with ui.element('td').props('data-label="Status"'):
                                         status_class = 'badge-success' if u.is_active else 'badge-danger'
-                                        ui.element('span').classes(f'badge {status_class}').text('Active' if u.is_active else 'Inactive')
+                                        with ui.element('span').classes(f'badge {status_class}'):
+                                            ui.label('Active' if u.is_active else 'Inactive')
                                     with ui.element('td').props('data-label="Actions"'):
                                         if auth_z_service.can_edit_user(page.user, u):
                                             ui.button('Edit', on_click=lambda u=u: edit_user(u)).classes('btn btn-sm')

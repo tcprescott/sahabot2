@@ -45,7 +45,8 @@ def register():
             with ui.element('div').classes('card text-center'):
                 # Check for errors
                 if error:
-                    ui.element('div').classes('card-header').text('Authentication Failed')
+                    with ui.element('div').classes('card-header'):
+                        ui.label('Authentication Failed')
                     with ui.element('div').classes('card-body'):
                         ui.label(f'Error: {error}').classes('text-error')
                         ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
@@ -54,7 +55,8 @@ def register():
                 # Verify CSRF state
                 stored_state = app.storage.user.get('oauth_state')
                 if not state or state != stored_state:
-                    ui.element('div').classes('card-header').text('Authentication Failed')
+                    with ui.element('div').classes('card-header'):
+                        ui.label('Authentication Failed')
                     with ui.element('div').classes('card-body'):
                         ui.label('Invalid state token. Please try again.').classes('text-error')
                         ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
@@ -62,7 +64,8 @@ def register():
                 
                 # Exchange code for token and authenticate
                 if code:
-                    ui.element('div').classes('card-header').text('Authenticating...')
+                    with ui.element('div').classes('card-header'):
+                        ui.label('Authenticating...')
                     ui.spinner(size='lg')
                     
                     try:
@@ -83,12 +86,14 @@ def register():
                         ui.navigate.to(redirect_url)
                         
                     except Exception as e:
-                        ui.element('div').classes('card-header').text('Authentication Failed')
+                        with ui.element('div').classes('card-header'):
+                            ui.label('Authentication Failed')
                         with ui.element('div').classes('card-body'):
                             ui.label(f'Error: {str(e)}').classes('text-error')
                             ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
                 else:
-                    ui.element('div').classes('card-header').text('Authentication Failed')
+                    with ui.element('div').classes('card-header'):
+                        ui.label('Authentication Failed')
                     with ui.element('div').classes('card-body'):
                         ui.label('No authorization code received.').classes('text-error')
                         ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')

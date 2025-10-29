@@ -5,13 +5,18 @@ This module handles Discord OAuth2 authentication flow.
 """
 
 import httpx
+import logging
 from typing import Optional, Dict, Any
+from urllib.parse import urlencode
 from config import settings
 from nicegui import app, ui
 from fastapi import Request
 from application.services.user_service import UserService
 from application.services.audit_service import AuditService
 from models import User
+
+
+logger = logging.getLogger(__name__)
 
 
 class DiscordAuthService:
@@ -48,7 +53,7 @@ class DiscordAuthService:
             'state': state
         }
         
-        query_string = '&'.join(f"{k}={v}" for k, v in params.items())
+        query_string = urlencode(params)
         return f"{self.DISCORD_AUTHORIZE_URL}?{query_string}"
     
     async def exchange_code_for_token(self, code: str) -> Dict[str, Any]:
@@ -69,16 +74,29 @@ class DiscordAuthService:
             'client_secret': settings.DISCORD_CLIENT_SECRET,
             'grant_type': 'authorization_code',
             'code': code,
-            'redirect_uri': settings.DISCORD_REDIRECT_URI
+            'redirect_uri': settings.DISCORD_REDIRECT_URI,
+        }
+        
+        headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
         }
         
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 self.DISCORD_TOKEN_URL,
                 data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers=headers
             )
-            response.raise_for_status()
+            
+            # Log error details if request fails
+            if response.status_code != 200:
+                error_text = response.text
+                raise httpx.HTTPStatusError(
+                    f"Discord token exchange failed: {error_text}",
+                    request=response.request,
+                    response=response
+                )
+            
             return response.json()
     
     async def get_user_info(self, access_token: str) -> Dict[str, Any]:
@@ -116,24 +134,39 @@ class DiscordAuthService:
         Raises:
             Exception: If authentication fails
         """
-        # Exchange code for token
-        token_data = await self.exchange_code_for_token(code)
-        access_token = token_data['access_token']
-        
-        # Get user info from Discord
-        discord_user = await self.get_user_info(access_token)
-        
-        # Get or create user in database
-        user = await self.user_service.get_or_create_user_from_discord(
-            discord_id=int(discord_user['id']),
-            discord_username=discord_user['username'],
-            discord_discriminator=discord_user.get('discriminator'),
-            discord_avatar=discord_user.get('avatar'),
-            discord_email=discord_user.get('email')
-        )
-        
-        # Log the login
-        await self.audit_service.log_login(user, ip_address)
+        try:
+            # Exchange code for token
+            logger.info("Attempting to exchange authorization code for token")
+            token_data = await self.exchange_code_for_token(code)
+            access_token = token_data['access_token']
+            logger.info("Successfully obtained access token")
+            
+            # Get user info from Discord
+            logger.info("Fetching user info from Discord")
+            discord_user = await self.get_user_info(access_token)
+            logger.info("Successfully retrieved user info for Discord ID: %s", discord_user['id'])
+            
+            # Get or create user in database
+            user = await self.user_service.get_or_create_user_from_discord(
+                discord_id=int(discord_user['id']),
+                discord_username=discord_user['username'],
+                discord_discriminator=discord_user.get('discriminator'),
+                discord_avatar=discord_user.get('avatar'),
+                discord_email=discord_user.get('email')
+            )
+            
+            # Log the login
+            await self.audit_service.log_login(user, ip_address)
+            
+            return user
+        except httpx.HTTPStatusError as e:
+            logger.error("Discord OAuth2 error: Status %s", e.response.status_code)
+            logger.error("Response body: %s", e.response.text)
+            raise Exception(f"Discord authentication failed: {e.response.text}")
+        except Exception as e:
+            logger.error("Authentication error: %s", str(e), exc_info=True)
+            raise
+
         
         return user
     

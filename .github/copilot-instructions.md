@@ -15,7 +15,7 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
   - `audit_log.py`: AuditLog model for tracking user actions
 - **components/**: Reusable UI components and templates
   - `base_page.py`: Base page template with navbar and layout
-- **bot/**: Discord bot integration
+- **discordbot/**: Discord bot integration
   - `client.py`: Discord bot singleton implementation with lifecycle management
   - Commands should be in separate files (e.g., `commands/admin.py`, `commands/user.py`)
 
@@ -42,7 +42,7 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - **static/css/main.css**: All application styles (no inline CSS allowed)
 
 ### Discord Bot Layer
-- **bot/**: Discord bot integration (runs as singleton within the application)
+- **discordbot/**: Discord bot integration (runs as singleton within the application)
   - `client.py`: Core bot implementation extending `commands.Bot`
   - Lifecycle managed by `main.py` lifespan (starts on app startup, stops on shutdown)
   - Uses `get_bot_instance()` to access singleton from services or commands
@@ -93,6 +93,9 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - **Logging**: Use lazy % formatting in logging statements (not f-strings)
   - ✅ `logger.info("User %s logged in", user.id)`
   - ❌ `logger.info(f"User {user.id} logged in")`
+- **NiceGUI Elements**: Elements don't have a `.text()` method
+  - ✅ `with ui.element('div').classes('header'): ui.label('Text')`
+  - ❌ `ui.element('div').classes('header').text('Text')`  # AttributeError!
 
 ### 7. Discord Bot Architecture
 - **Bot as Presentation Layer**: Discord bot is part of the presentation layer (like UI pages)
@@ -217,9 +220,9 @@ if not user:
 Bot commands follow the same separation of concerns as the rest of the application:
 
 ```python
-# Example bot command (in bot/commands/user.py)
+# Example bot command (in discordbot/commands/user.py)
 from discord import app_commands
-from bot.client import get_bot_instance
+from discordbot.client import get_bot_instance
 from application.services.user_service import UserService
 
 @app_commands.command(name="profile", description="View your profile")
@@ -338,7 +341,7 @@ def register():
 8. Create service in `application/services/`
 
 ### New Discord Bot Command
-1. Create command file in `bot/commands/` (e.g., `bot/commands/user_commands.py`)
+1. Create command file in `discordbot/commands/` (e.g., `discordbot/commands/user_commands.py`)
 2. Use `@app_commands.command()` decorator (never prefix commands)
 3. Delegate all business logic to services
 4. Handle only Discord interaction (parsing, responding)
@@ -347,7 +350,7 @@ def register():
 
 Example:
 ```python
-# bot/commands/admin_commands.py
+# discordbot/commands/admin_commands.py
 from discord import app_commands
 import discord
 from application.services.user_service import UserService
@@ -375,6 +378,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 
 ## Common Pitfalls to Avoid
 - ❌ Don't use `.style()` for inline CSS
+- ❌ Don't use `.text()` on elements (use `with` context and `ui.label()` instead)
 - ❌ Don't access ORM from UI pages
 - ❌ Don't put business logic in UI
 - ❌ Don't forget async/await
@@ -385,6 +389,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't put business logic in bot commands
 - ❌ Don't use f-strings in logging statements (use lazy % formatting)
 - ✅ Do use external CSS classes
+- ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
 - ✅ Do use repositories for data access
 - ✅ Do enforce permissions server-side

@@ -200,37 +200,70 @@ All configuration is loaded centrally via `config.py` using Pydantic Settings. D
 - `HOST` - Server host
 - `PORT` - Server port
 
-## Permission Levels
-
-The application uses the following permission hierarchy:
-
-- **USER** (0) - Default permission for all authenticated users
-- **MODERATOR** (50) - Can perform moderation actions
-- **ADMIN** (100) - Can access admin panel and manage users
-- **SUPERADMIN** (200) - Can change user permissions
-
 ## API Documentation
-
-### Base Path
 
 All API endpoints are mounted under `/api` and are part of the presentation layer. They must only call into the service layer and never access ORM models directly.
 
-### Endpoints (initial scaffolding)
+### Interactive Documentation
 
-- `GET /api/health` — Health check
-- `GET /api/users/me` — Current authenticated user (requires session)
-- `GET /api/users` — List users (admin only)
-- `GET /api/users/search?q=...` — Search users (moderator+)
+When running in development mode, interactive API documentation is available:
+- **Swagger UI**: http://localhost:8080/docs (interactive, test endpoints directly)
+- **ReDoc**: http://localhost:8080/redoc (detailed documentation with examples)
 
-Authentication for API endpoints uses Bearer tokens associated with users. Tokens inherit the user's permissions (e.g., moderator/admin). A UI for token management will be added, but tokens can already be generated/verified via the service layer.
+> **Note**: In production mode, API docs are disabled for security. Set `DEBUG=True` in `.env` to enable them.
+
+### Authentication
+
+API endpoints use **Bearer token authentication**. Tokens are associated with Discord users and inherit their permissions.
+
+To authenticate API requests, include your token in the Authorization header:
+```
+Authorization: Bearer YOUR_TOKEN_HERE
+```
+
+You can test authentication directly in the Swagger UI by clicking the "Authorize" button and entering your token.
+
+### Available Endpoints
+
+#### Health
+- `GET /api/health` — Health check (no authentication required)
+
+#### Users
+- `GET /api/users/me` — Get current authenticated user profile
+- `GET /api/users` — List all users (requires ADMIN permission)
+- `GET /api/users/search?q=<query>` — Search users by username (requires MODERATOR permission)
+
+All user endpoints require Bearer token authentication and are rate limited.
 
 ### Rate Limiting
 
-API requests are rate limited per-user using a sliding window (default 60 requests per 60 seconds). A user's limit can be customized via the `api_rate_limit_per_minute` field; otherwise, the default from settings is used. When exceeded, the API returns HTTP 429 with a `Retry-After` header.
+API requests are rate limited per-user using a sliding window (default 60 requests per 60 seconds). A user's limit can be customized via the `api_rate_limit_per_minute` field; otherwise, the default from settings is used. When exceeded, the API returns HTTP 429 with a `Retry-After` header indicating when to retry.
 
-When running in development mode, API documentation is available at:
-- Swagger UI: http://localhost:8080/docs
-- ReDoc: http://localhost:8080/redoc
+### Response Formats
+
+All API responses use JSON format with consistent schemas:
+
+**Success Response Example**:
+```json
+{
+  "items": [...],
+  "count": 10
+}
+```
+
+**Error Response Example**:
+```json
+{
+  "detail": "Error message here"
+}
+```
+
+### Permission Levels
+
+- **USER** (0) - Default permission; can access `/api/users/me`
+- **MODERATOR** (50) - Can search users
+- **ADMIN** (100) - Can list all users
+- **SUPERADMIN** (200) - Full access (future endpoints)
 
 ## Testing
 

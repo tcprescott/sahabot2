@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Directories to scan (relative to repository root)
 SCAN_DIRS = [
     "application",
-    "bot",
+    "discordbot",
     "components",
     "middleware",
     "models",

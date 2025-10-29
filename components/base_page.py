@@ -73,7 +73,8 @@ class BasePage:
         """Render the navigation bar."""
         with ui.element('div').classes('navbar'):
             with ui.element('div').classes('navbar-content'):
-                ui.element('div').classes('navbar-brand').text(self.title)
+                with ui.element('div').classes('navbar-brand'):
+                    ui.label(self.title)
                 with ui.element('div').classes('navbar-menu'):
                     # Home link
                     home_classes = 'navbar-link active' if self.active_nav == 'home' else 'navbar-link'

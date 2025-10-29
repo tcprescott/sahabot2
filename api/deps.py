@@ -10,7 +10,11 @@ from config import settings
 from models import User, Permission
 
 
-_http_bearer = HTTPBearer(auto_error=False)
+_http_bearer = HTTPBearer(
+    auto_error=False,
+    scheme_name="BearerAuth",
+    description="Enter your API token (generated from the web interface or API token management)"
+)
 
 
 async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(_http_bearer)) -> User:

@@ -6,7 +6,7 @@ Tests the bot client initialization and lifecycle.
 
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
-from bot.client import DiscordBot, get_bot_instance
+from discordbot.client import DiscordBot, get_bot_instance
 
 
 @pytest.mark.unit
