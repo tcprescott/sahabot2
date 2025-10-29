@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from nicegui import app as nicegui_app, ui
 from config import settings
 from database import init_db, close_db
-from discordbot.client import start_bot, stop_bot
+from application.services.discord_service import DiscordService
 from racetime.client import start_racetime_bot, stop_all_racetime_bots
 from api import register_api
 import frontend
@@ -43,27 +43,22 @@ async def lifespan(app: FastAPI):
     # Configure NiceGUI storage
     nicegui_app.storage.secret = settings.SECRET_KEY
 
-    # Start Discord bot
-    try:
-        await start_bot()
-        logger.info("Discord bot started")
-    except Exception as e:
-        logger.error("Failed to start Discord bot: %s", e, exc_info=True)
-        logger.warning("Application will continue without Discord bot")
+    # Start Discord bot via service (fallback to racetime bots if unavailable)
+    await DiscordService.start()
 
-        # Start Racetime bots for configured categories
-        racetime_configs = settings.racetime_bot_configs
-        if racetime_configs:
-            logger.info("Starting %d racetime bot(s)", len(racetime_configs))
-            for category, client_id, client_secret in racetime_configs:
-                try:
-                    await start_racetime_bot(category, client_id, client_secret)
-                    logger.info("Racetime bot started for category: %s", category)
-                except Exception as racetime_error:
-                    logger.error("Failed to start Racetime bot for category %s: %s", category, racetime_error, exc_info=True)
-                    logger.warning("Application will continue without Racetime bot for %s", category)
-        else:
-            logger.info("No racetime bots configured")
+    # Start Racetime bots for configured categories
+    racetime_configs = settings.racetime_bot_configs
+    if racetime_configs:
+        logger.info("Starting %d racetime bot(s)", len(racetime_configs))
+        for category, client_id, client_secret in racetime_configs:
+            try:
+                await start_racetime_bot(category, client_id, client_secret)
+                logger.info("Racetime bot started for category: %s", category)
+            except Exception as racetime_error:
+                logger.error("Failed to start Racetime bot for category %s: %s", category, racetime_error, exc_info=True)
+                logger.warning("Application will continue without Racetime bot for %s", category)
+    else:
+        logger.info("No racetime bots configured")
 
     yield
 
@@ -73,12 +68,8 @@ async def lifespan(app: FastAPI):
     # Stop all Racetime bots
     await stop_all_racetime_bots()
 
-    # Stop Discord bot
-    try:
-        await stop_bot()
-        logger.info("Discord bot stopped")
-    except Exception as e:
-        logger.error("Error stopping Discord bot: %s", e, exc_info=True)
+    # Stop Discord bot via service
+    await DiscordService.stop()
 
     # Close database connections
     await close_db()

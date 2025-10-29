@@ -50,7 +50,7 @@ class DiscordBot(commands.Bot):
         
         # Load command cogs
         try:
-            await self.load_extension('bot.commands.test_commands')
+            await self.load_extension('discordbot.commands.test_commands')
             logger.info("Loaded test commands")
         except Exception as e:
             logger.error("Failed to load test commands: %s", e, exc_info=True)
