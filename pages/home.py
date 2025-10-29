@@ -17,6 +17,7 @@ from views import (
     HelpView,
     AboutView,
     ArchiveView,
+    LoremIpsumView,
 )
 
 
@@ -39,6 +40,12 @@ def register():
                 if page.user:
                     await view_class.render(page.user)
             return _content
+        
+        # Wrapper for views that don't need user parameter
+        def make_simple_view_content(view_class):
+            async def _content(page: BasePage):
+                await view_class.render()
+            return _content
 
         # Define tabs with dedicated view modules
         tabs = [
@@ -52,6 +59,7 @@ def register():
             {"label": "Help", "icon": "help", "content": make_view_content(HelpView)},
             {"label": "About", "icon": "info", "content": make_view_content(AboutView)},
             {"label": "Archive", "icon": "inventory", "content": make_view_content(ArchiveView)},
+            {"label": "Lorem Ipsum", "icon": "description", "content": make_simple_view_content(LoremIpsumView)},
         ]
 
         base = BasePage.simple_page(title="SahaBot2", active_nav="home", tabs=tabs, default_tab="Overview")

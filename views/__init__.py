@@ -15,6 +15,7 @@ from views.tools import ToolsView
 from views.help import HelpView
 from views.about import AboutView
 from views.archive import ArchiveView
+from views.lorem_ipsum import LoremIpsumView
 
 __all__ = [
     'OverviewView',
@@ -27,4 +28,5 @@ __all__ = [
     'HelpView',
     'AboutView',
     'ArchiveView',
+    'LoremIpsumView',
 ]

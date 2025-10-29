@@ -91,6 +91,10 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - Type hints on function parameters and returns
 - Descriptive variable names
 - Comments for complex logic
+- **No Trailing Whitespace**: Remove trailing whitespace from all lines, including blank lines
+  - ✅ Clean lines with no trailing spaces or tabs
+  - ❌ Lines ending with spaces, tabs, or other whitespace characters
+  - Exception: Only when absolutely required by the language/format (rare)
 - **Module Imports**: All imports at module level (top of file), never inline
   - ✅ `from components.sidebar import Sidebar` at top of file
   - ❌ `from components.sidebar import Sidebar` inside function
@@ -396,6 +400,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't put business logic in bot commands
 - ❌ Don't use f-strings in logging statements (use lazy % formatting)
 - ❌ Don't use inline imports (import inside functions) - always import at module level
+- ❌ Don't leave trailing whitespace on any lines (including blank lines)
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -406,6 +411,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do delegate all bot logic to services
 - ✅ Do use lazy % formatting in logging: `logger.info("User %s", user_id)`
 - ✅ Do import all modules at the top of the file (module level)
+- ✅ Do keep all lines clean with no trailing whitespace
 
 ## References
 - NiceGUI: https://nicegui.io

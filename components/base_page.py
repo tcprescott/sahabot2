@@ -15,16 +15,17 @@ The layout includes:
 
 from nicegui import app, ui
 from middleware.auth import DiscordAuthService
-from models import User
+from models import User, Permission
 from components.sidebar import Sidebar
 from typing import Optional, Callable, Awaitable
 import inspect
+import logging
 
 
 class BasePage:
     """
     Base page template with consistent layout and navigation.
-    
+
     This class provides a reusable template for all pages, ensuring consistent
     header, footer, CSS loading, and page structure across the application.
 
@@ -174,17 +175,17 @@ class BasePage:
             dark_btn_ref['btn'].props(f'flat color={header_color}')
             dark_btn_ref['btn'].tooltip('Toggle dark mode')
             header_buttons.append(dark_btn_ref['btn'])
-    
+
     def _render_footer(self) -> None:
         """Render the footer with copyright text."""
         with ui.footer().classes('bg-grey-2 text-grey-7 q-pa-md footer-dark-override'):
             ui.label(self.copyright_text).classes('text-caption')
-    
+
     async def _handle_logout(self) -> None:
         """Handle user logout."""
         await self.auth_service.clear_current_user()
         ui.navigate.to('/')
-    
+
     async def render_tabbed_page(self, tabs: list, hide_tabs: bool = False) -> None:
         """Render a tabbed interface with the provided tab configuration.
 
@@ -273,38 +274,36 @@ class BasePage:
             # Render header and footer
             if self.show_header:
                 self._render_header()
+
             self._render_footer()
 
             # Render content (either tabbed or regular)
             if self.tabs and not self.use_sidebar:
                 await self.render_tabbed_page(self.tabs)
             elif self.tabs and self.use_sidebar:
-                # Responsive layout with overlay sidebar
-                
-                with ui.element('div').classes('page-container page-container-wide'):
-                    # First render tabs to get panels reference
-                    # (Use a temporary container to determine structure)
-                    temp_default = self.default_tab if self.default_tab else (self.tabs[0]['label'] if self.tabs else None)
-                    
-                    # Create sidebar first (before content) with placeholder panels
-                    self._sidebar = Sidebar(tabs=self.tabs, panels=None)
-                    
-                    # Create content container
-                    content_container = ui.column()
-                    
-                    # Render sidebar elements (backdrop and sidebar)
-                    self._sidebar.render(content_container)
-                    
-                    # Now render tab content (this creates self._panels)
-                    with content_container:
-                        await self.render_tabbed_page(self.tabs, hide_tabs=True)
-                    
-                    # Update sidebar with actual panels reference
-                    import logging
-                    logger = logging.getLogger(__name__)
-                    logger.info("Setting sidebar.panels to %s (from self._panels)", self._panels)
-                    self._sidebar.panels = self._panels
-                    logger.info("Sidebar.panels is now %s", self._sidebar.panels)
+                # Simple sidebar layout
+
+                # Create and render sidebar with panels reference
+                self._sidebar = Sidebar(tabs=self.tabs, panels=self._panels)
+
+                # Calculate margin for content based on sidebar state
+                sidebar_collapsed = bool(app.storage.user.get('sidebar_collapsed', False))
+                content_margin_left = '72px' if sidebar_collapsed else '248px'
+
+                # Apply margin to the main page content area
+                ui.run_javascript(f'''
+                    const pageContent = document.querySelector('.q-page');
+                    if (pageContent) {{
+                        pageContent.style.marginLeft = '{content_margin_left}';
+                        pageContent.style.transition = 'margin-left 0.3s ease';
+                    }}
+                ''')
+
+                # Render the sidebar (it will position itself fixed)
+                self._sidebar.render(None)
+
+                # Render tab content (this creates self._panels)
+                await self.render_tabbed_page(self.tabs, hide_tabs=True)
             else:
                 with ui.element('div').classes('page-container'):
                     with ui.element('div').classes('content-wrapper'):
@@ -348,7 +347,7 @@ class BasePage:
             page.show_header = False
 
         return page
-    
+
     @staticmethod
     def authenticated_page(
         title: str = "SahaBot2",
@@ -405,11 +404,10 @@ class BasePage:
         Returns:
             BasePage: Configured base page instance
         """
-        from models import Permission as Perm
         return BasePage(
             title=title,
             active_nav=active_nav,
-            require_permission=Perm.ADMIN,
+            require_permission=Permission.ADMIN,
             redirect_path=redirect_path,
             copyright_text=copyright_text,
             tabs=tabs,

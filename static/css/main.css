@@ -258,7 +258,7 @@ body:not(.body--dark) .card-body {
 /* Responsive visibility helpers */
 /* Default (desktop): show desktop-only, hide mobile-only */
 .mobile-only { 
-    display: none; 
+    display: none;
 }
 .desktop-only { 
     display: flex; 
@@ -273,10 +273,10 @@ body:not(.body--dark) .card-body {
 /* Mobile: show mobile-only, hide desktop-only */
 @media (max-width: 1024px) {
     .mobile-only { 
-        display: flex; 
+        display: flex;
     }
     .desktop-only { 
-        display: none; 
+        display: none;
     }
     
     /* More specific rules for sidebars to override the above */

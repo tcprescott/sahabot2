@@ -12,6 +12,7 @@ from config import settings
 from nicegui import app, ui
 from application.services.user_service import UserService
 from application.services.audit_service import AuditService
+from application.repositories.user_repository import UserRepository
 from models import User
 
 
@@ -182,7 +183,6 @@ class DiscordAuthService:
             return None
         
         # Fetch fresh user data from database
-        from application.repositories.user_repository import UserRepository
         user_repo = UserRepository()
         return await user_repo.get_by_id(user_id)
     
