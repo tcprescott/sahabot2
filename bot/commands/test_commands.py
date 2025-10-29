@@ -32,7 +32,7 @@ class TestCommands(commands.Cog):
         Args:
             interaction: The Discord interaction object
         """
-        logger.info(f"Test command invoked by {interaction.user} (ID: {interaction.user.id})")
+        logger.info("Test command invoked by %s (ID: %s)", interaction.user, interaction.user.id)
         
         # Create an embed for a nice-looking response
         embed = discord.Embed(

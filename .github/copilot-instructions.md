@@ -90,6 +90,9 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - Type hints on function parameters and returns
 - Descriptive variable names
 - Comments for complex logic
+- **Logging**: Use lazy % formatting in logging statements (not f-strings)
+  - ✅ `logger.info("User %s logged in", user.id)`
+  - ❌ `logger.info(f"User {user.id} logged in")`
 
 ### 7. Discord Bot Architecture
 - **Bot as Presentation Layer**: Discord bot is part of the presentation layer (like UI pages)
@@ -380,6 +383,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't use prefix (chat-based) commands in Discord bot
 - ❌ Don't access ORM from bot commands
 - ❌ Don't put business logic in bot commands
+- ❌ Don't use f-strings in logging statements (use lazy % formatting)
 - ✅ Do use external CSS classes
 - ✅ Do use services for all business logic
 - ✅ Do use repositories for data access
@@ -387,6 +391,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do test on mobile viewports
 - ✅ Do use application commands (slash commands) for Discord bot
 - ✅ Do delegate all bot logic to services
+- ✅ Do use lazy % formatting in logging: `logger.info("User %s", user_id)`
 
 ## References
 - NiceGUI: https://nicegui.io

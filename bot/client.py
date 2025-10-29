@@ -53,20 +53,20 @@ class DiscordBot(commands.Bot):
             await self.load_extension('bot.commands.test_commands')
             logger.info("Loaded test commands")
         except Exception as e:
-            logger.error(f"Failed to load test commands: {e}", exc_info=True)
+            logger.error("Failed to load test commands: %s", e, exc_info=True)
         
         # Sync commands to Discord
         try:
             synced = await self.tree.sync()
-            logger.info(f"Synced {len(synced)} command(s) to Discord")
+            logger.info("Synced %d command(s) to Discord", len(synced))
         except Exception as e:
-            logger.error(f"Failed to sync commands: {e}", exc_info=True)
+            logger.error("Failed to sync commands: %s", e, exc_info=True)
     
     async def on_ready(self) -> None:
         """Event handler called when the bot is ready."""
         self._ready = True
-        logger.info(f'Bot is ready! Logged in as {self.user} (ID: {self.user.id})')
-        logger.info(f'Connected to {len(self.guilds)} guilds')
+        logger.info('Bot is ready! Logged in as %s (ID: %s)', self.user, self.user.id)
+        logger.info('Connected to %d guilds', len(self.guilds))
         
         # Set bot status
         await self.change_presence(
@@ -83,7 +83,7 @@ class DiscordBot(commands.Bot):
         Args:
             event_method: The event method that raised the error
         """
-        logger.error(f'Error in {event_method}', exc_info=True)
+        logger.error('Error in %s', event_method, exc_info=True)
     
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         """
@@ -93,7 +93,7 @@ class DiscordBot(commands.Bot):
             ctx: Command context
             error: The error that occurred
         """
-        logger.error(f'Command error in {ctx.command}: {error}', exc_info=error)
+        logger.error('Command error in %s: %s', ctx.command, error, exc_info=error)
     
     @property
     def is_ready(self) -> bool:
@@ -164,7 +164,7 @@ async def _run_bot() -> None:
         if _bot_instance:
             await _bot_instance.start(settings.DISCORD_BOT_TOKEN)
     except Exception as e:
-        logger.error(f"Bot encountered an error: {e}", exc_info=True)
+        logger.error("Bot encountered an error: %s", e, exc_info=True)
         _bot_instance = None
         raise
 
@@ -198,7 +198,7 @@ async def stop_bot() -> None:
         logger.info("Discord bot stopped successfully")
     
     except Exception as e:
-        logger.error(f"Error stopping bot: {e}", exc_info=True)
+        logger.error("Error stopping bot: %s", e, exc_info=True)
     
     finally:
         _bot_instance = None

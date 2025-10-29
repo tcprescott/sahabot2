@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
         await start_bot()
         logger.info("Discord bot started")
     except Exception as e:
-        logger.error(f"Failed to start Discord bot: {e}", exc_info=True)
+        logger.error("Failed to start Discord bot: %s", e, exc_info=True)
         logger.warning("Application will continue without Discord bot")
     
     yield
@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI):
         await stop_bot()
         logger.info("Discord bot stopped")
     except Exception as e:
-        logger.error(f"Error stopping Discord bot: {e}", exc_info=True)
+        logger.error("Error stopping Discord bot: %s", e, exc_info=True)
     
     # Close database connections
     await close_db()
