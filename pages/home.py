@@ -18,27 +18,39 @@ def register():
         
         Displays welcome message and user dashboard if authenticated.
         """
-        base = BasePage.simple_page(title="SahaBot2", active_nav="home")
-        
-        async def content(page: BasePage):
-            """Render the home page content."""
-            # Welcome card
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-header'):
-                    ui.label('Welcome to SahaBot2')
-                with ui.element('div').classes('card-body'):
-                    if page.user:
-                        ui.label(f'Hello, {page.user.discord_username}!').classes('text-primary')
-                        ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')
-                    else:
-                        ui.label('Please log in with Discord to continue.').classes('text-secondary')
-            
-            # User dashboard (if authenticated)
-            if page.user:
-                with ui.element('div').classes('card'):
+        # Define 10 example tabs with placeholder content
+        def make_tab_content(label: str):
+            async def _content():
+                with ui.element('div').classes('card bg-dynamic-surface'):
                     with ui.element('div').classes('card-header'):
-                        ui.label('Dashboard')
+                        ui.label(f'{label}').classes('text-dynamic-primary')
                     with ui.element('div').classes('card-body'):
-                        ui.label('Your dashboard content will appear here.').classes('text-secondary')
-        
+                        ui.label(f'This is placeholder content for the {label} tab.')\
+                            .classes('text-dynamic-secondary')
+                # Also showcase a small paragraph for spacing
+                ui.label('Use this space to add real content later.')\
+                    .classes('text-dynamic-secondary mt-1')
+            return _content
+
+        tabs = [
+            {"label": "Overview", "icon": "home", "content": make_tab_content("Overview")},
+            {"label": "Schedule", "icon": "event", "content": make_tab_content("Schedule")},
+            {"label": "Users", "icon": "people", "content": make_tab_content("Users")},
+            {"label": "Reports", "icon": "analytics", "content": make_tab_content("Reports")},
+            {"label": "Settings", "icon": "settings", "content": make_tab_content("Settings")},
+            {"label": "Favorites", "icon": "star", "content": make_tab_content("Favorites")},
+            {"label": "Tools", "icon": "build", "content": make_tab_content("Tools")},
+            {"label": "Help", "icon": "help", "content": make_tab_content("Help")},
+            {"label": "About", "icon": "info", "content": make_tab_content("About")},
+            {"label": "Archive", "icon": "inventory", "content": make_tab_content("Archive")},
+        ]
+
+        base = BasePage.simple_page(title="SahaBot2", active_nav="home", tabs=tabs, default_tab="Overview")
+        # Enable the responsive sidebar for this example
+        base.use_sidebar = True
+
+        # Content function is not used when tabs are provided, but define a no-op to keep API consistent
+        async def content(_: BasePage):
+            pass
+
         await base.render(content)()

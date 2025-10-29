@@ -54,11 +54,12 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 
 ## Core Principles
 
-### 1. Mobile-First Responsive Design
-- All UI must be functional on mobile devices
+### 1. Responsive Design for All Devices
+- Design must work seamlessly on both mobile and desktop devices
+- Use mobile-first approach but ensure desktop experience is polished and takes advantage of larger screens
 - Use CSS media queries in `main.css` for responsive layouts
-- Test all features on mobile viewport sizes
-- Ensure feature parity between mobile and desktop
+- Test all features on both mobile viewport sizes and desktop resolutions
+- Ensure feature parity across all devices while optimizing layout for each form factor
 
 ### 2. Separation of Concerns
 - **UI pages** (`pages/`) - Presentation only, no business logic
@@ -114,9 +115,11 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 poetry install
 ```
 
-### Running
-- **Dev**: `./start.sh dev` (port 8080, auto-reload)
-- **Prod**: `./start.sh prod` (port 80, multi-worker)
+### Server Management
+- The development server is typically already running
+- **Do NOT** attempt to start the server in tool calls or tests
+- If server restart is needed, user will handle it manually
+- Use `./start.sh dev` (port 8080, auto-reload) or `./start.sh prod` (port 80, multi-worker) only when explicitly requested
 
 ### Database Migrations
 - **Init**: `poetry run aerich init-db`
