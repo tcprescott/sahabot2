@@ -48,7 +48,7 @@ class BasePage:
         """Load the main CSS stylesheet."""
         ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')
     
-    def _check_authorization(self) -> bool:
+    async def _check_authorization(self) -> bool:
         """
         Check if user meets authentication and authorization requirements.
         
@@ -56,17 +56,16 @@ class BasePage:
             bool: True if authorized, False otherwise
         """
         if self.require_permission is not None:
-            self.user = self.auth_service.require_permission(
+            self.user = await self.auth_service.require_permission(
                 self.require_permission,
                 self.redirect_path
             )
             return self.user is not None
         elif self.require_auth:
-            self.auth_service.require_auth(self.redirect_path)
-            self.user = self.auth_service.get_current_user()
+            self.user = await self.auth_service.require_auth(self.redirect_path)
             return self.user is not None
         else:
-            self.user = self.auth_service.get_current_user()
+            self.user = await self.auth_service.get_current_user()
             return True
     
     def _render_navbar(self) -> None:
@@ -131,7 +130,7 @@ class BasePage:
             self._load_css()
             
             # Check authorization
-            if not self._check_authorization():
+            if not await self._check_authorization():
                 return
             
             # Render navbar

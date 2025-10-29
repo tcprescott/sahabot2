@@ -4,7 +4,8 @@ Database initialization and management utilities.
 
 from tortoise import Tortoise
 from config import settings
-
+from migrations.tortoise_config import TORTOISE_ORM
+from aerich import Command
 
 async def init_db() -> None:
     """
@@ -12,6 +13,9 @@ async def init_db() -> None:
     
     This should be called during application startup.
     """
+    command = Command(tortoise_config=TORTOISE_ORM, app='models', location='./migrations')
+    await command.init()
+    await command.upgrade()
     await Tortoise.init(
         db_url=settings.database_url,
         modules={'models': ['models.user', 'models.audit_log', 'models.api_token']},

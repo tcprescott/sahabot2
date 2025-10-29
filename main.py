@@ -10,7 +10,7 @@ from nicegui import app as nicegui_app, ui
 from config import settings
 from database import init_db, close_db
 from application.services.discord_service import DiscordService
-from racetime.client import start_racetime_bot, stop_all_racetime_bots
+from application.services.racetime_service import RacetimeService
 from api import register_api
 import frontend
 import logging
@@ -47,18 +47,7 @@ async def lifespan(app: FastAPI):
     await DiscordService.start()
 
     # Start Racetime bots for configured categories
-    racetime_configs = settings.racetime_bot_configs
-    if racetime_configs:
-        logger.info("Starting %d racetime bot(s)", len(racetime_configs))
-        for category, client_id, client_secret in racetime_configs:
-            try:
-                await start_racetime_bot(category, client_id, client_secret)
-                logger.info("Racetime bot started for category: %s", category)
-            except Exception as racetime_error:
-                logger.error("Failed to start Racetime bot for category %s: %s", category, racetime_error, exc_info=True)
-                logger.warning("Application will continue without Racetime bot for %s", category)
-    else:
-        logger.info("No racetime bots configured")
+    await RacetimeService.start_all()
 
     yield
 
@@ -66,7 +55,7 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down SahaBot2...")
 
     # Stop all Racetime bots
-    await stop_all_racetime_bots()
+    await RacetimeService.stop_all()
 
     # Stop Discord bot via service
     await DiscordService.stop()
@@ -77,7 +66,7 @@ async def lifespan(app: FastAPI):
 
 
 # Initialize FastAPI application
-app = FastAPI(
+app: FastAPI = FastAPI(
     title="SahaBot2 API",
     description="""
 SahasrahBot2 API - A modern web application with Discord integration.
@@ -119,6 +108,12 @@ Per-user limits can be customized. When exceeded, the API returns HTTP 429 with 
     ],
 )
 
+# Register API routes
+register_api(app)
+
+# Register frontend routes (including static files mounting)
+frontend.register_routes(app)
+
 # Initialize NiceGUI with FastAPI
 ui.run_with(
     app,
@@ -126,12 +121,6 @@ ui.run_with(
     title="SahaBot2",
     favicon="🤖"
 )
-
-# Register frontend routes
-frontend.register_routes()
-
-# Register API routes
-register_api(app)
 
 
 if __name__ in {"__main__", "__mp_main__"}:

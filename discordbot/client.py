@@ -27,9 +27,6 @@ class DiscordBot(commands.Bot):
         """Initialize the Discord bot with required intents."""
         # Configure intents
         intents = discord.Intents.default()
-        intents.message_content = True
-        intents.members = True
-        intents.guilds = True
         
         # Initialize bot
         super().__init__(

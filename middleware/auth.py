@@ -10,7 +10,6 @@ from typing import Optional, Dict, Any
 from urllib.parse import urlencode
 from config import settings
 from nicegui import app, ui
-from fastapi import Request
 from application.services.user_service import UserService
 from application.services.audit_service import AuditService
 from models import User
@@ -171,14 +170,21 @@ class DiscordAuthService:
         return user
     
     @staticmethod
-    def get_current_user() -> Optional[User]:
+    async def get_current_user() -> Optional[User]:
         """
         Get current authenticated user from session.
         
         Returns:
             Optional[User]: Current user or None if not authenticated
         """
-        return app.storage.user.get('user')
+        user_id = app.storage.user.get('user_id')
+        if not user_id:
+            return None
+        
+        # Fetch fresh user data from database
+        from application.repositories.user_repository import UserRepository
+        user_repo = UserRepository()
+        return await user_repo.get_by_id(user_id)
     
     @staticmethod
     async def set_current_user(user: User) -> None:
@@ -188,10 +194,10 @@ class DiscordAuthService:
         Args:
             user: User to set as current
         """
-        app.storage.user['user'] = user
+        # Only store serializable data (not the ORM object)
         app.storage.user['user_id'] = user.id
         app.storage.user['discord_id'] = user.discord_id
-        app.storage.user['permission'] = user.permission
+        app.storage.user['permission'] = user.permission.value
     
     @staticmethod
     async def clear_current_user() -> None:
@@ -199,19 +205,25 @@ class DiscordAuthService:
         app.storage.user.clear()
     
     @staticmethod
-    def require_auth(redirect_to: str = '/') -> None:
+    async def require_auth(redirect_to: str = '/') -> Optional[User]:
         """
         Require authentication for current page.
         
         Args:
             redirect_to: URL to redirect to after login
+            
+        Returns:
+            Optional[User]: Current user if authenticated
         """
-        if not DiscordAuthService.get_current_user():
+        user = await DiscordAuthService.get_current_user()
+        if not user:
             app.storage.user['redirect_after_login'] = redirect_to
             ui.navigate.to('/auth/login')
+            return None
+        return user
     
     @staticmethod
-    def require_permission(permission: int, redirect_to: str = '/') -> Optional[User]:
+    async def require_permission(permission: int, redirect_to: str = '/') -> Optional[User]:
         """
         Require specific permission level for current page.
         
@@ -222,7 +234,7 @@ class DiscordAuthService:
         Returns:
             Optional[User]: Current user if authorized
         """
-        user = DiscordAuthService.get_current_user()
+        user = await DiscordAuthService.get_current_user()
         
         if not user:
             app.storage.user['redirect_after_login'] = redirect_to
