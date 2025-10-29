@@ -100,6 +100,176 @@ body:not(.body--dark) .card-body {
     color: #555;
 }
 
+/* ==================== HEADER BAR ==================== */
+.header-bar {
+    background-color: #ffffff;
+    padding: var(--spacing-md) var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.body--dark .header-bar,
+.q-dark .header-bar {
+    background-color: var(--surface-color);
+    border-bottom: 1px solid #2C2F33;
+}
+
+.header-container {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+}
+
+.header-logo {
+    color: var(--primary-color);
+}
+
+.header-brand {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.body--dark .header-brand,
+.q-dark .header-brand {
+    color: var(--text-primary);
+}
+
+.header-username {
+    font-size: 0.95rem;
+    color: #4b5563;
+    font-weight: 500;
+}
+
+.body--dark .header-username,
+.q-dark .header-username {
+    color: var(--text-secondary);
+}
+
+.header-menu-button {
+    color: #6b7280;
+}
+
+.body--dark .header-menu-button,
+.q-dark .header-menu-button {
+    color: var(--text-secondary);
+}
+
+/* Mobile responsive header */
+@media (max-width: 768px) {
+    .header-bar {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .header-brand {
+        font-size: 1.2rem;
+    }
+
+    .header-username {
+        display: none; /* Hide username on mobile, show only menu icon */
+    }
+}
+
+/* ==================== MENU STYLES ==================== */
+/* Quasar menu component styling */
+.q-menu {
+    background-color: #ffffff;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: var(--spacing-xs);
+    min-width: 200px;
+}
+
+.body--dark .q-menu,
+.q-dark .q-menu {
+    background-color: #2C2F33;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Menu items */
+.q-item {
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: #374151;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 40px;
+}
+
+.body--dark .q-item,
+.q-dark .q-item {
+    color: var(--text-secondary);
+}
+
+.q-item:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+.body--dark .q-item:hover,
+.q-dark .q-item:hover {
+    background-color: #36393f;
+    color: var(--text-primary);
+}
+
+/* Menu item icons */
+.q-item .q-icon {
+    color: #6b7280;
+    margin-right: var(--spacing-sm);
+}
+
+.body--dark .q-item .q-icon,
+.q-dark .q-item .q-icon {
+    color: var(--text-secondary);
+}
+
+.q-item:hover .q-icon {
+    color: var(--primary-color);
+}
+
+/* Menu separators */
+.q-separator {
+    background-color: #e5e7eb;
+    height: 1px;
+    margin: var(--spacing-xs) 0;
+}
+
+.body--dark .q-separator,
+.q-dark .q-separator {
+    background-color: #404449;
+}
+
+/* Menu item with danger/logout styling */
+.q-item.danger {
+    color: var(--error-color);
+}
+
+.q-item.danger:hover {
+    background-color: rgba(237, 66, 69, 0.1);
+}
+
+.body--dark .q-item.danger:hover,
+.q-dark .q-item.danger:hover {
+    background-color: rgba(237, 66, 69, 0.2);
+}
+
+/* Menu item labels */
+.q-item__label {
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
 /* Home page specific hero section */
 .home-hero {
     width: 100%;
@@ -254,6 +424,160 @@ body:not(.body--dark) .card-body {
 .sidebar.collapsed .label { display: none; }
 
 .sidebar .spacer { flex: 1; }
+
+/* ==================== SIDEBAR FLYOUT ==================== */
+/* Flyout sidebar that slides in from the left */
+.sidebar-flyout {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    background-color: #ffffff;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+}
+
+.body--dark .sidebar-flyout,
+.q-dark .sidebar-flyout {
+    background-color: var(--surface-color);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Closed state - hidden off screen */
+.sidebar-flyout.sidebar-closed {
+    transform: translateX(-100%);
+}
+
+/* Open state - visible */
+.sidebar-flyout.sidebar-open {
+    transform: translateX(0);
+}
+
+/* Sidebar header */
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-lg) var(--spacing-md);
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.body--dark .sidebar-header,
+.q-dark .sidebar-header {
+    border-bottom: 1px solid #404449;
+}
+
+.sidebar-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.body--dark .sidebar-title,
+.q-dark .sidebar-title {
+    color: var(--text-primary);
+}
+
+.sidebar-close-btn {
+    color: #6b7280;
+}
+
+.body--dark .sidebar-close-btn,
+.q-dark .sidebar-close-btn {
+    color: var(--text-secondary);
+}
+
+/* Sidebar items container */
+.sidebar-items {
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md);
+    gap: var(--spacing-xs);
+}
+
+/* Individual sidebar item */
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #374151;
+}
+
+.body--dark .sidebar-item,
+.q-dark .sidebar-item {
+    color: var(--text-secondary);
+}
+
+.sidebar-item:hover {
+    background-color: #f3f4f6;
+    color: #111827;
+}
+
+.body--dark .sidebar-item:hover,
+.q-dark .sidebar-item:hover {
+    background-color: #36393f;
+    color: var(--text-primary);
+}
+
+.sidebar-item-icon {
+    color: #6b7280;
+    font-size: 1.5rem;
+}
+
+.body--dark .sidebar-item-icon,
+.q-dark .sidebar-item-icon {
+    color: var(--text-secondary);
+}
+
+.sidebar-item:hover .sidebar-item-icon {
+    color: var(--primary-color);
+}
+
+.sidebar-item-label {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Hamburger menu button in header */
+.header-hamburger {
+    color: #6b7280;
+}
+
+.body--dark .header-hamburger,
+.q-dark .header-hamburger {
+    color: var(--text-secondary);
+}
+
+.header-hamburger:hover {
+    color: var(--primary-color);
+}
+
+/* Mobile responsive adjustments for sidebar */
+@media (max-width: 768px) {
+    .sidebar-flyout {
+        width: 85vw; /* Take up most of screen on mobile */
+        max-width: 320px;
+    }
+
+    .sidebar-backdrop.active {
+        display: block;
+    }
+}
+
+@media (min-width: 769px) {
+    .sidebar-flyout {
+        width: 280px;
+    }
+}
 
 /* Responsive visibility helpers */
 /* Default (desktop): show desktop-only, hide mobile-only */
