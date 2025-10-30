@@ -43,22 +43,30 @@ async def lifespan(app: FastAPI):
     # Configure NiceGUI storage
     nicegui_app.storage.secret = settings.SECRET_KEY
 
-    # Start Discord bot via service (fallback to racetime bots if unavailable)
-    await DiscordService.start()
+    # Start Discord bot via service (if enabled)
+    if settings.DISCORD_BOT_ENABLED:
+        await DiscordService.start()
+    else:
+        logger.info("Discord bot disabled by configuration")
 
-    # Start Racetime bots for configured categories
-    await RacetimeService.start_all()
+    # Start Racetime bots for configured categories (if enabled)
+    if settings.RACETIME_BOTS_ENABLED:
+        await RacetimeService.start_all()
+    else:
+        logger.info("Racetime bots disabled by configuration")
 
     yield
 
     # Shutdown
     logger.info("Shutting down SahaBot2...")
 
-    # Stop all Racetime bots
-    await RacetimeService.stop_all()
+    # Stop all Racetime bots (if they were enabled)
+    if settings.RACETIME_BOTS_ENABLED:
+        await RacetimeService.stop_all()
 
-    # Stop Discord bot via service
-    await DiscordService.stop()
+    # Stop Discord bot via service (if it was enabled)
+    if settings.DISCORD_BOT_ENABLED:
+        await DiscordService.stop()
 
     # Close database connections
     await close_db()

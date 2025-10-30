@@ -121,3 +121,32 @@ class AuditService:
             list[AuditLog]: User's audit log entries
         """
         return await self.audit_repository.get_by_user(user_id=user_id, limit=limit)
+    
+    async def log_user_update(
+        self,
+        user: User,
+        target_user_id: int,
+        changes: str,
+        ip_address: Optional[str] = None
+    ) -> AuditLog:
+        """
+        Log a user update action.
+        
+        Args:
+            user: User who made the update
+            target_user_id: ID of user that was updated
+            changes: Description of changes made
+            ip_address: IP address of the user
+            
+        Returns:
+            AuditLog: Created audit log entry
+        """
+        return await self.log_action(
+            user=user,
+            action="user_update",
+            details={
+                "target_user_id": target_user_id,
+                "changes": changes
+            },
+            ip_address=ip_address
+        )

@@ -1154,6 +1154,21 @@ body:not(.body--dark) .card-body {
     color: var(--surface-color);
 }
 
+.badge-danger {
+    background-color: var(--error-color);
+    color: var(--text-primary);
+}
+
+.badge-warning {
+    background-color: var(--warning-color);
+    color: var(--surface-color);
+}
+
+.badge-info {
+    background-color: #3498db;
+    color: var(--text-primary);
+}
+
 /* Icon Styles */
 .icon-large {
     color: #FF9800;

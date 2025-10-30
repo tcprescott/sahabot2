@@ -32,10 +32,12 @@ class Settings(BaseSettings):
     
     # Discord Bot Configuration
     DISCORD_BOT_TOKEN: str
+    DISCORD_BOT_ENABLED: bool = True  # Set to False to disable Discord bot
     
     # Racetime.gg Configuration
     # Format: category1:client_id:client_secret,category2:client_id:client_secret
     RACETIME_BOTS: str = ""  # Comma-separated list of category:client_id:client_secret
+    RACETIME_BOTS_ENABLED: bool = True  # Set to False to disable Racetime bots
 
     # Application Configuration
     SECRET_KEY: str

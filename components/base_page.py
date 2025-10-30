@@ -10,6 +10,7 @@ from typing import Optional, Callable, Awaitable
 from nicegui import ui
 from middleware.auth import DiscordAuthService
 from models import User, Permission
+from components.user_menu import UserMenu
 
 
 class BasePage:
@@ -67,55 +68,8 @@ class BasePage:
 
                 # Right side: User info and menu
                 with ui.row().classes('header-right gap-md'):
-                    if self.user:
-                        # User is logged in - show username and menu
-                        ui.label(self.user.discord_username).classes('header-username')
-
-                        with ui.button(icon='menu').props('flat round').classes('header-menu-button'):
-                            with ui.menu():
-                                # Dark mode toggle
-                                ui.menu_item(
-                                    'Toggle Dark Mode',
-                                    on_click=lambda: ui.run_javascript('document.body.classList.toggle("body--dark")')
-                                ).props('icon=dark_mode')
-
-                                ui.separator()
-
-                                # Admin panel (only if user is admin)
-                                if self.user.is_admin():
-                                    ui.menu_item(
-                                        'Admin Panel',
-                                        on_click=lambda: ui.navigate.to('/admin')
-                                    ).props('icon=admin_panel_settings')
-
-                                # Logout
-                                ui.menu_item(
-                                    'Logout',
-                                    on_click=self._handle_logout
-                                ).props('icon=logout')
-                    else:
-                        # User not logged in - show login button
-                        with ui.button(icon='menu').props('flat round').classes('header-menu-button'):
-                            with ui.menu():
-                                # Dark mode toggle
-                                ui.menu_item(
-                                    'Toggle Dark Mode',
-                                    on_click=lambda: ui.run_javascript('document.body.classList.toggle("body--dark")')
-                                ).props('icon=dark_mode')
-
-                                ui.separator()
-
-                                # Login
-                                ui.menu_item(
-                                    'Login with Discord',
-                                    on_click=lambda: ui.navigate.to('/auth/login')
-                                ).props('icon=login')
-
-    async def _handle_logout(self) -> None:
-        """Handle user logout."""
-        await DiscordAuthService.clear_current_user()
-        ui.notify('Logged out successfully', type='positive')
-        ui.navigate.to('/')
+                    user_menu = UserMenu(self.user)
+                    user_menu.render()
 
     def _render_sidebar(self, items: Optional[list] = None) -> None:
         """
