@@ -1,7 +1,7 @@
 /* Responsive Design - Mobile-first approach */
 
-/* ==================== MOBILE (< 768px) ==================== */
-@media (max-width: 768px) {
+/* ==================== MOBILE/TABLET (< 1024px) ==================== */
+@media (max-width: 1023px) {
     /* Header adjustments */
     .header-bar {
         padding: var(--spacing-sm) var(--spacing-md);
@@ -15,7 +15,7 @@
         display: none;
     }
 
-    /* Sidebar becomes flyout on mobile */
+    /* Sidebar becomes off-canvas flyout on mobile */
     .sidebar-overlay {
         position: fixed;
         top: 0;
@@ -23,6 +23,12 @@
         right: 0;
         bottom: 0;
         z-index: 1000;
+        display: none; /* hidden by default */
+        background: rgba(0,0,0,0.5);
+    }
+
+    .sidebar-overlay.active {
+        display: block; /* shown when menu is open */
     }
 
     .sidebar {
@@ -31,6 +37,22 @@
         top: 0;
         bottom: 0;
         z-index: 1001;
+        transform: translateX(-100%); /* collapsed by default */
+        transition: transform 0.25s ease;
+        visibility: hidden;
+    }
+
+    .sidebar.open {
+        transform: translateX(0); /* expanded when toggled */
+        visibility: visible;
+    }
+
+    /* Show burger/menu button on mobile */
+    .header-menu-button,
+    .header-hamburger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
     /* Content adjustments */
@@ -61,24 +83,13 @@
     }
 }
 
-/* ==================== TABLET (768px - 1024px) ==================== */
-@media (min-width: 768px) and (max-width: 1024px) {
-    .page-container {
-        max-width: 960px;
-    }
 
-    .sidebar {
-        width: 200px;
-    }
 
-    .content-sidebar-expanded {
-        padding-left: 216px;
-    }
-}
-
-/* ==================== DESKTOP (> 1024px) ==================== */
+/* ==================== DESKTOP (>= 1024px) ==================== */
 @media (min-width: 1024px) {
     .page-container {
+        /* Offset content to the right of the persistent sidebar */
+        margin-left: calc(var(--sidebar-width) + var(--spacing-lg));
         max-width: 1200px;
     }
 
@@ -90,6 +101,31 @@
     /* Show desktop elements */
     .desktop-only {
         display: block;
+    }
+
+    /* Desktop: persistent sidebar, no overlay, hide burger */
+    .sidebar {
+        position: static;
+        transform: none;
+        visibility: visible;
+    }
+
+    /* Ensure flyout sidebar is always visible on desktop widths */
+    .sidebar-flyout,
+    .sidebar-flyout.sidebar-open,
+    .sidebar-flyout.sidebar-closed {
+        transform: none !important;
+        pointer-events: auto;
+        visibility: visible;
+    }
+
+    .sidebar-overlay,
+    .sidebar-backdrop {
+        display: none !important;
+    }
+
+    .header-hamburger {
+        display: none !important;
     }
 
     /* Larger spacing on desktop */
@@ -106,5 +142,6 @@
 @media (min-width: 1440px) {
     .page-container {
         max-width: 1400px;
+        margin-left: calc(var(--sidebar-width) + var(--spacing-lg));
     }
 }

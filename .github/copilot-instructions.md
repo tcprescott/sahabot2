@@ -74,38 +74,37 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - Include CSS in pages: `ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')`
 
 #### Official Color Palette
-The application uses a carefully curated color scheme with automatic dark mode support:
+The application uses a five-color palette with automatic dark mode support. Light-to-dark order is preserved across modes.
 
 **Light Mode Colors (Primary Palette):**
 ```css
---antique-white: #f0e7d8;    /* hsla(38, 44%, 89%, 1)  - Light backgrounds, surfaces */
---steel-blue: #508ab9;       /* hsla(207, 43%, 52%, 1) - Primary actions, links */
---pomp-and-power: #755988;   /* hsla(276, 21%, 44%, 1) - Secondary accents */
---brown-sugar: #b88165;      /* hsla(20, 37%, 56%, 1)  - Warm accents, highlights */
---eggplant: #443742;         /* hsla(309, 11%, 24%, 1) - Dark text, borders */
+--seasalt:  #f8f8f8;  /* Very light neutral: page backgrounds and muted surfaces */
+--old-gold: #d0c040;  /* Primary actions: buttons, links, highlights */
+--olive:    #988818;  /* Secondary accents: badges, tags, emphasis */
+--olive-2:  #7c6f13;  /* Strong accent / warnings / borders emphasis */
+--black:    #000000;  /* Primary text and strong borders */
 ```
 
-**Dark Mode Colors (Inverted/Adjusted):**
+**Dark Mode Colors (Adjusted for Contrast):**
 ```css
---eggplant-dark: #443742;         /* Dark backgrounds */
---steel-blue-dark: #6ba3d4;       /* Lightened for contrast on dark backgrounds */
---pomp-and-power-dark: #9378af;   /* Lightened for visibility */
---brown-sugar-dark: #d4a088;      /* Lightened warm accents */
---antique-white-dark: #f5f0e8;    /* Light text on dark backgrounds */
+--black-dark:   #0f0f0f; /* Dark backgrounds and surfaces */
+--old-gold-dark:#e6d65a; /* Lightened primary for readability on dark */
+--olive-dark:   #c0b339; /* Lightened secondary for dark mode accents */
+--olive-2-dark: #b3952f; /* Lightened strong accent for visibility */
+--seasalt-dark: #f2f2f2; /* Light text on dark backgrounds */
 ```
 
 **Usage Guidelines:**
-- **Backgrounds**: Use `antique-white` (light) or `eggplant` (dark)
-- **Primary Actions**: Use `steel-blue` for buttons, links, primary CTAs
-- **Secondary Elements**: Use `pomp-and-power` for badges, tags, secondary accents
-- **Warm Accents**: Use `brown-sugar` for highlights, hover states, warnings
-- **Text/Borders**: Use `eggplant` (light mode) or `antique-white` (dark mode)
-- **Gradients**: Available for special UI elements (see palette above)
+- **Backgrounds**: Use `seasalt` (light) or `black-dark` (dark)
+- **Primary Actions**: Use `old-gold` for buttons, links, primary CTAs (use `old-gold-dark` on dark)
+- **Secondary Elements**: Use `olive` for badges, tags, secondary accents (use `olive-dark` on dark)
+- **Emphasis/Warnings**: Use `olive-2` (use `olive-2-dark` on dark)
+- **Text/Borders**: Use `black` (light mode) or `seasalt-dark` (dark mode)
 
 **Implementation:**
 - Define CSS variables in `:root` for light mode
 - Override in `.body--dark` or `.q-dark` selectors for dark mode
-- Use `var(--color-name)` in all CSS rules
+- Map semantic tokens (e.g., `--primary-color`, `--background-color`) to the palette
 - Ensure sufficient contrast ratios (WCAG AA minimum)
 - Test both light and dark modes for readability
 

@@ -2,28 +2,28 @@
 
 :root {
     /* Official Color Palette - Light Mode */
-    --antique-white: #f0e7d8;
-    --steel-blue: #508ab9;
-    --pomp-and-power: #755988;
-    --brown-sugar: #b88165;
-    --eggplant: #443742;
+    --seasalt:  #f8f8f8;  /* very light neutral */
+    --old-gold: #d0c040;  /* primary */
+    --olive:    #988818;  /* secondary */
+    --olive-2:  #7c6f13;  /* strong accent */
+    --black:    #000000;  /* text/borders */
 
     /* Semantic Color Mapping - Light Mode */
-    --primary-color: var(--steel-blue);
-    --primary-hover: #3d6a91;
-    --secondary-color: var(--pomp-and-power);
-    --background-color: var(--antique-white);
+    --primary-color: var(--old-gold);
+    --primary-hover: #b3a333; /* slightly darker old-gold for hover */
+    --secondary-color: var(--olive);
+    --background-color: var(--seasalt);
     --surface-color: #ffffff;
-    --text-primary: var(--eggplant);
-    --text-secondary: #6b5d67;
-    --accent-color: var(--brown-sugar);
-    --border-color: #d8d0c8;
+    --text-primary: var(--black);
+    --text-secondary: #333333;
+    --accent-color: var(--olive-2);
+    --border-color: #dddddd;
 
     /* Status Colors */
-    --error-color: #c73e3a;
-    --warning-color: var(--brown-sugar);
-    --success-color: var(--steel-blue);
-    --info-color: var(--pomp-and-power);
+    --error-color: #d9534f;
+    --warning-color: var(--olive-2);
+    --success-color: #2ea44f;
+    --info-color: var(--olive);
 
     /* Spacing - Mobile first, adjusted for desktop */
     --spacing-xs: 0.25rem;
@@ -41,34 +41,37 @@
     --shadow-sm: 0 1px 3px rgba(68, 55, 66, 0.12);
     --shadow-md: 0 4px 6px rgba(68, 55, 66, 0.15);
     --shadow-lg: 0 10px 20px rgba(68, 55, 66, 0.2);
+
+    /* Layout sizes */
+    --sidebar-width: 280px;
 }
 
 /* Dark Mode Color Overrides */
 .body--dark,
 .q-dark {
     /* Official Color Palette - Dark Mode */
-    --antique-white: #f5f0e8;
-    --steel-blue: #6ba3d4;
-    --pomp-and-power: #9378af;
-    --brown-sugar: #d4a088;
-    --eggplant: #443742;
+    --seasalt:  #f2f2f2;  /* light text */
+    --old-gold: #e6d65a;  /* lighter for dark backgrounds */
+    --olive:    #c0b339;  /* lighter secondary */
+    --olive-2:  #b3952f;  /* lighter strong accent */
+    --black:    #0f0f0f;  /* dark background/surfaces */
 
     /* Semantic Color Mapping - Dark Mode */
-    --primary-color: var(--steel-blue);
-    --primary-hover: #85b5df;
-    --secondary-color: var(--pomp-and-power);
-    --background-color: #1a1518;
-    --surface-color: var(--eggplant);
-    --text-primary: var(--antique-white);
-    --text-secondary: #c9bfc7;
-    --accent-color: var(--brown-sugar);
-    --border-color: #5d4e57;
+    --primary-color: var(--old-gold);
+    --primary-hover: #f0e07a;
+    --secondary-color: var(--olive);
+    --background-color: var(--black);
+    --surface-color: #161616;
+    --text-primary: var(--seasalt);
+    --text-secondary: #cfcfcf;
+    --accent-color: var(--olive-2);
+    --border-color: #2a2a2a;
 
     /* Status Colors - Dark Mode */
-    --error-color: #e05853;
-    --warning-color: var(--brown-sugar);
-    --success-color: var(--steel-blue);
-    --info-color: var(--pomp-and-power);
+    --error-color: #ff6b6b;
+    --warning-color: var(--olive-2);
+    --success-color: #3ddc84;
+    --info-color: var(--olive);
 
     /* Shadows - Dark Mode */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);

@@ -38,7 +38,8 @@
     font-weight: 500;
 }
 
-.header-menu-button {
+.header-menu-button,
+.header-hamburger {
     color: var(--text-secondary);
 }
 
@@ -138,7 +139,7 @@ body:not(.body--dark) .navbar-link:hover {
     top: 0;
     left: 0;
     bottom: 0;
-    width: 280px;
+    width: var(--sidebar-width);
     background-color: var(--surface-color);
     box-shadow: var(--shadow-md);
     z-index: 1000;
@@ -150,6 +151,17 @@ body:not(.body--dark) .navbar-link:hover {
 
 .sidebar-flyout.hidden {
     transform: translateX(-100%);
+}
+
+/* Flyout state classes toggled by BasePage */
+.sidebar-flyout.sidebar-closed {
+    transform: translateX(-100%);
+    pointer-events: none;
+}
+
+.sidebar-flyout.sidebar-open {
+    transform: translateX(0);
+    pointer-events: auto;
 }
 
 .sidebar-header {
@@ -221,6 +233,11 @@ body:not(.body--dark) .navbar-link:hover {
 .sidebar-backdrop.hidden {
     opacity: 0;
     pointer-events: none;
+}
+
+.sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* ==================== CONTENT AREAS ==================== */

@@ -50,11 +50,11 @@ class BasePage:
             if self.sidebar_open:
                 self._sidebar_container.classes(remove='sidebar-closed', add='sidebar-open')
                 if self._backdrop:
-                    self._backdrop.classes(add='active')
+                    self._backdrop.classes(remove='hidden', add='active')
             else:
                 self._sidebar_container.classes(remove='sidebar-open', add='sidebar-closed')
                 if self._backdrop:
-                    self._backdrop.classes(remove='active')
+                    self._backdrop.classes(remove='active', add='hidden')
 
     def _render_header(self) -> None:
         """Render the header bar with logo, app name, and user menu."""
@@ -83,8 +83,8 @@ class BasePage:
         if items is None:
             items = []
 
-        # Backdrop for mobile (hidden on desktop via CSS)
-        self._backdrop = ui.element('div').classes('sidebar-backdrop')
+        # Backdrop for mobile (hidden on desktop via CSS) - start hidden by default
+        self._backdrop = ui.element('div').classes('sidebar-backdrop hidden')
         self._backdrop.on('click', self._toggle_sidebar)
 
         # Sidebar container - starts closed on mobile, but CSS overrides on desktop
