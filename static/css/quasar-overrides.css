@@ -1,0 +1,148 @@
+/* Quasar Component Customizations */
+
+/* ==================== MENU ==================== */
+.q-menu {
+    background-color: var(--surface-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-md);
+    padding: var(--spacing-xs);
+    min-width: 200px;
+}
+
+.q-item {
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    min-height: 40px;
+}
+
+.body--dark .q-item,
+.q-dark .q-item {
+    color: var(--text-secondary);
+}
+
+.q-item:hover {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+.q-item .q-icon {
+    color: var(--text-secondary);
+    margin-right: var(--spacing-sm);
+}
+
+.body--dark .q-item .q-icon,
+.q-dark .q-item .q-icon {
+    color: var(--text-secondary);
+}
+
+.q-item:hover .q-icon {
+    color: var(--primary-color);
+}
+
+.q-separator {
+    background-color: var(--border-color);
+    height: 1px;
+    margin: var(--spacing-xs) 0;
+}
+
+.q-item.danger {
+    color: var(--error-color);
+}
+
+.q-item.danger:hover {
+    background-color: rgba(237, 66, 69, 0.1);
+}
+
+.q-item .label {
+    flex: 1;
+}
+
+/* ==================== TOGGLE/SWITCH ==================== */
+.q-toggle__inner {
+    display: flex;
+    align-items: center;
+}
+
+.q-toggle__track {
+    display: flex;
+    align-items: center;
+    background-color: var(--text-secondary);
+    opacity: 0.4;
+}
+
+.q-toggle--truthy .q-toggle__track {
+    background-color: var(--primary-color);
+    opacity: 1;
+}
+
+.q-toggle__thumb {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ==================== TABLE ==================== */
+.q-table {
+    background-color: var(--surface-color);
+}
+
+.q-table__top,
+.q-table__bottom {
+    background-color: var(--surface-color);
+}
+
+.q-table thead tr,
+.q-table tbody td {
+    border-color: var(--border-color);
+}
+
+.q-table th {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.q-table td {
+    color: var(--text-secondary);
+}
+
+/* ==================== DIALOG ==================== */
+.q-dialog__backdrop {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.q-card {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+}
+
+/* ==================== INPUT ==================== */
+.q-field__control {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+}
+
+.q-field__label {
+    color: var(--text-secondary);
+}
+
+.q-field--focused .q-field__label {
+    color: var(--primary-color);
+}
+
+/* ==================== BUTTON ==================== */
+.q-btn {
+    text-transform: none;
+}
+
+.q-btn--standard {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.q-btn--outline {
+    color: var(--primary-color);
+    border-color: var(--primary-color);
+}

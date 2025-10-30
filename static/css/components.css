@@ -1,0 +1,149 @@
+/* Reusable Component Styles */
+
+/* ==================== BUTTONS ==================== */
+.btn {
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: #ffffff;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: #ffffff;
+}
+
+.btn-danger {
+    background-color: var(--error-color);
+    color: #ffffff;
+}
+
+.btn-full-width {
+    width: 100%;
+}
+
+/* ==================== CARDS ==================== */
+.card {
+    background-color: var(--surface-color);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.card-header {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: var(--spacing-md);
+    color: var(--text-primary);
+}
+
+.card-body {
+    color: var(--text-secondary);
+}
+
+.card-padding {
+    padding: 1.5em;
+}
+
+.card-padding-large {
+    padding: 2em;
+}
+
+.card-centered {
+    padding: 2em;
+    text-align: center;
+}
+
+.card-full-width {
+    width: 100%;
+    margin-bottom: 1.5em;
+    padding: 1.5em;
+}
+
+.card-list-item {
+    width: 100%;
+    margin-bottom: 0.5em;
+}
+
+body:not(.body--dark) .card {
+    background-color: var(--surface-color);
+}
+
+body:not(.body--dark) .card-header {
+    color: var(--text-primary);
+}
+
+body:not(.body--dark) .card-body {
+    color: var(--text-secondary);
+}
+
+/* ==================== BADGES ==================== */
+.badge {
+    display: inline-block;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.badge-admin {
+    background-color: var(--error-color);
+    color: #ffffff;
+}
+
+.badge-moderator {
+    background-color: var(--warning-color);
+    color: #ffffff;
+}
+
+.badge-user {
+    background-color: var(--text-secondary);
+    color: #ffffff;
+}
+
+.badge-success {
+    background-color: var(--success-color);
+    color: #ffffff;
+}
+
+.badge-danger {
+    background-color: var(--error-color);
+    color: #ffffff;
+}
+
+.badge-warning {
+    background-color: var(--warning-color);
+    color: #ffffff;
+}
+
+.badge-info {
+    background-color: var(--info-color);
+    color: #ffffff;
+}
+
+/* ==================== ICONS ==================== */
+.icon-large {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.icon-medium {
+    font-size: 2rem;
+}
+
+.icon-small {
+    font-size: 1rem;
+}

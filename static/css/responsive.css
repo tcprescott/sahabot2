@@ -1,0 +1,110 @@
+/* Responsive Design - Mobile-first approach */
+
+/* ==================== MOBILE (< 768px) ==================== */
+@media (max-width: 768px) {
+    /* Header adjustments */
+    .header-bar {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .header-brand {
+        font-size: 1.2rem;
+    }
+
+    .header-username {
+        display: none;
+    }
+
+    /* Sidebar becomes flyout on mobile */
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        z-index: 1001;
+    }
+
+    /* Content adjustments */
+    .content-with-sidebar {
+        margin: var(--spacing-sm);
+        padding: var(--spacing-md);
+    }
+
+    .page-container {
+        padding: var(--spacing-md);
+    }
+
+    /* Cards */
+    .card {
+        margin-bottom: var(--spacing-sm);
+        padding: var(--spacing-md);
+    }
+
+    /* Tables - make scrollable */
+    .data-table {
+        overflow-x: auto;
+    }
+
+    /* Buttons */
+    .btn-full-width {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+}
+
+/* ==================== TABLET (768px - 1024px) ==================== */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .page-container {
+        max-width: 960px;
+    }
+
+    .sidebar {
+        width: 200px;
+    }
+
+    .content-sidebar-expanded {
+        padding-left: 216px;
+    }
+}
+
+/* ==================== DESKTOP (> 1024px) ==================== */
+@media (min-width: 1024px) {
+    .page-container {
+        max-width: 1200px;
+    }
+
+    /* Hide mobile-only elements */
+    .mobile-only {
+        display: none;
+    }
+
+    /* Show desktop elements */
+    .desktop-only {
+        display: block;
+    }
+
+    /* Larger spacing on desktop */
+    .card {
+        padding: var(--spacing-xl);
+    }
+
+    .header-bar {
+        padding: var(--spacing-lg) var(--spacing-xl);
+    }
+}
+
+/* ==================== LARGE DESKTOP (> 1440px) ==================== */
+@media (min-width: 1440px) {
+    .page-container {
+        max-width: 1400px;
+    }
+}

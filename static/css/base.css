@@ -1,0 +1,41 @@
+/* Base Styles and Reset */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.6;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Global light mode overrides */
+body:not(.body--dark) {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+/* Dynamic text color helpers */
+body:not(.body--dark) .text-dynamic-primary { color: var(--text-primary); }
+body:not(.body--dark) .text-dynamic-secondary { color: var(--text-secondary); }
+
+.body--dark .text-dynamic-primary,
+.q-dark .text-dynamic-primary { color: var(--text-primary); }
+
+.body--dark .text-dynamic-secondary,
+.q-dark .text-dynamic-secondary { color: var(--text-secondary); }
+
+/* Background helpers */
+.bg-dynamic-surface { background-color: var(--surface-color); }
+.bg-dynamic-muted { background-color: var(--background-color); }
+
+.body--dark .bg-dynamic-surface,
+.q-dark .bg-dynamic-surface { background-color: var(--surface-color); }
+
+.body--dark .bg-dynamic-muted,
+.q-dark .bg-dynamic-muted { background-color: var(--background-color); }
