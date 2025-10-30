@@ -127,18 +127,18 @@ class BasePage:
         if items is None:
             items = []
 
-        # Backdrop for mobile
+        # Backdrop for mobile (hidden on desktop via CSS)
         self._backdrop = ui.element('div').classes('sidebar-backdrop')
         self._backdrop.on('click', self._toggle_sidebar)
 
-        # Sidebar container
-        initial_class = 'sidebar-closed'
-        self._sidebar_container = ui.element('div').classes(f'sidebar-flyout {initial_class}')
+        # Sidebar container - starts closed on mobile, but CSS overrides on desktop
+        self._sidebar_container = ui.element('div').classes('sidebar-flyout sidebar-closed')
 
         with self._sidebar_container:
             # Sidebar header
             with ui.element('div').classes('sidebar-header'):
                 ui.label('Navigation').classes('sidebar-title')
+                # Close button (hidden on desktop via CSS)
                 ui.button(icon='close', on_click=self._toggle_sidebar).props('flat round dense').classes('sidebar-close-btn')
 
             # Sidebar items

@@ -426,7 +426,7 @@ body:not(.body--dark) .card-body {
 .sidebar .spacer { flex: 1; }
 
 /* ==================== SIDEBAR FLYOUT ==================== */
-/* Flyout sidebar that slides in from the left */
+/* Responsive sidebar: always visible on desktop, flyout on mobile */
 .sidebar-flyout {
     position: fixed;
     top: 0;
@@ -446,16 +446,6 @@ body:not(.body--dark) .card-body {
 .q-dark .sidebar-flyout {
     background-color: var(--surface-color);
     box-shadow: 2px 0 8px rgba(0, 0, 0, 0.4);
-}
-
-/* Closed state - hidden off screen */
-.sidebar-flyout.sidebar-closed {
-    transform: translateX(-100%);
-}
-
-/* Open state - visible */
-.sidebar-flyout.sidebar-open {
-    transform: translateX(0);
 }
 
 /* Sidebar header */
@@ -561,8 +551,23 @@ body:not(.body--dark) .card-body {
     color: var(--primary-color);
 }
 
-/* Mobile responsive adjustments for sidebar */
+/* Page container with sidebar spacing */
+.page-container {
+    transition: margin-left 0.3s ease;
+}
+
+/* Mobile: Sidebar is a flyout overlay */
 @media (max-width: 768px) {
+    /* Closed state - hidden off screen */
+    .sidebar-flyout.sidebar-closed {
+        transform: translateX(-100%);
+    }
+
+    /* Open state - visible */
+    .sidebar-flyout.sidebar-open {
+        transform: translateX(0);
+    }
+
     .sidebar-flyout {
         width: 85vw; /* Take up most of screen on mobile */
         max-width: 320px;
@@ -571,11 +576,46 @@ body:not(.body--dark) .card-body {
     .sidebar-backdrop.active {
         display: block;
     }
+
+    .page-container {
+        margin-left: 0;
+    }
 }
 
+/* Desktop: Sidebar is always visible */
 @media (min-width: 769px) {
+    /* Always show sidebar on desktop */
     .sidebar-flyout {
+        transform: translateX(0) !important;
         width: 280px;
+    }
+
+    /* Hide close button on desktop */
+    .sidebar-close-btn {
+        display: none;
+    }
+
+    /* Hide hamburger menu on desktop */
+    .header-hamburger {
+        display: none;
+    }
+
+    /* Hide backdrop on desktop */
+    .sidebar-backdrop {
+        display: none !important;
+    }
+
+    /* Adjust header to make room for sidebar */
+    .header-bar {
+        margin-left: 280px;
+    }
+
+    /* Adjust page content to make room for sidebar */
+    .page-container,
+    .page-container-narrow,
+    .page-container-wide {
+        margin-left: 280px !important;
+        margin-right: 0 !important;
     }
 }
 
@@ -702,18 +742,21 @@ body:not(.body--dark) .card-body {
     width: 100%;
     max-width: 1400px;
     margin: 0 auto;
+    padding: var(--spacing-md);
 }
 
 .page-container-narrow {
     width: 100%;
     max-width: 1200px;
     margin: 0 auto;
+    padding: var(--spacing-md);
 }
 
 .page-container-wide {
     width: 100%;
     max-width: 1600px;
     margin: 0 auto;
+    padding: var(--spacing-md);
 }
 
 .content-wrapper {
@@ -1257,6 +1300,8 @@ body:not(.body--dark) .card-body {
 @media (max-width: 768px) {
     .page-container {
         padding: var(--spacing-sm);
+        margin-left: 0;
+        margin-right: auto;
     }
     
     .card {
@@ -1315,6 +1360,7 @@ body:not(.body--dark) .card-body {
     /* Enhanced spacing and layout for desktop */
     .page-container {
         padding: var(--spacing-xl);
+        /* Note: margin-left is set in min-width: 769px rule for sidebar */
     }
     
     .content-wrapper {

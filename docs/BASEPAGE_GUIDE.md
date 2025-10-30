@@ -104,16 +104,19 @@ async def admin_page():
   - Admin Panel (if admin)
   - Logout
 
-## Sidebar Flyout
+## Sidebar Navigation
 
-The sidebar provides navigation between pages. It slides in from the left when the hamburger menu is clicked.
+The sidebar provides navigation between pages with responsive behavior:
+- **Desktop (≥769px)**: Always visible, permanent side navigation
+- **Mobile (<769px)**: Flyout overlay, toggled with hamburger menu
 
 ### Sidebar Features
-- **Slide Animation**: Smooth slide-in/out transition
+- **Responsive Behavior**: Always-on for desktop, flyout for mobile
+- **Slide Animation**: Smooth slide-in/out transition (mobile)
 - **Backdrop Overlay**: Dark overlay behind sidebar (mobile only)
-- **Close Button**: X button in sidebar header
+- **Close Button**: X button in sidebar header (mobile only)
 - **Navigation Items**: Custom items with icons and labels
-- **Auto-close**: Sidebar closes when an item is clicked or backdrop is tapped
+- **Auto-close**: Sidebar closes when an item is clicked (mobile only)
 
 ### Sidebar Items Structure
 
@@ -166,13 +169,25 @@ All styles are defined in `/static/css/main.css` with the following classes:
 ### Responsive Design
 
 **Header:**
-- **Desktop**: Full layout with username visible
-- **Mobile**: Compact layout with username hidden, only menu icon shown
+- **Desktop (≥769px)**: 
+  - Full layout with username visible
+  - Hamburger menu hidden (sidebar always visible)
+- **Mobile (<769px)**: 
+  - Compact layout with username hidden
+  - Hamburger menu visible for sidebar toggle
 
 **Sidebar:**
-- **Desktop**: 280px width, no backdrop
-- **Mobile**: 85vw width (max 320px), dark backdrop overlay
-- Smooth slide animation on all devices
+- **Desktop (≥769px)**: 
+  - Always visible (280px width)
+  - No backdrop overlay
+  - Close button hidden
+  - Page content shifts right to accommodate sidebar
+- **Mobile (<769px)**: 
+  - Flyout overlay (85vw width, max 320px)
+  - Dark backdrop overlay when open
+  - Close button visible
+  - Smooth slide animation
+  - Closes on item click or backdrop tap
 
 ## Content Function
 
