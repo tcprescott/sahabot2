@@ -36,6 +36,8 @@ class BasePage:
         self._sidebar_container = None
         self._backdrop = None
         self._content_container = None
+        self._dynamic_content_container = None
+        self._content_loaders: dict[str, Callable[[], Awaitable[None]]] = {}
 
     async def _load_user(self) -> None:
         """Load current user from session."""
@@ -117,10 +119,48 @@ class BasePage:
                 ui.icon(item['icon']).classes('sidebar-item-icon')
             ui.label(item['label']).classes('sidebar-item-label')
 
+    def get_dynamic_content_container(self):
+        """
+        Get the dynamic content container for content switching.
+        
+        Returns:
+            The dynamic content container element
+        """
+        return self._dynamic_content_container
+    
+    def register_content_loader(self, key: str, loader: Callable[[], Awaitable[None]]) -> None:
+        """
+        Register a content loader function for dynamic content switching.
+        
+        Args:
+            key: Unique identifier for this content loader
+            loader: Async function that loads content into the dynamic container
+        """
+        self._content_loaders[key] = loader
+    
+    def create_sidebar_item_with_loader(self, label: str, icon: str, loader_key: str) -> dict:
+        """
+        Create a sidebar item that loads dynamic content.
+        
+        Args:
+            label: Display label for the sidebar item
+            icon: Material icon name
+            loader_key: Key for the registered content loader
+            
+        Returns:
+            Sidebar item dictionary
+        """
+        def action():
+            if loader_key in self._content_loaders:
+                ui.timer(0, self._content_loaders[loader_key], once=True)
+        
+        return {'label': label, 'icon': icon, 'action': action}
+    
     async def render(
         self,
         content: Optional[Callable[[BasePage], Awaitable[None]]] = None,
-        sidebar_items: Optional[list] = None
+        sidebar_items: Optional[list] = None,
+        use_dynamic_content: bool = False
     ) -> None:
         """
         Render the page with header, sidebar, and optional content.
@@ -128,6 +168,7 @@ class BasePage:
         Args:
             content: Async function to render page content, receives this BasePage instance
             sidebar_items: Optional list of sidebar items with 'label', 'icon', and 'action'
+            use_dynamic_content: If True, creates a dynamic content container for content switching
         """
         # Load CSS
         ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')
@@ -146,9 +187,18 @@ class BasePage:
 
         # Render content if provided
         if content:
-            self._content_container = ui.element('div').classes('page-container')
-            with self._content_container:
-                await content(self)
+            if use_dynamic_content:
+                # Create a dynamic content container that can be cleared/reloaded
+                self._content_container = ui.element('div').classes('page-container')
+                with self._content_container:
+                    self._dynamic_content_container = ui.column().classes('full-width')
+                    with self._dynamic_content_container:
+                        await content(self)
+            else:
+                # Standard static content
+                self._content_container = ui.element('div').classes('page-container')
+                with self._content_container:
+                    await content(self)
 
     @staticmethod
     def simple_page(title: str = "SahaBot2") -> 'BasePage':
@@ -181,13 +231,14 @@ class BasePage:
 
         async def authenticated_render(
             content: Optional[Callable[[BasePage], Awaitable[None]]] = None,
-            sidebar_items: Optional[list] = None
+            sidebar_items: Optional[list] = None,
+            use_dynamic_content: bool = False
         ) -> None:
             # Check authentication before rendering
             user = await DiscordAuthService.require_auth()
             if not user:
                 return  # User was redirected to login
-            await original_render(content, sidebar_items)
+            await original_render(content, sidebar_items, use_dynamic_content)
 
         page.render = authenticated_render  # type: ignore
         return page
@@ -210,13 +261,14 @@ class BasePage:
 
         async def admin_render(
             content: Optional[Callable[[BasePage], Awaitable[None]]] = None,
-            sidebar_items: Optional[list] = None
+            sidebar_items: Optional[list] = None,
+            use_dynamic_content: bool = False
         ) -> None:
             # Check admin permission before rendering
             user = await DiscordAuthService.require_permission(Permission.ADMIN, '/admin')
             if not user:
                 return  # User was redirected
-            await original_render(content, sidebar_items)
+            await original_render(content, sidebar_items, use_dynamic_content)
 
         page.render = admin_render  # type: ignore
         return page

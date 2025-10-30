@@ -67,11 +67,47 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - **Repositories** (`application/repositories/`) - Data access only
 - **Never** access ORM models directly from UI - always use services
 
-### 3. External CSS Only
+### 3. External CSS Only & Color Scheme
 - **No** inline styles via `.style()` method
 - All CSS in `static/css/main.css`
 - Use semantic, human-friendly class names (e.g., `card`, `btn-primary`, `navbar`)
 - Include CSS in pages: `ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')`
+
+#### Official Color Palette
+The application uses a carefully curated color scheme with automatic dark mode support:
+
+**Light Mode Colors (Primary Palette):**
+```css
+--antique-white: #f0e7d8;    /* hsla(38, 44%, 89%, 1)  - Light backgrounds, surfaces */
+--steel-blue: #508ab9;       /* hsla(207, 43%, 52%, 1) - Primary actions, links */
+--pomp-and-power: #755988;   /* hsla(276, 21%, 44%, 1) - Secondary accents */
+--brown-sugar: #b88165;      /* hsla(20, 37%, 56%, 1)  - Warm accents, highlights */
+--eggplant: #443742;         /* hsla(309, 11%, 24%, 1) - Dark text, borders */
+```
+
+**Dark Mode Colors (Inverted/Adjusted):**
+```css
+--eggplant-dark: #443742;         /* Dark backgrounds */
+--steel-blue-dark: #6ba3d4;       /* Lightened for contrast on dark backgrounds */
+--pomp-and-power-dark: #9378af;   /* Lightened for visibility */
+--brown-sugar-dark: #d4a088;      /* Lightened warm accents */
+--antique-white-dark: #f5f0e8;    /* Light text on dark backgrounds */
+```
+
+**Usage Guidelines:**
+- **Backgrounds**: Use `antique-white` (light) or `eggplant` (dark)
+- **Primary Actions**: Use `steel-blue` for buttons, links, primary CTAs
+- **Secondary Elements**: Use `pomp-and-power` for badges, tags, secondary accents
+- **Warm Accents**: Use `brown-sugar` for highlights, hover states, warnings
+- **Text/Borders**: Use `eggplant` (light mode) or `antique-white` (dark mode)
+- **Gradients**: Available for special UI elements (see palette above)
+
+**Implementation:**
+- Define CSS variables in `:root` for light mode
+- Override in `.body--dark` or `.q-dark` selectors for dark mode
+- Use `var(--color-name)` in all CSS rules
+- Ensure sufficient contrast ratios (WCAG AA minimum)
+- Test both light and dark modes for readability
 
 ### 4. Discord OAuth2 Authentication
 - All users authenticate via Discord
@@ -219,13 +255,24 @@ if not user:
 ```
 
 ### CSS Classes
+**Note**: All CSS must use the official color palette defined above. Use CSS variables for colors.
+
 - Container: `page-container`, `content-wrapper`
 - Cards: `card`, `card-header`, `card-body`
 - Buttons: `btn`, `btn-primary`, `btn-secondary`, `btn-danger`
 - Navigation: `navbar`, `navbar-brand`, `navbar-menu`, `navbar-link`
 - Tables: `data-table`
-- Badges: `badge`, `badge-admin`, `badge-moderator`, `badge-user`
+- Badges: `badge`, `badge-admin`, `badge-moderator`, `badge-user`, `badge-success`, `badge-danger`, `badge-warning`, `badge-info`
 - Utilities: `text-center`, `mt-1`, `mb-2`, `flex`, `gap-md`
+
+**Color Usage in Classes:**
+- Primary buttons/links: `steel-blue` / `steel-blue-dark`
+- Secondary elements: `pomp-and-power` / `pomp-and-power-dark`
+- Success/positive: Use `steel-blue` or custom success color
+- Warning/attention: `brown-sugar` / `brown-sugar-dark`
+- Error/danger: Adjust `eggplant` or use complementary red
+- Text: `eggplant` (light) / `antique-white-dark` (dark)
+- Backgrounds: `antique-white` (light) / `eggplant-dark` (dark)
 
 ### Discord Bot Commands
 Bot commands follow the same separation of concerns as the rest of the application:

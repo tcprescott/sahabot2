@@ -1,7 +1,14 @@
 """
 Admin page for SahaBot2.
 
-This module provides administrative functionality.
+This module provides administrative functionality using BasePage's dynamic content loading.
+
+The page uses a single route with dynamic content switching via sidebar navigation:
+- Overview: Dashboard with welcome message and statistics
+- Users: User management interface
+- Settings: Application settings
+
+This pattern is reusable for other multi-section pages via BasePage.
 """
 
 from nicegui import ui
@@ -14,65 +21,58 @@ def register():
     """Register admin page routes."""
     
     @ui.page('/admin')
-    async def admin_overview():
-        """Admin dashboard overview page."""
+    async def admin_page():
+        """Admin dashboard page with dynamic content switching."""
         base = BasePage.admin_page(title="SahaBot2 - Admin")
         
         async def content(page: BasePage):
-            """Render the admin overview content."""
-            # Header
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-header'):
-                    ui.label('Admin Dashboard').classes('text-2xl font-bold')
-                with ui.element('div').classes('card-body'):
-                    ui.label(f'Welcome, {page.user.discord_username}').classes('text-primary')
-                    ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')
+            """Render the admin page with dynamic content container."""
+            # Get the dynamic content container
+            container = page.get_dynamic_content_container()
             
-            # Render overview
-            await overview.OverviewView.render(page.user)
+            # Define content loader functions
+            async def load_overview():
+                """Load the overview content."""
+                container.clear()
+                with container:
+                    # Header
+                    with ui.element('div').classes('card'):
+                        with ui.element('div').classes('card-header'):
+                            ui.label('Admin Dashboard').classes('text-2xl font-bold')
+                        with ui.element('div').classes('card-body'):
+                            ui.label(f'Welcome, {page.user.discord_username}').classes('text-primary')
+                            ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')
+                    
+                    # Render overview
+                    await overview.OverviewView.render(page.user)
+            
+            async def load_users():
+                """Load the users management content."""
+                container.clear()
+                with container:
+                    users_view = AdminUsersView(page.user)
+                    await users_view.render()
+            
+            async def load_settings():
+                """Load the settings content."""
+                container.clear()
+                with container:
+                    await settings.SettingsView.render(page.user)
+            
+            # Register content loaders
+            page.register_content_loader('overview', load_overview)
+            page.register_content_loader('users', load_users)
+            page.register_content_loader('settings', load_settings)
+            
+            # Load initial content (overview)
+            await load_overview()
         
+        # Create sidebar items with dynamic content loaders
         sidebar_items = [
             {'label': 'Home', 'action': lambda: ui.navigate.to('/'), 'icon': 'home'},
-            {'label': 'Overview', 'action': lambda: ui.navigate.to('/admin'), 'icon': 'dashboard'},
-            {'label': 'Users', 'action': lambda: ui.navigate.to('/admin/users'), 'icon': 'people'},
-            {'label': 'Settings', 'action': lambda: ui.navigate.to('/admin/settings'), 'icon': 'settings'},
+            base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
+            base.create_sidebar_item_with_loader('Users', 'people', 'users'),
+            base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
         ]
         
-        await base.render(content, sidebar_items)
-    
-    @ui.page('/admin/users')
-    async def admin_users():
-        """Admin users management page."""
-        base = BasePage.admin_page(title="SahaBot2 - User Management")
-        
-        async def content(page: BasePage):
-            """Render the users management content."""
-            users_view = AdminUsersView(page.user)
-            await users_view.render()
-        
-        sidebar_items = [
-            {'label': 'Home', 'action': lambda: ui.navigate.to('/'), 'icon': 'home'},
-            {'label': 'Overview', 'action': lambda: ui.navigate.to('/admin'), 'icon': 'dashboard'},
-            {'label': 'Users', 'action': lambda: ui.navigate.to('/admin/users'), 'icon': 'people'},
-            {'label': 'Settings', 'action': lambda: ui.navigate.to('/admin/settings'), 'icon': 'settings'},
-        ]
-        
-        await base.render(content, sidebar_items)
-    
-    @ui.page('/admin/settings')
-    async def admin_settings():
-        """Admin settings page."""
-        base = BasePage.admin_page(title="SahaBot2 - Settings")
-        
-        async def content(page: BasePage):
-            """Render the settings content."""
-            await settings.SettingsView.render(page.user)
-        
-        sidebar_items = [
-            {'label': 'Home', 'action': lambda: ui.navigate.to('/'), 'icon': 'home'},
-            {'label': 'Overview', 'action': lambda: ui.navigate.to('/admin'), 'icon': 'dashboard'},
-            {'label': 'Users', 'action': lambda: ui.navigate.to('/admin/users'), 'icon': 'people'},
-            {'label': 'Settings', 'action': lambda: ui.navigate.to('/admin/settings'), 'icon': 'settings'},
-        ]
-        
-        await base.render(content, sidebar_items)
+        await base.render(content, sidebar_items, use_dynamic_content=True)

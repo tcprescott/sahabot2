@@ -217,9 +217,6 @@ class AdminUsersView:
                             on_click=self._refresh_users
                         ).classes('btn').props('flat')
             
-            # User statistics
-            await self._render_statistics()
-            
             # User table
             self.table_container = ui.column().classes('full-width')
             await self._refresh_users()
