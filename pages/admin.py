@@ -27,12 +27,10 @@ def register():
         
         async def content(page: BasePage):
             """Render the admin page with dynamic content container."""
-            # Get the dynamic content container
-            container = page.get_dynamic_content_container()
-            
             # Define content loader functions
             async def load_overview():
                 """Load the overview content."""
+                container = page.get_dynamic_content_container() or ui.element('div').classes('page-container')
                 container.clear()
                 with container:
                     # Header
@@ -46,23 +44,10 @@ def register():
                     # Render overview
                     await overview.OverviewView.render(page.user)
             
-            async def load_users():
-                """Load the users management content."""
-                container.clear()
-                with container:
-                    users_view = AdminUsersView(page.user)
-                    await users_view.render()
-            
-            async def load_settings():
-                """Load the settings content."""
-                container.clear()
-                with container:
-                    await settings.SettingsView.render(page.user)
-            
             # Register content loaders
             page.register_content_loader('overview', load_overview)
-            page.register_content_loader('users', load_users)
-            page.register_content_loader('settings', load_settings)
+            page.register_content_loader('users', page.create_instance_view_loader(lambda: AdminUsersView(page.user)))
+            page.register_content_loader('settings', page.create_view_loader(settings.SettingsView))
             
             # Load initial content (overview)
             await load_overview()

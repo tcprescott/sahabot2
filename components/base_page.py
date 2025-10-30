@@ -6,7 +6,8 @@ including a header with branding, user info, and navigation menu.
 """
 
 from __future__ import annotations
-from typing import Optional, Callable, Awaitable
+from typing import Optional, Callable, Awaitable, Any
+import inspect
 from nicegui import ui
 from middleware.auth import DiscordAuthService
 from models import User, Permission
@@ -109,15 +110,65 @@ class BasePage:
         Args:
             item: Dictionary with 'label', 'icon', and 'action' keys
         """
+        # Handle subsection groups
+        children = item.get('children') if isinstance(item, dict) else None
+        if children and isinstance(children, list):
+            # Determine if this section should be collapsible or a static header
+            collapsible = item.get('collapsible', True)
+            if collapsible:
+                exp = ui.expansion(text=item.get('label', ''), icon=item.get('icon', None)).classes('sidebar-section')
+                # Open by default if requested
+                if item.get('expanded', True):
+                    exp.props('default-opened')
+                with exp:
+                    for child in children:
+                        self._render_sidebar_item(child)
+            else:
+                # Static header (non-collapsible) with children always visible
+                with ui.element('div').classes('sidebar-section sidebar-section-static'):
+                    with ui.element('div').classes('sidebar-section-header'):
+                        if item.get('icon'):
+                            ui.icon(item['icon']).classes('sidebar-section-header-icon')
+                        ui.label(item.get('label', '')).classes('sidebar-section-header-label')
+                    with ui.element('div').classes('sidebar-section-children'):
+                        for child in children:
+                            self._render_sidebar_item(child)
+            return
+
+        # Leaf navigation item
         def handle_click():
             if 'action' in item and callable(item['action']):
                 item['action']()
             self._toggle_sidebar()  # Close sidebar after clicking item
 
         with ui.element('div').classes('sidebar-item').on('click', handle_click):
-            if 'icon' in item:
+            if 'icon' in item and item['icon']:
                 ui.icon(item['icon']).classes('sidebar-item-icon')
-            ui.label(item['label']).classes('sidebar-item-label')
+            ui.label(item.get('label', '')).classes('sidebar-item-label')
+
+    def create_sidebar_section(self, label: str, icon: Optional[str], children: list[dict], *, collapsible: bool = True, expanded: bool = True) -> dict:
+        """Create a sidebar section with optional collapsibility.
+
+        By default sections are collapsible (rendered as expansion groups). Set
+        ``collapsible=False`` to render a static header with children always visible.
+
+        Args:
+            label: Section title
+            icon: Optional icon name for the section header
+            children: List of sidebar item dicts (label, icon, action) to render inside the section
+            collapsible: Whether the section is collapsible. Defaults to True.
+            expanded: Whether a collapsible section should be opened by default. Defaults to True.
+
+        Returns:
+            Sidebar section dictionary compatible with _render_sidebar_item
+        """
+        return {
+            'label': label,
+            'icon': icon,
+            'children': children,
+            'collapsible': collapsible,
+            'expanded': expanded,
+        }
 
     def get_dynamic_content_container(self):
         """
@@ -155,6 +206,64 @@ class BasePage:
                 ui.timer(0, self._content_loaders[loader_key], once=True)
         
         return {'label': label, 'icon': icon, 'action': action}
+
+    def create_view_loader(self, view_class: Any) -> Callable[[], Awaitable[None]]:
+        """Create a loader that renders a view class into the page content container.
+
+        This expects the provided view class to expose an async `render(user)` method.
+
+        Args:
+            view_class: A view class with an async static/class method `render(user)`
+
+        Returns:
+            An async no-arg callable that clears the current content area and renders the view.
+        """
+        async def loader() -> None:
+            # Prefer the dynamic content container when present; fall back to the main content container
+            container = self.get_dynamic_content_container() or self._content_container
+            if container is None:
+                # Fallback: create a standard page container to host the content
+                self._content_container = ui.element('div').classes('page-container')
+                container = self._content_container
+
+            container.clear()
+            with container:
+                # Delegate actual rendering to the view class
+                await view_class.render(self.user)
+
+        return loader
+
+    def create_instance_view_loader(self, factory: Callable[[], Any], method: str = "render") -> Callable[[], Awaitable[None]]:
+        """Create a loader that instantiates a view and invokes its render method.
+
+        This is intended for views that require construction (e.g., need `self` or
+        constructor arguments) instead of a static/class `render(user)` method.
+
+        Args:
+            factory: Zero-argument callable that returns a view instance.
+            method: Name of the render method to invoke on the instance. Defaults to "render".
+
+        Returns:
+            An async no-arg callable that clears the current content area and renders the instance view.
+        """
+        async def loader() -> None:
+            container = self.get_dynamic_content_container() or self._content_container
+            if container is None:
+                # Initialize a default content container if not present
+                self._content_container = ui.element('div').classes('page-container')
+                container = self._content_container
+
+            container.clear()
+            with container:
+                instance = factory()
+                render_fn = getattr(instance, method, None)
+                if render_fn is None:
+                    return
+                result = render_fn()
+                if inspect.iscoroutine(result):
+                    await result
+
+        return loader
     
     async def render(
         self,

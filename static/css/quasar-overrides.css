@@ -61,27 +61,20 @@
 }
 
 /* ==================== TOGGLE/SWITCH ==================== */
-.q-toggle__inner {
-    display: flex;
-    align-items: center;
-}
-
+/* Off state - visible gray track */
 .q-toggle__track {
-    display: flex;
-    align-items: center;
-    background-color: var(--text-secondary);
-    opacity: 0.4;
+    opacity: 1 !important;
 }
 
-.q-toggle--truthy .q-toggle__track {
-    background-color: var(--primary-color);
-    opacity: 1;
+.q-toggle__track:before {
+    background: #999999 !important;
+    opacity: 1 !important;
 }
 
-.q-toggle__thumb {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+/* On state - primary color track */
+.q-toggle--truthy .q-toggle__track:before {
+    background: var(--primary-color) !important;
+    opacity: 1 !important;
 }
 
 /* ==================== TABLE ==================== */
