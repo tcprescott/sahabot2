@@ -51,6 +51,7 @@ class TournamentPlayers(Model):
 
 class StreamChannel(Model):
     id = fields.IntField(pk=True)
+    organization = fields.ForeignKeyField('models.Organization', related_name='stream_channels')
     name = fields.CharField(max_length=255, unique=True)
     stream_url = fields.CharField(max_length=255, null=True)
     is_active = fields.BooleanField(default=True)

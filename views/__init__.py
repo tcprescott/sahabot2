@@ -36,6 +36,7 @@ from views.organization import (
     OrganizationPermissionsView,
     OrganizationSettingsView,
     OrganizationTournamentsView,
+    OrganizationStreamChannelsView,
 )
 
 from views.user_profile import (
@@ -68,6 +69,7 @@ __all__ = [
     'OrganizationPermissionsView',
     'OrganizationSettingsView',
     'OrganizationTournamentsView',
+    'OrganizationStreamChannelsView',
     # User Profile views
     'ProfileInfoView',
     'ApiKeysView',

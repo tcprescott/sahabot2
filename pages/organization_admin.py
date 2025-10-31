@@ -14,6 +14,7 @@ from views.organization import (
     OrganizationPermissionsView,
     OrganizationSettingsView,
     OrganizationTournamentsView,
+    OrganizationStreamChannelsView,
 )
 
 
@@ -26,11 +27,17 @@ def register():
         base = BasePage.authenticated_page(title="Organization Admin")
         service = OrganizationService()
 
+        # Pre-check authorization to determine sidebar structure
+        # We need to do this outside content() so we can build sidebar_items
+        from middleware.auth import DiscordAuthService
+        user = await DiscordAuthService.get_current_user()
+        
+        allowed_admin = await service.user_can_admin_org(user, organization_id)
+        allowed_tournaments = await service.user_can_manage_tournaments(user, organization_id)
+        allowed = allowed_admin or allowed_tournaments
+
         async def content(page: BasePage):
-            # Authorization: allow global admins/org-admins OR tournament managers
-            allowed_admin = await service.user_can_admin_org(page.user, organization_id)
-            allowed_tournaments = await service.user_can_manage_tournaments(page.user, organization_id)
-            allowed = allowed_admin or allowed_tournaments
+            # Re-check authorization inside content
             if not allowed:
                 ui.notify('You do not have access to administer this organization.', color='negative')
                 ui.navigate.to('/admin')
@@ -91,11 +98,21 @@ def register():
                         view = OrganizationTournamentsView(org, page.user)
                         await view.render()
 
+            async def load_stream_channels():
+                """Load organization stream channels management."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = OrganizationStreamChannelsView(org, page.user)
+                        await view.render()
+
             # Register loaders (restrict for non-admin tournament managers)
             if allowed_admin:
                 page.register_content_loader('overview', load_overview)
                 page.register_content_loader('members', load_members)
                 page.register_content_loader('permissions', load_permissions)
+                page.register_content_loader('stream_channels', load_stream_channels)
                 page.register_content_loader('settings', load_settings)
             # Tournaments accessible to admins and TOURNAMENT_MANAGERs
             page.register_content_loader('tournaments', load_tournaments)
@@ -106,15 +123,23 @@ def register():
             else:
                 await load_tournaments()
 
-        # Create sidebar items
+        # Create sidebar items (conditionally for non-admins)
         sidebar_items = [
             base.create_nav_link('Back to Admin', 'arrow_back', '/admin'),
             base.create_separator(),
-            base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
-            base.create_sidebar_item_with_loader('Members', 'people', 'members'),
-            base.create_sidebar_item_with_loader('Permissions', 'verified_user', 'permissions'),
-            base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
-            base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
         ]
+
+        if allowed_admin:
+            sidebar_items.extend([
+                base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
+                base.create_sidebar_item_with_loader('Members', 'people', 'members'),
+                base.create_sidebar_item_with_loader('Permissions', 'verified_user', 'permissions'),
+                base.create_sidebar_item_with_loader('Stream Channels', 'cast', 'stream_channels'),
+                base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
+                base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
+            ])
+        else:
+            # Tournament managers only see Tournaments
+            sidebar_items.append(base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)
