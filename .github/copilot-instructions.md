@@ -490,12 +490,12 @@ class MyDialog(BaseDialog):
         
         ui.separator()
         
-    # Use actions row for buttons (Convention: positive left, neutral/negative right)
-    with self.create_actions_row():
-      # Positive action on the far left
-      ui.button('Save', on_click=self._save).classes('btn').props('color=positive')
-      # Neutral/negative action on the far right
-      ui.button('Cancel', on_click=self.close).classes('btn')
+        # Use actions row for buttons (Convention: neutral/negative left, positive right)
+        with self.create_actions_row():
+            # Neutral/negative action on the far left
+            ui.button('Cancel', on_click=self.close).classes('btn')
+            # Positive action on the far right
+            ui.button('Save', on_click=self._save).classes('btn').props('color=positive')
     
     async def _save(self):
         """Save and close."""

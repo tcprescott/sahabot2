@@ -41,10 +41,21 @@ class BasePage:
         self._content_container = None
         self._dynamic_content_container = None
         self._content_loaders: dict[str, Callable[[], Awaitable[None]]] = {}
+        self._current_view_key: Optional[str] = None
 
     async def _load_user(self) -> None:
         """Load current user from session."""
         self.user = await DiscordAuthService.get_current_user()
+
+    async def _restore_view_from_hash(self) -> None:
+        """Check URL hash and load corresponding view if it exists."""
+        # Get current hash from browser
+        hash_value = await ui.run_javascript('window.location.hash.substring(1)')
+        
+        # If there's a hash and a matching loader, trigger it
+        if hash_value and hash_value in self._content_loaders:
+            # Use timer to ensure it runs after initial render completes
+            ui.timer(0.1, lambda: self._content_loaders[hash_value](), once=True)
 
     def _toggle_sidebar(self) -> None:
         """Toggle sidebar open/closed state."""
@@ -159,7 +170,14 @@ class BasePage:
             key: Unique identifier for this content loader
             loader: Async function that loads content into the dynamic container
         """
-        self._content_loaders[key] = loader
+        async def wrapped_loader():
+            """Wrapped loader that updates the URL hash when loading content."""
+            self._current_view_key = key
+            # Update URL hash to reflect current view
+            ui.run_javascript(f'window.location.hash = "{key}"')
+            await loader()
+        
+        self._content_loaders[key] = wrapped_loader
     
     def create_sidebar_item_with_loader(self, label: str, icon: str, loader_key: str) -> dict:
         """
@@ -302,6 +320,9 @@ class BasePage:
                         await content(self)
                     # Footer at the bottom of the page container
                     Footer.render()
+                
+                # After content is loaded, check URL hash and load corresponding view
+                await self._restore_view_from_hash()
             else:
                 # Standard static content
                 self._content_container = ui.element('div').classes('page-container')

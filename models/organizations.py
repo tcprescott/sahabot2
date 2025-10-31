@@ -6,6 +6,7 @@ from tortoise.models import Model
 if TYPE_CHECKING:
     from .match_schedule import Tournament
     from .audit_log import AuditLog
+    from .settings import OrganizationSetting
 
 class Organization(Model):
     id = fields.IntField(pk=True)
@@ -20,6 +21,7 @@ class Organization(Model):
     permissions: fields.ReverseRelation["OrganizationPermission"]
     tournaments: fields.ReverseRelation["Tournament"]
     audit_logs: fields.ReverseRelation["AuditLog"]
+    settings: fields.ReverseRelation["OrganizationSetting"]
 
 class OrganizationMember(Model):
     id = fields.IntField(pk=True)

@@ -84,10 +84,10 @@ class UserAddDialog(BaseDialog):
 
         # Actions
         with self.create_actions_row():
-            # Positive action on the far left
-            ui.button('Create User', on_click=self._create_and_close).classes('btn').props('color=positive')
-            # Neutral/negative action on the far right
+            # Neutral/negative action on the far left
             ui.button('Cancel', on_click=self.close).classes('btn')
+            # Positive action on the far right
+            ui.button('Create User', on_click=self._create_and_close).classes('btn').props('color=positive')
 
     def _on_discord_id_change(self, e) -> None:
         """Handle Discord ID change and coerce to int when possible."""

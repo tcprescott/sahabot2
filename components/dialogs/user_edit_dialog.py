@@ -86,10 +86,10 @@ class UserEditDialog(BaseDialog):
 
             # Actions
             with self.create_actions_row():
-                # Positive action on the far left
-                ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
-                # Neutral/negative action on the far right
+                # Neutral/negative action on the far left
                 ui.button('Cancel', on_click=self.close).classes('btn')
+                # Positive action on the far right
+                ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
 
     async def _save_and_close(self) -> None:
         """Save changes and close dialog."""

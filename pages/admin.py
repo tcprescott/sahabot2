@@ -14,7 +14,9 @@ This pattern is reusable for other multi-section pages via BasePage.
 from nicegui import ui
 from components.base_page import BasePage
 from views.admin_users import AdminUsersView
-from views import overview, settings
+from views.admin_organizations import AdminOrganizationsView
+from views import overview
+from views.admin_settings import AdminSettingsView
 
 
 def register():
@@ -47,7 +49,8 @@ def register():
             # Register content loaders
             page.register_content_loader('overview', load_overview)
             page.register_content_loader('users', page.create_instance_view_loader(lambda: AdminUsersView(page.user)))
-            page.register_content_loader('settings', page.create_view_loader(settings.SettingsView))
+            page.register_content_loader('organizations', page.create_instance_view_loader(lambda: AdminOrganizationsView(page.user)))
+            page.register_content_loader('settings', page.create_instance_view_loader(lambda: AdminSettingsView(page.user)))
             
             # Load initial content (overview)
             await load_overview()
@@ -58,6 +61,7 @@ def register():
             base.create_separator(),
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
             base.create_sidebar_item_with_loader('Users', 'people', 'users'),
+            base.create_sidebar_item_with_loader('Organizations', 'domain', 'organizations'),
             base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
         ]
         

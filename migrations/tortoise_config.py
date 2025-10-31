@@ -10,7 +10,7 @@ TORTOISE_ORM = {
     },
     "apps": {
         "models": {
-            "models": ["models.user", "models.audit_log", "models.api_token", "aerich.models"],
+            "models": ["models.user", "models.audit_log", "models.api_token", "models.match_schedule", "models.organizations", "models.settings", "aerich.models"],
             "default_connection": "default",
         }
     },

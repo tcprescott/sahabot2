@@ -7,7 +7,7 @@ This module registers all NiceGUI pages and routes for the application.
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from config import settings
-from pages import home, auth, admin, example
+from pages import home, auth, admin, example, organization_admin
 
 
 class NoCacheStaticFiles(StaticFiles):
@@ -54,5 +54,6 @@ def register_routes(fastapi_app: FastAPI = None):
     auth.register()
     admin.register()
     example.register()
+    organization_admin.register()
     
     print("Frontend routes registered")

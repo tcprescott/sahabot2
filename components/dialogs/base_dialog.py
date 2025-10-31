@@ -89,8 +89,8 @@ class BaseDialog:
             ui.element: Actions container using left/right convention
 
         Convention:
-        - Place the primary/positive action FIRST; it will align to the far left
-        - Place neutral/negative actions AFTER; they will align to the far right
+        - Place neutral/negative actions FIRST; they will align to the far left
+        - Place the primary/positive action LAST; it will align to the far right
         This layout is achieved via CSS (justify-content: space-between).
         """
         return ui.element('div').classes('dialog-actions')
