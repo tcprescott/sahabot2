@@ -117,3 +117,36 @@ class AuthorizationService:
         
         # Superadmins can assign permissions lower than their own
         return [p for p in Permission if p < user.permission]
+    
+    @staticmethod
+    async def can_manage_org_members(user: Optional[User], organization_id: int) -> bool:
+        """
+        Check if user can manage members in an organization.
+        
+        Args:
+            user: User to check permissions for
+            organization_id: Organization to check permissions in
+            
+        Returns:
+            bool: True if user can manage members
+        """
+        if user is None:
+            return False
+        
+        # SUPERADMINs can manage any organization
+        if user.has_permission(Permission.SUPERADMIN):
+            return True
+        
+        # Check if user has ADMIN or MEMBER_MANAGER permission in the org
+        from application.repositories.organization_repository import OrganizationRepository
+        repo = OrganizationRepository()
+        member = await repo.get_member(organization_id, user.id)
+        
+        if not member:
+            return False
+        
+        # Check if member has any permissions
+        await member.fetch_related('permissions')
+        permission_names = [p.permission_name for p in member.permissions]
+        
+        return 'ADMIN' in permission_names or 'MEMBER_MANAGER' in permission_names

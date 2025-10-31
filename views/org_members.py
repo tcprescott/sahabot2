@@ -13,6 +13,7 @@ from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.member_permissions_dialog import MemberPermissionsDialog
 from components.dialogs.invite_member_dialog import InviteMemberDialog
 from application.services.organization_service import OrganizationService
+from application.services.authorization_service import AuthorizationService
 
 
 class OrganizationMembersView:
@@ -22,7 +23,9 @@ class OrganizationMembersView:
         self.organization = organization
         self.user = user
         self.service = OrganizationService()
+        self.auth_service = AuthorizationService()
         self.container = None
+        self.can_manage = False  # Will be set in render
 
     async def _refresh(self) -> None:
         """Refresh the members list."""
@@ -64,7 +67,8 @@ class OrganizationMembersView:
         with Card.create(title='Organization Members'):
             with ui.row().classes('w-full justify-between mb-2'):
                 ui.label(f'{len(members)} member(s) in this organization')
-                ui.button('Invite Member', icon='person_add', on_click=self._open_invite_dialog).props('color=positive').classes('btn')
+                if self.can_manage:
+                    ui.button('Invite Member', icon='person_add', on_click=self._open_invite_dialog).props('color=positive').classes('btn')
 
             if not members:
                 with ui.element('div').classes('text-center mt-4'):
@@ -89,7 +93,10 @@ class OrganizationMembersView:
 
                 def render_actions(m):
                     with ui.element('div').classes('flex gap-2'):
-                        ui.button('Edit Permissions', icon='security', on_click=lambda m=m: self._open_permissions_dialog(m)).classes('btn')
+                        if self.can_manage:
+                            ui.button('Edit Permissions', icon='security', on_click=lambda m=m: self._open_permissions_dialog(m)).classes('btn')
+                        else:
+                            ui.label('—').classes('text-secondary')
 
                 columns = [
                     TableColumn('Username', cell_render=render_username),
@@ -102,6 +109,9 @@ class OrganizationMembersView:
 
     async def render(self) -> None:
         """Render the members view."""
+        # Check if user can manage members
+        self.can_manage = await self.auth_service.can_manage_org_members(self.user, self.organization.id)
+        
         self.container = ui.column().classes('full-width')
         with self.container:
             await self._render_content()
