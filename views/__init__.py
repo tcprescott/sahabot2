@@ -2,22 +2,43 @@
 Views package for SahaBot2.
 
 This package contains view modules for different sections of the application.
-Each view module defines the content and layout for a specific page or tab.
+Views are organized into subdirectories based on which pages use them:
+- home: Views used by the home page
+- admin: Views used by the admin page
+- organization: Views used by the organization admin page
 """
 
-from views.overview import OverviewView
-from views.schedule import ScheduleView
-from views.users import UsersView
-from views.reports import ReportsView
-from views.settings import SettingsView
-from views.favorites import FavoritesView
-from views.tools import ToolsView
-from views.help import HelpView
-from views.about import AboutView
-from views.archive import ArchiveView
-from views.lorem_ipsum import LoremIpsumView
+# Re-export all views for backward compatibility
+from views.home import (
+    OverviewView,
+    ScheduleView,
+    UsersView,
+    ReportsView,
+    SettingsView,
+    FavoritesView,
+    ToolsView,
+    HelpView,
+    AboutView,
+    WelcomeView,
+    ArchiveView,
+    LoremIpsumView,
+)
+
+from views.admin import (
+    AdminUsersView,
+    AdminOrganizationsView,
+    AdminSettingsView,
+)
+
+from views.organization import (
+    OrganizationOverviewView,
+    OrganizationMembersView,
+    OrganizationPermissionsView,
+    OrganizationSettingsView,
+)
 
 __all__ = [
+    # Home views
     'OverviewView',
     'ScheduleView',
     'UsersView',
@@ -27,6 +48,16 @@ __all__ = [
     'ToolsView',
     'HelpView',
     'AboutView',
+    'WelcomeView',
     'ArchiveView',
     'LoremIpsumView',
+    # Admin views
+    'AdminUsersView',
+    'AdminOrganizationsView',
+    'AdminSettingsView',
+    # Organization views
+    'OrganizationOverviewView',
+    'OrganizationMembersView',
+    'OrganizationPermissionsView',
+    'OrganizationSettingsView',
 ]

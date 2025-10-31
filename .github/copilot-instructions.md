@@ -38,9 +38,23 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - **pages/**: NiceGUI page modules
   - `home.py`: Main landing page
   - `auth.py`: Login, OAuth callback, logout pages
-  This application is multi-tenant. All user actions and data are scoped to Organizations (managed via the Organizations tab). Every feature we add or change must preserve tenant isolation and enforce the security model described below.
   - `admin.py`: Admin dashboard (requires ADMIN permission)
+  - `organization_admin.py`: Organization-specific admin page
+- **views/**: View components organized by page
+  - Views are **organized into subdirectories** based on which pages use them
+  - `views/home/`: Views used by the home page (overview, schedule, users, reports, settings, favorites, tools, help, about, welcome, archive, lorem_ipsum)
+  - `views/admin/`: Views used by the admin page (admin_users, admin_organizations, admin_settings)
+  - `views/organization/`: Views used by the organization admin page (org_overview, org_members, org_permissions, org_settings)
+  - Each subdirectory has its own `__init__.py` that exports its views
+  - The main `views/__init__.py` re-exports all views for backward compatibility
+  - **When creating new views**, place them in the appropriate subdirectory based on which page will use them
+  - **When creating new pages**, create a corresponding subdirectory in `views/` for that page's views
+- **components/**: Reusable UI components and templates
+  - `base_page.py`: Base page template with navbar and layout
+  - `dialogs/`: Dialog components (UI-only)
 - **static/css/main.css**: All application styles (no inline CSS allowed)
+
+This application is multi-tenant. All user actions and data are scoped to Organizations (managed via the Organizations tab). Every feature we add or change must preserve tenant isolation and enforce the security model described below.
 
 ### Discord Bot Layer
 
@@ -528,6 +542,57 @@ await dialog.show()
 4. Add component-specific CSS to `static/css/main.css`
 5. Use in pages by importing from `components`
 
+### New View
+Views are page-specific content modules. They should be organized by which page uses them.
+
+1. **Determine which page will use the view** (home, admin, organization_admin, or new page)
+2. **Create view file in appropriate subdirectory**:
+   - For home page: `views/home/my_view.py`
+   - For admin page: `views/admin/my_view.py`
+   - For organization page: `views/organization/my_view.py`
+   - For new page: Create `views/newpage/` directory first
+3. **Export from subdirectory's `__init__.py`**:
+   ```python
+   from views.home.my_view import MyView
+   __all__ = [..., 'MyView']
+   ```
+4. **Re-export from main `views/__init__.py`** for backward compatibility:
+   ```python
+   from views.home import MyView
+   __all__ = [..., 'MyView']
+   ```
+5. **Import in page** using subdirectory path:
+   ```python
+   from views.home import MyView
+   # or
+   from views import MyView  # backward compatible
+   ```
+6. **Keep views presentation-only** - delegate all business logic to services
+
+**Example view structure:**
+```python
+"""
+My view module.
+
+Description of what this view displays.
+"""
+from nicegui import ui
+from components.card import Card
+
+class MyView:
+    """View for displaying my content."""
+    
+    def __init__(self, user, service):
+        self.user = user
+        self.service = service
+    
+    async def render(self):
+        """Render the view content."""
+        data = await self.service.get_data()
+        with Card.create(title='My Title'):
+            ui.label(f'Hello {self.user.discord_username}')
+```
+
 ### New Business Logic
 1. Create service in `application/services/`
 2. Create repository in `application/repositories/` for data access
@@ -599,6 +664,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't use f-strings in logging statements (use lazy % formatting)
 - ❌ Don't use inline imports (import inside functions) - always import at module level
 - ❌ Don't leave trailing whitespace on any lines (including blank lines)
+- ❌ Don't create views in the root `views/` directory - always use the appropriate subdirectory
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -610,6 +676,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do use lazy % formatting in logging: `logger.info("User %s", user_id)`
 - ✅ Do import all modules at the top of the file (module level)
 - ✅ Do keep all lines clean with no trailing whitespace
+- ✅ Do organize views into subdirectories by page (views/home/, views/admin/, views/organization/)
 
 ## References
 - NiceGUI: https://nicegui.io

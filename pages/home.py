@@ -9,7 +9,7 @@ Uses BasePage's dynamic content switching via sidebar navigation for:
 
 from nicegui import ui
 from components import BasePage
-from views import (
+from views.home import (
     overview, schedule, users, reports, settings,
     favorites, tools, help as help_view, about, welcome
 )

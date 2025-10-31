@@ -13,10 +13,8 @@ This pattern is reusable for other multi-section pages via BasePage.
 
 from nicegui import ui
 from components.base_page import BasePage
-from views.admin_users import AdminUsersView
-from views.admin_organizations import AdminOrganizationsView
-from views import overview
-from views.admin_settings import AdminSettingsView
+from views.admin import AdminUsersView, AdminOrganizationsView, AdminSettingsView
+from views.home import overview
 
 
 def register():

@@ -8,10 +8,12 @@ from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organization_service import OrganizationService
-from views.org_overview import OrganizationOverviewView
-from views.org_members import OrganizationMembersView
-from views.org_permissions import OrganizationPermissionsView
-from views.org_settings import OrganizationSettingsView
+from views.organization import (
+    OrganizationOverviewView,
+    OrganizationMembersView,
+    OrganizationPermissionsView,
+    OrganizationSettingsView,
+)
 
 
 def register():
