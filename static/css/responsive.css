@@ -78,15 +78,55 @@
         padding: var(--spacing-md);
     }
 
-    /* Tables - make scrollable */
-    .data-table {
-        overflow-x: auto;
-    }
+    /* (replaced by mobile card/grid styles below) */
 
     /* Buttons */
     .btn-full-width {
         width: 100%;
         margin-bottom: var(--spacing-sm);
+    }
+
+    /* Tables → mobile card/grid layout */
+    .data-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .data-table thead {
+        display: none; /* hide header on mobile */
+    }
+
+    .data-table tr {
+        display: block;
+        background: var(--surface-color);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        margin: 0 0 var(--spacing-md) 0; /* full-width cards; no horizontal margin */
+        width: 100%;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    .data-table td {
+        display: grid;
+        grid-template-columns: minmax(8rem, 40%) 1fr; /* label | value */
+        align-items: start;
+        gap: var(--spacing-md);
+        padding: var(--spacing-md);
+        border-bottom: 1px solid var(--border-color);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .data-table td:last-child {
+        border-bottom: none;
+    }
+
+    .data-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--text-secondary);
     }
 }
 

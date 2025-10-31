@@ -38,15 +38,33 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - **pages/**: NiceGUI page modules
   - `home.py`: Main landing page
   - `auth.py`: Login, OAuth callback, logout pages
+  This application is multi-tenant. All user actions and data are scoped to Organizations (managed via the Organizations tab). Every feature we add or change must preserve tenant isolation and enforce the security model described below.
   - `admin.py`: Admin dashboard (requires ADMIN permission)
 - **static/css/main.css**: All application styles (no inline CSS allowed)
 
 ### Discord Bot Layer
+
+  ### Multi-Tenancy & Organizations
+  - **models/organizations.py**: Organization domain models
+    - `Organization`: Tenant entity; parent for tenant-scoped data
+    - `OrganizationMember`: Links users to organizations (membership and roles)
+    - `OrganizationPermission`: Optional per-organization permission grants/roles
+  - **pages/Admin > Organizations**: UI for managing organizations and memberships
+  - All tenant-scoped resources must reference an organization (direct FK or via relation). Services and repositories are responsible for enforcing organization constraints in all reads and writes.
 - **discordbot/**: Discord bot integration (runs as singleton within the application)
   - `client.py`: Core bot implementation extending `commands.Bot`
   - Lifecycle managed by `main.py` lifespan (starts on app startup, stops on shutdown)
   - Uses `get_bot_instance()` to access singleton from services or commands
   - **Commands should be in separate modules** organized by feature (e.g., `commands/admin.py`)
+
+  ### 6. Multi-Tenant Isolation and Security
+  - All data access and mutations must be scoped to a specific Organization (tenant).
+  - Do not rely on client-provided organization identifiers without verification; validate membership and permissions server-side.
+  - Service and repository methods should accept an explicit `organization_id` (or `Organization`) parameter and enforce it in queries.
+  - Never return or operate on cross-tenant data. Filters must include the organization constraint for list/detail queries, updates, and deletes.
+  - Audit everything with tenant context: include `organization_id` in `AuditLog` entries where applicable.
+  - Caches and computed results must be keyed by organization.
+  - Global roles (e.g., SUPERADMIN) may bypass tenant checks when explicitly intended; all other roles are tenant-bound.
 
 ### Database
 - **migrations/**: Aerich migration scripts and config
@@ -67,6 +85,29 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 - **Repositories** (`application/repositories/`) - Data access only
 - **Never** access ORM models directly from UI - always use services
 
+  ### Tenant-aware Authorization
+  ```python
+  from application.services.authorization_service import AuthorizationService
+
+  auth_z = AuthorizationService()
+
+  # Resolve current org (from session, page context, or explicit parameter)
+  organization_id = current_org_id()
+
+  # Membership and permission checks MUST include organization context
+  if not auth_z.is_member(user, organization_id):
+      raise PermissionError("Not a member of this organization")
+
+  # For privileged actions, evaluate tenant roles first, then global overrides
+  if auth_z.can_manage_users(user, organization_id) or auth_z.is_superadmin(user):
+      ...  # proceed
+  ```
+
+  Guidelines:
+  - Pass `organization_id` through from UI → services → repositories.
+  - In repositories, always include the organization filter (`.filter(organization_id=...)`).
+  - Do not infer organization from arbitrary resource IDs without validating ownership.
+
 ### 3. External CSS Only & Color Scheme
 - **No** inline styles via `.style()` method
 - All CSS in `static/css/main.css`
@@ -77,22 +118,38 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
 The application uses a five-color palette with automatic dark mode support. Light-to-dark order is preserved across modes.
 
 **Light Mode Colors (Primary Palette):**
+
+  ### Tenant-aware Service Usage
+  ```python
+  org_id = current_org_id()
+  users = await user_service.get_users_for_org(org_id)
+  user  = await user_service.update_user_permission_in_org(org_id, user_id, Permission.ADMIN)
+  ```
+  Service and repository method signatures should include the organization context for tenant-scoped data. Prefer explicit `org_id` parameters over implicit globals.
 ```css
 --seasalt:  #f8f8f8;  /* Very light neutral: page backgrounds and muted surfaces */
 --old-gold: #d0c040;  /* Primary actions: buttons, links, highlights */
 --olive:    #988818;  /* Secondary accents: badges, tags, emphasis */
 --olive-2:  #7c6f13;  /* Strong accent / warnings / borders emphasis */
+   - Tenant scope: models that represent tenant data include an `organization` FK. Queries must filter by organization.
 --black:    #000000;  /* Primary text and strong borders */
 ```
+
+  Tenant context in pages:
+  - Resolve/select the current organization (e.g., from session or a selector in the navbar/organizations tab).
+  - Pass `organization_id` to all service calls.
+  - Hide UI elements that cross tenant boundaries; always enforce on the server as well.
 
 **Dark Mode Colors (Adjusted for Contrast):**
 ```css
 --black-dark:   #0f0f0f; /* Dark backgrounds and surfaces */
 --old-gold-dark:#e6d65a; /* Lightened primary for readability on dark */
+  5. Ensure all reads/writes accept and enforce `organization_id`
 --olive-dark:   #c0b339; /* Lightened secondary for dark mode accents */
 --olive-2-dark: #b3952f; /* Lightened strong accent for visibility */
 --seasalt-dark: #f2f2f2; /* Light text on dark backgrounds */
 ```
+  4. For tenant-scoped actions, add `organization_id` to method signatures and checks
 
 **Usage Guidelines:**
 - **Backgrounds**: Use `seasalt` (light) or `black-dark` (dark)
@@ -102,6 +159,7 @@ The application uses a five-color palette with automatic dark mode support. Ligh
 - **Text/Borders**: Use `black` (light mode) or `seasalt-dark` (dark mode)
 
 **Implementation:**
+  9. If the model is tenant data, include an `organization` FK and add indexes on `(organization_id, ...)` where appropriate
 - Define CSS variables in `:root` for light mode
 - Override in `.body--dark` or `.q-dark` selectors for dark mode
 - Map semantic tokens (e.g., `--primary-color`, `--background-color`) to the palette
@@ -110,9 +168,15 @@ The application uses a five-color palette with automatic dark mode support. Ligh
 
 ### 4. Discord OAuth2 Authentication
 - All users authenticate via Discord
+  - ❌ Don't forget tenant scoping in queries and service methods
+  - ❌ Don't trust client-provided `organization_id` without validating membership
+  - ❌ Don't leak cross-tenant data via joins, exports, or background jobs
 - OAuth flow handled in `middleware/auth.py`
 - User info synced to database on login
 - Session managed via NiceGUI `app.storage.user`
+  - ✅ Do ensure every tenant-scoped operation includes `organization_id`
+  - ✅ Do record tenant context in audit logs and metrics
+  - ✅ Do design caches and background tasks to be organization-aware
 
 ### 5. Database-Driven Authorization
 - Authorization logic in `AuthorizationService` (separate from business logic)
@@ -346,16 +410,26 @@ if bot:
 ## Adding Features
 
 ### New Page
-1. Create file in `pages/` (e.g., `pages/new_page.py`)
-2. Define `register()` function
-3. Use `@ui.page('/path')` decorator with `BasePage` template
-4. Add CSS classes to `static/css/main.css` (no inline styles!)
+### UI Layer
+- **pages/**: NiceGUI page modules
+  - `home.py`: Main landing page
+  - `auth.py`: Login, OAuth callback, logout pages
+  - `admin.py`: Admin dashboard (requires ADMIN permission)
+- **components/**: Reusable UI components
+  - `header.py`: Header bar
+  - `footer.py`: Footer bar (not fixed)
+  - `sidebar.py`: Sidebar flyout/persistent navigation
+  - `data_table.py`: Responsive table helper (desktop table, mobile grid)
+  - `dialogs/`: Dialog components (UI-only)
+    - `user_edit_dialog.py`: Edit User dialog
+- **static/css/main.css**: All application styles (no inline CSS allowed)
 5. Register in `frontend.py`
 
 Example:
 ```python
 from nicegui import ui
 from components.base_page import BasePage
+ - **Dialogs** (`components/dialogs/`) - UI-only modal components; delegate logic to services
 
 def register():
     @ui.page('/mypage')
@@ -365,6 +439,83 @@ def register():
         async def content(page: BasePage):
             with ui.element('div').classes('card'):
                 ui.label('My content here')
+### New Dialog
+All dialogs should extend `BaseDialog` for consistent structure and behavior.
+
+1. Create dialog module in `components/dialogs/` (e.g., `my_dialog.py`)
+2. Extend `BaseDialog` and implement `_render_body()` method
+3. Keep it presentation-only; call services for business logic
+4. Use BaseDialog helper methods for common patterns
+5. Export from `components/dialogs/__init__.py`
+
+**BaseDialog provides:**
+- `create_dialog(title, icon, max_width)` - Create dialog with standard card structure
+- `create_form_grid(columns)` - Responsive form grid (1-2 columns)
+- `create_actions_row()` - Standardized action buttons container
+- `create_permission_select(...)` - Permission dropdown with proper enum handling
+- `create_info_row(label, value)` - Read-only information display
+- `create_section_title(text)` - Section header within dialog
+- `show()` / `close()` - Display and dismiss dialog
+
+Example:
+```python
+from components.dialogs.base_dialog import BaseDialog
+from nicegui import ui
+from models import User
+
+class MyDialog(BaseDialog):
+    """Custom dialog extending BaseDialog."""
+    
+    def __init__(self, user: User, on_save=None):
+        super().__init__()
+        self.user = user
+        self.on_save = on_save
+    
+    async def show(self):
+        """Display the dialog."""
+        self.create_dialog(
+            title=f'Edit {self.user.discord_username}',
+            icon='edit',
+        )
+        super().show()
+    
+    def _render_body(self):
+        """Render dialog content."""
+        # Use form grid for responsive layout
+        with self.create_form_grid(columns=2):
+            with ui.element('div'):
+                ui.input(label='Name').classes('w-full')
+            with ui.element('div'):
+                ui.input(label='Email').classes('w-full')
+        
+        ui.separator()
+        
+    # Use actions row for buttons (Convention: positive left, neutral/negative right)
+    with self.create_actions_row():
+      # Positive action on the far left
+      ui.button('Save', on_click=self._save).classes('btn').props('color=positive')
+      # Neutral/negative action on the far right
+      ui.button('Cancel', on_click=self.close).classes('btn')
+    
+    async def _save(self):
+        """Save and close."""
+        # Business logic via services
+        # ...
+        if self.on_save:
+            await self.on_save()
+        await self.close()
+
+# Usage in views:
+dialog = MyDialog(user=user, on_save=refresh_callback)
+await dialog.show()
+```
+
+**Key Benefits:**
+- Consistent card styling and layout
+- Built-in permission select with enum normalization
+- Responsive form grids
+- Standardized action button placement
+- Reusable helper methods reduce boilerplate
         
         await base.render(content)()
 ```

@@ -2,6 +2,7 @@
 Audit log model for tracking user actions.
 
 This module contains the AuditLog model for security and compliance logging.
+Includes optional organization context for multi-tenant auditing.
 """
 
 from tortoise import fields
@@ -15,6 +16,7 @@ class AuditLog(Model):
     Attributes:
         id: Primary key
         user: Foreign key to User who performed the action
+        organization: Optional foreign key to Organization (tenant context)
         action: Action type/name
         details: JSON field with action details
         ip_address: IP address of the user
@@ -23,6 +25,7 @@ class AuditLog(Model):
     
     id = fields.IntField(pk=True)
     user = fields.ForeignKeyField('models.User', related_name='audit_logs', null=True)
+    organization = fields.ForeignKeyField('models.Organization', related_name='audit_logs', null=True, index=True)
     action = fields.CharField(max_length=255)
     details = fields.JSONField(null=True)
     ip_address = fields.CharField(max_length=45, null=True)

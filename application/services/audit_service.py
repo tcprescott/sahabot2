@@ -25,7 +25,8 @@ class AuditService:
         user: Optional[User],
         action: str,
         details: Optional[dict[str, Any]] = None,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
+        organization_id: Optional[int] = None,
     ) -> AuditLog:
         """
         Log a user action.
@@ -43,10 +44,11 @@ class AuditService:
             user=user,
             action=action,
             details=details,
-            ip_address=ip_address
+            ip_address=ip_address,
+            organization_id=organization_id,
         )
     
-    async def log_login(self, user: User, ip_address: Optional[str] = None) -> AuditLog:
+    async def log_login(self, user: User, ip_address: Optional[str] = None, organization_id: Optional[int] = None) -> AuditLog:
         """
         Log a user login.
         
@@ -61,7 +63,8 @@ class AuditService:
             user=user,
             action="user_login",
             details={"discord_id": user.discord_id},
-            ip_address=ip_address
+            ip_address=ip_address,
+            organization_id=organization_id,
         )
     
     async def log_permission_change(
@@ -70,7 +73,8 @@ class AuditService:
         target_user: User,
         old_permission: int,
         new_permission: int,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
+        organization_id: Optional[int] = None,
     ) -> AuditLog:
         """
         Log a permission change.
@@ -92,9 +96,10 @@ class AuditService:
                 "target_user_id": target_user.id,
                 "target_username": target_user.discord_username,
                 "old_permission": old_permission,
-                "new_permission": new_permission
+                "new_permission": new_permission,
             },
-            ip_address=ip_address
+            ip_address=ip_address,
+            organization_id=organization_id,
         )
     
     async def get_recent_logs(self, limit: int = 100) -> list[AuditLog]:
@@ -108,6 +113,19 @@ class AuditService:
             list[AuditLog]: Recent audit log entries
         """
         return await self.audit_repository.get_recent(limit=limit)
+
+    async def get_recent_logs_for_org(self, organization_id: int, limit: int = 100) -> list[AuditLog]:
+        """
+        Get recent audit logs for a specific organization.
+        
+        Args:
+            organization_id: Organization ID
+            limit: Maximum number of logs to return
+            
+        Returns:
+            list[AuditLog]: Recent audit log entries for the organization
+        """
+        return await self.audit_repository.get_recent_for_org(organization_id=organization_id, limit=limit)
     
     async def get_user_logs(self, user_id: int, limit: int = 100) -> list[AuditLog]:
         """
@@ -121,13 +139,28 @@ class AuditService:
             list[AuditLog]: User's audit log entries
         """
         return await self.audit_repository.get_by_user(user_id=user_id, limit=limit)
+
+    async def get_user_logs_in_org(self, user_id: int, organization_id: int, limit: int = 100) -> list[AuditLog]:
+        """
+        Get audit logs for a specific user within an organization.
+        
+        Args:
+            user_id: User ID
+            organization_id: Organization ID
+            limit: Maximum number of logs to return
+            
+        Returns:
+            list[AuditLog]: User's audit log entries scoped to the organization
+        """
+        return await self.audit_repository.get_by_user_in_org(user_id=user_id, organization_id=organization_id, limit=limit)
     
     async def log_user_update(
         self,
         user: User,
         target_user_id: int,
         changes: str,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
+        organization_id: Optional[int] = None,
     ) -> AuditLog:
         """
         Log a user update action.
@@ -146,7 +179,8 @@ class AuditService:
             action="user_update",
             details={
                 "target_user_id": target_user_id,
-                "changes": changes
+                "changes": changes,
             },
-            ip_address=ip_address
+            ip_address=ip_address,
+            organization_id=organization_id,
         )

@@ -76,6 +76,60 @@ class UserService:
         )
         
         return user
+
+    async def create_user_manual(
+        self,
+        discord_id: int,
+        discord_username: str,
+        discord_email: Optional[str] = None,
+        permission: Permission = Permission.USER,
+        is_active: bool = True,
+        discord_discriminator: Optional[str] = None,
+        discord_avatar: Optional[str] = None,
+    ) -> User:
+        """Create a user manually.
+
+        Validates uniqueness by Discord ID and applies defaults consistent with
+        OAuth-created users.
+
+        Args:
+            discord_id: Discord user ID (unique)
+            discord_username: Display username
+            discord_email: Optional email
+            permission: Initial permission level (default USER)
+            is_active: Whether the account is active (default True)
+            discord_discriminator: Optional discriminator (legacy)
+            discord_avatar: Optional avatar hash
+
+        Returns:
+            User: The newly created user
+
+        Raises:
+            ValueError: If a user with the given Discord ID already exists
+        """
+        # Ensure required fields
+        if not discord_id or not discord_username:
+            raise ValueError("discord_id and discord_username are required")
+
+        existing = await self.user_repository.get_by_discord_id(discord_id)
+        if existing:
+            raise ValueError("A user with this Discord ID already exists")
+
+        # Create via repository; default is_active True, override if specified
+        user = await self.user_repository.create(
+            discord_id=discord_id,
+            discord_username=discord_username,
+            discord_discriminator=discord_discriminator,
+            discord_avatar=discord_avatar,
+            discord_email=discord_email,
+            permission=permission,
+        )
+
+        if user.is_active != is_active:
+            user.is_active = is_active
+            await user.save()
+
+        return user
     
     async def update_user_permission(self, user_id: int, new_permission: Permission) -> User:
         """

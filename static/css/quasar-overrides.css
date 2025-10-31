@@ -130,12 +130,29 @@
     text-transform: none;
 }
 
-.q-btn--standard {
+.q-btn--standard:not(.btn-primary):not(.btn-success):not(.btn-secondary):not(.btn-danger) {
     background-color: var(--primary-color);
     color: #ffffff;
 }
 
-.q-btn--outline {
+.q-btn--outline:not(.btn-primary):not(.btn-success):not(.btn-secondary):not(.btn-danger) {
     color: var(--primary-color);
     border-color: var(--primary-color);
+}
+
+/* Map Quasar positive color to app success color */
+.bg-positive,
+.q-btn.bg-positive,
+.q-chip.bg-positive {
+    background: var(--success-color) !important;
+    background-color: var(--success-color) !important;
+    color: #ffffff !important;
+}
+
+.text-positive {
+    color: var(--success-color) !important;
+}
+
+.q-btn--outline.text-positive {
+    border-color: var(--success-color) !important;
 }

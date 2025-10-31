@@ -38,6 +38,15 @@
     justify-content: center;
 }
 
+/* Common flex justify helpers used in views */
+.justify-end {
+    justify-content: flex-end;
+}
+
+.justify-between {
+    justify-content: space-between;
+}
+
 /* ==================== GAPS ==================== */
 .gap-xs {
     gap: var(--spacing-xs);
@@ -58,6 +67,11 @@
 .gap-xl {
     gap: var(--spacing-xl);
 }
+
+/* Numeric gap aliases for convenience */
+.gap-2 { gap: var(--spacing-sm); }
+.gap-4 { gap: var(--spacing-md); }
+.gap-8 { gap: var(--spacing-lg); }
 
 /* ==================== SPACING ==================== */
 .m-0 { margin: 0; }
@@ -125,6 +139,11 @@
     font-size: 1.5rem;
 }
 
+/* Additional typography helpers */
+.text-2xl { font-size: 2rem; }
+.font-bold { font-weight: 700; }
+.font-semibold { font-weight: 600; }
+
 /* ==================== TITLES ==================== */
 .page-title {
     font-size: 2em;
@@ -167,6 +186,9 @@
     width: 100%;
 }
 
+/* Alias used widely across views */
+.full-width { width: 100%; }
+
 .h-full {
     height: 100%;
 }
@@ -198,3 +220,6 @@
     align-items: center;
     margin-bottom: 1.5em;
 }
+
+/* Growth utility */
+.flex-grow { flex-grow: 1; }

@@ -4,9 +4,17 @@ User model and permission definitions.
 This module contains the User model and Permission enum for authentication and authorization.
 """
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from tortoise import fields
 from tortoise.models import Model
 from enum import IntEnum
+
+if TYPE_CHECKING:
+    from .api_token import ApiToken
+    from .audit_log import AuditLog
+    from .match_schedule import MatchPlayers, TournamentPlayers, Crew
+    from .organizations import OrganizationMember
 
 
 class Permission(IntEnum):
@@ -52,6 +60,15 @@ class User(Model):
     
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
+
+    # related fields (reverse relations)
+    api_tokens: fields.ReverseRelation["ApiToken"]
+    audit_logs: fields.ReverseRelation["AuditLog"]
+    match_players: fields.ReverseRelation["MatchPlayers"]
+    tournament_players: fields.ReverseRelation["TournamentPlayers"]
+    crew_memberships: fields.ReverseRelation["Crew"]
+    approved_crew: fields.ReverseRelation["Crew"]
+    organizations: fields.ReverseRelation["OrganizationMember"]
     
     class Meta:
         table = "users"

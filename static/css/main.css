@@ -28,6 +28,9 @@
 /* 9. Sidebar separator styles */
 @import url('sidebar-separator.css');
 
+/* 10. Dialog styles */
+@import url('dialog.css');
+
 /* ==================== APPLICATION-SPECIFIC STYLES ==================== */
 /* Add any page-specific styles below that don't fit into the categories above */
 
