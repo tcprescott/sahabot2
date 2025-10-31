@@ -4,19 +4,22 @@ Frontend routes registration.
 This module registers all NiceGUI pages and routes for the application.
 """
 
+import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from config import settings
-from pages import home, auth, admin, example, organization_admin
+from pages import home, auth, admin, organization_admin, user_profile
+
+logger = logging.getLogger(__name__)
 
 
 class NoCacheStaticFiles(StaticFiles):
     """StaticFiles subclass that disables caching in development mode."""
-    
+
     def __init__(self, *args, **kwargs):
         self.is_dev = settings.DEBUG
         super().__init__(*args, **kwargs)
-    
+
     async def __call__(self, scope, receive, send):
         if self.is_dev and scope['type'] == 'http':
             # Wrap the send function to add no-cache headers
@@ -39,21 +42,21 @@ class NoCacheStaticFiles(StaticFiles):
 def register_routes(fastapi_app: FastAPI = None):
     """
     Register all frontend routes and mount static files.
-    
+
     This function is called from main.py to register all NiceGUI pages.
-    
+
     Args:
         fastapi_app: The FastAPI application instance (optional, for mounting static files)
     """
     # Mount static files directory with no-cache in development
     if fastapi_app:
         fastapi_app.mount("/static", NoCacheStaticFiles(directory="static"), name="static")
-    
+
     # Register pages
     home.register()
     auth.register()
     admin.register()
-    example.register()
     organization_admin.register()
-    
-    print("Frontend routes registered")
+    user_profile.register()
+
+    logger.info("Frontend routes registered")

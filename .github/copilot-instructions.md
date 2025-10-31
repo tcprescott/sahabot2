@@ -100,6 +100,36 @@ This application is multi-tenant. All user actions and data are scoped to Organi
 - **Repositories** (`application/repositories/`) - Data access only
 - **Never** access ORM models directly from UI - always use services
 
+### 3. Logging Standards
+- **Always use the logging framework** - Never use `print()` for logging in application code
+- **Import logging at module level**:
+  ```python
+  import logging
+  
+  logger = logging.getLogger(__name__)
+  ```
+- **Use lazy % formatting** in logging statements (not f-strings):
+  ```python
+  # ✅ Correct - lazy formatting
+  logger.info("User %s logged in", user.id)
+  logger.error("Failed to process %s: %s", item_id, error)
+  
+  # ❌ Wrong - f-strings or concatenation
+  logger.info(f"User {user.id} logged in")  # Don't do this!
+  logger.info("User " + user.id + " logged in")  # Don't do this!
+  ```
+- **Use appropriate log levels**:
+  - `logger.debug()` - Detailed diagnostic information
+  - `logger.info()` - General informational messages (app startup, route registration, etc.)
+  - `logger.warning()` - Warning messages (deprecated features, recoverable issues)
+  - `logger.error()` - Error messages (exceptions, failures)
+  - `logger.critical()` - Critical issues (system failures)
+- **Exceptions**: `print()` is acceptable in:
+  - Test scripts (e.g., `test_*.py`)
+  - Utility scripts (e.g., `check_*.py`, `tools/*.py`)
+  - Interactive/CLI tools where user-facing output is needed
+  - Code examples in docstrings
+
   ### Tenant-aware Authorization
   ```python
   from application.services.authorization_service import AuthorizationService
@@ -123,7 +153,7 @@ This application is multi-tenant. All user actions and data are scoped to Organi
   - In repositories, always include the organization filter (`.filter(organization_id=...)`).
   - Do not infer organization from arbitrary resource IDs without validating ownership.
 
-### 3. External CSS Only & Color Scheme
+### 4. External CSS Only & Color Scheme
 - **No** inline styles via `.style()` method
 - All CSS in `static/css/main.css`
 - Use semantic, human-friendly class names (e.g., `card`, `btn-primary`, `navbar`)
@@ -181,7 +211,7 @@ The application uses a five-color palette with automatic dark mode support. Ligh
 - Ensure sufficient contrast ratios (WCAG AA minimum)
 - Test both light and dark modes for readability
 
-### 4. Discord OAuth2 Authentication
+### 5. Discord OAuth2 Authentication
 - All users authenticate via Discord
   - ❌ Don't forget tenant scoping in queries and service methods
   - ❌ Don't trust client-provided `organization_id` without validating membership
@@ -193,13 +223,13 @@ The application uses a five-color palette with automatic dark mode support. Ligh
   - ✅ Do record tenant context in audit logs and metrics
   - ✅ Do design caches and background tasks to be organization-aware
 
-### 5. Database-Driven Authorization
+### 6. Database-Driven Authorization
 - Authorization logic in `AuthorizationService` (separate from business logic)
 - Permissions stored in database (User.permission field)
 - Server-side enforcement via `require_permission()`
 - UI can conditionally show elements based on permissions, but must enforce server-side
 
-### 6. High Code Quality
+### 7. High Code Quality
 - **Always** use async/await
 - **All** public functions must have docstrings
 - Type hints on function parameters and returns
@@ -220,7 +250,7 @@ The application uses a five-color palette with automatic dark mode support. Ligh
   - ✅ `with ui.element('div').classes('header'): ui.label('Text')`
   - ❌ `ui.element('div').classes('header').text('Text')`  # AttributeError!
 
-### 7. Discord Bot Architecture
+### 8. Discord Bot Architecture
 - **Bot as Presentation Layer**: Discord bot is part of the presentation layer (like UI pages)
 - **Never** access ORM models directly from bot commands - always use services
 - **Never** put business logic in bot commands - delegate to services
@@ -661,6 +691,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't use prefix (chat-based) commands in Discord bot
 - ❌ Don't access ORM from bot commands
 - ❌ Don't put business logic in bot commands
+- ❌ Don't use `print()` for logging in application code (use logging framework)
 - ❌ Don't use f-strings in logging statements (use lazy % formatting)
 - ❌ Don't use inline imports (import inside functions) - always import at module level
 - ❌ Don't leave trailing whitespace on any lines (including blank lines)
@@ -673,6 +704,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do test on mobile viewports
 - ✅ Do use application commands (slash commands) for Discord bot
 - ✅ Do delegate all bot logic to services
+- ✅ Do use the logging framework with `logger = logging.getLogger(__name__)`
 - ✅ Do use lazy % formatting in logging: `logger.info("User %s", user_id)`
 - ✅ Do import all modules at the top of the file (module level)
 - ✅ Do keep all lines clean with no trailing whitespace

@@ -4,6 +4,8 @@ SahaBot2 - Main Application Entry Point
 This module initializes the FastAPI application with NiceGUI integration.
 """
 
+import logging
+
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from nicegui import app as nicegui_app, ui
@@ -13,7 +15,6 @@ from application.services.discord_service import DiscordService
 from application.services.racetime_service import RacetimeService
 from api import register_api
 import frontend
-import logging
 
 # Configure logging
 logging.basicConfig(
@@ -132,7 +133,7 @@ ui.run_with(
 
 
 if __name__ in {"__main__", "__mp_main__"}:
-    print(f"Starting SahaBot2 on {settings.HOST}:{settings.PORT}")
+    logger.info("Starting SahaBot2 on %s:%s", settings.HOST, settings.PORT)
     ui.run(
         host=settings.HOST,
         port=settings.PORT,

@@ -75,6 +75,11 @@ class UserMenu:
                     'separator': True
                 },
                 {
+                    'name': 'My Profile',
+                    'icon': 'person',
+                    'on_click': lambda: ui.navigate.to('/profile')
+                },
+                {
                     'name': 'Admin Panel',
                     'icon': 'admin_panel_settings',
                     'on_click': lambda: ui.navigate.to('/admin'),

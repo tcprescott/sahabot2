@@ -28,3 +28,11 @@ class ApiTokenRepository:
     async def touch_last_used(self, token: ApiToken) -> None:
         token.last_used_at = datetime.utcnow()
         await token.save()
+
+    async def list_by_user(self, user_id: int) -> list[ApiToken]:
+        """Get all tokens for a user."""
+        return await ApiToken.filter(user_id=user_id).order_by('-created_at')
+
+    async def get_by_id(self, token_id: int) -> Optional[ApiToken]:
+        """Get a token by its ID."""
+        return await ApiToken.get_or_none(id=token_id)

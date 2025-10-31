@@ -37,6 +37,12 @@ from views.organization import (
     OrganizationSettingsView,
 )
 
+from views.user_profile import (
+    ProfileInfoView,
+    ApiKeysView,
+    UserOrganizationsView,
+)
+
 __all__ = [
     # Home views
     'OverviewView',
@@ -60,4 +66,8 @@ __all__ = [
     'OrganizationMembersView',
     'OrganizationPermissionsView',
     'OrganizationSettingsView',
+    # User Profile views
+    'ProfileInfoView',
+    'ApiKeysView',
+    'UserOrganizationsView',
 ]

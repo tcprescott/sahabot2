@@ -48,3 +48,26 @@ class ApiTokenService:
             return None
         await self.repo.touch_last_used(api_token)
         return await api_token.user
+
+    async def list_user_tokens(self, user_id: int) -> list[ApiToken]:
+        """List all tokens for a user."""
+        return await self.repo.list_by_user(user_id)
+
+    async def create_token(self, user_id: int, name: str, expires_at: Optional[datetime] = None) -> dict:
+        """Create a new token and return it with the plaintext token."""
+        user = await User.get_or_none(id=user_id)
+        if not user:
+            raise ValueError("User not found")
+        
+        token, api_token = await self.generate_token(user, name, expires_at)
+        return {
+            'token': token,
+            'api_token': api_token
+        }
+
+    async def revoke_token(self, token_id: int) -> None:
+        """Revoke a token by ID."""
+        token = await self.repo.get_by_id(token_id)
+        if not token:
+            raise ValueError("Token not found")
+        await self.repo.revoke(token)
