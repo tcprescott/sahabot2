@@ -8,6 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from components.card import Card
+from components.datetime_label import DateTimeLabel
 
 
 class ProfileInfoView:
@@ -63,4 +64,4 @@ class ProfileInfoView:
                     ui.icon('calendar_today').classes('text-secondary')
                     with ui.column().classes('flex-1'):
                         ui.label('Member Since').classes('text-sm text-secondary')
-                        ui.label(self.user.created_at.strftime('%B %d, %Y')).classes('text-sm')
+                        DateTimeLabel.date(self.user.created_at, classes='text-sm')

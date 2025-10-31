@@ -10,6 +10,7 @@ from models import Organization, User
 from models.match_schedule import MatchPlayers
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
+from components.datetime_label import DateTimeLabel
 from application.services.tournament_service import TournamentService
 
 
@@ -44,7 +45,7 @@ class MyMatchesView:
                 
                 def render_scheduled_time(mp: MatchPlayers):
                     if mp.match.scheduled_at:
-                        ui.label(mp.match.scheduled_at.strftime('%Y-%m-%d %H:%M'))
+                        DateTimeLabel.datetime(mp.match.scheduled_at)
                     else:
                         ui.label('TBD').classes('text-secondary')
                 

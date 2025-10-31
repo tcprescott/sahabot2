@@ -9,6 +9,7 @@ from typing import Any
 from nicegui import ui
 from models import Organization
 from components.card import Card
+from components.datetime_label import DateTimeLabel
 
 
 class OrganizationOverviewView:
@@ -43,11 +44,11 @@ class OrganizationOverviewView:
                 
                 with ui.row().classes('gap-md'):
                     ui.label('Created:').classes('font-semibold')
-                    ui.label(str(self.organization.created_at))
+                    DateTimeLabel.datetime(self.organization.created_at)
                 
                 with ui.row().classes('gap-md'):
                     ui.label('Last Updated:').classes('font-semibold')
-                    ui.label(str(self.organization.updated_at))
+                    DateTimeLabel.datetime(self.organization.updated_at)
         
         # Stats cards (placeholder for future metrics)
         with ui.row().classes('w-full gap-md mt-2'):

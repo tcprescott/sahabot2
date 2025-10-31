@@ -77,3 +77,54 @@ class TournamentRepository:
             user_id=user_id,
             tournament__organization_id=organization_id
         ).prefetch_related('tournament')
+
+    async def register_user_for_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> Optional[TournamentPlayers]:
+        """Register a user for a tournament.
+        
+        Returns None if tournament doesn't exist or doesn't belong to the organization.
+        Returns the registration if successful (or if already registered).
+        """
+        # Verify tournament belongs to organization
+        tournament = await self.get_for_org(organization_id, tournament_id)
+        if not tournament:
+            logger.warning("Cannot register user %s for tournament %s - tournament not found in org %s", user_id, tournament_id, organization_id)
+            return None
+        
+        # Check if already registered
+        existing = await TournamentPlayers.filter(tournament_id=tournament_id, user_id=user_id).first()
+        if existing:
+            logger.info("User %s already registered for tournament %s", user_id, tournament_id)
+            return existing
+        
+        # Create registration
+        registration = await TournamentPlayers.create(tournament_id=tournament_id, user_id=user_id)
+        logger.info("Registered user %s for tournament %s in org %s", user_id, tournament_id, organization_id)
+        return registration
+
+    async def unregister_user_from_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> bool:
+        """Unregister a user from a tournament.
+        
+        Returns True if unregistered successfully, False otherwise.
+        """
+        # Verify tournament belongs to organization
+        tournament = await self.get_for_org(organization_id, tournament_id)
+        if not tournament:
+            logger.warning("Cannot unregister user %s from tournament %s - tournament not found in org %s", user_id, tournament_id, organization_id)
+            return False
+        
+        # Find and delete registration
+        registration = await TournamentPlayers.filter(tournament_id=tournament_id, user_id=user_id).first()
+        if not registration:
+            logger.warning("User %s not registered for tournament %s", user_id, tournament_id)
+            return False
+        
+        await registration.delete()
+        logger.info("Unregistered user %s from tournament %s in org %s", user_id, tournament_id, organization_id)
+        return True
+
+    async def list_all_org_tournaments(self, organization_id: int) -> List[Tournament]:
+        """List all tournaments in an organization (including inactive).
+        
+        No authorization check - used for public listing to members.
+        """
+        return await Tournament.filter(organization_id=organization_id).order_by('-created_at')

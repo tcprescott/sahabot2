@@ -74,3 +74,25 @@ class TournamentService:
         No special authorization - users can view their own registrations.
         """
         return await self.repo.list_user_tournament_registrations(organization_id, user_id)
+
+    async def list_all_org_tournaments(self, organization_id: int) -> List[Tournament]:
+        """List all tournaments in an organization (public listing for members).
+        
+        No special authorization - any member can view available tournaments.
+        """
+        return await self.repo.list_all_org_tournaments(organization_id)
+
+    async def register_user_for_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> Optional[TournamentPlayers]:
+        """Register a user for a tournament.
+        
+        Open enrollment - any member can register themselves.
+        Returns None if tournament doesn't exist or doesn't belong to the organization.
+        """
+        return await self.repo.register_user_for_tournament(organization_id, tournament_id, user_id)
+
+    async def unregister_user_from_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> bool:
+        """Unregister a user from a tournament.
+        
+        Users can unregister themselves from tournaments.
+        """
+        return await self.repo.unregister_user_from_tournament(organization_id, tournament_id, user_id)

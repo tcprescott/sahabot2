@@ -8,6 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organization_service import OrganizationService
+from application.services.tournament_service import TournamentService
 from views.tournaments import (
     TournamentOrgSelectView,
     EventScheduleView,
@@ -40,7 +41,8 @@ def register():
     async def tournament_org_page(organization_id: int):
         """Tournament page for specific organization."""
         base = BasePage.authenticated_page(title="Tournaments")
-        service = OrganizationService()
+        org_service = OrganizationService()
+        tournament_service = TournamentService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
@@ -58,7 +60,7 @@ def register():
                 ui.navigate.to('/tournaments')
                 return
 
-            org = await service.get_organization(organization_id)
+            org = await org_service.get_organization(organization_id)
             if not org:
                 with ui.element('div').classes('card'):
                     with ui.element('div').classes('card-header'):
@@ -92,7 +94,7 @@ def register():
                 if container:
                     container.clear()
                     with container:
-                        view = MySettingsView(org, page.user)
+                        view = MySettingsView(page.user, org, tournament_service)
                         await view.render()
 
             # Register loaders

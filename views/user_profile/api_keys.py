@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
+from components.datetime_label import DateTimeLabel
 from components.dialogs import CreateApiKeyDialog
 from application.services.api_token_service import ApiTokenService
 import logging
@@ -78,11 +79,11 @@ class ApiKeysView:
                     return ui.label(t.name)
 
                 def render_created(t):
-                    return ui.label(t.created_at.strftime('%Y-%m-%d %H:%M'))
+                    return DateTimeLabel.datetime(t.created_at)
 
                 def render_last_used(t):
                     if t.last_used_at:
-                        return ui.label(t.last_used_at.strftime('%Y-%m-%d %H:%M'))
+                        return DateTimeLabel.datetime(t.last_used_at)
                     return ui.label('Never').classes('text-secondary')
 
                 def render_status(t):
