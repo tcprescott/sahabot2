@@ -13,6 +13,7 @@ from views.organization import (
     OrganizationMembersView,
     OrganizationPermissionsView,
     OrganizationSettingsView,
+    OrganizationTournamentsView,
 )
 
 
@@ -26,8 +27,10 @@ def register():
         service = OrganizationService()
 
         async def content(page: BasePage):
-            # Authorization: allow global admins or org-admin members
-            allowed = await service.user_can_admin_org(page.user, organization_id)
+            # Authorization: allow global admins/org-admins OR tournament managers
+            allowed_admin = await service.user_can_admin_org(page.user, organization_id)
+            allowed_tournaments = await service.user_can_manage_tournaments(page.user, organization_id)
+            allowed = allowed_admin or allowed_tournaments
             if not allowed:
                 ui.notify('You do not have access to administer this organization.', color='negative')
                 ui.navigate.to('/admin')
@@ -79,14 +82,29 @@ def register():
                         view = OrganizationSettingsView(org, page.user)
                         await view.render()
 
-            # Register loaders
-            page.register_content_loader('overview', load_overview)
-            page.register_content_loader('members', load_members)
-            page.register_content_loader('permissions', load_permissions)
-            page.register_content_loader('settings', load_settings)
+            async def load_tournaments():
+                """Load organization tournaments management."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = OrganizationTournamentsView(org, page.user)
+                        await view.render()
 
-            # Load initial content (overview)
-            await load_overview()
+            # Register loaders (restrict for non-admin tournament managers)
+            if allowed_admin:
+                page.register_content_loader('overview', load_overview)
+                page.register_content_loader('members', load_members)
+                page.register_content_loader('permissions', load_permissions)
+                page.register_content_loader('settings', load_settings)
+            # Tournaments accessible to admins and TOURNAMENT_MANAGERs
+            page.register_content_loader('tournaments', load_tournaments)
+
+            # Load initial content: overview for admins, tournaments for managers
+            if allowed_admin:
+                await load_overview()
+            else:
+                await load_tournaments()
 
         # Create sidebar items
         sidebar_items = [
@@ -95,6 +113,7 @@ def register():
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
             base.create_sidebar_item_with_loader('Members', 'people', 'members'),
             base.create_sidebar_item_with_loader('Permissions', 'verified_user', 'permissions'),
+            base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
             base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
         ]
 

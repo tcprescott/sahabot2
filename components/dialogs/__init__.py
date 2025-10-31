@@ -10,6 +10,7 @@ from components.dialogs.member_permissions_dialog import MemberPermissionsDialog
 from components.dialogs.invite_member_dialog import InviteMemberDialog
 from components.dialogs.api_key_dialogs import CreateApiKeyDialog, DisplayTokenDialog
 from components.dialogs.leave_organization_dialog import LeaveOrganizationDialog
+from components.dialogs.tournament_dialogs import TournamentDialog, ConfirmDialog
 
 __all__ = [
     'BaseDialog',
@@ -23,4 +24,6 @@ __all__ = [
     'CreateApiKeyDialog',
     'DisplayTokenDialog',
     'LeaveOrganizationDialog',
+    'TournamentDialog',
+    'ConfirmDialog',
 ]

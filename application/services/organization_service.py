@@ -89,6 +89,26 @@ class OrganizationService:
             return True
         return await self.repo.is_user_org_admin(user_id=user.id, organization_id=organization_id)
 
+    async def user_can_manage_tournaments(self, user: Optional[User], organization_id: int) -> bool:
+        """Check if the user can manage tournaments within the organization.
+
+        Grants if:
+        - User can admin the org (global or org-level admin), OR
+        - User has the TOURNAMENT_MANAGER org permission
+        """
+        if await self.user_can_admin_org(user, organization_id):
+            return True
+        if user is None:
+            return False
+
+        # Check org membership and permissions for TOURNAMENT_MANAGER
+        member = await self.repo.get_member(organization_id, user.id)
+        if not member:
+            return False
+        await member.fetch_related('permissions')
+        permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
+        return 'TOURNAMENT_MANAGER' in permission_names
+
     # --- Permissions definitions (per-organization) ---
 
     async def list_permissions(self, organization_id: int):
