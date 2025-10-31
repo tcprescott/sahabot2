@@ -10,7 +10,7 @@ from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs.tournament_dialogs import TournamentDialog, ConfirmDialog
+from components.dialogs import TournamentDialog, ConfirmDialog
 from application.services.tournament_service import TournamentService
 
 

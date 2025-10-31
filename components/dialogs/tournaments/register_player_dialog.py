@@ -5,7 +5,7 @@ Dialog for tournament admins to register players for tournaments.
 from __future__ import annotations
 from typing import Optional, Callable, Awaitable
 from nicegui import ui
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 from application.services.user_service import UserService
 from application.services.organization_service import OrganizationService
 from models import Organization, User, Tournament

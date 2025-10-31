@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Optional, Callable, Awaitable
 from datetime import datetime
 from nicegui import ui
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 from application.services.tournament_service import TournamentService
 from models import User, Organization
 import logging

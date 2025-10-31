@@ -11,7 +11,7 @@ from models.match_schedule import MatchPlayers
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
-from components.dialogs.submit_match_dialog import SubmitMatchDialog
+from components.dialogs import SubmitMatchDialog
 from application.services.tournament_service import TournamentService
 
 
@@ -23,7 +23,7 @@ class MyMatchesView:
         self.user = user
         self.service = TournamentService()
         self.container = None
-        self.filter_state = 'all'  # all, pending, scheduled, checked_in, in_progress, finished
+        self.filter_states = ['pending', 'scheduled', 'checked_in']  # Default: show pending, scheduled, checked_in
 
     async def _refresh(self) -> None:
         """Refresh the view by clearing and re-rendering."""
@@ -46,20 +46,20 @@ class MyMatchesView:
             return 'pending'
 
     def _filter_matches(self, match_players):
-        """Filter matches based on current filter state."""
-        if self.filter_state == 'all':
+        """Filter matches based on current filter states."""
+        if not self.filter_states:
             return match_players
         
         filtered = []
         for mp in match_players:
             state = self._get_match_state(mp.match)
-            if state == self.filter_state:
+            if state in self.filter_states:
                 filtered.append(mp)
         return filtered
 
-    async def _on_filter_change(self, new_state: str) -> None:
+    async def _on_filter_change(self, new_states) -> None:
         """Handle filter state change."""
-        self.filter_state = new_state
+        self.filter_states = new_states if new_states else []
         await self._refresh()
 
     async def _render_content(self) -> None:
@@ -80,22 +80,22 @@ class MyMatchesView:
         with ui.element('div').classes('card'):
             with ui.element('div').classes('card-body'):
                 with ui.row().classes('full-width items-center justify-between gap-4'):
-                    # Filter dropdown
+                    # Filter dropdown (multi-select)
                     with ui.row().classes('items-center gap-4'):
                         ui.label('Filter:').classes('font-semibold')
                         ui.select(
                             label='Status',
                             options={
-                                'all': 'All Matches',
                                 'pending': 'Pending',
                                 'scheduled': 'Scheduled',
                                 'checked_in': 'Checked In',
                                 'in_progress': 'In Progress',
                                 'finished': 'Finished'
                             },
-                            value=self.filter_state,
+                            value=self.filter_states,
+                            multiple=True,
                             on_change=lambda e: self._on_filter_change(e.value)
-                        ).classes('min-w-[200px]')
+                        ).classes('min-w-[200px]').props('use-chips')
                     
                     # Submit button
                     ui.button('Submit Match', icon='add', on_click=open_submit_match_dialog).classes('btn btn-primary')
@@ -137,6 +137,18 @@ class MyMatchesView:
                     else:
                         ui.label('—').classes('text-secondary')
                 
+                def render_opponents(mp: MatchPlayers):
+                    """Render the other players in this match (excluding the current user)."""
+                    all_players = getattr(mp.match, 'players', [])
+                    opponents = [p for p in all_players if p.user_id != self.user.id]
+                    
+                    if opponents:
+                        with ui.column().classes('gap-1'):
+                            for opponent in opponents:
+                                ui.label(opponent.user.discord_username).classes('text-sm')
+                    else:
+                        ui.label('—').classes('text-secondary')
+                
                 def render_status(mp: MatchPlayers):
                     match = mp.match
                     if match.finished_at:
@@ -158,6 +170,7 @@ class MyMatchesView:
                 columns = [
                     TableColumn('Tournament', cell_render=render_tournament),
                     TableColumn('Match', cell_render=render_match_title),
+                    TableColumn('Opponents', cell_render=render_opponents),
                     TableColumn('Scheduled', cell_render=render_scheduled_time),
                     TableColumn('Station', cell_render=render_station),
                     TableColumn('Stream', cell_render=render_stream),

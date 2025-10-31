@@ -12,10 +12,12 @@ from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
-from components.dialogs.member_permissions_dialog import MemberPermissionsDialog
-from components.dialogs.invite_member_dialog import InviteMemberDialog
-from components.dialogs.organization_invite_dialog import OrganizationInviteDialog
-from components.dialogs.tournament_dialogs import ConfirmDialog
+from components.dialogs import (
+    MemberPermissionsDialog,
+    InviteMemberDialog,
+    OrganizationInviteDialog,
+    ConfirmDialog,
+)
 from application.services.organization_service import OrganizationService
 from application.services.authorization_service import AuthorizationService
 from application.services.organization_invite_service import OrganizationInviteService

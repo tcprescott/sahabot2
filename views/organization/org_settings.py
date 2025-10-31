@@ -9,8 +9,7 @@ from typing import Any
 from nicegui import ui
 from models import Organization
 from components.card import Card
-from components.dialogs.organization_dialog import OrganizationDialog
-from components.dialogs.org_setting_dialog import OrgSettingDialog
+from components.dialogs import OrganizationDialog, OrgSettingDialog
 from application.services.organization_service import OrganizationService
 from application.services.settings_service import SettingsService
 from components.data_table import ResponsiveTable, TableColumn

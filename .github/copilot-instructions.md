@@ -51,7 +51,15 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
   - **When creating new pages**, create a corresponding subdirectory in `views/` for that page's views
 - **components/**: Reusable UI components and templates
   - `base_page.py`: Base page template with navbar and layout
-  - `dialogs/`: Dialog components (UI-only)
+  - `dialogs/`: Dialog components (UI-only) **organized by the views that use them**
+    - `dialogs/admin/`: Dialogs used by admin views (user_edit, user_add, organization, global_setting)
+    - `dialogs/organization/`: Dialogs used by organization views (member_permissions, invite_member, organization_invite, org_setting, stream_channel)
+    - `dialogs/tournaments/`: Dialogs used by tournament views (match_seed, edit_match, submit_match, register_player)
+    - `dialogs/user_profile/`: Dialogs used by user profile views (api_key, leave_organization)
+    - `dialogs/common/`: Dialogs used across multiple views (base_dialog, tournament_dialogs with ConfirmDialog)
+    - Each subdirectory has its own `__init__.py` that exports its dialogs
+    - The main `dialogs/__init__.py` re-exports all dialogs for backward compatibility
+    - **When creating new dialogs**, place them in the appropriate subdirectory based on which view will use them
 - **static/css/main.css**: All application styles (no inline CSS allowed)
 
 This application is multi-tenant. All user actions and data are scoped to Organizations (managed via the Organizations tab). Every feature we add or change must preserve tenant isolation and enforce the security model described below.
@@ -487,11 +495,18 @@ def register():
 ### New Dialog
 All dialogs should extend `BaseDialog` for consistent structure and behavior.
 
-1. Create dialog module in `components/dialogs/` (e.g., `my_dialog.py`)
-2. Extend `BaseDialog` and implement `_render_body()` method
-3. Keep it presentation-only; call services for business logic
-4. Use BaseDialog helper methods for common patterns
-5. Export from `components/dialogs/__init__.py`
+1. **Determine which view will use the dialog** (admin, organization, tournaments, user_profile, or multiple)
+2. **Create dialog module in appropriate subdirectory**:
+   - For admin views: `components/dialogs/admin/my_dialog.py`
+   - For organization views: `components/dialogs/organization/my_dialog.py`
+   - For tournament views: `components/dialogs/tournaments/my_dialog.py`
+   - For user profile views: `components/dialogs/user_profile/my_dialog.py`
+   - For shared/common: `components/dialogs/common/my_dialog.py`
+3. Extend `BaseDialog` (from `components.dialogs.common.base_dialog`) and implement `_render_body()` method
+4. Keep it presentation-only; call services for business logic
+5. Use BaseDialog helper methods for common patterns
+6. **Export from subdirectory's `__init__.py`** (e.g., `components/dialogs/admin/__init__.py`)
+7. **Re-export from main `dialogs/__init__.py`** for backward compatibility
 
 **BaseDialog provides:**
 - `create_dialog(title, icon, max_width)` - Create dialog with standard card structure
@@ -504,7 +519,7 @@ All dialogs should extend `BaseDialog` for consistent structure and behavior.
 
 Example:
 ```python
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 from nicegui import ui
 from models import User
 
@@ -696,6 +711,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't use inline imports (import inside functions) - always import at module level
 - ❌ Don't leave trailing whitespace on any lines (including blank lines)
 - ❌ Don't create views in the root `views/` directory - always use the appropriate subdirectory
+- ❌ Don't create dialogs in the root `dialogs/` directory - always use the appropriate subdirectory
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -709,6 +725,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do import all modules at the top of the file (module level)
 - ✅ Do keep all lines clean with no trailing whitespace
 - ✅ Do organize views into subdirectories by page (views/home/, views/admin/, views/organization/)
+- ✅ Do organize dialogs into subdirectories by view usage (dialogs/admin/, dialogs/organization/, dialogs/tournaments/, dialogs/user_profile/, dialogs/common/)
 
 ## References
 - NiceGUI: https://nicegui.io

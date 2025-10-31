@@ -9,7 +9,7 @@ from typing import Optional, Callable
 from nicegui import ui
 from models import Permission
 from application.services.user_service import UserService
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 import logging
 
 logger = logging.getLogger(__name__)

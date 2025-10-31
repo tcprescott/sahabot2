@@ -9,7 +9,7 @@ from typing import Any
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
-from components.dialogs.global_setting_dialog import GlobalSettingDialog
+from components.dialogs import GlobalSettingDialog
 from application.services.settings_service import SettingsService
 
 

@@ -7,7 +7,7 @@ This module provides a confirmation dialog for users leaving organizations.
 from __future__ import annotations
 from typing import Optional, Callable
 from nicegui import ui
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 import logging
 
 logger = logging.getLogger(__name__)

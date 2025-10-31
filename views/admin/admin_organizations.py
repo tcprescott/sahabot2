@@ -10,7 +10,7 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
 from components.datetime_label import DateTimeLabel
-from components.dialogs.organization_dialog import OrganizationDialog
+from components.dialogs import OrganizationDialog
 from application.services.organization_service import OrganizationService
 
 

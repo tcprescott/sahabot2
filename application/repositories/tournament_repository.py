@@ -69,14 +69,14 @@ class TournamentRepository:
         """List all matches for tournaments in an organization, ordered by scheduled date."""
         return await Match.filter(
             tournament__organization_id=organization_id
-        ).prefetch_related('tournament', 'stream_channel', 'crew_members__user', 'seed').order_by('scheduled_at')
+        ).prefetch_related('tournament', 'stream_channel', 'crew_members__user', 'seed', 'players__user').order_by('scheduled_at')
 
     async def list_matches_for_user(self, organization_id: int, user_id: int) -> List[MatchPlayers]:
         """List all matches a user is participating in for an organization."""
         return await MatchPlayers.filter(
             user_id=user_id,
             match__tournament__organization_id=organization_id
-        ).prefetch_related('match__tournament', 'match__stream_channel').order_by('-match__scheduled_at')
+        ).prefetch_related('match__tournament', 'match__stream_channel', 'match__players__user').order_by('-match__scheduled_at')
 
     async def list_user_tournament_registrations(self, organization_id: int, user_id: int) -> List[TournamentPlayers]:
         """List tournaments a user is registered for in an organization."""

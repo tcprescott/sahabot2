@@ -7,7 +7,7 @@ Extends BaseDialog and supports both create and edit modes.
 from __future__ import annotations
 from typing import Optional, Callable, Awaitable
 from nicegui import ui
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 from models import Organization
 from application.services.organization_service import OrganizationService
 

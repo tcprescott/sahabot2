@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Optional, Callable, List
 from datetime import datetime
 from nicegui import ui
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 from models import User
 from models.match_schedule import Tournament, Match, StreamChannel
 import logging

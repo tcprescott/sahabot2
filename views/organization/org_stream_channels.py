@@ -10,8 +10,7 @@ from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs.stream_channel_dialog import StreamChannelDialog
-from components.dialogs.tournament_dialogs import ConfirmDialog
+from components.dialogs import StreamChannelDialog, ConfirmDialog
 from application.services.stream_channel_service import StreamChannelService
 
 

@@ -12,7 +12,7 @@ from models import User, Permission
 from application.services.user_service import UserService
 from application.services.authorization_service import AuthorizationService
 from application.services.audit_service import AuditService
-from components.dialogs.base_dialog import BaseDialog
+from components.dialogs.common.base_dialog import BaseDialog
 import logging
 
 logger = logging.getLogger(__name__)

@@ -1,41 +1,74 @@
-"""Dialog components package."""
+"""
+Dialog components package.
 
-from components.dialogs.base_dialog import BaseDialog
-from components.dialogs.user_edit_dialog import UserEditDialog
-from components.dialogs.user_add_dialog import UserAddDialog
-from components.dialogs.organization_dialog import OrganizationDialog
-from components.dialogs.global_setting_dialog import GlobalSettingDialog
-from components.dialogs.org_setting_dialog import OrgSettingDialog
-from components.dialogs.member_permissions_dialog import MemberPermissionsDialog
-from components.dialogs.invite_member_dialog import InviteMemberDialog
-from components.dialogs.api_key_dialogs import CreateApiKeyDialog, DisplayTokenDialog
-from components.dialogs.leave_organization_dialog import LeaveOrganizationDialog
-from components.dialogs.tournament_dialogs import TournamentDialog, ConfirmDialog
-from components.dialogs.stream_channel_dialog import StreamChannelDialog
-from components.dialogs.organization_invite_dialog import OrganizationInviteDialog
-from components.dialogs.submit_match_dialog import SubmitMatchDialog
-from components.dialogs.register_player_dialog import RegisterPlayerDialog
-from components.dialogs.match_seed_dialog import MatchSeedDialog
-from components.dialogs.edit_match_dialog import EditMatchDialog
+Dialogs are organized into subdirectories based on the views that use them:
+- admin/: Dialogs used by admin views (users, organizations, settings)
+- organization/: Dialogs used by organization views (members, settings, stream channels)
+- tournaments/: Dialogs used by tournament views (matches, players, schedule)
+- user_profile/: Dialogs used by user profile views (API keys, organizations)
+- common/: Dialogs used across multiple views (base dialog, confirm dialog)
+
+For backward compatibility, all dialogs are re-exported from this module.
+"""
+
+# Common dialogs (used across multiple views)
+from components.dialogs.common import BaseDialog, TournamentDialog, ConfirmDialog
+
+# Admin dialogs
+from components.dialogs.admin import (
+    UserEditDialog,
+    UserAddDialog,
+    OrganizationDialog,
+    GlobalSettingDialog,
+)
+
+# Organization dialogs
+from components.dialogs.organization import (
+    MemberPermissionsDialog,
+    InviteMemberDialog,
+    OrganizationInviteDialog,
+    OrgSettingDialog,
+    StreamChannelDialog,
+)
+
+# Tournament dialogs
+from components.dialogs.tournaments import (
+    MatchSeedDialog,
+    EditMatchDialog,
+    SubmitMatchDialog,
+    RegisterPlayerDialog,
+)
+
+# User profile dialogs
+from components.dialogs.user_profile import (
+    CreateApiKeyDialog,
+    DisplayTokenDialog,
+    LeaveOrganizationDialog,
+)
 
 __all__ = [
+    # Common
     'BaseDialog',
+    'TournamentDialog',
+    'ConfirmDialog',
+    # Admin
     'UserEditDialog',
     'UserAddDialog',
     'OrganizationDialog',
     'GlobalSettingDialog',
+    # Organization
     'OrgSettingDialog',
     'MemberPermissionsDialog',
     'InviteMemberDialog',
-    'CreateApiKeyDialog',
-    'DisplayTokenDialog',
-    'LeaveOrganizationDialog',
-    'TournamentDialog',
-    'ConfirmDialog',
-    'StreamChannelDialog',
     'OrganizationInviteDialog',
+    'StreamChannelDialog',
+    # Tournaments
     'SubmitMatchDialog',
     'RegisterPlayerDialog',
     'MatchSeedDialog',
     'EditMatchDialog',
+    # User profile
+    'CreateApiKeyDialog',
+    'DisplayTokenDialog',
+    'LeaveOrganizationDialog',
 ]

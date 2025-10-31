@@ -9,8 +9,7 @@ from nicegui import ui
 from models import Organization, User
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs.register_player_dialog import RegisterPlayerDialog
-from components.dialogs.tournament_dialogs import ConfirmDialog
+from components.dialogs import RegisterPlayerDialog, ConfirmDialog
 from application.services.tournament_service import TournamentService
 from application.services.organization_service import OrganizationService
 import logging

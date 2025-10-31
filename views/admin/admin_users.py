@@ -9,8 +9,7 @@ from components.data_table import ResponsiveTable, TableColumn
 from models import User
 from application.services.user_service import UserService
 from application.services.authorization_service import AuthorizationService
-from components.dialogs.user_edit_dialog import UserEditDialog
-from components.dialogs.user_add_dialog import UserAddDialog
+from components.dialogs import UserEditDialog, UserAddDialog
 import logging
 
 logger = logging.getLogger(__name__)

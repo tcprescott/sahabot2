@@ -31,7 +31,7 @@ class EventScheduleView:
         self.org_service = OrganizationService()
         self.auth_service = AuthorizationService()
         self.container = None
-        self.filter_state = 'all'  # all, pending, scheduled, checked_in, in_progress, finished
+        self.filter_states = ['pending', 'scheduled', 'checked_in']  # Default: show pending, scheduled, checked_in
         self.selected_tournaments = []  # List of selected tournament IDs
         self.can_manage_tournaments = False  # Set during render
         self.can_edit_matches = False  # Set during render (moderator or tournament admin)
@@ -50,27 +50,27 @@ class EventScheduleView:
             return 'pending'
 
     def _filter_matches(self, matches):
-        """Filter matches based on current filter state and selected tournaments."""
+        """Filter matches based on current filter states and selected tournaments."""
         filtered = []
-        
+
         for match in matches:
-            # Filter by state
-            if self.filter_state != 'all':
+            # Filter by state (if any states are selected)
+            if self.filter_states:
                 state = self._get_match_state(match)
-                if state != self.filter_state:
+                if state not in self.filter_states:
                     continue
-            
+
             # Filter by tournament selection
             if self.selected_tournaments and match.tournament_id not in self.selected_tournaments:
                 continue
-            
+
             filtered.append(match)
-        
+
         return filtered
 
-    async def _on_filter_change(self, new_state: str) -> None:
+    async def _on_filter_change(self, new_states) -> None:
         """Handle filter state change."""
-        self.filter_state = new_state
+        self.filter_states = new_states if new_states else []
         await self._refresh()
 
     async def _on_tournament_filter_change(self, selected_ids) -> None:
@@ -91,38 +91,38 @@ class EventScheduleView:
         self.can_manage_tournaments = await self.org_service.user_can_manage_tournaments(
             self.user, self.organization.id
         )
-        
+
         # Check if user can edit matches (tournament manager or moderator)
         self.can_edit_matches = self.can_manage_tournaments or self.auth_service.can_moderate(self.user)
-        
+
         # Get all matches for this organization's tournaments via service
         all_matches = await self.service.list_org_matches(self.organization.id)
-        
+
         # Get all tournaments for filter
         all_tournaments = await self.service.list_all_org_tournaments(self.organization.id)
         tournament_options = {t.id: t.name for t in all_tournaments}
-        
+
         # Filter bar
         with ui.element('div').classes('card'):
             with ui.element('div').classes('card-body'):
                 with ui.row().classes('full-width items-center gap-4 flex-wrap'):
                     ui.label('Filters:').classes('font-semibold')
-                    
-                    # Status filter
+
+                    # Status filter (multi-select)
                     ui.select(
                         label='Status',
                         options={
-                            'all': 'All Matches',
                             'pending': 'Pending',
                             'scheduled': 'Scheduled',
                             'checked_in': 'Checked In',
                             'in_progress': 'In Progress',
                             'finished': 'Finished'
                         },
-                        value=self.filter_state,
+                        value=self.filter_states,
+                        multiple=True,
                         on_change=lambda e: self._on_filter_change(e.value)
-                    ).classes('min-w-[200px]')
-                    
+                    ).classes('min-w-[200px]').props('use-chips')
+
                     # Tournament filter (multi-select)
                     ui.select(
                         label='Tournaments',
@@ -131,10 +131,10 @@ class EventScheduleView:
                         multiple=True,
                         on_change=lambda e: self._on_tournament_filter_change(e.value)
                     ).classes('min-w-[200px]').props('use-chips')
-        
+
         # Apply filter
         matches = self._filter_matches(all_matches)
-        
+
         with Card.create(title=f'Event Schedule - {self.organization.name} ({len(matches)}/{len(all_matches)})'):
             if not matches:
                 with ui.element('div').classes('text-center mt-4'):
@@ -144,25 +144,36 @@ class EventScheduleView:
             else:
                 def render_tournament(match: Match):
                     ui.label(match.tournament.name)
-                
+
                 def render_title(match: Match):
                     if match.title:
                         ui.label(match.title)
                     else:
                         ui.label('—').classes('text-secondary')
-                
+
                 def render_scheduled_time(match: Match):
                     if match.scheduled_at:
                         DateTimeLabel.datetime(match.scheduled_at)
                     else:
                         ui.label('TBD').classes('text-secondary')
-                
+
                 def render_stream(match: Match):
                     if match.stream_channel:
                         ui.label(match.stream_channel.name)
                     else:
                         ui.label('—').classes('text-secondary')
-                
+
+                def render_players(match: Match):
+                    """Render the players participating in this match."""
+                    players = getattr(match, 'players', [])
+
+                    if players:
+                        with ui.column().classes('gap-1'):
+                            for player in players:
+                                ui.label(player.user.discord_username).classes('text-sm')
+                    else:
+                        ui.label('—').classes('text-secondary')
+
                 def render_status(match: Match):
                     if match.finished_at:
                         ui.label('Finished').classes('badge badge-success')
@@ -174,7 +185,7 @@ class EventScheduleView:
                         ui.label('Scheduled').classes('badge badge-secondary')
                     else:
                         ui.label('Pending').classes('badge')
-                
+
                 async def signup_crew(match_id: int, role: str):
                     """Sign up for a crew role."""
                     try:
@@ -215,10 +226,10 @@ class EventScheduleView:
                         crew for crew in getattr(match, 'crew_members', [])
                         if crew.role.lower() == 'commentator'
                     ]
-                    
+
                     # Check if current user is signed up
                     user_signed_up = any(crew.user_id == self.user.id for crew in commentators)
-                    
+
                     with ui.column().classes('gap-2'):
                         if commentators:
                             with ui.column().classes('gap-1'):
@@ -228,7 +239,7 @@ class EventScheduleView:
                                     ui.label(crew.user.discord_username).classes(color_class)
                         else:
                             ui.label('—').classes('text-secondary')
-                        
+
                         # Sign up or remove button
                         if user_signed_up:
                             ui.button(
@@ -240,7 +251,7 @@ class EventScheduleView:
                                 icon='add_circle',
                                 on_click=lambda m=match: signup_crew(m.id, 'commentator')
                             ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as commentator')
-                
+
                 def render_tracker(match: Match):
                     """Render tracker(s) with approval status color and signup button."""
                     # Get crew members with tracker role
@@ -248,13 +259,13 @@ class EventScheduleView:
                         crew for crew in getattr(match, 'crew_members', [])
                         if crew.role.lower() == 'tracker'
                     ]
-                    
+
                     # Check if tracker is enabled for this tournament
                     tracker_enabled = getattr(match.tournament, 'tracker_enabled', True)
-                    
+
                     # Check if current user is signed up
                     user_signed_up = any(crew.user_id == self.user.id for crew in trackers)
-                    
+
                     with ui.column().classes('gap-2'):
                         if trackers:
                             with ui.column().classes('gap-1'):
@@ -264,7 +275,7 @@ class EventScheduleView:
                                     ui.label(crew.user.discord_username).classes(color_class)
                         else:
                             ui.label('—').classes('text-secondary')
-                        
+
                         # Sign up or remove button (only if tracker enabled for this tournament)
                         if tracker_enabled:
                             if user_signed_up:
@@ -283,36 +294,36 @@ class EventScheduleView:
                                 icon='block',
                                 on_click=None
                             ).classes('btn btn-sm').props('flat disable size=sm').tooltip('Tracker role not enabled for this tournament')
-                
+
                 async def open_seed_dialog(match_id: int, match_title: str):
                     """Open dialog to set/edit seed for a match."""
                     # Get current match to get seed info
                     match = next((m for m in matches if m.id == match_id), None)
                     if not match:
                         return
-                    
+
                     seed = getattr(match, 'seed', None)
                     if seed and hasattr(seed, '__iter__') and not isinstance(seed, str):
                         seed_list = list(seed) if not isinstance(seed, list) else seed
                         seed = seed_list[0] if seed_list else None
-                    
+
                     initial_url = seed.url if seed else ""
                     initial_description = seed.description if seed else None
-                    
+
                     async def on_submit(url: str, description: Optional[str]):
                         await self.service.set_match_seed(
                             self.user, self.organization.id, match_id, url, description
                         )
                         ui.notify('Seed updated', type='positive')
                         await self._refresh()
-                    
+
                     async def on_delete():
                         await self.service.delete_match_seed(
                             self.user, self.organization.id, match_id
                         )
                         ui.notify('Seed deleted', type='positive')
                         await self._refresh()
-                    
+
                     dialog = MatchSeedDialog(
                         match_title=match_title or f'Match #{match_id}',
                         initial_url=initial_url,
@@ -321,17 +332,17 @@ class EventScheduleView:
                         on_delete=on_delete if seed else None,
                     )
                     await dialog.show()
-                
+
                 def render_seed(match: Match):
                     """Render seed/ROM link if available."""
                     # Check if seed exists (1:1 relationship)
                     seed = getattr(match, 'seed', None)
-                    
+
                     # Handle the case where seed is a ReverseRelation (list)
                     if seed and hasattr(seed, '__iter__') and not isinstance(seed, str):
                         seed_list = list(seed) if not isinstance(seed, list) else seed
                         seed = seed_list[0] if seed_list else None
-                    
+
                     with ui.column().classes('gap-2'):
                         if seed:
                             # Show link to seed URL
@@ -344,7 +355,7 @@ class EventScheduleView:
                                 ui.label(seed.description).classes('text-secondary text-xs')
                         else:
                             ui.label('—').classes('text-secondary')
-                        
+
                         # Add "Set Seed" button for tournament managers
                         if self.can_manage_tournaments:
                             icon = 'edit' if seed else 'add'
@@ -353,14 +364,14 @@ class EventScheduleView:
                                 icon=icon,
                                 on_click=lambda m=match: open_seed_dialog(m.id, m.title)
                             ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip(tooltip)
-                
+
                 async def open_edit_match_dialog(match_id: int):
                     """Open dialog to edit a match."""
                     # Get current match
                     match = next((m for m in matches if m.id == match_id), None)
                     if not match:
                         return
-                    
+
                     async def on_save(title: str, scheduled_at, stream_id, comment):
                         result = await self.service.update_match(
                             self.user,
@@ -376,14 +387,14 @@ class EventScheduleView:
                             await self._refresh()
                         else:
                             ui.notify('Failed to update match', type='negative')
-                    
+
                     dialog = EditMatchDialog(
                         match=match,
                         organization_id=self.organization.id,
                         on_save=on_save,
                     )
                     await dialog.show()
-                
+
                 def render_actions(match: Match):
                     """Render action buttons for moderators/tournament admins."""
                     if self.can_edit_matches:
@@ -394,10 +405,11 @@ class EventScheduleView:
                             ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Edit match')
                     else:
                         ui.label('—').classes('text-secondary')
-                
+
                 columns = [
                     TableColumn('Tournament', cell_render=render_tournament),
                     TableColumn('Match', cell_render=render_title),
+                    TableColumn('Players', cell_render=render_players),
                     TableColumn('Scheduled', cell_render=render_scheduled_time),
                     TableColumn('Stream', cell_render=render_stream),
                     TableColumn('Seed', cell_render=render_seed),
@@ -406,7 +418,7 @@ class EventScheduleView:
                     TableColumn('Status', cell_render=render_status),
                     TableColumn('Actions', cell_render=render_actions),
                 ]
-                
+
                 table = ResponsiveTable(columns, matches)
                 await table.render()
 
