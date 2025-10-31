@@ -19,12 +19,12 @@ from views.home import overview
 
 def register():
     """Register admin page routes."""
-    
+
     @ui.page('/admin')
     async def admin_page():
         """Admin dashboard page with dynamic content switching."""
         base = BasePage.admin_page(title="SahaBot2 - Admin")
-        
+
         async def content(page: BasePage):
             """Render the admin page with dynamic content container."""
             # Define content loader functions
@@ -40,19 +40,19 @@ def register():
                         with ui.element('div').classes('card-body'):
                             ui.label(f'Welcome, {page.user.discord_username}').classes('text-primary')
                             ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')
-                    
+
                     # Render overview
                     await overview.OverviewView.render(page.user)
-            
+
             # Register content loaders
             page.register_content_loader('overview', load_overview)
             page.register_content_loader('users', page.create_instance_view_loader(lambda: AdminUsersView(page.user)))
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: AdminOrganizationsView(page.user)))
             page.register_content_loader('settings', page.create_instance_view_loader(lambda: AdminSettingsView(page.user)))
-            
+
             # Load initial content (overview)
             await load_overview()
-        
+
         # Create sidebar items with dynamic content loaders
         sidebar_items = [
             base.create_nav_link('Home', 'home', '/'),
@@ -62,5 +62,5 @@ def register():
             base.create_sidebar_item_with_loader('Organizations', 'domain', 'organizations'),
             base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
         ]
-        
+
         await base.render(content, sidebar_items, use_dynamic_content=True)

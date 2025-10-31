@@ -13,14 +13,14 @@ from middleware.auth import DiscordAuthService
 class UserMenu:
     """
     User menu component for header navigation.
-    
+
     Displays username and dropdown menu with customizable menu items.
     """
-    
+
     def __init__(self, user: Optional[User] = None, menu_items: Optional[List[Dict[str, Any]]] = None):
         """
         Initialize user menu.
-        
+
         Args:
             user: Current authenticated user (None if not logged in)
             menu_items: Optional list of custom menu items. If None, uses default items.
@@ -33,30 +33,30 @@ class UserMenu:
         """
         self.user = user
         self.menu_items = menu_items or self._get_default_menu_items()
-    
+
     async def _handle_logout(self) -> None:
         """Handle user logout."""
         await DiscordAuthService.clear_current_user()
         ui.notify('Logged out successfully', type='positive')
         ui.navigate.to('/')
-    
+
     def _get_avatar_url(self) -> Optional[str]:
         """
         Get the Discord avatar URL for the user.
-        
+
         Returns:
             Discord CDN URL for the user's avatar, or None if not available
         """
         if not self.user or not self.user.discord_avatar:
             return None
-        
+
         # Discord CDN URL format
         return f"https://cdn.discordapp.com/avatars/{self.user.discord_id}/{self.user.discord_avatar}.png"
-    
+
     def _get_default_menu_items(self) -> List[Dict[str, Any]]:
         """
         Get default menu items based on user authentication state.
-        
+
         Returns:
             List of menu item dictionaries
         """
@@ -67,7 +67,7 @@ class UserMenu:
                 'on_click': lambda: ui.run_javascript('document.body.classList.toggle("body--dark")')
             }
         ]
-        
+
         if self.user:
             # Authenticated user items
             items.extend([
@@ -103,18 +103,18 @@ class UserMenu:
                     'on_click': lambda: ui.navigate.to('/auth/login')
                 }
             ])
-        
+
         return items
-    
+
     def render(self) -> None:
         """Render the user menu component."""
         # Show username if logged in
         if self.user:
             ui.label(self.user.discord_username).classes('header-username')
-        
+
         # Render menu button with avatar or generic icon
         avatar_url = self._get_avatar_url()
-        
+
         if avatar_url:
             # Use Discord avatar
             with ui.button().props('flat round').classes('header-menu-button'):
@@ -126,7 +126,7 @@ class UserMenu:
             with ui.button(icon='account_circle').props('flat round').classes('header-menu-button'):
                 with ui.menu():
                     self._render_menu_items()
-    
+
     def _render_menu_items(self) -> None:
         """Render the menu items."""
         for item in self.menu_items:
@@ -134,12 +134,12 @@ class UserMenu:
             if item.get('separator'):
                 ui.separator()
                 continue
-            
+
             # Check condition if specified
             condition = item.get('condition')
             if condition and callable(condition) and not condition():
                 continue
-            
+
             # Render menu item
             with ui.menu_item(on_click=item['on_click']):
                 with ui.row().classes('items-center'):

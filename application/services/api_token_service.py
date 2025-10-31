@@ -58,7 +58,7 @@ class ApiTokenService:
         user = await User.get_or_none(id=user_id)
         if not user:
             raise ValueError("User not found")
-        
+
         token, api_token = await self.generate_token(user, name, expires_at)
         return {
             'token': token,

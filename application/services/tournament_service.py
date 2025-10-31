@@ -8,7 +8,7 @@ from typing import Optional, List
 import logging
 
 from models import User
-from models.match_schedule import Tournament
+from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organization_service import OrganizationService
 
@@ -53,3 +53,24 @@ class TournamentService:
             logger.warning("Unauthorized delete_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return False
         return await self.repo.delete(organization_id, tournament_id)
+
+    async def list_org_matches(self, organization_id: int) -> List[Match]:
+        """List all matches for an organization.
+
+        No special authorization - any member can view the event schedule.
+        """
+        return await self.repo.list_matches_for_org(organization_id)
+
+    async def list_user_matches(self, organization_id: int, user_id: int) -> List[MatchPlayers]:
+        """List matches for a specific user in an organization.
+
+        No special authorization - users can view their own matches.
+        """
+        return await self.repo.list_matches_for_user(organization_id, user_id)
+
+    async def list_user_tournament_registrations(self, organization_id: int, user_id: int) -> List[TournamentPlayers]:
+        """List tournament registrations for a user in an organization.
+
+        No special authorization - users can view their own registrations.
+        """
+        return await self.repo.list_user_tournament_registrations(organization_id, user_id)

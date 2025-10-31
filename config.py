@@ -29,11 +29,11 @@ class Settings(BaseSettings):
     DISCORD_CLIENT_SECRET: str
     DISCORD_REDIRECT_URI: str = "http://localhost:8080/auth/callback"
     DISCORD_GUILD_ID: Optional[str] = None
-    
+
     # Discord Bot Configuration
     DISCORD_BOT_TOKEN: str
     DISCORD_BOT_ENABLED: bool = True  # Set to False to disable Discord bot
-    
+
     # Racetime.gg Configuration
     # Format: category1:client_id:client_secret,category2:client_id:client_secret
     RACETIME_BOTS: str = ""  # Comma-separated list of category:client_id:client_secret
@@ -72,29 +72,29 @@ class Settings(BaseSettings):
             bool: True if production, False otherwise
         """
         return self.ENVIRONMENT.lower() == "production"
-    
+
     @property
     def racetime_bot_configs(self) -> list[tuple[str, str, str]]:
         """
         Parse racetime bot configurations.
-        
+
         Returns:
             List of tuples: (category, client_id, client_secret)
         """
         if not self.RACETIME_BOTS:
             return []
-        
+
         configs = []
         for bot_config in self.RACETIME_BOTS.split(','):
             bot_config = bot_config.strip()
             if not bot_config:
                 continue
-            
+
             parts = bot_config.split(':')
             if len(parts) == 3:
                 category, client_id, client_secret = parts
                 configs.append((category.strip(), client_id.strip(), client_secret.strip()))
-        
+
         return configs
 
 

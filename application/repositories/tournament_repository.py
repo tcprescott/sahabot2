@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional, List
 import logging
 
-from models.match_schedule import Tournament
+from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 
 logger = logging.getLogger(__name__)
 
@@ -57,3 +57,23 @@ class TournamentRepository:
         await tournament.delete()
         logger.info("Deleted tournament %s in org %s", tournament_id, organization_id)
         return True
+
+    async def list_matches_for_org(self, organization_id: int) -> List[Match]:
+        """List all matches for tournaments in an organization, ordered by scheduled date."""
+        return await Match.filter(
+            tournament__organization_id=organization_id
+        ).prefetch_related('tournament', 'stream_channel').order_by('scheduled_at')
+
+    async def list_matches_for_user(self, organization_id: int, user_id: int) -> List[MatchPlayers]:
+        """List all matches a user is participating in for an organization."""
+        return await MatchPlayers.filter(
+            user_id=user_id,
+            match__tournament__organization_id=organization_id
+        ).prefetch_related('match__tournament', 'match__stream_channel').order_by('-match__scheduled_at')
+
+    async def list_user_tournament_registrations(self, organization_id: int, user_id: int) -> List[TournamentPlayers]:
+        """List tournaments a user is registered for in an organization."""
+        return await TournamentPlayers.filter(
+            user_id=user_id,
+            tournament__organization_id=organization_id
+        ).prefetch_related('tournament')

@@ -47,7 +47,7 @@ class UserOrganizationsView:
             except Exception as e:
                 logger.error("Failed to leave organization: %s", e)
                 ui.notify(f'Failed to leave organization: {e}', type='negative')
-        
+
         # Show confirmation dialog
         dialog = LeaveOrganizationDialog(org_name, on_confirm=confirm_leave)
         await dialog.show()
@@ -57,7 +57,7 @@ class UserOrganizationsView:
         # Get all organization memberships for this user
         from models.organizations import OrganizationMember
         memberships = await OrganizationMember.filter(user_id=self.user.id).prefetch_related('organization', 'permissions')
-        
+
         with Card.create(title='My Organizations'):
             if not memberships:
                 with ui.element('div').classes('text-center mt-4'):
@@ -67,10 +67,10 @@ class UserOrganizationsView:
             else:
                 def render_name(m):
                     return ui.label(m.organization.name).classes('font-bold')
-                
+
                 def render_description(m):
                     return ui.label(m.organization.description or 'No description').classes('text-secondary')
-                
+
                 async def render_permissions(m):
                     perms = await m.permissions.all()
                     if perms:
@@ -80,19 +80,19 @@ class UserOrganizationsView:
                                 ui.element('span').classes('badge badge-info').text = name
                     else:
                         ui.label('Member').classes('text-secondary')
-                
+
                 async def render_actions(m):
                     with ui.row().classes('gap-2'):
                         # Show admin button if user can access the organization admin panel
                         # (superadmins or organization admins)
                         can_admin = await self.service.user_can_admin_org(self.user, m.organization.id)
                         if can_admin:
-                            ui.button('Admin Panel', icon='admin_panel_settings', 
+                            ui.button('Admin Panel', icon='admin_panel_settings',
                                     on_click=lambda org=m.organization: ui.navigate.to(f'/admin/organizations/{org.id}')).classes('btn')
-                        
-                        ui.button('Leave', icon='exit_to_app', 
+
+                        ui.button('Leave', icon='exit_to_app',
                                 on_click=lambda org=m.organization: self._leave_organization(org.id, org.name)).props('color=warning').classes('btn')
-                
+
                 columns = [
                     TableColumn('Organization', cell_render=render_name),
                     TableColumn('Description', cell_render=render_description),

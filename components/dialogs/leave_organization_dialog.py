@@ -18,7 +18,7 @@ class LeaveOrganizationDialog(BaseDialog):
 
     def __init__(self, org_name: str, on_confirm: Optional[Callable[[], None]] = None):
         """Initialize the leave organization dialog.
-        
+
         Args:
             org_name: Name of the organization to leave
             on_confirm: Callback function to call when confirmed
@@ -43,7 +43,7 @@ class LeaveOrganizationDialog(BaseDialog):
             with ui.row().classes('items-center gap-sm'):
                 ui.icon('warning').classes('icon-medium')
                 ui.label('This action cannot be undone').classes('text-bold')
-        
+
         ui.label('Are you sure you want to leave this organization?').classes('mb-2')
         ui.label('You will lose access to all organization resources and need to be re-invited to rejoin.').classes('text-secondary text-sm')
 

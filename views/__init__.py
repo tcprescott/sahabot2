@@ -6,6 +6,7 @@ Views are organized into subdirectories based on which pages use them:
 - admin: Views used by the admin page
 - organization: Views used by the organization admin page
 - user_profile: Views used by the user profile page
+- tournaments: Views used by the tournaments page
 """
 
 # Re-export all views for backward compatibility
@@ -30,6 +31,13 @@ from views.user_profile import (
     UserOrganizationsView,
 )
 
+from views.tournaments import (
+    TournamentOrgSelectView,
+    EventScheduleView,
+    MyMatchesView,
+    MySettingsView,
+)
+
 __all__ = [
     # Admin views
     'AdminUsersView',
@@ -46,4 +54,9 @@ __all__ = [
     'ProfileInfoView',
     'ApiKeysView',
     'UserOrganizationsView',
+    # Tournament views
+    'TournamentOrgSelectView',
+    'EventScheduleView',
+    'MyMatchesView',
+    'MySettingsView',
 ]

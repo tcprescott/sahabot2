@@ -105,7 +105,7 @@ This application is multi-tenant. All user actions and data are scoped to Organi
 - **Import logging at module level**:
   ```python
   import logging
-  
+
   logger = logging.getLogger(__name__)
   ```
 - **Use lazy % formatting** in logging statements (not f-strings):
@@ -113,7 +113,7 @@ This application is multi-tenant. All user actions and data are scoped to Organi
   # ✅ Correct - lazy formatting
   logger.info("User %s logged in", user.id)
   logger.error("Failed to process %s: %s", item_id, error)
-  
+
   # ❌ Wrong - f-strings or concatenation
   logger.info(f"User {user.id} logged in")  # Don't do this!
   logger.info("User " + user.id + " logged in")  # Don't do this!
@@ -303,7 +303,7 @@ from components.base_page import BasePage
 
 def register():
     """Register page routes."""
-    
+
     @ui.page('/path')
     async def page_name():
         """Page docstring."""
@@ -311,12 +311,12 @@ def register():
         base = BasePage.simple_page(title="Page Title", active_nav="home")
         # or base = BasePage.authenticated_page(title="Page Title", active_nav="nav_item")
         # or base = BasePage.admin_page(title="Admin Page", active_nav="admin")
-        
+
         async def content(page: BasePage):
             """Render page content - has access to page.user."""
             with ui.element('div').classes('card'):
                 ui.label(f'Hello, {page.user.discord_username}!')
-        
+
         await base.render(content)()
 ```
 
@@ -396,14 +396,14 @@ async def profile(interaction: discord.Interaction):
     """Display user profile information."""
     # Get service instance
     user_service = UserService()
-    
+
     # Fetch data via service (no direct ORM access)
     user = await user_service.get_user_by_discord_id(interaction.user.id)
-    
+
     if not user:
         await interaction.response.send_message("User not found", ephemeral=True)
         return
-    
+
     # Format and respond
     await interaction.response.send_message(
         f"Username: {user.discord_username}\nPermission: {user.permission.name}",
@@ -480,7 +480,7 @@ def register():
     @ui.page('/mypage')
     async def my_page():
         base = BasePage.simple_page(title="My Page", active_nav="mypage")
-        
+
         async def content(page: BasePage):
             with ui.element('div').classes('card'):
                 ui.label('My content here')
@@ -510,12 +510,12 @@ from models import User
 
 class MyDialog(BaseDialog):
     """Custom dialog extending BaseDialog."""
-    
+
     def __init__(self, user: User, on_save=None):
         super().__init__()
         self.user = user
         self.on_save = on_save
-    
+
     async def show(self):
         """Display the dialog."""
         self.create_dialog(
@@ -523,7 +523,7 @@ class MyDialog(BaseDialog):
             icon='edit',
         )
         super().show()
-    
+
     def _render_body(self):
         """Render dialog content."""
         # Use form grid for responsive layout
@@ -532,16 +532,16 @@ class MyDialog(BaseDialog):
                 ui.input(label='Name').classes('w-full')
             with ui.element('div'):
                 ui.input(label='Email').classes('w-full')
-        
+
         ui.separator()
-        
+
         # Use actions row for buttons (Convention: neutral/negative left, positive right)
         with self.create_actions_row():
             # Neutral/negative action on the far left
             ui.button('Cancel', on_click=self.close).classes('btn')
             # Positive action on the far right
             ui.button('Save', on_click=self._save).classes('btn').props('color=positive')
-    
+
     async def _save(self):
         """Save and close."""
         # Business logic via services
@@ -561,7 +561,7 @@ await dialog.show()
 - Responsive form grids
 - Standardized action button placement
 - Reusable helper methods reduce boilerplate
-        
+
         await base.render(content)()
 ```
 
@@ -611,11 +611,11 @@ from components.card import Card
 
 class MyView:
     """View for displaying my content."""
-    
+
     def __init__(self, user, service):
         self.user = user
         self.service = service
-    
+
     async def render(self):
         """Render the view content."""
         data = await self.service.get_data()
@@ -666,7 +666,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
     # Use service for business logic
     user_service = UserService()
     result = await user_service.ban_user(user.id, reason)
-    
+
     # Respond to interaction
     await interaction.response.send_message(
         f"User {user.mention} has been banned.",

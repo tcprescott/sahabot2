@@ -12,7 +12,7 @@ from application.services.user_service import UserService
 
 class InviteMemberDialog(BaseDialog):
     """Dialog for adding a user as a member of the organization.
-    
+
     For now, this immediately adds the member (auto-accept).
     Future: this will create an invite that the user must accept.
     """
@@ -41,7 +41,7 @@ class InviteMemberDialog(BaseDialog):
         with self.create_form_grid(columns=1):
             with ui.element('div').classes('span-1'):
                 ui.label('Select a user to add to this organization').classes('font-semibold mb-2')
-                
+
                 # Get all users for the dropdown
                 # Note: this loads synchronously; in production you might want lazy loading
                 self.user_select = ui.select(
@@ -49,7 +49,7 @@ class InviteMemberDialog(BaseDialog):
                     options={},
                     with_input=True,
                 ).classes('w-full')
-                
+
                 # Load users asynchronously
                 async def load_users():
                     users = await self.user_service.get_all_users()
@@ -57,7 +57,7 @@ class InviteMemberDialog(BaseDialog):
                     options = {u.id: u.discord_username for u in users}
                     self.user_select.options = options
                     self.user_select.update()
-                
+
                 ui.timer(0.1, load_users, once=True)
 
         with self.create_actions_row():
@@ -68,7 +68,7 @@ class InviteMemberDialog(BaseDialog):
         if not self.user_select or not self.user_select.value:
             ui.notify('Please select a user', type='warning')
             return
-        
+
         user_id = self.user_select.value
         try:
             await self.org_service.add_member(self.organization_id, user_id)

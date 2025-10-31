@@ -41,7 +41,7 @@ def register():
             error: Error message if authorization failed
         """
         base = BasePage.simple_page(title="SahaBot2 - Authentication")
-        
+
         async def content(page: BasePage):
             """Render authentication callback content."""
             # Check for errors
@@ -99,7 +99,7 @@ def register():
                     with ui.element('div').classes('card-body'):
                         ui.label('No authorization code received.').classes('text-error')
                         ui.button('Try Again', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
-        
+
         await base.render(content)
 
     @ui.page('/auth/logout')

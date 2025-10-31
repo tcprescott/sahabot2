@@ -42,7 +42,7 @@ class ApiKeysView:
                 logger.error("Failed to generate API key: %s", e)
                 ui.notify(f'Failed to generate API key: {e}', type='negative')
                 return None
-        
+
         # Show create dialog which will also display the token
         dialog = CreateApiKeyDialog(on_create=create_token, on_complete=self._refresh)
         await dialog.show()
@@ -62,12 +62,12 @@ class ApiKeysView:
         all_tokens = await self.service.list_user_tokens(self.user.id)
         # Filter out revoked tokens
         tokens = [t for t in all_tokens if t.is_active]
-        
+
         with Card.create(title='API Keys'):
             with ui.row().classes('w-full justify-between mb-4'):
                 ui.label(f'{len(tokens)} active API key(s)').classes('text-secondary')
                 ui.button('Generate New Key', icon='add_circle', on_click=self._generate_new_key).props('color=positive').classes('btn')
-            
+
             if not tokens:
                 with ui.element('div').classes('text-center mt-4'):
                     ui.icon('key').classes('text-secondary icon-large')
@@ -76,24 +76,24 @@ class ApiKeysView:
             else:
                 def render_name(t):
                     return ui.label(t.name)
-                
+
                 def render_created(t):
                     return ui.label(t.created_at.strftime('%Y-%m-%d %H:%M'))
-                
+
                 def render_last_used(t):
                     if t.last_used_at:
                         return ui.label(t.last_used_at.strftime('%Y-%m-%d %H:%M'))
                     return ui.label('Never').classes('text-secondary')
-                
+
                 def render_status(t):
                     if t.expires_at and t.expires_at < t.created_at:  # Basic check
                         return ui.label('Expired').classes('badge badge-warning')
                     return ui.label('Active').classes('badge badge-success')
-                
+
                 def render_actions(t):
                     with ui.row().classes('gap-2'):
                         ui.button('Revoke', icon='block', on_click=lambda token=t: self._revoke_token(token.id)).props('color=negative').classes('btn')
-                
+
                 columns = [
                     TableColumn('Name', cell_render=render_name),
                     TableColumn('Created', cell_render=render_created),

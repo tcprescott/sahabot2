@@ -26,14 +26,14 @@ class ProfileInfoView:
                     with ui.column().classes('flex-1'):
                         ui.label('Discord Username').classes('text-sm text-secondary')
                         ui.label(self.user.discord_username).classes('font-bold')
-                
+
                 # Discord ID
                 with ui.row().classes('items-center'):
                     ui.icon('fingerprint').classes('text-secondary')
                     with ui.column().classes('flex-1'):
                         ui.label('Discord ID').classes('text-sm text-secondary')
                         ui.label(str(self.user.discord_id)).classes('font-mono')
-                
+
                 # Email (only show to superadmin or self)
                 if self.user.discord_email:
                     with ui.row().classes('items-center'):
@@ -41,14 +41,14 @@ class ProfileInfoView:
                         with ui.column().classes('flex-1'):
                             ui.label('Email').classes('text-sm text-secondary')
                             ui.label(self.user.discord_email).classes('font-mono')
-                
+
                 # Permission Level
                 with ui.row().classes('items-center'):
                     ui.icon('security').classes('text-secondary')
                     with ui.column().classes('flex-1'):
                         ui.label('Permission Level').classes('text-sm text-secondary')
                         ui.label(self.user.permission.name).classes('font-bold badge badge-info')
-                
+
                 # Account Status
                 with ui.row().classes('items-center'):
                     ui.icon('verified' if self.user.is_active else 'block').classes('text-secondary')
@@ -57,7 +57,7 @@ class ProfileInfoView:
                         status_badge = 'badge-success' if self.user.is_active else 'badge-danger'
                         status_text = 'Active' if self.user.is_active else 'Inactive'
                         ui.label(status_text).classes(f'badge {status_badge}')
-                
+
                 # Member Since
                 with ui.row().classes('items-center'):
                     ui.icon('calendar_today').classes('text-secondary')

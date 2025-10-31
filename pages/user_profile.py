@@ -34,6 +34,8 @@ def register():
 
         # Create sidebar items
         sidebar_items = [
+            base.create_nav_link('Back to Home', 'home', '/'),
+            base.create_separator(),
             base.create_sidebar_item_with_loader('Profile Info', 'person', 'profile'),
             base.create_sidebar_item_with_loader('API Keys', 'vpn_key', 'api-keys'),
             base.create_sidebar_item_with_loader('Organizations', 'business', 'organizations'),

@@ -22,7 +22,7 @@ from components import BasePage
 async def my_page():
     """Simple public page."""
     base = BasePage.simple_page(title="My Page")
-    
+
     # Optional: Define sidebar items
     sidebar_items = [
         {
@@ -36,14 +36,14 @@ async def my_page():
             'action': lambda: ui.navigate.to('/about')
         },
     ]
-    
+
     async def content(page: BasePage):
         """Render page content."""
         with ui.element('div').classes('card'):
             ui.label('Public content here')
             if page.user:
                 ui.label(f'Hello, {page.user.discord_username}!')
-    
+
     await base.render(content, sidebar_items=sidebar_items)
 ```
 
@@ -57,12 +57,12 @@ from components import BasePage
 async def protected_page():
     """Page requiring authentication."""
     base = BasePage.authenticated_page(title="Protected Page")
-    
+
     async def content(page: BasePage):
         """Render page content - user is guaranteed to exist."""
         with ui.element('div').classes('card'):
             ui.label(f'Welcome, {page.user.discord_username}!')
-    
+
     await base.render(content)
 ```
 
@@ -76,12 +76,12 @@ from components import BasePage
 async def admin_page():
     """Page requiring admin permission."""
     base = BasePage.admin_page(title="Admin Panel")
-    
+
     async def content(page: BasePage):
         """Render page content - user is guaranteed to be admin."""
         with ui.element('div').classes('card'):
             ui.label(f'Admin: {page.user.discord_username}')
-    
+
     await base.render(content)
 ```
 
@@ -169,20 +169,20 @@ All styles are defined in `/static/css/main.css` with the following classes:
 ### Responsive Design
 
 **Header:**
-- **Desktop (≥769px)**: 
+- **Desktop (≥769px)**:
   - Full layout with username visible
   - Hamburger menu hidden (sidebar always visible)
-- **Mobile (<769px)**: 
+- **Mobile (<769px)**:
   - Compact layout with username hidden
   - Hamburger menu visible for sidebar toggle
 
 **Sidebar:**
-- **Desktop (≥769px)**: 
+- **Desktop (≥769px)**:
   - Always visible (280px width)
   - No backdrop overlay
   - Close button hidden
   - Page content shifts right to accommodate sidebar
-- **Mobile (<769px)**: 
+- **Mobile (<769px)**:
   - Flyout overlay (85vw width, max 320px)
   - Dark backdrop overlay when open
   - Close button visible
@@ -197,7 +197,7 @@ The `content` function passed to `render()` receives the `BasePage` instance as 
 async def content(page: BasePage):
     """
     Render page content.
-    
+
     Args:
         page: BasePage instance with user property
     """

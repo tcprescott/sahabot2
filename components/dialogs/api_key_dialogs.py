@@ -18,7 +18,7 @@ class CreateApiKeyDialog(BaseDialog):
 
     def __init__(self, on_create: Optional[Callable[[str], None]] = None, on_complete: Optional[Callable[[], None]] = None):
         """Initialize the create API key dialog.
-        
+
         Args:
             on_create: Callback function to call with the key name when created, should return the token
             on_complete: Callback function to call when dialog is completely done
@@ -48,7 +48,7 @@ class CreateApiKeyDialog(BaseDialog):
     def _render_create_form(self) -> None:
         """Render the initial create form."""
         ui.label('Create a new API key for accessing the SahaBot API.').classes('text-secondary mb-2')
-        
+
         with self.create_form_grid(columns=1):
             with ui.element('div'):
                 self.name_input = ui.input(label='Key Name', placeholder='e.g., "Production Bot"').classes('w-full')
@@ -90,7 +90,7 @@ class CreateApiKeyDialog(BaseDialog):
 
         if self.on_create:
             self.generated_token = await self.on_create(self.name_input.value)
-            
+
             # Update dialog to show token
             if self.generated_token and self.body_container:
                 self.body_container.clear()
@@ -109,7 +109,7 @@ class DisplayTokenDialog(BaseDialog):
 
     def __init__(self, token: str):
         """Initialize the display token dialog.
-        
+
         Args:
             token: The plaintext API token to display
         """

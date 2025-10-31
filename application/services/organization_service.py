@@ -64,21 +64,21 @@ class OrganizationService:
 
     async def create_organization(self, name: str, description: Optional[str], is_active: bool = True) -> Organization:
         """Create a new organization.
-        
+
         Note: Caller should ensure the user has global admin privileges.
         """
         return await self.repo.create(name=name, description=description, is_active=is_active)
 
     async def update_organization(self, organization_id: int, name: str, description: Optional[str], is_active: bool) -> Optional[Organization]:
         """Update an existing organization.
-        
+
         Returns the updated entity or None if not found.
         """
         return await self.repo.update(organization_id=organization_id, name=name, description=description, is_active=is_active)
 
     async def user_can_admin_org(self, user: Optional[User], organization_id: int) -> bool:
         """Check if the user can administer the given organization.
-        
+
         Rules:
         - SUPERADMIN or ADMIN can access
         - Otherwise, user must be a member with an org-level ADMIN role
@@ -175,8 +175,12 @@ class OrganizationService:
 
     async def add_member(self, organization_id: int, user_id: int):
         """Add a user as a member of the organization.
-        
+
         For now, this immediately adds the member (auto-accept).
         Future: this will create an invite that must be accepted.
         """
         return await self.repo.add_member(organization_id, user_id)
+
+    async def list_user_memberships(self, user_id: int):
+        """List all organizations a user is a member of."""
+        return await self.repo.list_memberships_for_user(user_id)

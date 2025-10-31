@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 class GlobalSetting(Model):
     """
     Global application settings stored as key-value pairs.
-    
+
     Attributes:
         id: Primary key
         key: Unique setting key/identifier
@@ -27,7 +27,7 @@ class GlobalSetting(Model):
         created_at: When the setting was created
         updated_at: When the setting was last modified
     """
-    
+
     id = fields.IntField(pk=True)
     key = fields.CharField(max_length=255, unique=True, index=True)
     value = fields.TextField()
@@ -35,11 +35,11 @@ class GlobalSetting(Model):
     is_public = fields.BooleanField(default=False)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
-    
+
     class Meta:
         table = "global_settings"
         ordering = ["key"]
-    
+
     def __str__(self) -> str:
         """String representation."""
         return f"{self.key}: {self.value}"
@@ -48,7 +48,7 @@ class GlobalSetting(Model):
 class OrganizationSetting(Model):
     """
     Organization-specific settings that override or extend global settings.
-    
+
     Attributes:
         id: Primary key
         organization: Foreign key to Organization
@@ -58,7 +58,7 @@ class OrganizationSetting(Model):
         created_at: When the setting was created
         updated_at: When the setting was last modified
     """
-    
+
     id = fields.IntField(pk=True)
     organization = fields.ForeignKeyField('models.Organization', related_name='settings', index=True)
     key = fields.CharField(max_length=255, index=True)
@@ -66,12 +66,12 @@ class OrganizationSetting(Model):
     description = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
-    
+
     class Meta:
         table = "organization_settings"
         unique_together = (("organization", "key"),)
         ordering = ["organization_id", "key"]
-    
+
     def __str__(self) -> str:
         """String representation."""
         org_id = self.organization.id if hasattr(self, 'organization') else 'unknown'

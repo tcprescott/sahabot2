@@ -5,7 +5,6 @@ Allows users to choose which organization's tournaments to view.
 """
 
 from __future__ import annotations
-from typing import Any
 from nicegui import ui
 from models import User
 from components.card import Card
@@ -21,8 +20,8 @@ class TournamentOrgSelectView:
 
     async def render(self) -> None:
         """Render the organization selection view."""
-        # Get all organizations the user is a member of
-        members = await self.service.repo.list_members_for_user(self.user.id)
+        # Get all organizations the user is a member of via service
+        members = await self.service.list_user_memberships(self.user.id)
         
         with Card.create(title='Select Organization'):
             if not members:
@@ -35,7 +34,6 @@ class TournamentOrgSelectView:
                 
                 with ui.element('div').classes('flex flex-col gap-4'):
                     for member in members:
-                        await member.fetch_related('organization')
                         org = member.organization
                         
                         with ui.element('div').classes('card'):

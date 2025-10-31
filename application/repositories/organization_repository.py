@@ -76,6 +76,15 @@ class OrganizationRepository:
             .first()
         )
 
+    async def list_memberships_for_user(self, user_id: int) -> list[OrganizationMember]:
+        """List all organization memberships for a user with organization prefetched."""
+        return await (
+            OrganizationMember
+            .filter(user_id=user_id)
+            .prefetch_related('organization')
+            .order_by('joined_at')
+        )
+
     # --- Permissions management ---
 
     async def list_permissions(self, organization_id: int) -> list[OrganizationPermission]:
@@ -169,7 +178,7 @@ class OrganizationRepository:
 
     async def add_member(self, organization_id: int, user_id: int) -> OrganizationMember:
         """Add a user as a member of the organization (idempotent).
-        
+
         Returns the existing member if already present, otherwise creates a new membership.
         """
         existing = await OrganizationMember.get_or_none(organization_id=organization_id, user_id=user_id)

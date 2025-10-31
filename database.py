@@ -10,7 +10,7 @@ from aerich import Command
 async def init_db() -> None:
     """
     Initialize database connection.
-    
+
     This should be called during application startup.
     """
     command = Command(tortoise_config=TORTOISE_ORM, app='models', location='./migrations')
@@ -27,7 +27,7 @@ async def init_db() -> None:
 async def close_db() -> None:
     """
     Close database connections.
-    
+
     This should be called during application shutdown.
     """
     await Tortoise.close_connections()
@@ -36,7 +36,7 @@ async def close_db() -> None:
 async def generate_schemas() -> None:
     """
     Generate database schemas.
-    
+
     Only use this in development. In production, use Aerich migrations.
     """
     await Tortoise.generate_schemas()

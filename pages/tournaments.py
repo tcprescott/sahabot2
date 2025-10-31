@@ -22,14 +22,19 @@ def register():
     @ui.page('/tournaments')
     async def tournaments_page():
         """Tournament page - show organization selector."""
-        base = BasePage.authenticated_page(title="Tournaments", active_nav="tournaments")
+        base = BasePage.authenticated_page(title="Tournaments")
 
         async def content(page: BasePage):
             """Render organization selection page."""
             view = TournamentOrgSelectView(page.user)
             await view.render()
 
-        await base.render(content)
+        # Create sidebar items
+        sidebar_items = [
+            base.create_nav_link('Back to Home', 'home', '/'),
+        ]
+
+        await base.render(content, sidebar_items)
 
     @ui.page('/tournaments/{organization_id}')
     async def tournament_org_page(organization_id: int):
@@ -39,10 +44,12 @@ def register():
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
+        from models import OrganizationMember
         user = await DiscordAuthService.get_current_user()
         
         # Check if user is a member of this organization
-        is_member = await service.is_user_member(user.id, organization_id)
+        member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
+        is_member = member is not None
         
         async def content(page: BasePage):
             # Re-check membership inside content
