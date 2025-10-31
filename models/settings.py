@@ -70,7 +70,7 @@ class OrganizationSetting(Model):
     class Meta:
         table = "organization_settings"
         unique_together = (("organization", "key"),)
-        ordering = ["organization", "key"]
+        ordering = ["organization_id", "key"]
     
     def __str__(self) -> str:
         """String representation."""

@@ -1,7 +1,7 @@
 """
 Organization Permissions view.
 
-Manage organization-level permissions and roles.
+Display available permission types for this organization.
 """
 
 from __future__ import annotations
@@ -9,14 +9,16 @@ from typing import Any
 from nicegui import ui
 from models import Organization
 from components.card import Card
+from application.services.organization_service import OrganizationService
 
 
 class OrganizationPermissionsView:
-    """Manage organization permissions."""
+    """Display organization permission types (read-only)."""
 
     def __init__(self, organization: Organization, user: Any) -> None:
         self.organization = organization
         self.user = user
+        self.service = OrganizationService()
         self.container = None
 
     async def _refresh(self) -> None:
@@ -27,17 +29,22 @@ class OrganizationPermissionsView:
                 await self._render_content()
 
     async def _render_content(self) -> None:
-        """Render the permissions list and controls."""
-        with Card.create(title='Organization Permissions'):
-            with ui.row().classes('w-full justify-between mb-2'):
-                ui.label('Define custom roles and permissions for this organization.')
-                ui.button('Create Permission', icon='add').props('color=positive').classes('btn')
-            
-            # Placeholder - will be populated with actual permissions
-            with ui.element('div').classes('text-center mt-4'):
-                ui.icon('verified_user').classes('text-secondary icon-large')
-                ui.label('No custom permissions defined').classes('text-secondary')
-                ui.label('Create permissions to assign specific roles to members').classes('text-secondary text-sm')
+        """Render the available permission types."""
+        available_types = self.service.list_available_permission_types()
+
+        with Card.create(title='Available Permission Types'):
+            ui.label('These permission types can be assigned to organization members.').classes('mb-4 text-secondary')
+
+            # Display permissions as a list
+            for ptype in available_types:
+                with ui.element('div').classes('mb-3 p-3 border rounded'):
+                    with ui.row().classes('items-center gap-2 mb-1'):
+                        ui.icon('verified_user').classes('text-primary')
+                        ui.label(ptype['name']).classes('text-lg font-bold')
+                    ui.label(ptype['description']).classes('text-secondary')
+
+            ui.separator().classes('my-4')
+            ui.label('To assign permissions to members, go to the Members tab.').classes('text-sm text-secondary italic')
 
     async def render(self) -> None:
         """Render the permissions view."""

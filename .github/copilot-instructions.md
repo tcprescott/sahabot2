@@ -65,6 +65,7 @@ SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAut
   - Audit everything with tenant context: include `organization_id` in `AuditLog` entries where applicable.
   - Caches and computed results must be keyed by organization.
   - Global roles (e.g., SUPERADMIN) may bypass tenant checks when explicitly intended; all other roles are tenant-bound.
+  - **User email addresses are considered sensitive PII**: Only SUPERADMIN users may view or edit email addresses. Never display `discord_email` in organization views, member lists, dialogs, or any context accessible to non-superadmin users.
 
 ### Database
 - **migrations/**: Aerich migration scripts and config
