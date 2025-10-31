@@ -8,7 +8,7 @@ import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from config import settings
-from pages import home, auth, admin, organization_admin, user_profile
+from pages import home, auth, admin, organization_admin, user_profile, invite
 
 logger = logging.getLogger(__name__)
 
@@ -58,5 +58,6 @@ def register_routes(fastapi_app: FastAPI = None):
     admin.register()
     organization_admin.register()
     user_profile.register()
+    invite.register()
 
     logger.info("Frontend routes registered")

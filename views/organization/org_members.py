@@ -6,14 +6,19 @@ List organization members and manage their permissions.
 
 from __future__ import annotations
 from typing import Any
+from datetime import datetime
 from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.member_permissions_dialog import MemberPermissionsDialog
 from components.dialogs.invite_member_dialog import InviteMemberDialog
+from components.dialogs.organization_invite_dialog import OrganizationInviteDialog
+from components.dialogs.tournament_dialogs import ConfirmDialog
 from application.services.organization_service import OrganizationService
 from application.services.authorization_service import AuthorizationService
+from application.services.organization_invite_service import OrganizationInviteService
+from config import settings
 
 
 class OrganizationMembersView:
@@ -24,6 +29,7 @@ class OrganizationMembersView:
         self.user = user
         self.service = OrganizationService()
         self.auth_service = AuthorizationService()
+        self.invite_service = OrganizationInviteService()
         self.container = None
         self.can_manage = False  # Will be set in render
 
@@ -60,11 +66,120 @@ class OrganizationMembersView:
         )
         await dialog.show()
 
+    async def _render_invite_links(self) -> None:
+        """Render invite links management section."""
+        invites = await self.invite_service.list_org_invites(self.user, self.organization.id)
+
+        with Card.create(title='Invite Links'):
+            with ui.row().classes('w-full justify-between mb-2'):
+                ui.label('Share these links to let users join the organization')
+                if self.can_manage:
+                    async def open_create_dialog():
+                        await self._open_create_invite_dialog()
+                    ui.button('Create Invite Link', icon='add_link', on_click=open_create_dialog).props('color=positive').classes('btn')
+
+            if not invites:
+                with ui.element('div').classes('text-center mt-4'):
+                    ui.icon('link').classes('text-secondary icon-large')
+                    ui.label('No invite links yet').classes('text-secondary')
+                    ui.label('Create a link to share with new members').classes('text-secondary text-sm')
+            else:
+                def render_invite_url(inv):
+                    full_url = f'{settings.BASE_URL}/invite/{inv.slug}'
+                    with ui.row().classes('items-center gap-2'):
+                        ui.label(full_url).classes('font-mono text-sm')
+                        async def copy_to_clipboard():
+                            # Use JavaScript to copy to clipboard
+                            await ui.run_javascript(f'''
+                                navigator.clipboard.writeText("{full_url}").then(() => {{
+                                    console.log("Copied to clipboard: {full_url}");
+                                }}).catch(err => {{
+                                    console.error("Failed to copy: ", err);
+                                }});
+                            ''')
+                            ui.notify('Link copied to clipboard!', type='positive')
+                        ui.button(icon='content_copy', on_click=copy_to_clipboard).props('flat dense')
+
+                def render_status(inv):
+                    if not inv.is_active:
+                        ui.label('Inactive').classes('badge badge-secondary')
+                    elif inv.expires_at and inv.expires_at < datetime.now():
+                        ui.label('Expired').classes('badge badge-danger')
+                    elif inv.max_uses and inv.uses_count >= inv.max_uses:
+                        ui.label('Max uses reached').classes('badge badge-warning')
+                    else:
+                        ui.label('Active').classes('badge badge-success')
+
+                def render_uses(inv):
+                    if inv.max_uses:
+                        ui.label(f'{inv.uses_count} / {inv.max_uses}')
+                    else:
+                        ui.label(f'{inv.uses_count} / ∞')
+
+                def render_invite_actions(inv):
+                    with ui.element('div').classes('flex gap-2'):
+                        if self.can_manage:
+                            if inv.is_active:
+                                async def deactivate():
+                                    await self.invite_service.update_invite(self.user, self.organization.id, inv.id, is_active=False)
+                                    await self._refresh()
+                                ui.button('Deactivate', icon='link_off', on_click=deactivate).classes('btn')
+                            else:
+                                async def activate():
+                                    await self.invite_service.update_invite(self.user, self.organization.id, inv.id, is_active=True)
+                                    await self._refresh()
+                                ui.button('Activate', icon='link', on_click=activate).classes('btn')
+                            
+                            async def delete_invite():
+                                async def do_delete():
+                                    await self.invite_service.delete_invite(self.user, self.organization.id, inv.id)
+                                    await self._refresh()
+                                dialog = ConfirmDialog(
+                                    title='Delete Invite Link',
+                                    message=f"Are you sure you want to delete the invite link '/invite/{inv.slug}'?",
+                                    on_confirm=do_delete
+                                )
+                                await dialog.show()
+                            ui.button('Delete', icon='delete', on_click=delete_invite).classes('btn').props('color=negative')
+
+                columns = [
+                    TableColumn('Invite URL', cell_render=render_invite_url),
+                    TableColumn('Status', cell_render=render_status),
+                    TableColumn('Uses', cell_render=render_uses),
+                    TableColumn('Created', key='created_at'),
+                    TableColumn('Actions', cell_render=render_invite_actions),
+                ]
+                table = ResponsiveTable(columns, invites)
+                await table.render()
+
+    async def _open_create_invite_dialog(self) -> None:
+        """Open dialog to create an invite link."""
+        async def on_submit(slug, max_uses, expires_at):
+            _invite, error = await self.invite_service.create_invite(
+                self.user,
+                self.organization.id,
+                slug,
+                max_uses,
+                expires_at
+            )
+            if error:
+                ui.notify(error, type='negative')
+            else:
+                ui.notify('Invite link created successfully!', type='positive')
+                await self._refresh()
+
+        dialog = OrganizationInviteDialog(on_submit=on_submit)
+        await dialog.show()
+
     async def _render_content(self) -> None:
         """Render the members list and controls."""
+        # Render invite links first
+        await self._render_invite_links()
+
+        # Then render members list
         members = await self.service.list_members(self.organization.id)
 
-        with Card.create(title='Organization Members'):
+        with Card.create(title='Organization Members', classes='mt-2'):
             with ui.row().classes('w-full justify-between mb-2'):
                 ui.label(f'{len(members)} member(s) in this organization')
                 if self.can_manage:

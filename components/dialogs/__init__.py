@@ -12,6 +12,7 @@ from components.dialogs.api_key_dialogs import CreateApiKeyDialog, DisplayTokenD
 from components.dialogs.leave_organization_dialog import LeaveOrganizationDialog
 from components.dialogs.tournament_dialogs import TournamentDialog, ConfirmDialog
 from components.dialogs.stream_channel_dialog import StreamChannelDialog
+from components.dialogs.organization_invite_dialog import OrganizationInviteDialog
 
 __all__ = [
     'BaseDialog',
@@ -28,4 +29,5 @@ __all__ = [
     'TournamentDialog',
     'ConfirmDialog',
     'StreamChannelDialog',
+    'OrganizationInviteDialog',
 ]

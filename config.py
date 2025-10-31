@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
+    BASE_URL: str = "http://localhost:8080"  # Base URL for the application
 
     # Server Configuration
     HOST: str = "0.0.0.0"

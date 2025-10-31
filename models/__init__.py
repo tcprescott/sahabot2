@@ -9,6 +9,7 @@ from models.audit_log import AuditLog
 from models.api_token import ApiToken
 from models.match_schedule import Tournament, Match, MatchPlayers, StreamChannel, TournamentPlayers, Crew
 from models.organizations import Organization, OrganizationMember, OrganizationPermission
+from models.organization_invite import OrganizationInvite
 from models.settings import GlobalSetting, OrganizationSetting
 
 __all__ = [
@@ -19,6 +20,7 @@ __all__ = [
     'Organization',
     'OrganizationMember',
     'OrganizationPermission',
+    'OrganizationInvite',
     'GlobalSetting',
     'OrganizationSetting',
     'Tournament',
