@@ -13,6 +13,10 @@ from components.dialogs.leave_organization_dialog import LeaveOrganizationDialog
 from components.dialogs.tournament_dialogs import TournamentDialog, ConfirmDialog
 from components.dialogs.stream_channel_dialog import StreamChannelDialog
 from components.dialogs.organization_invite_dialog import OrganizationInviteDialog
+from components.dialogs.submit_match_dialog import SubmitMatchDialog
+from components.dialogs.register_player_dialog import RegisterPlayerDialog
+from components.dialogs.match_seed_dialog import MatchSeedDialog
+from components.dialogs.edit_match_dialog import EditMatchDialog
 
 __all__ = [
     'BaseDialog',
@@ -30,4 +34,8 @@ __all__ = [
     'ConfirmDialog',
     'StreamChannelDialog',
     'OrganizationInviteDialog',
+    'SubmitMatchDialog',
+    'RegisterPlayerDialog',
+    'MatchSeedDialog',
+    'EditMatchDialog',
 ]

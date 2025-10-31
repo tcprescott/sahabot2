@@ -14,6 +14,7 @@ from views.tournaments import (
     EventScheduleView,
     MyMatchesView,
     MySettingsView,
+    TournamentManagementView,
 )
 
 
@@ -97,10 +98,20 @@ def register():
                         view = MySettingsView(page.user, org, tournament_service)
                         await view.render()
 
+            async def load_tournament_management():
+                """Load tournament management."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = TournamentManagementView(org, page.user)
+                        await view.render()
+
             # Register loaders
             page.register_content_loader('event_schedule', load_event_schedule)
             page.register_content_loader('my_matches', load_my_matches)
             page.register_content_loader('my_settings', load_my_settings)
+            page.register_content_loader('tournament_management', load_tournament_management)
 
             # Load initial content
             await load_event_schedule()
@@ -112,6 +123,8 @@ def register():
             base.create_sidebar_item_with_loader('Event Schedule', 'event', 'event_schedule'),
             base.create_sidebar_item_with_loader('My Matches', 'sports_esports', 'my_matches'),
             base.create_sidebar_item_with_loader('My Settings', 'settings', 'my_settings'),
+            base.create_separator(),
+            base.create_sidebar_item_with_loader('Tournament Management', 'admin_panel_settings', 'tournament_management'),
         ]
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

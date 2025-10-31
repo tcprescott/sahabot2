@@ -11,6 +11,7 @@ from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
+from components.datetime_label import DateTimeLabel
 from components.dialogs.member_permissions_dialog import MemberPermissionsDialog
 from components.dialogs.invite_member_dialog import InviteMemberDialog
 from components.dialogs.organization_invite_dialog import OrganizationInviteDialog
@@ -142,11 +143,14 @@ class OrganizationMembersView:
                                 await dialog.show()
                             ui.button('Delete', icon='delete', on_click=delete_invite).classes('btn').props('color=negative')
 
+                def render_created(invite):
+                    DateTimeLabel.datetime(invite.created_at)
+
                 columns = [
                     TableColumn('Invite URL', cell_render=render_invite_url),
                     TableColumn('Status', cell_render=render_status),
                     TableColumn('Uses', cell_render=render_uses),
-                    TableColumn('Created', key='created_at'),
+                    TableColumn('Created', cell_render=render_created),
                     TableColumn('Actions', cell_render=render_invite_actions),
                 ]
                 table = ResponsiveTable(columns, invites)
@@ -213,10 +217,13 @@ class OrganizationMembersView:
                         else:
                             ui.label('—').classes('text-secondary')
 
+                def render_joined(m):
+                    DateTimeLabel.datetime(m.joined_at)
+
                 columns = [
                     TableColumn('Username', cell_render=render_username),
                     TableColumn('Permissions', cell_render=render_permissions),
-                    TableColumn('Joined', key='joined_at'),
+                    TableColumn('Joined', cell_render=render_joined),
                     TableColumn('Actions', cell_render=render_actions),
                 ]
                 table = ResponsiveTable(columns, members)

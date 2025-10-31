@@ -16,7 +16,7 @@ class Header:
                 with ui.row().classes('header-left gap-md'):
                     ui.button(icon='menu', on_click=self.toggle_sidebar).props('flat round').classes('header-hamburger')
                     ui.icon('smart_toy', size='lg').classes('header-logo')
-                    ui.label('SahaBot2').classes('header-brand')
+                    ui.label('SahasrahBot').classes('header-brand')
                 # Right side: User info and menu
                 with ui.row().classes('header-right gap-md'):
                     user_menu = UserMenu(self.user)

@@ -9,6 +9,7 @@ from typing import Any
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
+from components.datetime_label import DateTimeLabel
 from components.dialogs.organization_dialog import OrganizationDialog
 from application.services.organization_service import OrganizationService
 
@@ -40,7 +41,7 @@ class AdminOrganizationsView:
             columns = [
                 TableColumn('Name', key='name'),
                 TableColumn('Active', cell_render=lambda o: ui.icon('check_circle').classes('text-positive') if o.is_active else ui.icon('cancel').classes('text-negative')),
-                TableColumn('Created', key='created_at'),
+                TableColumn('Created', cell_render=lambda o: DateTimeLabel.datetime(o.created_at)),
                 TableColumn('Actions', cell_render=lambda o: self._actions_cell(o)),
             ]
             table = ResponsiveTable(columns, orgs)

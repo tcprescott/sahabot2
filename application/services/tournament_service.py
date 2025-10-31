@@ -4,13 +4,17 @@ Contains org-scoped business logic and authorization checks.
 """
 
 from __future__ import annotations
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
+from datetime import datetime
 import logging
 
 from models import User
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organization_service import OrganizationService
+
+if TYPE_CHECKING:
+    from models.match_schedule import Crew
 
 logger = logging.getLogger(__name__)
 
@@ -30,21 +34,21 @@ class TournamentService:
             return []
         return await self.repo.list_by_org(organization_id)
 
-    async def create_tournament(self, user: Optional[User], organization_id: int, name: str, description: Optional[str], is_active: bool) -> Optional[Tournament]:
+    async def create_tournament(self, user: Optional[User], organization_id: int, name: str, description: Optional[str], is_active: bool, tracker_enabled: bool = True) -> Optional[Tournament]:
         """Create a tournament in an org if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized create_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
-        return await self.repo.create(organization_id, name, description, is_active)
+        return await self.repo.create(organization_id, name, description, is_active, tracker_enabled)
 
-    async def update_tournament(self, user: Optional[User], organization_id: int, tournament_id: int, *, name: Optional[str], description: Optional[str], is_active: Optional[bool]) -> Optional[Tournament]:
+    async def update_tournament(self, user: Optional[User], organization_id: int, tournament_id: int, *, name: Optional[str], description: Optional[str], is_active: Optional[bool], tracker_enabled: Optional[bool] = None) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized update_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
-        return await self.repo.update(organization_id, tournament_id, name=name, description=description, is_active=is_active)
+        return await self.repo.update(organization_id, tournament_id, name=name, description=description, is_active=is_active, tracker_enabled=tracker_enabled)
 
     async def delete_tournament(self, user: Optional[User], organization_id: int, tournament_id: int) -> bool:
         """Delete a tournament if user can admin the org."""
@@ -90,9 +94,187 @@ class TournamentService:
         """
         return await self.repo.register_user_for_tournament(organization_id, tournament_id, user_id)
 
+    async def admin_register_user_for_tournament(
+        self,
+        admin_user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        user_id: int
+    ) -> Optional[TournamentPlayers]:
+        """Register a user for a tournament (admin action).
+        
+        Requires TOURNAMENT_MANAGER permission or org admin privileges.
+        Returns None if unauthorized or tournament doesn't exist.
+        """
+        # Check if admin user has permission to manage tournaments
+        can_manage = await self.org_service.user_can_manage_tournaments(admin_user, organization_id)
+        if not can_manage:
+            logger.warning(
+                "Unauthorized admin_register_user_for_tournament by user %s for org %s",
+                getattr(admin_user, 'id', None),
+                organization_id
+            )
+            return None
+
+        return await self.repo.register_user_for_tournament(organization_id, tournament_id, user_id)
+
+    async def admin_unregister_user_from_tournament(
+        self,
+        admin_user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        user_id: int
+    ) -> bool:
+        """Unregister a user from a tournament (admin action).
+        
+        Requires TOURNAMENT_MANAGER permission or org admin privileges.
+        Returns False if unauthorized or user not registered.
+        """
+        # Check if admin user has permission to manage tournaments
+        can_manage = await self.org_service.user_can_manage_tournaments(admin_user, organization_id)
+        if not can_manage:
+            logger.warning(
+                "Unauthorized admin_unregister_user_from_tournament by user %s for org %s",
+                getattr(admin_user, 'id', None),
+                organization_id
+            )
+            return False
+
+        return await self.repo.unregister_user_from_tournament(organization_id, tournament_id, user_id)
+
     async def unregister_user_from_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> bool:
         """Unregister a user from a tournament.
         
         Users can unregister themselves from tournaments.
         """
         return await self.repo.unregister_user_from_tournament(organization_id, tournament_id, user_id)
+
+    async def list_tournament_players(self, organization_id: int, tournament_id: int) -> List[TournamentPlayers]:
+        """List all players registered for a tournament.
+        
+        No special authorization - any member can view tournament registrations.
+        """
+        return await self.repo.list_tournament_players(organization_id, tournament_id)
+
+    async def create_match(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        player_ids: List[int],
+        scheduled_at: Optional[datetime] = None,
+        comment: Optional[str] = None,
+        title: Optional[str] = None,
+    ) -> Optional[Match]:
+        """Create a match for a tournament.
+        
+        Open access - any member can submit a match request.
+        In the future, this might require approval from tournament organizers.
+        """
+        # Verify user is a member of the organization
+        if not user:
+            logger.warning("Unauthenticated attempt to create match for org %s", organization_id)
+            return None
+
+        member = await self.org_service.get_member(organization_id, user.id)
+        if not member:
+            logger.warning("User %s is not a member of org %s, cannot create match", user.id, organization_id)
+            return None
+
+        return await self.repo.create_match(
+            organization_id=organization_id,
+            tournament_id=tournament_id,
+            player_ids=player_ids,
+            scheduled_at=scheduled_at,
+            comment=comment,
+            title=title,
+        )
+
+    async def update_match(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        *,
+        title: Optional[str] = None,
+        scheduled_at: Optional[datetime] = None,
+        stream_channel_id: Optional[int] = None,
+        comment: Optional[str] = None,
+    ) -> Optional[Match]:
+        """Update a match.
+        
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+        """
+        # Check if user can manage tournaments (tournament admin) or is a moderator
+        can_manage = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        
+        if not can_manage:
+            # Check if user is at least a moderator
+            from application.services.authorization_service import AuthorizationService
+            auth_z = AuthorizationService()
+            if not auth_z.can_moderate(user):
+                logger.warning("Unauthorized update_match by user %s for org %s", getattr(user, 'id', None), organization_id)
+                return None
+        
+        return await self.repo.update_match(
+            organization_id=organization_id,
+            match_id=match_id,
+            title=title,
+            scheduled_at=scheduled_at,
+            stream_channel_id=stream_channel_id,
+            comment=comment,
+        )
+
+    async def signup_crew(self, user: User, organization_id: int, match_id: int, role: str) -> Optional['Crew']:
+        """Sign up as crew for a match.
+        
+        Any member can sign up. Requires approval from tournament manager.
+        """
+        from models.match_schedule import Crew
+        
+        # Verify user is a member of the organization
+        member = await self.org_service.get_member(organization_id, user.id)
+        if not member:
+            logger.warning("User %s is not a member of org %s, cannot sign up as crew", user.id, organization_id)
+            return None
+
+        return await self.repo.signup_crew(match_id, user.id, role)
+
+    async def remove_crew_signup(self, user: User, organization_id: int, match_id: int, role: str) -> bool:
+        """Remove crew signup for a match.
+        
+        Users can remove their own signups.
+        """
+        # Verify user is a member of the organization
+        member = await self.org_service.get_member(organization_id, user.id)
+        if not member:
+            logger.warning("User %s is not a member of org %s, cannot remove crew signup", user.id, organization_id)
+            return False
+
+        return await self.repo.remove_crew_signup(match_id, user.id, role)
+
+    async def set_match_seed(self, user: Optional[User], organization_id: int, match_id: int, url: str, description: Optional[str] = None):
+        """Set or update seed information for a match.
+        
+        Requires TOURNAMENT_MANAGER permission.
+        Returns the MatchSeed instance or None if unauthorized.
+        """
+        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        if not allowed:
+            logger.warning("Unauthorized set_match_seed by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return None
+        
+        return await self.repo.create_or_update_match_seed(match_id, url, description)
+
+    async def delete_match_seed(self, user: Optional[User], organization_id: int, match_id: int) -> bool:
+        """Delete seed information for a match.
+        
+        Requires TOURNAMENT_MANAGER permission.
+        Returns True if deleted, False if not found or unauthorized.
+        """
+        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        if not allowed:
+            logger.warning("Unauthorized delete_match_seed by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return False
+        
+        return await self.repo.delete_match_seed(match_id)

@@ -8,6 +8,7 @@ class Tournament(Model):
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     is_active = fields.BooleanField(default=True)
+    tracker_enabled = fields.BooleanField(default=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -32,6 +33,16 @@ class Match(Model):
     # related fields (reverse relations)
     players: fields.ReverseRelation["MatchPlayers"]
     crew_members: fields.ReverseRelation["Crew"]
+    seed: fields.ReverseRelation["MatchSeed"]
+
+class MatchSeed(Model):
+    """Game seed/ROM information for a match (1:1 with Match)."""
+    id = fields.IntField(pk=True)
+    match = fields.OneToOneField('models.Match', related_name='seed', on_delete=fields.CASCADE)
+    url = fields.CharField(max_length=500)
+    description = fields.TextField(null=True)
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
 
 class MatchPlayers(Model):
     id = fields.IntField(pk=True)

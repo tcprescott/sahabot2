@@ -32,21 +32,22 @@ class OrganizationTournamentsView:
 
     async def _open_create_dialog(self) -> None:
         """Open dialog to create a new tournament."""
-        async def on_submit(name: str, description: Optional[str], is_active: bool) -> None:
-            await self.service.create_tournament(self.user, self.organization.id, name, description, is_active)
+        async def on_submit(name: str, description: Optional[str], is_active: bool, tracker_enabled: bool) -> None:
+            await self.service.create_tournament(self.user, self.organization.id, name, description, is_active, tracker_enabled)
             await self._refresh()
 
         dialog = TournamentDialog(
             title='New Tournament',
             on_submit=on_submit,
             initial_is_active=True,
+            initial_tracker_enabled=True,
         )
         await dialog.show()
 
     async def _open_edit_dialog(self, t) -> None:
         """Open dialog to edit an existing tournament."""
-        async def on_submit(name: str, description: Optional[str], is_active: bool) -> None:
-            await self.service.update_tournament(self.user, self.organization.id, t.id, name=name, description=description, is_active=is_active)
+        async def on_submit(name: str, description: Optional[str], is_active: bool, tracker_enabled: bool) -> None:
+            await self.service.update_tournament(self.user, self.organization.id, t.id, name=name, description=description, is_active=is_active, tracker_enabled=tracker_enabled)
             await self._refresh()
 
         dialog = TournamentDialog(
@@ -54,6 +55,7 @@ class OrganizationTournamentsView:
             initial_name=getattr(t, 'name', ''),
             initial_description=getattr(t, 'description', None),
             initial_is_active=bool(getattr(t, 'is_active', True)),
+            initial_tracker_enabled=bool(getattr(t, 'tracker_enabled', True)),
             on_submit=on_submit,
         )
         await dialog.show()
