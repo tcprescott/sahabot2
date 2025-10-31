@@ -1,0 +1,23 @@
+.footer {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1.5rem 0 1rem 0;
+  background: var(--seasalt);
+  color: var(--black);
+  text-align: center;
+  font-size: 1rem;
+  border-top: 1px solid var(--olive-2);
+}
+.body--dark .footer, .q-dark .footer {
+  background: var(--black-dark);
+  color: var(--seasalt-dark);
+  border-top: 1px solid var(--olive-2-dark);
+}
+.footer-powered {
+  font-size: 0.9rem;
+  color: var(--olive);
+  margin-top: 0.5rem;
+}
+.body--dark .footer-powered, .q-dark .footer-powered {
+  color: var(--olive-dark);
+}

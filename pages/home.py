@@ -56,7 +56,6 @@ def register():
         management_section = base.create_sidebar_section(
             label='Management',
             icon='folder',
-            collapsible=False,
             children=[
                 base.create_sidebar_item_with_loader('Users', 'people', 'users'),
                 base.create_sidebar_item_with_loader('Reports', 'analytics', 'reports'),
@@ -78,6 +77,7 @@ def register():
         sidebar_items = [
             base.create_sidebar_item_with_loader('Overview', 'home', 'overview'),
             base.create_sidebar_item_with_loader('Schedule', 'event', 'schedule'),
+            {'type': 'separator'},
             management_section,
             resources_section,
         ]

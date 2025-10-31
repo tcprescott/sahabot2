@@ -16,6 +16,13 @@
     }
 
     /* Sidebar becomes off-canvas flyout on mobile */
+    /* Ensure sidebar flyout and backdrop overlay above the header on mobile */
+    .sidebar-flyout {
+        z-index: 4000; /* above Quasar header */
+    }
+    .sidebar-backdrop {
+        z-index: 3999; /* just under flyout, above header */
+    }
     .sidebar-overlay {
         position: fixed;
         top: 0;

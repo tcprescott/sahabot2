@@ -1,0 +1,11 @@
+.sidebar-separator {
+  width: 100%;
+  height: 1px;
+  margin: 0.75rem 0;
+  background: var(--olive-2);
+  opacity: 0.25;
+}
+.body--dark .sidebar-separator, .q-dark .sidebar-separator {
+  background: var(--olive-2-dark);
+  opacity: 0.3;
+}

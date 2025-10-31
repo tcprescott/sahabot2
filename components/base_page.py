@@ -11,7 +11,9 @@ import inspect
 from nicegui import ui
 from middleware.auth import DiscordAuthService
 from models import User, Permission
-from components.user_menu import UserMenu
+from components.header import Header
+from components.footer import Footer
+from components.sidebar import Sidebar
 
 
 class BasePage:
@@ -58,21 +60,9 @@ class BasePage:
                     self._backdrop.classes(remove='active', add='hidden')
 
     def _render_header(self) -> None:
-        """Render the header bar with logo, app name, and user menu."""
-        with ui.header().classes('header-bar'):
-            with ui.row().classes('header-container'):
-                # Left side: Hamburger menu, logo and app name
-                with ui.row().classes('header-left gap-md'):
-                    # Hamburger menu button for sidebar
-                    ui.button(icon='menu', on_click=self._toggle_sidebar).props('flat round').classes('header-hamburger')
-                    # Placeholder for logo (you can add an image here)
-                    ui.icon('smart_toy', size='lg').classes('header-logo')
-                    ui.label('SahaBot2').classes('header-brand')
-
-                # Right side: User info and menu
-                with ui.row().classes('header-right gap-md'):
-                    user_menu = UserMenu(self.user)
-                    user_menu.render()
+        """Render the header using the Header component."""
+        header = Header(self.user, self._toggle_sidebar)
+        header.render()
 
     def _render_sidebar(self, items: Optional[list] = None) -> None:
         """
@@ -105,34 +95,23 @@ class BasePage:
 
     def _render_sidebar_item(self, item: dict) -> None:
         """
-        Render a single sidebar item.
+        Render a single sidebar item or separator.
 
         Args:
-            item: Dictionary with 'label', 'icon', and 'action' keys
+            item: Dictionary with 'label', 'icon', 'action', or 'type' keys
         """
+        # Separator line support
+        if item.get('type') == 'separator':
+            ui.element('div').classes('sidebar-separator')
+            return
+
         # Handle subsection groups
         children = item.get('children') if isinstance(item, dict) else None
         if children and isinstance(children, list):
-            # Determine if this section should be collapsible or a static header
-            collapsible = item.get('collapsible', True)
-            if collapsible:
-                exp = ui.expansion(text=item.get('label', ''), icon=item.get('icon', None)).classes('sidebar-section')
-                # Open by default if requested
-                if item.get('expanded', True):
-                    exp.props('default-opened')
-                with exp:
-                    for child in children:
-                        self._render_sidebar_item(child)
-            else:
-                # Static header (non-collapsible) with children always visible
-                with ui.element('div').classes('sidebar-section sidebar-section-static'):
-                    with ui.element('div').classes('sidebar-section-header'):
-                        if item.get('icon'):
-                            ui.icon(item['icon']).classes('sidebar-section-header-icon')
-                        ui.label(item.get('label', '')).classes('sidebar-section-header-label')
-                    with ui.element('div').classes('sidebar-section-children'):
-                        for child in children:
-                            self._render_sidebar_item(child)
+            exp = ui.expansion(text=item.get('label', ''), icon=item.get('icon', None)).classes('sidebar-section')
+            with exp:
+                for child in children:
+                    self._render_sidebar_item(child)
             return
 
         # Leaf navigation item
@@ -146,18 +125,13 @@ class BasePage:
                 ui.icon(item['icon']).classes('sidebar-item-icon')
             ui.label(item.get('label', '')).classes('sidebar-item-label')
 
-    def create_sidebar_section(self, label: str, icon: Optional[str], children: list[dict], *, collapsible: bool = True, expanded: bool = True) -> dict:
-        """Create a sidebar section with optional collapsibility.
-
-        By default sections are collapsible (rendered as expansion groups). Set
-        ``collapsible=False`` to render a static header with children always visible.
+    def create_sidebar_section(self, label: str, icon: Optional[str], children: list[dict]) -> dict:
+        """Create a collapsible sidebar section with child items.
 
         Args:
             label: Section title
             icon: Optional icon name for the section header
             children: List of sidebar item dicts (label, icon, action) to render inside the section
-            collapsible: Whether the section is collapsible. Defaults to True.
-            expanded: Whether a collapsible section should be opened by default. Defaults to True.
 
         Returns:
             Sidebar section dictionary compatible with _render_sidebar_item
@@ -166,8 +140,6 @@ class BasePage:
             'label': label,
             'icon': icon,
             'children': children,
-            'collapsible': collapsible,
-            'expanded': expanded,
         }
 
     def get_dynamic_content_container(self):
@@ -206,6 +178,30 @@ class BasePage:
                 ui.timer(0, self._content_loaders[loader_key], once=True)
         
         return {'label': label, 'icon': icon, 'action': action}
+
+    def create_nav_link(self, label: str, icon: str, to: str) -> dict:
+        """Create a sidebar item that navigates to a route.
+
+        Args:
+            label: Display label for the link
+            icon: Material icon name
+            to: Target route/path to navigate to
+
+        Returns:
+            Sidebar item dictionary that, when clicked, navigates to the given route
+        """
+        def action() -> None:
+            ui.navigate.to(to)
+
+        return {'label': label, 'icon': icon, 'action': action}
+
+    def create_separator(self) -> dict:
+        """Create a visual separator item for the sidebar.
+
+        Returns:
+            Sidebar separator item dictionary
+        """
+        return {'type': 'separator'}
 
     def create_view_loader(self, view_class: Any) -> Callable[[], Awaitable[None]]:
         """Create a loader that renders a view class into the page content container.
@@ -290,9 +286,10 @@ class BasePage:
 
         # Render header
         self._render_header()
-
-        # Render sidebar
-        self._render_sidebar(sidebar_items)
+        
+        # Render sidebar via component
+        sidebar_component = Sidebar(self._toggle_sidebar)
+        self._sidebar_container, self._backdrop = sidebar_component.render(sidebar_items or [])
 
         # Render content if provided
         if content:
@@ -303,11 +300,15 @@ class BasePage:
                     self._dynamic_content_container = ui.column().classes('full-width')
                     with self._dynamic_content_container:
                         await content(self)
+                    # Footer at the bottom of the page container
+                    Footer.render()
             else:
                 # Standard static content
                 self._content_container = ui.element('div').classes('page-container')
                 with self._content_container:
                     await content(self)
+                    # Footer at the bottom of the page container
+                    Footer.render()
 
     @staticmethod
     def simple_page(title: str = "SahaBot2") -> 'BasePage':

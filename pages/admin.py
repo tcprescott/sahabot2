@@ -54,7 +54,8 @@ def register():
         
         # Create sidebar items with dynamic content loaders
         sidebar_items = [
-            {'label': 'Home', 'action': lambda: ui.navigate.to('/'), 'icon': 'home'},
+            base.create_nav_link('Home', 'home', '/'),
+            base.create_separator(),
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
             base.create_sidebar_item_with_loader('Users', 'people', 'users'),
             base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),

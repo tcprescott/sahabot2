@@ -22,6 +22,12 @@
 /* 7. Responsive styles - media queries */
 @import url('responsive.css');
 
+/* 8. Footer styles */
+@import url('footer.css');
+
+/* 9. Sidebar separator styles */
+@import url('sidebar-separator.css');
+
 /* ==================== APPLICATION-SPECIFIC STYLES ==================== */
 /* Add any page-specific styles below that don't fit into the categories above */
 
