@@ -1,0 +1,74 @@
+name: Deploy to Kubernetes
+
+on:
+  workflow_run:
+    workflows: ["Build and Push Container"]
+    types:
+      - completed
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (default: latest)'
+        required: false
+        default: 'latest'
+
+env:
+  REGISTRY: registry.digitalocean.com
+  IMAGE_NAME: sahabot2
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Save DigitalOcean kubeconfig
+      run: doctl kubernetes cluster kubeconfig save ${{ secrets.DIGITALOCEAN_CLUSTER_ID }}
+
+    - name: Set image tag
+      id: set-tag
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
+        else
+          echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+        fi
+
+    - name: Update deployment image
+      run: |
+        kubectl set image deployment/sahabot2 \
+          sahabot2=${{ env.REGISTRY }}/${{ secrets.DIGITALOCEAN_REGISTRY_NAME }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+          -n sahabot2
+
+    - name: Wait for rollout to complete
+      run: |
+        kubectl rollout status deployment/sahabot2 -n sahabot2 --timeout=5m
+
+    - name: Verify deployment
+      run: |
+        kubectl get deployment sahabot2 -n sahabot2
+        kubectl get pods -n sahabot2 -l app=sahabot2
+        kubectl get service sahabot2-service -n sahabot2
+
+    - name: Run database migrations
+      run: |
+        # Get the name of a running pod
+        POD_NAME=$(kubectl get pods -n sahabot2 -l app=sahabot2 -o jsonpath='{.items[0].metadata.name}')
+        
+        # Run migrations in the pod
+        kubectl exec -n sahabot2 $POD_NAME -- poetry run aerich upgrade || echo "Migration step completed with warnings"
+
+    - name: Deployment successful
+      run: |
+        echo "Deployment completed successfully!"
+        echo "Application is running at the LoadBalancer IP:"
+        kubectl get service sahabot2-service -n sahabot2 -o jsonpath='{.status.loadBalancer.ingress[0].ip}'

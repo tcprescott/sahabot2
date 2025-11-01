@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sahabot2-service
+  namespace: sahabot2
+  labels:
+    app: sahabot2
+spec:
+  type: LoadBalancer
+  selector:
+    app: sahabot2
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800

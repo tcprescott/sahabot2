@@ -126,6 +126,32 @@ The application will be available at:
 - Development: http://localhost:8080
 - Production: http://localhost:80
 
+## Deployment
+
+### Kubernetes Deployment
+
+SahaBot2 can be deployed to Digital Ocean's Managed Kubernetes service using the provided manifests and GitHub Actions workflows.
+
+**Quick Start**:
+1. Set up GitHub secrets (see [k8s/README.md](k8s/README.md))
+2. Push to `main` branch - automated build and deploy
+3. Access via LoadBalancer IP
+
+**Manual Deployment**:
+```bash
+# Build and push container
+docker build -t registry.digitalocean.com/<registry>/sahabot2:latest .
+docker push registry.digitalocean.com/<registry>/sahabot2:latest
+
+# Deploy to Kubernetes
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+```
+
+For detailed instructions, see the [Kubernetes Deployment Guide](k8s/README.md).
+
 ### Database Migrations
 
 **Create a migration after model changes**:
