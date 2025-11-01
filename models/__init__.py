@@ -11,6 +11,7 @@ from models.match_schedule import Tournament, Match, MatchPlayers, MatchSeed, St
 from models.organizations import Organization, OrganizationMember, OrganizationPermission
 from models.organization_invite import OrganizationInvite
 from models.settings import GlobalSetting, OrganizationSetting
+from models.preset import Preset, PresetNamespace
 
 __all__ = [
     'User',
@@ -30,4 +31,6 @@ __all__ = [
     'MatchSeed',
     'StreamChannel',
     'Crew',
+    'Preset',
+    'PresetNamespace',
 ]
