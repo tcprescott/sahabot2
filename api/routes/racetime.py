@@ -6,6 +6,7 @@ This module provides API endpoints for RaceTime.gg account linking via OAuth2.
 
 import logging
 import secrets
+from typing import Any
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
@@ -65,9 +66,7 @@ async def initiate_link(
     from the web UI. Authentication is verified via session state.
     """
     # Get current user from session
-    user_id = None
-    if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
-        user_id = app.storage.user.get('user_id')
+    user_id = _get_session_value('user_id')
 
     if not user_id:
         logger.warning("Unauthenticated user attempted to initiate RaceTime link")
@@ -77,9 +76,8 @@ async def initiate_link(
     state = secrets.token_urlsafe(32)
 
     # Store state in session for verification in callback
-    if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
-        app.storage.user['racetime_oauth_state'] = state
-        app.storage.user['racetime_linking_user_id'] = user_id
+    _set_session_value('racetime_oauth_state', state)
+    _set_session_value('racetime_linking_user_id', user_id)
 
     # Get authorization URL
     oauth_service = RacetimeOAuthService()
@@ -109,20 +107,17 @@ async def link_callback(
     """
     try:
         # Get user from session state
-        user_id = None
-        stored_state = None
-
-        if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
-            stored_state = app.storage.user.get('racetime_oauth_state')
-            user_id = app.storage.user.get('racetime_linking_user_id')
+        stored_state = _get_session_value('racetime_oauth_state')
+        user_id = _get_session_value('racetime_linking_user_id')
 
         if not user_id:
             logger.warning("No user ID found in session for RaceTime callback")
             raise HTTPException(status_code=401, detail="Not authenticated")
 
         # Verify state matches (CSRF protection)
-        if stored_state and state != stored_state:
-            logger.warning("State mismatch in RaceTime callback for user %s", user_id)
+        # Both stored_state and state must be present and match
+        if not stored_state or not state or state != stored_state:
+            logger.warning("State mismatch in RaceTime callback for user %s (stored: %s, received: %s)", user_id, bool(stored_state), bool(state))
             raise HTTPException(status_code=400, detail="Invalid state parameter")
 
         # Get user from database
@@ -154,9 +149,8 @@ async def link_callback(
         logger.info("Successfully linked RaceTime account %s to user %s", racetime_id, current_user.id)
 
         # Clear state from session
-        if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
-            app.storage.user.pop('racetime_oauth_state', None)
-            app.storage.user.pop('racetime_linking_user_id', None)
+        _remove_session_value('racetime_oauth_state')
+        _remove_session_value('racetime_linking_user_id')
 
         # Redirect back to profile page
         return RedirectResponse(url="/profile")
@@ -167,6 +161,44 @@ async def link_callback(
     except Exception as e:
         logger.error("Error in RaceTime callback: %s", str(e), exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to link RaceTime account")
+
+
+def _get_session_value(key: str) -> Any | None:
+    """
+    Helper function to safely get a value from the NiceGUI session storage.
+
+    Args:
+        key: Session storage key
+
+    Returns:
+        Value from session or None if not available
+    """
+    if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
+        return app.storage.user.get(key)
+    return None
+
+
+def _set_session_value(key: str, value: Any) -> None:
+    """
+    Helper function to safely set a value in the NiceGUI session storage.
+
+    Args:
+        key: Session storage key
+        value: Value to store
+    """
+    if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
+        app.storage.user[key] = value
+
+
+def _remove_session_value(key: str) -> None:
+    """
+    Helper function to safely remove a value from the NiceGUI session storage.
+
+    Args:
+        key: Session storage key
+    """
+    if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
+        app.storage.user.pop(key, None)
 
 
 @router.post(

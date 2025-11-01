@@ -79,10 +79,10 @@ class RacetimeOAuthService:
 
             # Log error details if request fails
             if response.status_code != 200:
-                error_text = response.text
-                logger.error("RaceTime.gg token exchange failed: %s", error_text)
+                # Don't log the full error response as it may contain sensitive info
+                logger.error("RaceTime.gg token exchange failed with status %s", response.status_code)
                 raise httpx.HTTPStatusError(
-                    f"RaceTime.gg token exchange failed: {error_text}",
+                    "RaceTime.gg token exchange failed",
                     request=response.request,
                     response=response
                 )
@@ -109,10 +109,10 @@ class RacetimeOAuthService:
             )
 
             if response.status_code != 200:
-                error_text = response.text
-                logger.error("RaceTime.gg userinfo request failed: %s", error_text)
+                # Don't log the full error response as it may contain sensitive info
+                logger.error("RaceTime.gg userinfo request failed with status %s", response.status_code)
                 raise httpx.HTTPStatusError(
-                    f"RaceTime.gg userinfo request failed: {error_text}",
+                    "RaceTime.gg userinfo request failed",
                     request=response.request,
                     response=response
                 )
