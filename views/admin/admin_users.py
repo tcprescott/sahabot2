@@ -73,7 +73,7 @@ class AdminUsersView:
                             # Add user button
                             ui.button(
                                 icon='person_add',
-                                on_click=lambda: self._open_add_user()
+                                on_click=self._open_add_user
                             ).classes('btn btn-primary')
             
             # User table
@@ -83,7 +83,7 @@ class AdminUsersView:
     async def _render_statistics(self):
         """Render user statistics cards."""
         # Load all users for statistics
-        all_users = await self.user_service.get_all_users(include_inactive=True)
+        all_users = await self.user_service.get_all_users(self.current_user, include_inactive=True)
         
         stats = {
             'total': len(all_users),
@@ -128,11 +128,11 @@ class AdminUsersView:
         try:
             # Load users based on current filters
             if self.search_query:
-                self.users = await self.user_service.search_users(self.search_query)
+                self.users = await self.user_service.search_users(self.current_user, self.search_query)
                 if not self.include_inactive:
                     self.users = [u for u in self.users if u.is_active]
             else:
-                self.users = await self.user_service.get_all_users(include_inactive=self.include_inactive)
+                self.users = await self.user_service.get_all_users(self.current_user, include_inactive=self.include_inactive)
             
             # Re-render table
             await self._render_user_table()

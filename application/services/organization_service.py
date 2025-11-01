@@ -7,9 +7,12 @@ provides helper methods for authorization decisions related to
 organization administration.
 """
 
+import logging
 from typing import Optional, Sequence, Iterable, Dict, List
 from models import Organization, User, Permission
 from application.repositories.organization_repository import OrganizationRepository
+
+logger = logging.getLogger(__name__)
 
 
 class OrganizationService:
@@ -62,18 +65,61 @@ class OrganizationService:
         """Get an organization by ID."""
         return await self.repo.get_by_id(organization_id)
 
-    async def create_organization(self, name: str, description: Optional[str], is_active: bool = True) -> Organization:
-        """Create a new organization.
-
-        Note: Caller should ensure the user has global admin privileges.
+    async def create_organization(self, current_user: Optional[User], name: str, description: Optional[str], is_active: bool = True) -> Optional[Organization]:
         """
+        Create a new organization.
+
+        Authorization: Only SUPERADMIN users can create organizations.
+
+        Args:
+            current_user: User attempting to create the organization
+            name: Organization name
+            description: Organization description
+            is_active: Whether organization is active
+
+        Returns:
+            Created organization or None if unauthorized
+        """
+        if not current_user or not current_user.has_permission(Permission.SUPERADMIN):
+            logger.warning(
+                "Unauthorized organization creation attempt by user %s",
+                current_user.id if current_user else None
+            )
+            return None
+
         return await self.repo.create(name=name, description=description, is_active=is_active)
 
-    async def update_organization(self, organization_id: int, name: str, description: Optional[str], is_active: bool) -> Optional[Organization]:
-        """Update an existing organization.
-
-        Returns the updated entity or None if not found.
+    async def update_organization(
+        self,
+        current_user: Optional[User],
+        organization_id: int,
+        name: str,
+        description: Optional[str],
+        is_active: bool
+    ) -> Optional[Organization]:
         """
+        Update an existing organization.
+
+        Authorization: Only SUPERADMIN users can update organizations.
+
+        Args:
+            current_user: User attempting to update the organization
+            organization_id: ID of organization to update
+            name: New organization name
+            description: New organization description
+            is_active: New active status
+
+        Returns:
+            Updated organization or None if not found or unauthorized
+        """
+        if not current_user or not current_user.has_permission(Permission.SUPERADMIN):
+            logger.warning(
+                "Unauthorized organization update attempt by user %s for org %s",
+                current_user.id if current_user else None,
+                organization_id
+            )
+            return None
+
         return await self.repo.update(organization_id=organization_id, name=name, description=description, is_active=is_active)
 
     async def user_can_admin_org(self, user: Optional[User], organization_id: int) -> bool:
@@ -127,14 +173,78 @@ class OrganizationService:
         for name in (self._normalize_name(n) for n in names):
             await self.repo.get_or_create_permission(organization_id, name)
 
-    async def create_permission(self, organization_id: int, permission_name: str, description: Optional[str] = None):
-        """Create a permission definition for the organization (idempotent)."""
+    async def create_permission(
+        self,
+        current_user: Optional[User],
+        organization_id: int,
+        permission_name: str,
+        description: Optional[str] = None
+    ):
+        """
+        Create a permission definition for the organization.
+
+        Authorization: Requires org admin or SUPERADMIN permission.
+
+        Args:
+            current_user: User attempting to create the permission
+            organization_id: Organization ID
+            permission_name: Name of the permission to create
+            description: Optional description
+
+        Returns:
+            Created permission or None if unauthorized
+        """
+        # Check authorization
+        can_manage = (
+            await self.user_can_admin_org(current_user, organization_id)
+            or (current_user and current_user.has_permission(Permission.SUPERADMIN))
+        )
+
+        if not can_manage:
+            logger.warning(
+                "Unauthorized permission creation attempt by user %s in org %s",
+                current_user.id if current_user else None,
+                organization_id
+            )
+            return None
+
         normalized = self._normalize_name(permission_name)
         self._validate_permission_names([normalized])
         return await self.repo.get_or_create_permission(organization_id, normalized, description or self._PERMISSION_TYPES.get(normalized))
 
-    async def delete_permission(self, organization_id: int, permission_name: str) -> int:
-        """Delete a permission definition by name. Returns number of rows deleted."""
+    async def delete_permission(
+        self,
+        current_user: Optional[User],
+        organization_id: int,
+        permission_name: str
+    ) -> int:
+        """
+        Delete a permission definition by name.
+
+        Authorization: Requires org admin or SUPERADMIN permission.
+
+        Args:
+            current_user: User attempting to delete the permission
+            organization_id: Organization ID
+            permission_name: Name of the permission to delete
+
+        Returns:
+            Number of rows deleted (0 if unauthorized)
+        """
+        # Check authorization
+        can_manage = (
+            await self.user_can_admin_org(current_user, organization_id)
+            or (current_user and current_user.has_permission(Permission.SUPERADMIN))
+        )
+
+        if not can_manage:
+            logger.warning(
+                "Unauthorized permission deletion attempt by user %s in org %s",
+                current_user.id if current_user else None,
+                organization_id
+            )
+            return 0
+
         normalized = self._normalize_name(permission_name)
         self._validate_permission_names([normalized])
         return await self.repo.delete_permission(organization_id, normalized)
@@ -151,11 +261,46 @@ class OrganizationService:
         normalized = [self._normalize_name(n) for n in permission_names]
         await self.repo.add_permissions_to_member(organization_id, user_id, normalized)
 
-    async def set_permissions_for_member(self, organization_id: int, user_id: int, permission_names: Sequence[str]) -> None:
-        """Replace the member's permissions with the provided list (idempotent)."""
+    async def set_permissions_for_member(
+        self,
+        current_user: Optional[User],
+        organization_id: int,
+        user_id: int,
+        permission_names: Sequence[str]
+    ) -> bool:
+        """
+        Replace the member's permissions with the provided list.
+
+        Authorization: Requires org admin or SUPERADMIN permission.
+
+        Args:
+            current_user: User attempting to set permissions
+            organization_id: Organization ID
+            user_id: User ID of the member
+            permission_names: List of permission names to assign
+
+        Returns:
+            True if successful, False if unauthorized
+        """
+        # Check authorization
+        can_manage = (
+            await self.user_can_admin_org(current_user, organization_id)
+            or (current_user and current_user.has_permission(Permission.SUPERADMIN))
+        )
+
+        if not can_manage:
+            logger.warning(
+                "Unauthorized member permission update attempt by user %s in org %s for user %s",
+                current_user.id if current_user else None,
+                organization_id,
+                user_id
+            )
+            return False
+
         self._validate_permission_names(permission_names)
         normalized = [self._normalize_name(n) for n in permission_names]
         await self.repo.set_permissions_for_member(organization_id, user_id, normalized)
+        return True
 
     async def remove_permissions_from_member(self, organization_id: int, user_id: int, permission_names: Sequence[str]) -> None:
         """Revoke one or more permissions from the member."""

@@ -370,6 +370,72 @@ if not user:
     return  # Redirected to login or home
 ```
 
+### API Routes & Authorization
+All API routes follow a consistent pattern with authorization enforced at the service layer:
+
+**Key Principles:**
+- **Authorization at Service Layer Only**: API routes should NOT perform authorization checks
+- **Pass current_user to services**: Routes extract the authenticated user via `Depends(get_current_user)` and pass to services
+- **Services enforce permissions**: All authorization logic lives in service methods
+- **Return empty results on unauthorized**: Services return empty lists/None rather than raising exceptions for unauthorized requests
+- **Rate limiting only**: API routes should only have `Depends(enforce_rate_limit)` in dependencies
+
+**API Route Pattern:**
+```python
+from fastapi import APIRouter, Depends
+from api.deps import get_current_user, enforce_rate_limit
+from application.services.user_service import UserService
+from models import User
+
+router = APIRouter(prefix="/resource", tags=["resource"])
+
+@router.get(
+    "/",
+    dependencies=[Depends(enforce_rate_limit)],  # Only rate limit, NO permission check
+    summary="List Resources",
+)
+async def list_resources(
+    current_user: User = Depends(get_current_user)  # Extract authenticated user
+) -> ResourceListResponse:
+    """
+    List resources.
+    
+    Authorization is enforced at the service layer.
+    """
+    service = ResourceService()
+    # Pass current_user to service - authorization happens there
+    resources = await service.list_resources(current_user)
+    return ResourceListResponse(items=resources, count=len(resources))
+```
+
+**Service Layer Authorization:**
+```python
+class ResourceService:
+    async def list_resources(self, current_user: Optional[User]) -> list[Resource]:
+        """
+        List resources visible to the user.
+        
+        Authorization is enforced here - only returns resources the user can access.
+        """
+        # Check permissions
+        if not current_user or not current_user.has_permission(Permission.MODERATOR):
+            logger.warning("Unauthorized access attempt by user %s", current_user.id if current_user else None)
+            return []  # Return empty list, don't raise exception
+        
+        # Fetch and return data
+        return await self.repository.list_all()
+```
+
+**Why This Pattern:**
+- ✅ Centralized authorization logic in services (single source of truth)
+- ✅ Consistent behavior across UI and API endpoints
+- ✅ Services can be tested independently of FastAPI routing
+- ✅ Multi-tenant checks happen in one place
+- ✅ Graceful degradation (empty results vs errors)
+- ❌ Don't use `Depends(require_permission())` in API routes
+- ❌ Don't check permissions in API route handlers
+- ❌ Don't raise 403 exceptions for authorization in services (return empty instead)
+
 ### CSS Classes
 **Note**: All CSS must use the official color palette defined above. Use CSS variables for colors.
 

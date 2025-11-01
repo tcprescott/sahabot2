@@ -4,9 +4,13 @@ User service for user-related business logic.
 This module contains all business logic related to user management.
 """
 
+import logging
 from models import User, Permission
 from typing import Optional
 from application.repositories.user_repository import UserRepository
+from application.services.authorization_service import AuthorizationService
+
+logger = logging.getLogger(__name__)
 
 
 class UserService:
@@ -198,26 +202,38 @@ class UserService:
 
         return user
 
-    async def get_all_users(self, include_inactive: bool = False) -> list[User]:
+    async def get_all_users(self, current_user: Optional[User], include_inactive: bool = False) -> list[User]:
         """
-        Get all users.
+        Get all users (requires ADMIN permission).
 
         Args:
+            current_user: User performing the action
             include_inactive: Whether to include inactive users
 
         Returns:
-            list[User]: List of users
+            list[User]: List of users (empty list if unauthorized)
         """
+        # Check authorization
+        if not AuthorizationService.can_access_admin_panel(current_user):
+            logger.warning("Unauthorized get_all_users attempt by user %s", getattr(current_user, 'id', None))
+            return []
+        
         return await self.user_repository.get_all(include_inactive=include_inactive)
 
-    async def search_users(self, query: str) -> list[User]:
+    async def search_users(self, current_user: Optional[User], query: str) -> list[User]:
         """
-        Search users by username.
+        Search users by username (requires MODERATOR permission).
 
         Args:
+            current_user: User performing the action
             query: Search query
 
         Returns:
-            list[User]: List of matching users
+            list[User]: List of matching users (empty list if unauthorized)
         """
+        # Check authorization
+        if not AuthorizationService.can_moderate(current_user):
+            logger.warning("Unauthorized search_users attempt by user %s", getattr(current_user, 'id', None))
+            return []
+        
         return await self.user_repository.search_by_username(query)

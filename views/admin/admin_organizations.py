@@ -42,7 +42,7 @@ class AdminOrganizationsView:
                 TableColumn('Name', key='name'),
                 TableColumn('Active', cell_render=lambda o: ui.icon('check_circle').classes('text-positive') if o.is_active else ui.icon('cancel').classes('text-negative')),
                 TableColumn('Created', cell_render=lambda o: DateTimeLabel.datetime(o.created_at)),
-                TableColumn('Actions', cell_render=lambda o: self._actions_cell(o)),
+                TableColumn('Actions', cell_render=self._actions_cell),
             ]
             table = ResponsiveTable(columns, orgs)
             await table.render()
