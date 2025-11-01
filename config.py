@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     RACETIME_BOTS: str = ""  # Comma-separated list of category:client_id:client_secret
     RACETIME_BOTS_ENABLED: bool = True  # Set to False to disable Racetime bots
 
+    # Racetime.gg OAuth2 Configuration (for user account linking)
+    RACETIME_CLIENT_ID: str = ""
+    RACETIME_CLIENT_SECRET: str = ""
+    RACETIME_OAUTH_REDIRECT_URI: str = "http://localhost:8080/api/racetime/link/callback"
+    RACETIME_URL: str = "https://racetime.gg"
+
     # Application Configuration
     SECRET_KEY: str
     ENVIRONMENT: str = "development"

@@ -237,3 +237,63 @@ class UserService:
             return []
         
         return await self.user_repository.search_by_username(query)
+
+    async def link_racetime_account(
+        self,
+        user: User,
+        racetime_id: str,
+        racetime_name: str,
+        access_token: str
+    ) -> User:
+        """
+        Link a RaceTime.gg account to a user.
+
+        Args:
+            user: User to link the account to
+            racetime_id: RaceTime.gg user ID
+            racetime_name: RaceTime.gg username
+            access_token: OAuth2 access token
+
+        Returns:
+            User: Updated user with linked RaceTime account
+
+        Raises:
+            ValueError: If RaceTime account is already linked to another user
+        """
+        # Check if this racetime_id is already linked to a different user
+        existing_user = await self.user_repository.get_by_racetime_id(racetime_id)
+        if existing_user and existing_user.id != user.id:
+            logger.warning(
+                "RaceTime account %s already linked to user %s, attempted by user %s",
+                racetime_id,
+                existing_user.id,
+                user.id
+            )
+            raise ValueError("This RaceTime.gg account is already linked to another user")
+
+        # Update user with RaceTime information
+        user.racetime_id = racetime_id
+        user.racetime_name = racetime_name
+        user.racetime_access_token = access_token
+        await user.save()
+
+        logger.info("Linked RaceTime account %s to user %s", racetime_id, user.id)
+        return user
+
+    async def unlink_racetime_account(self, user: User) -> User:
+        """
+        Unlink RaceTime.gg account from a user.
+
+        Args:
+            user: User to unlink the account from
+
+        Returns:
+            User: Updated user with unlinked RaceTime account
+        """
+        user.racetime_id = None
+        user.racetime_name = None
+        user.racetime_access_token = None
+        await user.save()
+
+        logger.info("Unlinked RaceTime account from user %s", user.id)
+        return user
