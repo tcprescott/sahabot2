@@ -71,11 +71,13 @@ class CTJetsService:
                 **settings
             }
 
-            # Note: ROM file handling would need to be implemented
-            # if actual ROM generation is required
+            # Note: ROM file handling requires multipart/form-data upload with the base
+            # Chrono Trigger ROM file. This is intentionally not implemented as it would
+            # require users to provide their own ROM files, which cannot be distributed.
+            # For actual ROM generation, implement multipart upload as follows:
+            # files = {'rom_file': ('chronotrigger.sfc', rom_bytes, 'application/octet-stream')}
+            # response = await client.post(url, data=form_data, files=files, ...)
             if rom_path:
-                # This would require multipart/form-data upload
-                # For now, we'll just log a warning
                 logger.warning("ROM file path provided but ROM upload not implemented")
 
             # Submit form

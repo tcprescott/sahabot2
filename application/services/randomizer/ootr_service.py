@@ -7,7 +7,7 @@ This service handles generation of Ocarina of Time randomizer seeds via API.
 import logging
 from typing import Dict, Any, Optional
 import httpx
-from config import Config
+from config import settings
 from .randomizer_service import RandomizerResult
 
 logger = logging.getLogger(__name__)
@@ -24,11 +24,11 @@ class OOTRService:
 
     def __init__(self):
         """Initialize the OOTR service."""
-        self.config = Config()
+        pass
 
     async def generate(
         self,
-        settings: Dict[str, Any],
+        settings_dict: Dict[str, Any],
         version: str = '6.1.0',
         encrypt: bool = True
     ) -> RandomizerResult:
@@ -36,7 +36,7 @@ class OOTRService:
         Generate an Ocarina of Time randomizer seed.
 
         Args:
-            settings: Dictionary of randomizer settings
+            settings_dict: Dictionary of randomizer settings
             version: OoTR version to use (default: '6.1.0')
             encrypt: Whether to encrypt the seed (default: True)
 
@@ -46,7 +46,7 @@ class OOTRService:
         Raises:
             httpx.HTTPError: If the API request fails
         """
-        api_key = getattr(self.config, 'OOTR_API_KEY', None)
+        api_key = getattr(settings, 'OOTR_API_KEY', None)
         if not api_key:
             logger.warning("OOTR_API_KEY not configured, seed generation may fail")
 
@@ -61,7 +61,7 @@ class OOTRService:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.BASE_URL}/api/sglive/seed/create",
-                json=settings,
+                json=settings_dict,
                 params=params,
                 timeout=30.0
             )
@@ -76,7 +76,7 @@ class OOTRService:
         return RandomizerResult(
             url=result.get('url', f"{self.BASE_URL}/seed/{seed_id}"),
             hash_id=str(seed_id),
-            settings=settings,
+            settings=settings_dict,
             randomizer='ootr',
             permalink=result.get('permalink'),
             metadata=result

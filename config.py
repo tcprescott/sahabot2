@@ -105,5 +105,6 @@ class Settings(BaseSettings):
 # Global settings instance
 settings = Settings()
 
-# Alias for backward compatibility
+# Alias for backward compatibility with external imports
+# Use 'settings' instance directly instead for new code
 Config = Settings

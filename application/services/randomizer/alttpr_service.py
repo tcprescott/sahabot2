@@ -7,7 +7,7 @@ This service handles generation of ALTTPR seeds via the official API.
 import logging
 from typing import Dict, Any, Optional
 import httpx
-from config import Config
+from config import settings
 from .randomizer_service import RandomizerResult
 
 logger = logging.getLogger(__name__)
@@ -22,11 +22,11 @@ class ALTTPRService:
 
     def __init__(self):
         """Initialize the ALTTPR service."""
-        self.config = Config()
+        pass
 
     async def generate(
         self,
-        settings: Dict[str, Any],
+        settings_dict: Dict[str, Any],
         baseurl: Optional[str] = None,
         endpoint: str = "/api/randomizer",
         tournament: bool = True,
@@ -37,7 +37,7 @@ class ALTTPRService:
         Generate an ALTTPR seed.
 
         Args:
-            settings: Dictionary of randomizer settings
+            settings_dict: Dictionary of randomizer settings
             baseurl: Base URL for the API (default: from config or https://alttpr.com)
             endpoint: API endpoint to use (default: /api/randomizer)
             tournament: Whether this is a tournament seed (default: True)
@@ -51,13 +51,13 @@ class ALTTPRService:
             httpx.HTTPError: If the API request fails
         """
         if baseurl is None:
-            baseurl = getattr(self.config, 'ALTTPR_BASEURL', 'https://alttpr.com')
+            baseurl = getattr(settings, 'ALTTPR_BASEURL', 'https://alttpr.com')
 
         # Apply additional settings
-        settings['tournament'] = tournament
-        settings['spoilers'] = spoilers
-        if 'allow_quickswap' not in settings:
-            settings['allow_quickswap'] = allow_quickswap
+        settings_dict['tournament'] = tournament
+        settings_dict['spoilers'] = spoilers
+        if 'allow_quickswap' not in settings_dict:
+            settings_dict['allow_quickswap'] = allow_quickswap
 
         url = f"{baseurl}{endpoint}"
 
@@ -66,7 +66,7 @@ class ALTTPRService:
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 url,
-                json=settings,
+                json=settings_dict,
                 timeout=60.0
             )
             response.raise_for_status()
@@ -81,7 +81,7 @@ class ALTTPRService:
         return RandomizerResult(
             url=permalink,
             hash_id=hash_id,
-            settings=settings,
+            settings=settings_dict,
             randomizer='alttpr',
             permalink=permalink,
             spoiler_url=result.get('spoiler', {}).get('download') if spoilers != 'off' else None,
