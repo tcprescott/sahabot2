@@ -19,6 +19,20 @@ This guide explains how to deploy SahaBot2 to Digital Ocean's Managed Kubernetes
    - `DIGITALOCEAN_REGISTRY_NAME` - Your DO registry name (e.g., `my-registry`)
    - `DIGITALOCEAN_CLUSTER_ID` - Your Kubernetes cluster ID or name
 
+## Validation
+
+Before deploying, validate your configuration:
+
+```bash
+python3 tools/validate_k8s.py
+```
+
+This script checks:
+- YAML syntax of all manifests
+- Whether secrets have been customized from template values
+- Whether deployment image registry is configured
+- GitHub Actions workflow syntax
+
 ## Architecture Overview
 
 The deployment consists of:

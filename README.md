@@ -137,6 +137,12 @@ SahaBot2 can be deployed to Digital Ocean's Managed Kubernetes service using the
 2. Push to `main` branch - automated build and deploy
 3. Access via LoadBalancer IP
 
+**Validation**:
+```bash
+# Validate configuration before deploying
+python3 tools/validate_k8s.py
+```
+
 **Manual Deployment**:
 ```bash
 # Build and push container
