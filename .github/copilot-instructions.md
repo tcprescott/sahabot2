@@ -3,6 +3,10 @@
 ## Project Overview
 SahaBot2 (SahasrahBot2) is a NiceGUI + FastAPI web application with Discord OAuth2 authentication and Tortoise ORM for database access. The application follows strict architectural principles emphasizing separation of concerns, mobile-first design, and high code quality.
 
+**This is the successor to the original SahasrahBot**: https://github.com/tcprescott/sahasrahbot
+
+When porting features from the original SahasrahBot, use the GitHub repository as a reference for understanding existing functionality, business logic, and user workflows. The new codebase has a completely different architecture (NiceGUI + FastAPI vs Flask), so features should be adapted to fit the new patterns rather than directly copied.
+
 ## Architecture & Key Components
 
 ### Core Files
@@ -267,6 +271,53 @@ The application uses a five-color palette with automatic dark mode support. Ligh
   - All commands must be registered as application commands via `@app_commands.command()`
 - **Singleton Pattern**: Bot runs as singleton, access via `get_bot_instance()` from `bot.client`
 - **Separation**: Bot commands should only handle Discord interaction (parsing, responding), delegate all logic to services
+
+### 9. Porting Features from Original SahasrahBot
+When implementing features that existed in the original SahasrahBot (https://github.com/tcprescott/sahasrahbot), follow this workflow:
+
+**Reference the Original Implementation:**
+1. Use the GitHub repository link to review the original feature's implementation
+2. Understand the business logic, user workflows, and data models used
+3. Identify the core functionality that needs to be preserved
+4. Note any Discord bot commands, API endpoints, or UI elements involved
+
+**Adapt to New Architecture:**
+1. **Don't copy-paste Flask code** - The original uses Flask, the new version uses NiceGUI + FastAPI
+2. **Refactor into layers**: Break the feature into services (business logic), repositories (data access), and UI/API (presentation)
+3. **Add multi-tenancy**: Most features should be organization-scoped (unless explicitly global like user management)
+4. **Use new patterns**: Follow the established patterns in SahaBot2 (BasePage, service layer authorization, async/await, etc.)
+5. **Modernize where appropriate**: Take the opportunity to improve UX, add validation, enhance error handling
+
+**Example Porting Workflow:**
+```
+Original SahasrahBot Feature: Tournament Management
+1. Review: alttpr/cogs/tournament.py for Discord commands
+2. Review: alttprbot_api/api/tournament.py for API endpoints  
+3. Review: alttprbot/database/tournament.py for data models
+4. Adapt: Create models/tournaments.py with Organization FK
+5. Adapt: Create application/services/tournament_service.py with business logic
+6. Adapt: Create api/routes/tournaments.py following established API patterns
+7. Adapt: Create views/tournaments/ for UI components
+8. Adapt: Port Discord commands to discordbot/commands/tournaments.py
+```
+
+**Key Differences to Remember:**
+- Original: Flask web app + separate Discord bot process
+- New: NiceGUI + FastAPI with embedded Discord bot
+- Original: Single-tenant (one instance per community)
+- New: Multi-tenant (organizations isolate communities)
+- Original: Role-based permissions via Discord roles
+- New: Database-driven permissions per organization
+- Original: Synchronous database operations
+- New: Async Tortoise ORM
+- Original: Jinja2 templates
+- New: NiceGUI component-based UI
+
+**When in Doubt:**
+- Preserve the core user experience and workflows
+- Adapt the implementation to fit SahaBot2 architecture
+- Ask for clarification if business logic is unclear
+- Reference the original repo liberally via GitHub URL
 
 ## Development Workflows
 
