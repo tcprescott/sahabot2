@@ -6,20 +6,7 @@ Pydantic models for request/response validation.
 from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
-from enum import IntEnum
-
-
-class TaskType(IntEnum):
-    """Task type enum."""
-    RACETIME_OPEN_ROOM = 1
-    CUSTOM = 99
-
-
-class ScheduleType(IntEnum):
-    """Schedule type enum."""
-    INTERVAL = 1
-    CRON = 2
-    ONE_TIME = 3
+from models.scheduled_task import TaskType, ScheduleType
 
 
 class ScheduledTaskBase(BaseModel):

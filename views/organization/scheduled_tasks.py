@@ -26,11 +26,13 @@ class OrganizationScheduledTasksView:
         with Card.create(title=f'Scheduled Tasks - {self.org.name}'):
             with ui.row().classes('w-full justify-between items-center mb-4'):
                 ui.label('Manage automated tasks for this organization').classes('text-secondary')
-                ui.button(
-                    'Create Task',
-                    icon='add',
-                    on_click=self._show_create_dialog
-                ).classes('btn').props('color=positive')
+                # TODO: Re-enable when create dialog is implemented
+                # ui.button(
+                #     'Create Task',
+                #     icon='add',
+                #     on_click=self._show_create_dialog
+                # ).classes('btn').props('color=positive')
+                ui.label('Use API to create tasks (UI coming soon)').classes('text-sm text-secondary')
 
             # Container for task list
             self.tasks_container = ui.element('div').classes('w-full')
@@ -88,10 +90,11 @@ class OrganizationScheduledTasksView:
 
                     # Actions
                     with ui.column().classes('gap-2'):
-                        ui.button(
-                            icon='edit',
-                            on_click=lambda t=task: self._show_edit_dialog(t)
-                        ).props('flat color=primary').tooltip('Edit Task')
+                        # TODO: Re-enable when edit dialog is implemented
+                        # ui.button(
+                        #     icon='edit',
+                        #     on_click=lambda t=task: self._show_edit_dialog(t)
+                        # ).props('flat color=primary').tooltip('Edit Task')
 
                         if task.is_active:
                             ui.button(
