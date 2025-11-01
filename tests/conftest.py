@@ -52,6 +52,9 @@ async def db() -> AsyncGenerator:
                         "models.user",
                         "models.audit_log",
                         "models.api_token",
+                        "models.preset",
+                        "models.organizations",
+                        "models.settings",
                     ],
                     "default_connection": "default",
                 }
