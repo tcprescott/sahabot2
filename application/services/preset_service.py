@@ -6,7 +6,7 @@ This module provides business logic for preset management.
 
 import logging
 import yaml
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Union
 from application.repositories.preset_repository import PresetRepository
 from models.preset import Preset, PresetNamespace
 from models.user import User
@@ -348,7 +348,7 @@ class PresetService:
         self,
         randomizer: str,
         include_namespace_names: bool = False
-    ) -> List[str] | Dict[str, List[str]]:
+    ) -> Union[List[str], Dict[str, List[str]]]:
         """
         Get a list of preset names for a specific randomizer.
 
