@@ -81,6 +81,18 @@ class RandomizerService:
         elif name == 'smb3r':
             from .smb3r_service import SMB3RService
             return SMB3RService()
+        elif name == 'sm':
+            from .sm_service import SMService
+            return SMService()
+        elif name == 'smz3':
+            from .smz3_service import SMZ3Service
+            return SMZ3Service()
+        elif name == 'ctjets' or name == 'ct':
+            from .ctjets_service import CTJetsService
+            return CTJetsService()
+        elif name == 'bingosync' or name == 'bingo':
+            from .bingosync_service import BingosyncService
+            return BingosyncService()
         else:
             raise ValueError(f"Unknown randomizer: {name}")
 
@@ -91,4 +103,4 @@ class RandomizerService:
         Returns:
             list[str]: List of randomizer names
         """
-        return ['alttpr', 'aosr', 'z1r', 'ootr', 'ffr', 'smb3r']
+        return ['alttpr', 'aosr', 'z1r', 'ootr', 'ffr', 'smb3r', 'sm', 'smz3', 'ctjets', 'bingosync']

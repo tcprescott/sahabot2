@@ -12,6 +12,10 @@ from .z1r_service import Z1RService
 from .ootr_service import OOTRService
 from .ffr_service import FFRService
 from .smb3r_service import SMB3RService
+from .sm_service import SMService
+from .smz3_service import SMZ3Service
+from .ctjets_service import CTJetsService
+from .bingosync_service import BingosyncService
 
 __all__ = [
     'RandomizerService',
@@ -21,4 +25,8 @@ __all__ = [
     'OOTRService',
     'FFRService',
     'SMB3RService',
+    'SMService',
+    'SMZ3Service',
+    'CTJetsService',
+    'BingosyncService',
 ]
