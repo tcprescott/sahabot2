@@ -6,6 +6,7 @@
 
 - 🎨 **Mobile-First Responsive Design** - Fully functional on all device sizes
 - 🔐 **Discord OAuth2 Authentication** - Secure login via Discord
+- 🏁 **RaceTime.gg Integration** - Link your RaceTime.gg account for race tracking
 - 🗄️ **Database-Driven Authorization** - Flexible permission system
 - 🏗️ **Clean Architecture** - Separation of concerns with service and repository layers
 - 💅 **External CSS** - No inline styling, human-friendly class names
@@ -95,13 +96,26 @@ sahabot2/
    ```
 
 5. **Configure Discord OAuth2**
-   
+
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Create a new application
    - Add OAuth2 redirect URL: `http://localhost:8080/auth/callback`
    - Copy Client ID and Client Secret to `.env`
 
-6. **Initialize database migrations**
+6. **Configure RaceTime.gg OAuth2 (Optional)**
+
+   For users to link their RaceTime.gg accounts:
+   - Go to [RaceTime.gg Developer Portal](https://racetime.gg/account/dev)
+   - Create a new OAuth2 application
+   - Set redirect URI to: `http://localhost:8080/api/racetime/link/callback`
+   - Copy Client ID and Client Secret to `.env`:
+     ```env
+     RACETIME_CLIENT_ID=your_client_id
+     RACETIME_CLIENT_SECRET=your_client_secret
+     RACETIME_OAUTH_REDIRECT_URI=http://localhost:8080/api/racetime/link/callback
+     ```
+
+7. **Initialize database migrations**
    ```bash
    poetry run aerich init-db
    ```
