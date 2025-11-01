@@ -99,5 +99,10 @@ class ConfirmDeleteDialog(BaseDialog):
 
     async def _confirm(self):
         """Handle confirmation."""
-        await self.on_confirm()
-        await self.close()
+        try:
+            await self.on_confirm()
+            await self.close()
+        except Exception as e:
+            logger.error("Error in confirmation callback: %s", e, exc_info=True)
+            ui.notify(f'Error: {str(e)}', type='negative')
+            # Don't close dialog on error

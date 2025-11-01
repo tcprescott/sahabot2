@@ -49,6 +49,7 @@ class PresetEditView:
             with ui.card().classes('w-full'):
                 with ui.element('div').classes('flex flex-col gap-4 p-4'):
                     # Namespace (if creating)
+                    namespace_select = None
                     if self.is_create:
                         # Get user's namespaces
                         namespaces = await self.service.list_namespaces(user=self.user)
@@ -104,6 +105,12 @@ class PresetEditView:
                     # Validation message area
                     validation_msg = ui.label('').classes('text-sm')
 
+                    # Helper to get namespace name
+                    def get_namespace_name():
+                        if self.is_create and namespace_select:
+                            return namespace_select.value
+                        return self.preset.namespace.name
+
                     # Action buttons
                     with ui.element('div').classes('flex justify-between mt-4'):
                         ui.button(
@@ -125,7 +132,7 @@ class PresetEditView:
                                 'Save' if not self.is_create else 'Create',
                                 icon='save',
                                 on_click=lambda: self._save_preset(
-                                    namespace_select.value if self.is_create else self.preset.namespace.name,
+                                    get_namespace_name(),
                                     preset_name_input.value,
                                     randomizer_select.value,
                                     content_editor.value,
@@ -146,11 +153,13 @@ class PresetEditView:
 
         try:
             yaml.safe_load(content)
-            message_label.text = '✓ Valid YAML'
-            message_label.classes('text-positive')
+            message_label.set_text('✓ Valid YAML')
+            message_label._classes.clear()
+            message_label.classes('text-sm text-positive')
         except yaml.YAMLError as e:
-            message_label.text = f'✗ Invalid YAML: {str(e)}'
-            message_label.classes('text-negative')
+            message_label.set_text(f'✗ Invalid YAML: {str(e)}')
+            message_label._classes.clear()
+            message_label.classes('text-sm text-negative')
 
     async def _save_preset(
         self,
@@ -174,13 +183,15 @@ class PresetEditView:
         """
         # Validation
         if not preset_name:
-            message_label.text = '✗ Preset name is required'
-            message_label.classes('text-negative')
+            message_label.set_text('✗ Preset name is required')
+            message_label._classes.clear()
+            message_label.classes('text-sm text-negative')
             return
 
         if not content:
-            message_label.text = '✗ Content is required'
-            message_label.classes('text-negative')
+            message_label.set_text('✗ Content is required')
+            message_label._classes.clear()
+            message_label.classes('text-sm text-negative')
             return
 
         try:
@@ -199,8 +210,9 @@ class PresetEditView:
                     ui.notify(f'Created preset {preset_name}', type='positive')
                     ui.navigate.to(f'/presets/namespace/{namespace_name}')
                 else:
-                    message_label.text = '✗ Failed to create preset (check permissions)'
-                    message_label.classes('text-negative')
+                    message_label.set_text('✗ Failed to create preset (check permissions)')
+                    message_label._classes.clear()
+                    message_label.classes('text-sm text-negative')
             else:
                 # Update existing preset
                 success = await self.service.update_preset(
@@ -214,13 +226,16 @@ class PresetEditView:
                     ui.notify(f'Updated preset {preset_name}', type='positive')
                     ui.navigate.back()
                 else:
-                    message_label.text = '✗ Failed to update preset (check permissions)'
-                    message_label.classes('text-negative')
+                    message_label.set_text('✗ Failed to update preset (check permissions)')
+                    message_label._classes.clear()
+                    message_label.classes('text-sm text-negative')
 
         except ValueError as e:
-            message_label.text = f'✗ {str(e)}'
-            message_label.classes('text-negative')
+            message_label.set_text(f'✗ {str(e)}')
+            message_label._classes.clear()
+            message_label.classes('text-sm text-negative')
         except Exception as e:
             logger.error("Error saving preset: %s", e, exc_info=True)
-            message_label.text = f'✗ Error: {str(e)}'
-            message_label.classes('text-negative')
+            message_label.set_text(f'✗ Error: {str(e)}')
+            message_label._classes.clear()
+            message_label.classes('text-sm text-negative')

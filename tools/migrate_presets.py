@@ -117,12 +117,15 @@ async def migrate_preset_file(
             return success
         else:
             logger.info("Creating new preset: %s/%s (%s)", namespace, preset_name, randomizer)
+            # NOTE: Passing user=None bypasses authorization for system migrations.
+            # This is intentional for bulk imports of official presets.
+            # The service layer will handle this by creating presets without user context.
             preset = await service.create_preset(
                 namespace,
                 preset_name,
                 randomizer,
                 content,
-                user=None  # System migration, no user context
+                user=None
             )
             if preset:
                 logger.info("Successfully created preset: %s/%s (%s)", namespace, preset_name, randomizer)
