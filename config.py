@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     API_RATE_LIMIT_WINDOW_SECONDS: int = 60
     API_DEFAULT_RATE_LIMIT_PER_MINUTE: int = 60
 
+    # Randomizer Configuration
+    ALTTPR_BASEURL: str = "https://alttpr.com"
+    OOTR_API_KEY: Optional[str] = None
+
     @property
     def database_url(self) -> str:
         """
@@ -100,3 +104,6 @@ class Settings(BaseSettings):
 
 # Global settings instance
 settings = Settings()
+
+# Alias for backward compatibility
+Config = Settings
