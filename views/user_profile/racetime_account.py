@@ -86,24 +86,22 @@ class RacetimeAccountView:
                     ).classes('btn btn-primary')
 
     async def _unlink_account(self) -> None:
-        """Unlink the RaceTime account via API."""
-        import httpx
-        from nicegui import app
+        """Unlink the RaceTime account via service."""
+        from application.services.user_service import UserService
+        from application.repositories.user_repository import UserRepository
 
         try:
-            # Call the unlink API endpoint
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{app.native.window_args.get('BASE_URL', 'http://localhost:8080')}/api/racetime/link/unlink",
-                    headers={'Authorization': f"Bearer {app.storage.user.get('user_id')}"}
-                )
+            # Call the service to unlink the account
+            user_service = UserService()
+            await user_service.unlink_racetime_account(self.user)
 
-                if response.status_code == 200:
-                    ui.notify('RaceTime account unlinked successfully', type='positive')
-                    # Reload the page to reflect changes
-                    ui.navigate.to('/profile')
-                else:
-                    ui.notify('Failed to unlink RaceTime account', type='negative')
+            # Refresh the user object
+            user_repo = UserRepository()
+            self.user = await user_repo.get_by_id(self.user.id)
+
+            ui.notify('RaceTime account unlinked successfully', type='positive')
+            # Reload the page to reflect changes
+            ui.navigate.to('/profile')
 
         except Exception as e:
             logger.error("Error unlinking RaceTime account: %s", str(e), exc_info=True)

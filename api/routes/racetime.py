@@ -51,79 +51,87 @@ async def get_link_status(
 
 @router.get(
     "/link/initiate",
-    dependencies=[Depends(enforce_rate_limit)],
     summary="Initiate RaceTime Account Link",
 )
 async def initiate_link(
     request: Request,
-    current_user: User = Depends(get_current_user)
 ) -> RedirectResponse:
     """
     Initiate RaceTime.gg OAuth2 flow for account linking.
 
     Redirects the user to RaceTime.gg for authorization.
+
+    Note: This endpoint does not use standard API authentication because it's accessed
+    from the web UI. Authentication is verified via session state.
     """
+    # Get current user from session
+    user_id = None
+    if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
+        user_id = app.storage.user.get('user_id')
+
+    if not user_id:
+        logger.warning("Unauthenticated user attempted to initiate RaceTime link")
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
     # Generate CSRF state token
     state = secrets.token_urlsafe(32)
 
     # Store state in session for verification in callback
-    # Note: In a NiceGUI context, we'd use app.storage.user, but for API routes
-    # we need to use the request session or a temporary cache
-    # For now, we'll pass it through and verify in callback
     if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
         app.storage.user['racetime_oauth_state'] = state
-        app.storage.user['racetime_linking_user_id'] = current_user.id
+        app.storage.user['racetime_linking_user_id'] = user_id
 
     # Get authorization URL
     oauth_service = RacetimeOAuthService()
     auth_url = oauth_service.get_authorization_url(state)
 
-    logger.info("User %s initiating RaceTime.gg account link", current_user.id)
+    logger.info("User %s initiating RaceTime.gg account link", user_id)
 
     return RedirectResponse(url=auth_url)
 
 
 @router.get(
     "/link/callback",
-    dependencies=[Depends(enforce_rate_limit)],
     summary="RaceTime OAuth Callback",
 )
 async def link_callback(
     code: str,
     state: str,
-    current_user: User | None = Depends(get_current_user)
 ) -> RedirectResponse:
     """
     Handle OAuth2 callback from RaceTime.gg.
 
     Completes the account linking process and redirects back to profile.
+
+    Note: This endpoint does not use standard API authentication because it's called
+    by an external OAuth redirect. Instead, it relies on session state stored during
+    the initiation step.
     """
     try:
-        # For API callback, we need to handle authentication differently
-        # since this is coming from an external redirect
-        # We'll need to check if we have user info in session
-
-        # Verify state (CSRF protection)
-        stored_state = None
+        # Get user from session state
         user_id = None
+        stored_state = None
 
         if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
             stored_state = app.storage.user.get('racetime_oauth_state')
             user_id = app.storage.user.get('racetime_linking_user_id')
 
-        # If no current_user from API auth, try to get from session
-        if not current_user and user_id:
-            user_service = UserService()
-            current_user = await user_service.get_user_by_id(user_id)
-
-        if not current_user:
-            logger.warning("No user found for RaceTime callback")
+        if not user_id:
+            logger.warning("No user ID found in session for RaceTime callback")
             raise HTTPException(status_code=401, detail="Not authenticated")
 
-        # Verify state matches
+        # Verify state matches (CSRF protection)
         if stored_state and state != stored_state:
-            logger.warning("State mismatch in RaceTime callback for user %s", current_user.id)
+            logger.warning("State mismatch in RaceTime callback for user %s", user_id)
             raise HTTPException(status_code=400, detail="Invalid state parameter")
+
+        # Get user from database
+        user_service = UserService()
+        current_user = await user_service.get_user_by_id(user_id)
+
+        if not current_user:
+            logger.warning("User %s not found for RaceTime callback", user_id)
+            raise HTTPException(status_code=401, detail="User not found")
 
         # Exchange code for token
         oauth_service = RacetimeOAuthService()
@@ -136,7 +144,6 @@ async def link_callback(
         racetime_name = userinfo['name']
 
         # Link the account
-        user_service = UserService()
         await user_service.link_racetime_account(
             user=current_user,
             racetime_id=racetime_id,
