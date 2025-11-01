@@ -11,6 +11,8 @@
 - 💅 **External CSS** - No inline styling, human-friendly class names
 - ⚡ **Async/Await** - Modern asynchronous Python throughout
 - 📝 **High Code Quality** - Comprehensive docstrings and type hints
+- 🐳 **Docker & Kubernetes** - Production-ready containerization and orchestration
+- 🚀 **CI/CD Pipeline** - Automated builds and deployments with GitHub Actions
 
 ## Architecture
 
@@ -303,6 +305,14 @@ Run tests with pytest:
 ```bash
 poetry run pytest
 ```
+
+## Additional Documentation
+
+- **[Kubernetes Deployment Guide](k8s/README.md)** - Complete guide for deploying to Digital Ocean Kubernetes
+- **[Docker Quick Start](docs/DOCKER.md)** - Local Docker testing and container management
+- **[CI/CD Pipeline](docs/CICD.md)** - GitHub Actions workflows and deployment automation
+- **[API Documentation](API_SWAGGER_GUIDE.md)** - Interactive API documentation guide
+- **[Components Guide](COMPONENTS_GUIDE.md)** - UI components reference
 
 ## Contributing
 
