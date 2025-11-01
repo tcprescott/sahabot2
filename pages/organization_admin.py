@@ -15,6 +15,7 @@ from views.organization import (
     OrganizationSettingsView,
     OrganizationTournamentsView,
     OrganizationStreamChannelsView,
+    OrganizationScheduledTasksView,
 )
 
 
@@ -107,12 +108,22 @@ def register():
                         view = OrganizationStreamChannelsView(org, page.user)
                         await view.render()
 
+            async def load_scheduled_tasks():
+                """Load organization scheduled tasks management."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = OrganizationScheduledTasksView(org, page.user)
+                        await view.render()
+
             # Register loaders (restrict for non-admin tournament managers)
             if allowed_admin:
                 page.register_content_loader('overview', load_overview)
                 page.register_content_loader('members', load_members)
                 page.register_content_loader('permissions', load_permissions)
                 page.register_content_loader('stream_channels', load_stream_channels)
+                page.register_content_loader('scheduled_tasks', load_scheduled_tasks)
                 page.register_content_loader('settings', load_settings)
             # Tournaments accessible to admins and TOURNAMENT_MANAGERs
             page.register_content_loader('tournaments', load_tournaments)
@@ -136,6 +147,7 @@ def register():
                 base.create_sidebar_item_with_loader('Permissions', 'verified_user', 'permissions'),
                 base.create_sidebar_item_with_loader('Stream Channels', 'cast', 'stream_channels'),
                 base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
+                base.create_sidebar_item_with_loader('Scheduled Tasks', 'schedule', 'scheduled_tasks'),
                 base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
             ])
         else:
