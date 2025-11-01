@@ -292,7 +292,7 @@ When implementing features that existed in the original SahasrahBot (https://git
 ```
 Original SahasrahBot Feature: Tournament Management
 1. Review: alttpr/cogs/tournament.py for Discord commands
-2. Review: alttprbot_api/api/tournament.py for API endpoints  
+2. Review: alttprbot_api/api/tournament.py for API endpoints
 3. Review: alttprbot/database/tournament.py for data models
 4. Adapt: Create models/tournaments.py with Organization FK
 5. Adapt: Create application/services/tournament_service.py with business logic
@@ -450,7 +450,7 @@ async def list_resources(
 ) -> ResourceListResponse:
     """
     List resources.
-    
+
     Authorization is enforced at the service layer.
     """
     service = ResourceService()
@@ -465,14 +465,14 @@ class ResourceService:
     async def list_resources(self, current_user: Optional[User]) -> list[Resource]:
         """
         List resources visible to the user.
-        
+
         Authorization is enforced here - only returns resources the user can access.
         """
         # Check permissions
         if not current_user or not current_user.has_permission(Permission.MODERATOR):
             logger.warning("Unauthorized access attempt by user %s", current_user.id if current_user else None)
             return []  # Return empty list, don't raise exception
-        
+
         # Fetch and return data
         return await self.repository.list_all()
 ```
