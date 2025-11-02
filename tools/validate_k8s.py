@@ -88,9 +88,16 @@ def check_deployment_image(deployment_path: Path) -> bool:
     try:
         with open(deployment_path) as f:
             deployment = yaml.safe_load(f)
-            
-        containers = deployment['spec']['template']['spec']['containers']
-        image = containers[0]['image']
+        
+        containers = deployment.get('spec', {}).get('template', {}).get('spec', {}).get('containers', [])
+        if not containers or not isinstance(containers, list):
+            print(f"✗ {deployment_path.name} does not contain any containers in spec.template.spec.containers")
+            return False
+        
+        image = containers[0].get('image')
+        if not image:
+            print(f"✗ {deployment_path.name} first container does not specify an image")
+            return False
         
         if 'YOUR_REGISTRY_NAME' in image:
             print(f"⚠ {deployment_path.name} uses placeholder registry name:")
