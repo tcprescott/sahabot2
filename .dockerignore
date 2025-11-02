@@ -85,5 +85,7 @@ docker-compose*.yml
 
 # Kubernetes
 k8s/
-*.yaml
-*.yml
+k8s/*.yaml
+k8s/*.yml
+.github/workflows/*.yml
+.github/workflows/*.yaml
