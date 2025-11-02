@@ -73,7 +73,6 @@ check_discord_config.py
 test_db_init.py
 
 # Migration files (run migrations separately in deployment)
-migrations/
 
 # CI/CD
 .gitlab-ci.yml
