@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: sahabot2
-        image: registry.digitalocean.com/YOUR_REGISTRY_NAME/sahabot2:latest
+        image: registry.digitalocean.com/YOUR_REGISTRY_NAME/sahabot2:v1.0.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
