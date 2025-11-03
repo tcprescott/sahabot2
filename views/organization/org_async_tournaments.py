@@ -180,6 +180,72 @@ class OrganizationAsyncTournamentsView:
             logger.error("Error checking channel permissions for tournament %s: %s", tournament.id, e)
             return ["Could not verify channel permissions"]
 
+    async def _post_embed_to_discord(self, tournament: AsyncTournament) -> None:
+        """Post the tournament embed to the configured Discord channel."""
+        if not tournament.discord_channel_id:
+            ui.notify('No Discord channel configured for this tournament', type='warning')
+            return
+
+        # Get the Discord bot instance
+        bot = get_bot_instance()
+        if not bot or not bot.is_ready:
+            ui.notify('Discord bot is not available', type='negative')
+            return
+
+        try:
+            # Get the channel
+            channel = await bot.fetch_channel(tournament.discord_channel_id)
+            if not channel:
+                ui.notify('Discord channel not found', type='negative')
+                return
+
+            # Check if bot has permission to send messages
+            if hasattr(channel, 'permissions_for'):
+                permissions = channel.permissions_for(channel.guild.me)
+                if not permissions.send_messages:
+                    ui.notify('Bot does not have permission to send messages in this channel', type='negative')
+                    return
+
+            # Import Discord embed
+            import discord
+            from discordbot.async_tournament_views import AsyncTournamentMainView
+
+            # Create the embed
+            embed = discord.Embed(
+                title=tournament.name,
+                description=tournament.description or "Async Tournament",
+                color=discord.Color.blue()
+            )
+            embed.add_field(
+                name="How to Participate",
+                value="Click 'Start New Async Run' below to begin a new race.",
+                inline=False
+            )
+            embed.add_field(
+                name="Status",
+                value="Active" if tournament.is_active else "Inactive",
+                inline=True
+            )
+            embed.add_field(
+                name="Runs Per Pool",
+                value=str(tournament.runs_per_pool),
+                inline=True
+            )
+            embed.set_footer(text=f"Tournament ID: {tournament.id}")
+
+            # Send the message with the persistent view
+            await channel.send(
+                embed=embed,
+                view=AsyncTournamentMainView()
+            )
+
+            ui.notify('Tournament embed posted to Discord successfully!', type='positive')
+            logger.info("Posted async tournament embed for tournament %s to channel %s", tournament.id, tournament.discord_channel_id)
+
+        except Exception as e:
+            logger.error("Error posting embed to Discord for tournament %s: %s", tournament.id, e, exc_info=True)
+            ui.notify(f'Failed to post embed to Discord: {str(e)}', type='negative')
+
     async def _render_content(self) -> None:
         """Render async tournaments list and actions."""
         tournaments = await self.service.list_org_tournaments(self.user, self.organization.id)
@@ -246,6 +312,14 @@ class OrganizationAsyncTournamentsView:
 
                 def render_actions(t: AsyncTournament):
                     with ui.element('div').classes('flex gap-2'):
+                        # Post Embed button (only show if Discord channel is configured)
+                        if t.discord_channel_id:
+                            ui.button(
+                                'Post Embed',
+                                icon='send',
+                                on_click=lambda t=t: self._post_embed_to_discord(t)
+                            ).props('color=info').classes('btn')
+                        
                         ui.button(
                             'Manage',
                             icon='settings',

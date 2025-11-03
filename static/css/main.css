@@ -181,3 +181,96 @@
     color: var(--border-color);
     margin-bottom: var(--spacing-md);
 }
+
+/* Async Tournament Styles */
+.pool-progress-card {
+    padding: var(--spacing-md);
+    background-color: var(--surface-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background-color: var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transition: width 0.3s ease;
+}
+
+.filter-select {
+    min-width: 150px;
+}
+
+.text-danger {
+    color: var(--danger-color, #e74c3c);
+}
+
+.text-info {
+    color: var(--info-color, #3498db);
+}
+
+.text-success {
+    color: var(--success-color, #2ecc71);
+}
+
+.text-warning {
+    color: var(--warning-color, #f39c12);
+}
+
+.icon-large {
+    font-size: 4rem;
+}
+
+/* Grid utilities */
+.grid {
+    display: grid;
+}
+
+.grid-cols-1 {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.grid-cols-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+/* Responsive grid helpers for desktop */
+@media (min-width: 768px) {
+    .md\:grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .md\:grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .md\:block {
+        display: block;
+    }
+}
+
+/* Hide on desktop */
+@media (min-width: 768px) {
+    .block {
+        display: block;
+    }
+
+    .md\:hidden {
+        display: none;
+    }
+
+    .hidden {
+        display: none;
+    }
+}
