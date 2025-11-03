@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
 from models.async_tournament import (
@@ -106,6 +106,56 @@ class AsyncTournamentRepository:
         logger.info("Created pool %s for tournament %s", pool.id, tournament_id)
         return pool
 
+    async def get_pool_by_id(
+        self,
+        pool_id: int,
+        organization_id: int
+    ) -> Optional[AsyncTournamentPool]:
+        """Get a pool by ID, verifying organization ownership."""
+        pool = await AsyncTournamentPool.get_or_none(id=pool_id).prefetch_related('tournament')
+        if not pool:
+            return None
+
+        # Verify org ownership through tournament
+        if pool.tournament.organization_id != organization_id:
+            return None
+
+        return pool
+
+    async def update_pool(
+        self,
+        pool_id: int,
+        organization_id: int,
+        **fields
+    ) -> Optional[AsyncTournamentPool]:
+        """Update a pool."""
+        pool = await self.get_pool_by_id(pool_id, organization_id)
+        if not pool:
+            return None
+
+        for field, value in fields.items():
+            if hasattr(pool, field):
+                setattr(pool, field, value)
+
+        await pool.save()
+        logger.info("Updated pool %s", pool_id)
+        return pool
+
+    async def delete_pool(
+        self,
+        pool_id: int,
+        organization_id: int
+    ) -> bool:
+        """Delete a pool and all associated permalinks and races."""
+        pool = await self.get_pool_by_id(pool_id, organization_id)
+        if not pool:
+            return False
+
+        # Cascading delete will handle permalinks and races
+        await pool.delete()
+        logger.info("Deleted pool %s", pool_id)
+        return True
+
     # Permalink methods
 
     async def list_permalinks(self, pool_id: int, organization_id: int) -> List[AsyncTournamentPermalink]:
@@ -145,6 +195,56 @@ class AsyncTournamentRepository:
         )
         logger.info("Created permalink %s for pool %s", permalink.id, pool_id)
         return permalink
+
+    async def get_permalink_by_id(
+        self,
+        permalink_id: int,
+        organization_id: int
+    ) -> Optional[AsyncTournamentPermalink]:
+        """Get a permalink by ID, verifying organization ownership."""
+        permalink = await AsyncTournamentPermalink.get_or_none(id=permalink_id).prefetch_related('pool__tournament')
+        if not permalink:
+            return None
+
+        # Verify org ownership through pool -> tournament
+        if permalink.pool.tournament.organization_id != organization_id:
+            return None
+
+        return permalink
+
+    async def update_permalink(
+        self,
+        permalink_id: int,
+        organization_id: int,
+        **fields
+    ) -> Optional[AsyncTournamentPermalink]:
+        """Update a permalink."""
+        permalink = await self.get_permalink_by_id(permalink_id, organization_id)
+        if not permalink:
+            return None
+
+        for field, value in fields.items():
+            if hasattr(permalink, field):
+                setattr(permalink, field, value)
+
+        await permalink.save()
+        logger.info("Updated permalink %s", permalink_id)
+        return permalink
+
+    async def delete_permalink(
+        self,
+        permalink_id: int,
+        organization_id: int
+    ) -> bool:
+        """Delete a permalink and all associated races."""
+        permalink = await self.get_permalink_by_id(permalink_id, organization_id)
+        if not permalink:
+            return False
+
+        # Cascading delete will handle races
+        await permalink.delete()
+        logger.info("Deleted permalink %s", permalink_id)
+        return True
 
     # Race methods
 
@@ -202,7 +302,7 @@ class AsyncTournamentRepository:
             permalink_id=permalink_id,
             user_id=user_id,
             discord_thread_id=discord_thread_id,
-            thread_open_time=datetime.now(datetime.UTC) if discord_thread_id else None,
+            thread_open_time=datetime.now(timezone.utc) if discord_thread_id else None,
         )
         logger.info("Created race %s for user %s in tournament %s", race.id, user_id, tournament_id)
         return race

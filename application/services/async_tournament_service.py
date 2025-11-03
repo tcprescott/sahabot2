@@ -224,6 +224,72 @@ class AsyncTournamentService:
 
         return pool
 
+    async def update_pool(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        pool_id: int,
+        **fields
+    ) -> Optional[AsyncTournamentPool]:
+        """Update a pool."""
+        if not await self.can_manage_async_tournaments(user, organization_id):
+            logger.warning("Unauthorized update_pool by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return None
+
+        pool = await self.repo.update_pool(pool_id, organization_id, **fields)
+        if pool:
+            await self.repo.create_audit_log(
+                tournament_id=pool.tournament_id,
+                action="update_pool",
+                details=f"Updated pool '{pool.name}'",
+                user_id=user.id if user else None,
+            )
+
+        return pool
+
+    async def delete_pool(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        pool_id: int
+    ) -> bool:
+        """Delete a pool and all associated data."""
+        if not await self.can_manage_async_tournaments(user, organization_id):
+            logger.warning("Unauthorized delete_pool by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return False
+
+        # Get pool details for audit log before deletion
+        pool = await self.repo.get_pool_by_id(pool_id, organization_id)
+        if not pool:
+            return False
+
+        tournament_id = pool.tournament_id
+        pool_name = pool.name
+
+        success = await self.repo.delete_pool(pool_id, organization_id)
+        if success:
+            await self.repo.create_audit_log(
+                tournament_id=tournament_id,
+                action="delete_pool",
+                details=f"Deleted pool '{pool_name}'",
+                user_id=user.id if user else None,
+            )
+
+        return success
+
+    async def get_pool(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        pool_id: int
+    ) -> Optional[AsyncTournamentPool]:
+        """Get a pool by ID with permission check."""
+        if not await self.org_service.is_member(user, organization_id):
+            logger.warning("Unauthorized get_pool by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return None
+
+        return await self.repo.get_pool_by_id(pool_id, organization_id)
+
     # Permalink management
 
     async def create_permalink(
@@ -250,6 +316,60 @@ class AsyncTournamentService:
             )
 
         return permalink
+
+    async def update_permalink(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        permalink_id: int,
+        **fields
+    ) -> Optional[AsyncTournamentPermalink]:
+        """Update a permalink."""
+        if not await self.can_manage_async_tournaments(user, organization_id):
+            logger.warning("Unauthorized update_permalink by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return None
+
+        permalink = await self.repo.update_permalink(permalink_id, organization_id, **fields)
+        if permalink:
+            pool = await AsyncTournamentPool.get(id=permalink.pool_id)
+            await self.repo.create_audit_log(
+                tournament_id=pool.tournament_id,
+                action="update_permalink",
+                details=f"Updated permalink in pool '{pool.name}'",
+                user_id=user.id if user else None,
+            )
+
+        return permalink
+
+    async def delete_permalink(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        permalink_id: int
+    ) -> bool:
+        """Delete a permalink and all associated races."""
+        if not await self.can_manage_async_tournaments(user, organization_id):
+            logger.warning("Unauthorized delete_permalink by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return False
+
+        # Get permalink details for audit log before deletion
+        permalink = await self.repo.get_permalink_by_id(permalink_id, organization_id)
+        if not permalink:
+            return False
+
+        pool = await AsyncTournamentPool.get(id=permalink.pool_id)
+        tournament_id = pool.tournament_id
+
+        success = await self.repo.delete_permalink(permalink_id, organization_id)
+        if success:
+            await self.repo.create_audit_log(
+                tournament_id=tournament_id,
+                action="delete_permalink",
+                details=f"Deleted permalink from pool '{pool.name}'",
+                user_id=user.id if user else None,
+            )
+
+        return success
 
     # Race management
 

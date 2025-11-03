@@ -1,29 +1,63 @@
 """
 Async Tournament Pools View.
 
-Shows all pools and their permalinks for a tournament.
+Shows all pools and their permalinks for a tournament with management UI.
 """
 
 from __future__ import annotations
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncTournament
+from models.async_tournament import AsyncTournament, AsyncTournamentPool
 from components.card import Card
+from components.dialogs.tournaments import PoolDialog, PermalinkDialog
 from application.services.async_tournament_service import AsyncTournamentService
+from application.services.authorization_service import AuthorizationService
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AsyncPoolsView:
-    """View for async tournament pools and permalinks."""
+    """View for async tournament pools and permalinks with management capabilities."""
 
     def __init__(self, user: User, tournament: AsyncTournament):
         self.user = user
         self.tournament = tournament
         self.service = AsyncTournamentService()
+        self.auth_service = AuthorizationService()
+        self.can_manage = False
+        self.container = None
 
     async def render(self):
         """Render the pools view."""
+        # Check management permissions
+        self.can_manage = await self.service.can_manage_async_tournaments(
+            self.user,
+            self.tournament.organization_id
+        )
+
         with Card.create(title=f'{self.tournament.name} - Pools'):
-            # Get pools
+            # Add pool button (for admins/mods)
+            if self.can_manage:
+                ui.button(
+                    'Add Pool',
+                    icon='add',
+                    on_click=lambda: self._show_pool_dialog()
+                ).classes('btn-primary mb-3')
+
+            # Container for pools
+            self.container = ui.element('div')
+            await self._refresh_pools()
+
+    async def _refresh_pools(self):
+        """Refresh the pools display."""
+        if not self.container:
+            return
+
+        self.container.clear()
+
+        with self.container:
+            # Get pools with permalinks
             await self.tournament.fetch_related('pools', 'pools__permalinks')
 
             if not self.tournament.pools:
@@ -36,26 +70,171 @@ class AsyncPoolsView:
             for pool in self.tournament.pools:
                 await self._render_pool(pool)
 
-    async def _render_pool(self, pool):
-        """Render a single pool section."""
+    async def _render_pool(self, pool: AsyncTournamentPool):
+        """Render a single pool section with management controls."""
         with ui.element('div').classes('card mb-4'):
             # Pool header
-            with ui.element('div').classes('card-header'):
-                ui.element('h5').classes('').add_slot('default', pool.name)
-                if pool.description:
-                    ui.label(pool.description).classes('text-sm text-secondary')
+            with ui.element('div').classes('card-header flex justify-between items-center'):
+                with ui.element('div'):
+                    ui.element('h5').classes('mb-1').add_slot('default', pool.name)
+                    if pool.description:
+                        ui.label(pool.description).classes('text-sm text-secondary')
+
+                # Pool management buttons
+                if self.can_manage:
+                    with ui.element('div').classes('flex gap-2'):
+                        ui.button(
+                            icon='add',
+                            on_click=lambda p=pool: self._show_permalink_dialog(p)
+                        ).classes('btn-sm').props('flat').tooltip('Add Permalink')
+                        ui.button(
+                            icon='edit',
+                            on_click=lambda p=pool: self._show_pool_dialog(p)
+                        ).classes('btn-sm').props('flat').tooltip('Edit Pool')
+                        ui.button(
+                            icon='delete',
+                            on_click=lambda p=pool: self._confirm_delete_pool(p)
+                        ).classes('btn-sm text-danger').props('flat').tooltip('Delete Pool')
 
             # Pool permalinks
             with ui.element('div').classes('card-body'):
                 if not pool.permalinks:
                     ui.label('No permalinks yet').classes('text-secondary')
                 else:
-                    with ui.element('ul').classes('list-unstyled'):
+                    with ui.element('div').classes('flex flex-col gap-2'):
                         for permalink in pool.permalinks:
-                            with ui.element('li').classes('mb-2'):
-                                # Link to permalink details page
-                                permalink_link = f'/tournaments/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{permalink.id}'
-                                ui.link(permalink.url, permalink_link)
-                                # Show par time if available
-                                if permalink.par_time is not None:
-                                    ui.label(f' (Par: {permalink.par_time_formatted})').classes('text-sm text-secondary')
+                            await self._render_permalink(pool, permalink)
+
+    async def _render_permalink(self, pool: AsyncTournamentPool, permalink):
+        """Render a single permalink with management controls."""
+        with ui.element('div').classes('flex justify-between items-center p-2 hover-bg'):
+            with ui.element('div').classes('flex-grow'):
+                # Link to permalink details page
+                permalink_link = f'/tournaments/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{permalink.id}'
+                ui.link(permalink.url, permalink_link)
+
+                # Show par time and notes
+                with ui.element('div').classes('text-sm text-secondary'):
+                    if permalink.par_time is not None:
+                        ui.label(f'Par: {permalink.par_time_formatted}')
+                    if permalink.notes:
+                        ui.label(f' - {permalink.notes}')
+
+            # Permalink management buttons
+            if self.can_manage:
+                with ui.element('div').classes('flex gap-1'):
+                    ui.button(
+                        icon='edit',
+                        on_click=lambda p=permalink: self._show_permalink_dialog(pool, p)
+                    ).classes('btn-sm').props('flat').tooltip('Edit Permalink')
+                    ui.button(
+                        icon='delete',
+                        on_click=lambda p=permalink: self._confirm_delete_permalink(p)
+                    ).classes('btn-sm text-danger').props('flat').tooltip('Delete Permalink')
+
+    async def _show_pool_dialog(self, pool: AsyncTournamentPool = None):
+        """Show dialog for creating/editing a pool."""
+        async def on_save(data):
+            if pool:
+                # Update existing pool
+                await self.service.update_pool(
+                    self.user,
+                    self.tournament.organization_id,
+                    pool.id,
+                    **data
+                )
+            else:
+                # Create new pool
+                await self.service.create_pool(
+                    self.user,
+                    self.tournament.organization_id,
+                    self.tournament.id,
+                    **data
+                )
+            await self._refresh_pools()
+
+        dialog = PoolDialog(pool=pool, on_save=on_save)
+        await dialog.show()
+
+    async def _show_permalink_dialog(self, pool: AsyncTournamentPool, permalink=None):
+        """Show dialog for creating/editing a permalink."""
+        async def on_save(data):
+            if permalink:
+                # Update existing permalink
+                await self.service.update_permalink(
+                    self.user,
+                    self.tournament.organization_id,
+                    permalink.id,
+                    **data
+                )
+            else:
+                # Create new permalink
+                await self.service.create_permalink(
+                    self.user,
+                    self.tournament.organization_id,
+                    pool.id,
+                    **data
+                )
+            await self._refresh_pools()
+
+        dialog = PermalinkDialog(permalink=permalink, on_save=on_save)
+        await dialog.show()
+
+    async def _confirm_delete_pool(self, pool: AsyncTournamentPool):
+        """Confirm and delete a pool."""
+        with ui.dialog() as dialog, ui.card():
+            ui.label(f'Delete Pool: {pool.name}?').classes('text-lg font-bold')
+            ui.label('This will delete all permalinks and races in this pool.').classes('text-danger')
+
+            with ui.element('div').classes('flex justify-end gap-2 mt-4'):
+                ui.button('Cancel', on_click=dialog.close).classes('btn')
+                ui.button(
+                    'Delete',
+                    on_click=lambda: self._delete_pool(pool, dialog)
+                ).classes('btn').props('color=negative')
+
+        dialog.open()
+
+    async def _delete_pool(self, pool: AsyncTournamentPool, dialog):
+        """Delete a pool after confirmation."""
+        success = await self.service.delete_pool(
+            self.user,
+            self.tournament.organization_id,
+            pool.id
+        )
+        if success:
+            ui.notify('Pool deleted successfully', type='positive')
+            await self._refresh_pools()
+        else:
+            ui.notify('Failed to delete pool', type='negative')
+        dialog.close()
+
+    async def _confirm_delete_permalink(self, permalink):
+        """Confirm and delete a permalink."""
+        with ui.dialog() as dialog, ui.card():
+            ui.label('Delete this permalink?').classes('text-lg font-bold')
+            ui.label('This will delete all races for this permalink.').classes('text-danger')
+
+            with ui.element('div').classes('flex justify-end gap-2 mt-4'):
+                ui.button('Cancel', on_click=dialog.close).classes('btn')
+                ui.button(
+                    'Delete',
+                    on_click=lambda: self._delete_permalink(permalink, dialog)
+                ).classes('btn').props('color=negative')
+
+        dialog.open()
+
+    async def _delete_permalink(self, permalink, dialog):
+        """Delete a permalink after confirmation."""
+        success = await self.service.delete_permalink(
+            self.user,
+            self.tournament.organization_id,
+            permalink.id
+        )
+        if success:
+            ui.notify('Permalink deleted successfully', type='positive')
+            await self._refresh_pools()
+        else:
+            ui.notify('Failed to delete permalink', type='negative')
+        dialog.close()
+
