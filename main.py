@@ -13,6 +13,8 @@ from config import settings
 from database import init_db, close_db
 from application.services.discord_service import DiscordService
 from application.services.racetime_service import RacetimeService
+from application.services.task_scheduler_service import TaskSchedulerService
+from application.services.task_handlers import register_task_handlers
 from api import register_api
 import frontend
 
@@ -56,10 +58,21 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Racetime bots disabled by configuration")
 
+    # Register task handlers
+    register_task_handlers()
+
+    # Start task scheduler
+    await TaskSchedulerService.start_scheduler()
+    logger.info("Task scheduler started")
+
     yield
 
     # Shutdown
     logger.info("Shutting down SahaBot2...")
+
+    # Stop task scheduler
+    await TaskSchedulerService.stop_scheduler()
+    logger.info("Task scheduler stopped")
 
     # Stop all Racetime bots (if they were enabled)
     if settings.RACETIME_BOTS_ENABLED:

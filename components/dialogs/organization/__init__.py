@@ -5,6 +5,7 @@ from components.dialogs.organization.invite_member_dialog import InviteMemberDia
 from components.dialogs.organization.organization_invite_dialog import OrganizationInviteDialog
 from components.dialogs.organization.org_setting_dialog import OrgSettingDialog
 from components.dialogs.organization.stream_channel_dialog import StreamChannelDialog
+from components.dialogs.organization.scheduled_task import ScheduledTaskDialog
 
 __all__ = [
     'MemberPermissionsDialog',
@@ -12,4 +13,5 @@ __all__ = [
     'OrganizationInviteDialog',
     'OrgSettingDialog',
     'StreamChannelDialog',
+    'ScheduledTaskDialog',
 ]
