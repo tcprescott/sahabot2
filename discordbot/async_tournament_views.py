@@ -179,10 +179,10 @@ class PoolSelectionView(ui.View):
 
         # Check for existing active races
         service = AsyncTournamentService()
-        existing_races = await AsyncTournamentRace.filter(
-            user_id=self.user.id,
-            tournament_id=self.tournament.id,
-            status__in=['pending', 'in_progress']
+        existing_races = await service.get_active_races_for_user(
+            user=self.user,
+            organization_id=self.tournament.organization_id,
+            tournament_id=self.tournament.id
         )
 
         if existing_races:
