@@ -39,6 +39,12 @@ class Settings(BaseSettings):
     RACETIME_BOTS: str = ""  # Comma-separated list of category:client_id:client_secret
     RACETIME_BOTS_ENABLED: bool = True  # Set to False to disable Racetime bots
 
+    # Racetime.gg OAuth2 Configuration (for user account linking)
+    RACETIME_CLIENT_ID: str = ""
+    RACETIME_CLIENT_SECRET: str = ""
+    RACETIME_OAUTH_REDIRECT_URI: Optional[str] = None  # Will default to {BASE_URL}/racetime/link/callback
+    RACETIME_URL: str = "https://racetime.gg"
+
     # Application Configuration
     SECRET_KEY: str
     ENVIRONMENT: str = "development"
@@ -100,6 +106,20 @@ class Settings(BaseSettings):
                 configs.append((category.strip(), client_id.strip(), client_secret.strip()))
 
         return configs
+
+    def get_racetime_oauth_redirect_uri(self) -> str:
+        """
+        Get the RaceTime OAuth redirect URI.
+
+        If RACETIME_OAUTH_REDIRECT_URI is set in the environment, use that.
+        Otherwise, construct it from BASE_URL.
+
+        Returns:
+            str: The OAuth redirect URI for RaceTime
+        """
+        if self.RACETIME_OAUTH_REDIRECT_URI:
+            return self.RACETIME_OAUTH_REDIRECT_URI
+        return f"{self.BASE_URL.rstrip('/')}/racetime/link/callback"
 
 
 # Global settings instance
