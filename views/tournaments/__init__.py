@@ -14,6 +14,7 @@ from views.tournaments.async_leaderboard import AsyncLeaderboardView
 from views.tournaments.async_pools import AsyncPoolsView
 from views.tournaments.async_player_history import AsyncPlayerHistoryView
 from views.tournaments.async_permalink import AsyncPermalinkView
+from views.tournaments.async_review_queue import AsyncReviewQueueView
 
 __all__ = [
     'TournamentOrgSelectView',
@@ -26,4 +27,5 @@ __all__ = [
     'AsyncPoolsView',
     'AsyncPlayerHistoryView',
     'AsyncPermalinkView',
+    'AsyncReviewQueueView',
 ]

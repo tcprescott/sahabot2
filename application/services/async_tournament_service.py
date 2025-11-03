@@ -91,6 +91,19 @@ class AsyncTournamentService:
         # Check for ADMIN or TOURNAMENT_ADMIN permission
         return await self.org_service.user_can_manage_tournaments(user, organization_id)
 
+    async def can_review_async_races(self, user: Optional[User], organization_id: int) -> bool:
+        """
+        Check if user can review async tournament races.
+
+        Users with ASYNC_REVIEWER or ADMIN permissions can review races,
+        and they can access all run information regardless of hide_results setting.
+        """
+        if not user:
+            return False
+
+        # Use the organization service helper method
+        return await self.org_service.user_can_review_async_races(user, organization_id)
+
     # Tournament CRUD
 
     async def list_org_tournaments(
@@ -812,3 +825,158 @@ class AsyncTournamentService:
 
         logger.info("Generated leaderboard for tournament %s with %s entries", tournament_id, len(leaderboard))
         return leaderboard
+
+    # Review operations
+
+    async def get_review_queue(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        status: Optional[str] = None,
+        review_status: Optional[str] = None,
+        reviewed_by_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[AsyncTournamentRace]:
+        """
+        Get review queue for a tournament.
+
+        Only users with ASYNC_REVIEWER or ADMIN permissions can access the review queue.
+        These users can see all runs regardless of hide_results setting.
+
+        Args:
+            user: User making the request
+            organization_id: Organization ID
+            tournament_id: Tournament ID
+            status: Optional race status filter
+            review_status: Optional review status filter
+            reviewed_by_id: Optional reviewer filter (-1 for unreviewed)
+            skip: Pagination offset
+            limit: Pagination limit
+
+        Returns:
+            List of races in review queue, or empty list if unauthorized
+        """
+        # Check authorization
+        if not await self.can_review_async_races(user, organization_id):
+            logger.warning("Unauthorized review queue access by user %s for org %s", user.id if user else None, organization_id)
+            return []
+
+        return await self.repo.get_review_queue(
+            tournament_id=tournament_id,
+            organization_id=organization_id,
+            status=status,
+            review_status=review_status,
+            reviewed_by_id=reviewed_by_id,
+            skip=skip,
+            limit=limit,
+        )
+
+    async def get_race_for_review(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        race_id: int,
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Get a race for review with full details.
+
+        Only users with ASYNC_REVIEWER or ADMIN permissions can review races.
+
+        Args:
+            user: User making the request
+            organization_id: Organization ID
+            race_id: Race ID
+
+        Returns:
+            Race with details, or None if not found/unauthorized
+        """
+        # Check authorization
+        if not await self.can_review_async_races(user, organization_id):
+            logger.warning("Unauthorized race review access by user %s for race %s", user.id if user else None, race_id)
+            return None
+
+        race = await self.repo.get_race_by_id(race_id, organization_id)
+        if not race:
+            return None
+
+        # Prefetch related data
+        await race.fetch_related('user', 'reviewed_by', 'permalink', 'permalink__pool', 'tournament')
+        return race
+
+    async def update_race_review(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        race_id: int,
+        review_status: str,
+        reviewer_notes: Optional[str] = None,
+        elapsed_time_seconds: Optional[int] = None,
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Update review status and details for a race.
+
+        Only users with ASYNC_REVIEWER or ADMIN permissions can review races.
+        Users cannot review their own races.
+
+        Args:
+            user: User making the request
+            organization_id: Organization ID
+            race_id: Race ID
+            review_status: New review status ('pending', 'accepted', 'rejected')
+            reviewer_notes: Optional notes from reviewer
+            elapsed_time_seconds: Optional elapsed time override (for corrections)
+
+        Returns:
+            Updated race, or None if not found/unauthorized
+        """
+        # Check authorization
+        if not await self.can_review_async_races(user, organization_id):
+            logger.warning("Unauthorized race review update by user %s for race %s", user.id if user else None, race_id)
+            return None
+
+        # Get the race
+        race = await self.repo.get_race_by_id(race_id, organization_id)
+        if not race:
+            return None
+
+        # Prevent self-review
+        if user and race.user_id == user.id:
+            logger.warning("User %s attempted to review their own race %s", user.id, race_id)
+            return None
+
+        # Only allow review of finished races that haven't been reattempted
+        if race.status != 'finished' or race.reattempted:
+            logger.warning("Cannot review race %s with status %s (reattempted=%s)", race_id, race.status, race.reattempted)
+            return None
+
+        # Calculate elapsed time override if provided
+        elapsed_time_override = None
+        if elapsed_time_seconds is not None:
+            elapsed_time_override = timedelta(seconds=elapsed_time_seconds)
+
+        # Update review
+        updated_race = await self.repo.update_race_review(
+            race_id=race_id,
+            organization_id=organization_id,
+            review_status=review_status,
+            reviewer_id=user.id if user else None,
+            reviewer_notes=reviewer_notes,
+            elapsed_time_override=elapsed_time_override,
+        )
+
+        if updated_race:
+            # Create audit log
+            await self.repo.create_audit_log(
+                tournament_id=updated_race.tournament_id,
+                action="review_race",
+                details=f"Race {race_id} reviewed: {review_status}",
+                user_id=user.id if user else None,
+            )
+
+            # If elapsed time was corrected, recalculate scores
+            if elapsed_time_override:
+                await self.calculate_permalink_scores(updated_race.permalink_id, organization_id)
+
+        return updated_race

@@ -24,6 +24,7 @@ from views.tournaments import (
     AsyncPoolsView,
     AsyncPlayerHistoryView,
     AsyncPermalinkView,
+    AsyncReviewQueueView,
 )
 from views.organization import (
     OrganizationOverviewView,
@@ -532,6 +533,40 @@ def register():
             base.create_nav_link('Dashboard', 'dashboard', f'/org/{organization_id}/async/{tournament_id}'),
             base.create_nav_link('Leaderboard', 'leaderboard', f'/org/{organization_id}/async/{tournament_id}/leaderboard'),
             base.create_nav_link('Pools', 'folder', f'/org/{organization_id}/async/{tournament_id}/pools'),
+        ]
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/org/{organization_id}/async/{tournament_id}/review')
+    async def async_tournament_review_queue(organization_id: int, tournament_id: int):
+        """Async tournament review queue - for reviewers only."""
+        base = BasePage.authenticated_page(title="Race Review Queue")
+
+        from application.services.async_tournament_service import AsyncTournamentService
+        async_service = AsyncTournamentService()
+
+        async def content(page: BasePage):
+            # Get tournament
+            tournament = await async_service.get_tournament(page.user, organization_id, tournament_id)
+            if not tournament:
+                ui.label('Tournament not found or you do not have access').classes('text-danger')
+                return
+
+            # Check if user has review permissions
+            can_review = await async_service.can_review_async_races(page.user, organization_id)
+            if not can_review:
+                ui.label('You do not have permission to review races').classes('text-danger')
+                return
+
+            view = AsyncReviewQueueView(tournament, page.user, organization_id)
+            await view.render()
+
+        sidebar_items = [
+            base.create_nav_link('Dashboard', 'dashboard', f'/org/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/org/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/org/{organization_id}/async/{tournament_id}/pools'),
+            base.create_separator(),
+            base.create_nav_link('Review Queue', 'rate_review', f'/org/{organization_id}/async/{tournament_id}/review'),
         ]
 
         await base.render(content, sidebar_items)

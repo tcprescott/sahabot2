@@ -74,3 +74,63 @@ class AsyncTournamentPoolListResponse(BaseModel):
 
     items: list[AsyncTournamentPoolOut] = Field(..., description="List of pool objects")
     count: int = Field(..., description="Total number of pools in the result")
+
+
+class UserBasicInfo(BaseModel):
+    """Basic user information for review responses."""
+
+    id: int = Field(..., description="User ID")
+    discord_username: str = Field(..., description="Discord username")
+
+    class Config:
+        from_attributes = True
+
+
+class PermalinkBasicInfo(BaseModel):
+    """Basic permalink information for review responses."""
+
+    id: int = Field(..., description="Permalink ID")
+    url: str = Field(..., description="Permalink URL")
+    pool_name: str = Field(..., description="Pool name")
+
+
+class AsyncTournamentRaceReviewOut(BaseModel):
+    """Async tournament race output schema for review purposes."""
+
+    id: int = Field(..., description="Race ID")
+    tournament_id: int = Field(..., description="Tournament ID")
+    user: UserBasicInfo = Field(..., description="Racer information")
+    permalink_id: int = Field(..., description="Permalink ID")
+    permalink_url: Optional[str] = Field(None, description="Permalink URL")
+    pool_name: Optional[str] = Field(None, description="Pool name")
+    status: str = Field(..., description="Race status")
+    start_time: Optional[datetime] = Field(None, description="Race start time")
+    end_time: Optional[datetime] = Field(None, description="Race end time")
+    elapsed_time_formatted: str = Field(..., description="Formatted elapsed time (HH:MM:SS)")
+    runner_vod_url: Optional[str] = Field(None, description="Runner's VOD URL")
+    runner_notes: Optional[str] = Field(None, description="Runner's notes")
+    score: Optional[float] = Field(None, description="Calculated score")
+    review_status: str = Field(..., description="Review status")
+    reviewed_by: Optional[UserBasicInfo] = Field(None, description="Reviewer information")
+    reviewed_at: Optional[datetime] = Field(None, description="Review timestamp")
+    reviewer_notes: Optional[str] = Field(None, description="Reviewer notes")
+    thread_open_time: Optional[datetime] = Field(None, description="Thread open time")
+    created_at: datetime = Field(..., description="Race creation timestamp")
+
+    class Config:
+        from_attributes = True
+
+
+class AsyncTournamentRaceReviewListResponse(BaseModel):
+    """Response schema for race review queue."""
+
+    items: list[AsyncTournamentRaceReviewOut] = Field(..., description="List of races for review")
+    count: int = Field(..., description="Total number of races in the result")
+
+
+class AsyncTournamentRaceReviewUpdateRequest(BaseModel):
+    """Request schema for updating race review."""
+
+    review_status: str = Field(..., pattern="^(pending|accepted|rejected)$", description="Review status")
+    reviewer_notes: Optional[str] = Field(None, max_length=10000, description="Reviewer notes")
+    elapsed_time_seconds: Optional[int] = Field(None, ge=0, description="Optional elapsed time override in seconds")

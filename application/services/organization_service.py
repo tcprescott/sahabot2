@@ -29,6 +29,7 @@ class OrganizationService:
         "MEMBER_MANAGER": "Add/remove members and set their permissions.",
         "SCHEDULE_MANAGER": "Create and manage schedules or events for the org.",
         "MODERATOR": "Moderate interactions and content for the org.",
+        "ASYNC_REVIEWER": "Review and approve async tournament race submissions.",
     }
 
     def list_available_permission_types(self) -> List[dict]:
@@ -87,7 +88,14 @@ class OrganizationService:
             )
             return None
 
-        return await self.repo.create(name=name, description=description, is_active=is_active)
+        organization = await self.repo.create(name=name, description=description, is_active=is_active)
+
+        # Initialize default permissions for the new organization
+        if organization:
+            await self.initialize_default_permissions(organization.id)
+            logger.info("Initialized default permissions for organization %s", organization.id)
+
+        return organization
 
     async def update_organization(
         self,
@@ -154,6 +162,26 @@ class OrganizationService:
         await member.fetch_related('permissions')
         permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
         return 'TOURNAMENT_MANAGER' in permission_names
+
+    async def user_can_review_async_races(self, user: Optional[User], organization_id: int) -> bool:
+        """Check if the user can review async tournament race submissions.
+
+        Grants if:
+        - User can admin the org (global or org-level admin), OR
+        - User has the ASYNC_REVIEWER org permission
+        """
+        if await self.user_can_admin_org(user, organization_id):
+            return True
+        if user is None:
+            return False
+
+        # Check org membership and permissions for ASYNC_REVIEWER
+        member = await self.repo.get_member(organization_id, user.id)
+        if not member:
+            return False
+        await member.fetch_related('permissions')
+        permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
+        return 'ASYNC_REVIEWER' in permission_names
 
     # --- Permissions definitions (per-organization) ---
 

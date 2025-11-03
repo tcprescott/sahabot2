@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 from typing import Optional, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import logging
 
 from models.async_tournament import (
@@ -346,3 +346,98 @@ class AsyncTournamentRepository:
         )
         logger.info("Created audit log %s for tournament %s: %s", audit_log.id, tournament_id, action)
         return audit_log
+
+    # Review methods
+
+    async def get_review_queue(
+        self,
+        tournament_id: int,
+        organization_id: int,
+        status: Optional[str] = None,
+        review_status: Optional[str] = None,
+        reviewed_by_id: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 100,
+    ) -> List[AsyncTournamentRace]:
+        """
+        Get races in the review queue for a tournament.
+
+        Args:
+            tournament_id: Tournament ID
+            organization_id: Organization ID (for verification)
+            status: Optional race status filter (e.g., 'finished')
+            review_status: Optional review status filter (e.g., 'pending', 'accepted', 'rejected')
+            reviewed_by_id: Optional filter by reviewer
+            skip: Number of records to skip (pagination)
+            limit: Maximum number of records to return
+
+        Returns:
+            List of races matching the filters
+        """
+        # Verify tournament belongs to organization
+        tournament = await self.get_by_id(tournament_id, organization_id)
+        if not tournament:
+            return []
+
+        query = AsyncTournamentRace.filter(
+            tournament_id=tournament_id,
+            reattempted=False  # Don't include reattempted races
+        ).prefetch_related('user', 'reviewed_by', 'permalink', 'permalink__pool')
+
+        if status:
+            query = query.filter(status=status)
+
+        if review_status:
+            query = query.filter(review_status=review_status)
+
+        if reviewed_by_id is not None:
+            if reviewed_by_id == -1:  # Special value for unreviewed
+                query = query.filter(reviewed_by_id__isnull=True)
+            else:
+                query = query.filter(reviewed_by_id=reviewed_by_id)
+
+        races = await query.offset(skip).limit(limit).order_by('-created_at')
+        return list(races)
+
+    async def update_race_review(
+        self,
+        race_id: int,
+        organization_id: int,
+        review_status: str,
+        reviewer_id: int,
+        reviewer_notes: Optional[str] = None,
+        elapsed_time_override: Optional[timedelta] = None,
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Update the review status and notes for a race.
+
+        Args:
+            race_id: Race ID
+            organization_id: Organization ID (for verification)
+            review_status: New review status ('pending', 'accepted', 'rejected')
+            reviewer_id: ID of the reviewing user
+            reviewer_notes: Optional notes from the reviewer
+            elapsed_time_override: Optional elapsed time override (for corrections)
+
+        Returns:
+            Updated race or None if not found/unauthorized
+        """
+        race = await self.get_race_by_id(race_id, organization_id)
+        if not race:
+            return None
+
+        # Update review fields
+        race.review_status = review_status
+        race.reviewed_by_id = reviewer_id
+        race.reviewed_at = datetime.now(timezone.utc)
+
+        if reviewer_notes is not None:
+            race.reviewer_notes = reviewer_notes
+
+        # If elapsed time override provided, update start/end times
+        if elapsed_time_override and race.end_time:
+            race.start_time = race.end_time - elapsed_time_override
+
+        await race.save()
+        logger.info("Updated review for race %s: %s by user %s", race_id, review_status, reviewer_id)
+        return race

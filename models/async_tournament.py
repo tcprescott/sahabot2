@@ -132,6 +132,13 @@ class AsyncTournamentRace(Model):
     runner_vod_url = fields.CharField(max_length=500, null=True)
     score = fields.FloatField(null=True)  # Calculated score based on par time
     score_updated_at = fields.DatetimeField(null=True)
+
+    # Review fields
+    review_status = fields.CharField(max_length=20, default='pending')  # pending, accepted, rejected
+    reviewed_by = fields.ForeignKeyField('models.User', related_name='async_race_reviews', null=True)
+    reviewed_at = fields.DatetimeField(null=True)
+    reviewer_notes = fields.TextField(null=True)
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -172,6 +179,19 @@ class AsyncTournamentRace(Model):
         if self.score is None:
             return "N/A"
         return f"{self.score:.3f}"
+
+    @property
+    def review_status_formatted(self) -> str:
+        """Get human-readable review status."""
+        if self.reattempted or self.status != 'finished':
+            return "N/A"
+
+        status_map = {
+            'pending': 'Pending',
+            'accepted': 'Accepted',
+            'rejected': 'Pending Second Review'
+        }
+        return status_map.get(self.review_status, self.review_status.title())
 
 
 class AsyncTournamentAuditLog(Model):

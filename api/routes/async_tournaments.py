@@ -7,6 +7,10 @@ from api.schemas.async_tournament import (
     AsyncTournamentCreateRequest,
     AsyncTournamentCreateResponse,
     AsyncTournamentUpdateRequest,
+    AsyncTournamentRaceReviewOut,
+    AsyncTournamentRaceReviewListResponse,
+    AsyncTournamentRaceReviewUpdateRequest,
+    UserBasicInfo,
 )
 from api.deps import get_current_user, enforce_rate_limit
 from application.services.async_tournament_service import AsyncTournamentService
@@ -281,3 +285,288 @@ async def delete_async_tournament(
             status_code=404,
             detail="Async tournament not found or insufficient permissions"
         )
+
+
+# ==================== RACE REVIEW ====================
+
+
+@router.get(
+    "/{tournament_id}/review-queue",
+    response_model=AsyncTournamentRaceReviewListResponse,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Get Review Queue",
+    description="Get races awaiting review. Requires ASYNC_REVIEWER or ADMIN permission.",
+    responses={
+        200: {"description": "Review queue retrieved successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def get_review_queue(
+    tournament_id: int = Path(..., description="Tournament ID"),
+    organization_id: int = Query(..., description="Organization ID"),
+    status: str = Query("finished", description="Race status filter"),
+    review_status: str = Query("pending", description="Review status filter (pending, accepted, rejected, all)"),
+    reviewed_by_id: int = Query(-1, description="Reviewer ID filter (-1 for unreviewed, 0 for all)"),
+    skip: int = Query(0, ge=0, description="Number of records to skip"),
+    limit: int = Query(50, ge=1, le=100, description="Maximum number of records to return"),
+    current_user: User = Depends(get_current_user)
+) -> AsyncTournamentRaceReviewListResponse:
+    """
+    Get review queue for a tournament.
+
+    Only users with ASYNC_REVIEWER or ADMIN permissions can access the review queue.
+    These users can see all runs regardless of hide_results setting.
+
+    Args:
+        tournament_id: Tournament ID
+        organization_id: Organization ID
+        status: Race status filter (default: 'finished')
+        review_status: Review status filter (default: 'pending', use 'all' for no filter)
+        reviewed_by_id: Reviewer filter (-1 for unreviewed, 0 for all, or specific user ID)
+        skip: Pagination offset
+        limit: Pagination limit
+        current_user: Authenticated user
+
+    Returns:
+        List of races in review queue
+
+    Raises:
+        HTTPException: 403 if user lacks permission
+    """
+    service = AsyncTournamentService()
+
+    # Convert 'all' filters to None
+    status_filter = None if status == 'all' else status
+    review_status_filter = None if review_status == 'all' else review_status
+    reviewer_filter = None if reviewed_by_id == 0 else reviewed_by_id
+
+    races = await service.get_review_queue(
+        user=current_user,
+        organization_id=organization_id,
+        tournament_id=tournament_id,
+        status=status_filter,
+        review_status=review_status_filter,
+        reviewed_by_id=reviewer_filter,
+        skip=skip,
+        limit=limit,
+    )
+
+    # Convert to response schema
+    items = []
+    for race in races:
+        # Build response object
+        user_info = UserBasicInfo(
+            id=race.user.id,
+            discord_username=race.user.discord_username
+        )
+
+        reviewed_by_info = None
+        if race.reviewed_by:
+            reviewed_by_info = UserBasicInfo(
+                id=race.reviewed_by.id,
+                discord_username=race.reviewed_by.discord_username
+            )
+
+        item = AsyncTournamentRaceReviewOut(
+            id=race.id,
+            tournament_id=race.tournament_id,
+            user=user_info,
+            permalink_id=race.permalink_id,
+            permalink_url=race.permalink.url if race.permalink else None,
+            pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+            status=race.status,
+            start_time=race.start_time,
+            end_time=race.end_time,
+            elapsed_time_formatted=race.elapsed_time_formatted,
+            runner_vod_url=race.runner_vod_url,
+            runner_notes=race.runner_notes,
+            score=race.score,
+            review_status=race.review_status,
+            reviewed_by=reviewed_by_info,
+            reviewed_at=race.reviewed_at,
+            reviewer_notes=race.reviewer_notes,
+            thread_open_time=race.thread_open_time,
+            created_at=race.created_at,
+        )
+        items.append(item)
+
+    return AsyncTournamentRaceReviewListResponse(items=items, count=len(items))
+
+
+@router.get(
+    "/races/{race_id}/review",
+    response_model=AsyncTournamentRaceReviewOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Get Race for Review",
+    description="Get detailed race information for review. Requires ASYNC_REVIEWER or ADMIN permission.",
+    responses={
+        200: {"description": "Race retrieved successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Race not found"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def get_race_for_review(
+    race_id: int = Path(..., description="Race ID"),
+    organization_id: int = Query(..., description="Organization ID"),
+    current_user: User = Depends(get_current_user)
+) -> AsyncTournamentRaceReviewOut:
+    """
+    Get race for review with full details.
+
+    Only users with ASYNC_REVIEWER or ADMIN permissions can review races.
+
+    Args:
+        race_id: Race ID
+        organization_id: Organization ID
+        current_user: Authenticated user
+
+    Returns:
+        Race details
+
+    Raises:
+        HTTPException: 403 if user lacks permission
+        HTTPException: 404 if race not found
+    """
+    service = AsyncTournamentService()
+    race = await service.get_race_for_review(
+        user=current_user,
+        organization_id=organization_id,
+        race_id=race_id,
+    )
+
+    if not race:
+        raise HTTPException(
+            status_code=404,
+            detail="Race not found or insufficient permissions"
+        )
+
+    # Build response object
+    user_info = UserBasicInfo(
+        id=race.user.id,
+        discord_username=race.user.discord_username
+    )
+
+    reviewed_by_info = None
+    if race.reviewed_by:
+        reviewed_by_info = UserBasicInfo(
+            id=race.reviewed_by.id,
+            discord_username=race.reviewed_by.discord_username
+        )
+
+    return AsyncTournamentRaceReviewOut(
+        id=race.id,
+        tournament_id=race.tournament_id,
+        user=user_info,
+        permalink_id=race.permalink_id,
+        permalink_url=race.permalink.url if race.permalink else None,
+        pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+        status=race.status,
+        start_time=race.start_time,
+        end_time=race.end_time,
+        elapsed_time_formatted=race.elapsed_time_formatted,
+        runner_vod_url=race.runner_vod_url,
+        runner_notes=race.runner_notes,
+        score=race.score,
+        review_status=race.review_status,
+        reviewed_by=reviewed_by_info,
+        reviewed_at=race.reviewed_at,
+        reviewer_notes=race.reviewer_notes,
+        thread_open_time=race.thread_open_time,
+        created_at=race.created_at,
+    )
+
+
+@router.patch(
+    "/races/{race_id}/review",
+    response_model=AsyncTournamentRaceReviewOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Update Race Review",
+    description="Update review status and details for a race. Requires ASYNC_REVIEWER or ADMIN permission.",
+    responses={
+        200: {"description": "Review updated successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions or attempting to review own race"},
+        404: {"description": "Race not found"},
+        422: {"description": "Invalid request data"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def update_race_review(
+    data: AsyncTournamentRaceReviewUpdateRequest,
+    race_id: int = Path(..., description="Race ID"),
+    organization_id: int = Query(..., description="Organization ID"),
+    current_user: User = Depends(get_current_user)
+) -> AsyncTournamentRaceReviewOut:
+    """
+    Update review status and details for a race.
+
+    Only users with ASYNC_REVIEWER or ADMIN permissions can review races.
+    Users cannot review their own races.
+
+    Args:
+        race_id: Race ID
+        organization_id: Organization ID
+        data: Review update data
+        current_user: Authenticated user
+
+    Returns:
+        Updated race
+
+    Raises:
+        HTTPException: 403 if user lacks permission or reviewing own race
+        HTTPException: 404 if race not found
+    """
+    service = AsyncTournamentService()
+    race = await service.update_race_review(
+        user=current_user,
+        organization_id=organization_id,
+        race_id=race_id,
+        review_status=data.review_status,
+        reviewer_notes=data.reviewer_notes,
+        elapsed_time_seconds=data.elapsed_time_seconds,
+    )
+
+    if not race:
+        raise HTTPException(
+            status_code=404,
+            detail="Race not found, insufficient permissions, or cannot review own race"
+        )
+
+    # Build response object
+    user_info = UserBasicInfo(
+        id=race.user.id,
+        discord_username=race.user.discord_username
+    )
+
+    reviewed_by_info = None
+    if race.reviewed_by:
+        reviewed_by_info = UserBasicInfo(
+            id=race.reviewed_by.id,
+            discord_username=race.reviewed_by.discord_username
+        )
+
+    return AsyncTournamentRaceReviewOut(
+        id=race.id,
+        tournament_id=race.tournament_id,
+        user=user_info,
+        permalink_id=race.permalink_id,
+        permalink_url=race.permalink.url if race.permalink else None,
+        pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+        status=race.status,
+        start_time=race.start_time,
+        end_time=race.end_time,
+        elapsed_time_formatted=race.elapsed_time_formatted,
+        runner_vod_url=race.runner_vod_url,
+        runner_notes=race.runner_notes,
+        score=race.score,
+        review_status=race.review_status,
+        reviewed_by=reviewed_by_info,
+        reviewed_at=race.reviewed_at,
+        reviewer_notes=race.reviewer_notes,
+        thread_open_time=race.thread_open_time,
+        created_at=race.created_at,
+    )
