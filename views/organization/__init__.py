@@ -13,6 +13,7 @@ from views.organization.org_async_tournaments import OrganizationAsyncTournament
 from views.organization.org_stream_channels import OrganizationStreamChannelsView
 from views.organization.scheduled_tasks import OrganizationScheduledTasksView
 from views.organization.discord_servers import DiscordServersView
+from views.organization.org_presets import OrgPresetsView
 
 __all__ = [
     'OrganizationOverviewView',
@@ -24,4 +25,5 @@ __all__ = [
     'OrganizationStreamChannelsView',
     'OrganizationScheduledTasksView',
     'DiscordServersView',
+    'OrgPresetsView',
 ]

@@ -91,26 +91,59 @@ class ALTTPRService:
     async def generate_from_preset(
         self,
         preset_name: str,
+        user_id: int,
         tournament: bool = True,
-        spoilers: str = "off"
+        spoilers: str = "off",
+        allow_quickswap: bool = False
     ) -> RandomizerResult:
         """
         Generate an ALTTPR seed from a preset.
 
         Args:
             preset_name: Name of the preset to use
+            user_id: User ID requesting the preset
             tournament: Whether this is a tournament seed (default: True)
             spoilers: Spoiler level ('on', 'off', 'generate') (default: 'off')
+            allow_quickswap: Allow quickswap (default: False)
 
         Returns:
             RandomizerResult: The generated seed information
 
         Raises:
             ValueError: If preset is not found
+            PermissionError: If user cannot access preset
             httpx.HTTPError: If the API request fails
         """
-        # In a full implementation, this would load preset from database or file
-        # For now, we'll raise an error
-        raise NotImplementedError(
-            "Preset loading not yet implemented. Use generate() with explicit settings."
+        from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
+
+        # Load preset from database
+        preset_repo = RandomizerPresetRepository()
+
+        # Get preset by name
+        preset = await preset_repo.get_by_name(
+            randomizer='alttpr',
+            name=preset_name
         )
+
+        if not preset:
+            raise ValueError(f"Preset '{preset_name}' not found")
+
+        # Check if user can access preset (must be public or owned by user)
+        if not preset.is_public and preset.user_id != user_id:
+            logger.warning(
+                "User %s attempted to access private preset %s owned by %s",
+                user_id, preset_name, preset.user_id
+            )
+            raise PermissionError(f"Not authorized to access preset '{preset_name}'")
+
+        # Extract settings from preset
+        settings_dict = preset.settings.get('settings', preset.settings)
+
+        # Generate seed using preset settings
+        return await self.generate(
+            settings_dict=settings_dict,
+            tournament=tournament,
+            spoilers=spoilers,
+            allow_quickswap=allow_quickswap
+        )
+
