@@ -44,7 +44,7 @@ class PermalinkDialog(BaseDialog):
             icon='link' if not self.permalink else 'edit',
             max_width='600px'
         )
-        super().show()
+        await super().show()
 
     def _render_body(self):
         """Render dialog content."""

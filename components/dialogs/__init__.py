@@ -37,6 +37,7 @@ from components.dialogs.tournaments import (
     EditMatchDialog,
     SubmitMatchDialog,
     RegisterPlayerDialog,
+    AsyncTournamentDialog,
 )
 
 # User profile dialogs
@@ -67,6 +68,7 @@ __all__ = [
     'RegisterPlayerDialog',
     'MatchSeedDialog',
     'EditMatchDialog',
+    'AsyncTournamentDialog',
     # User profile
     'CreateApiKeyDialog',
     'DisplayTokenDialog',

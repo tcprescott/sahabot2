@@ -861,6 +861,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't leave trailing whitespace on any lines (including blank lines)
 - ❌ Don't create views in the root `views/` directory - always use the appropriate subdirectory
 - ❌ Don't create dialogs in the root `dialogs/` directory - always use the appropriate subdirectory
+- ❌ Don't forget `await` when calling `super().show()` in dialog classes (causes RuntimeWarning)
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -868,6 +869,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do enforce permissions server-side
 - ✅ Do test on mobile viewports
 - ✅ Do use application commands (slash commands) for Discord bot
+- ✅ Do always use `await super().show()` in dialog `show()` methods (not `super().show()`)
 - ✅ Do delegate all bot logic to services
 - ✅ Do use the logging framework with `logger = logging.getLogger(__name__)`
 - ✅ Do use lazy % formatting in logging: `logger.info("User %s", user_id)`

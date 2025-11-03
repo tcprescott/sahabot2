@@ -14,6 +14,7 @@ from views.organization import (
     OrganizationPermissionsView,
     OrganizationSettingsView,
     OrganizationTournamentsView,
+    OrganizationAsyncTournamentsView,
     OrganizationStreamChannelsView,
     OrganizationScheduledTasksView,
     DiscordServersView,
@@ -100,6 +101,15 @@ def register():
                         view = OrganizationTournamentsView(org, page.user)
                         await view.render()
 
+            async def load_async_tournaments():
+                """Load organization async tournaments management."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = OrganizationAsyncTournamentsView(org, page.user)
+                        await view.render()
+
             async def load_stream_channels():
                 """Load organization stream channels management."""
                 container = page.get_dynamic_content_container()
@@ -138,6 +148,7 @@ def register():
                 page.register_content_loader('settings', load_settings)
             # Tournaments accessible to admins and TOURNAMENT_MANAGERs
             page.register_content_loader('tournaments', load_tournaments)
+            page.register_content_loader('async_tournaments', load_async_tournaments)
 
             # Load initial content: overview for admins, tournaments for managers
             if allowed_admin:
@@ -158,12 +169,16 @@ def register():
                 base.create_sidebar_item_with_loader('Permissions', 'verified_user', 'permissions'),
                 base.create_sidebar_item_with_loader('Stream Channels', 'cast', 'stream_channels'),
                 base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
+                base.create_sidebar_item_with_loader('Async Tournaments', 'schedule', 'async_tournaments'),
                 base.create_sidebar_item_with_loader('Discord Servers', 'dns', 'discord_servers'),
                 base.create_sidebar_item_with_loader('Scheduled Tasks', 'schedule', 'scheduled_tasks'),
                 base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
             ])
         else:
-            # Tournament managers only see Tournaments
-            sidebar_items.append(base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'))
+            # Tournament managers see both regular and async tournaments
+            sidebar_items.extend([
+                base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
+                base.create_sidebar_item_with_loader('Async Tournaments', 'schedule', 'async_tournaments'),
+            ])
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

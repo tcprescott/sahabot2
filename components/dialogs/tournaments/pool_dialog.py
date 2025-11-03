@@ -44,7 +44,7 @@ class PoolDialog(BaseDialog):
             icon='folder' if not self.pool else 'edit',
             max_width='600px'
         )
-        super().show()
+        await super().show()
 
     def _render_body(self):
         """Render dialog content."""

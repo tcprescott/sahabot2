@@ -1,0 +1,233 @@
+"""
+Organization Async Tournaments view.
+
+List, create, edit, and delete async tournaments within an organization.
+"""
+
+from __future__ import annotations
+from typing import Any
+from nicegui import ui
+from models import Organization
+from models.async_tournament import AsyncTournament
+from models.discord_guild import DiscordGuild
+from components.card import Card
+from components.data_table import ResponsiveTable, TableColumn
+from components.dialogs import AsyncTournamentDialog, ConfirmDialog
+from application.services.async_tournament_service import AsyncTournamentService
+from discordbot.client import get_bot_instance
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+class OrganizationAsyncTournamentsView:
+    """Manage async tournaments for an organization."""
+
+    def __init__(self, organization: Organization, user: Any) -> None:
+        self.organization = organization
+        self.user = user
+        self.service = AsyncTournamentService()
+        self.container = None
+
+    async def _refresh(self) -> None:
+        """Re-render the async tournaments list."""
+        if self.container:
+            self.container.clear()
+            with self.container:
+                await self._render_content()
+
+    async def _get_discord_channels(self) -> list[tuple[int, str]]:
+        """Get available Discord text channels from linked guilds."""
+        channels = []
+        
+        # Get the Discord bot instance
+        bot = get_bot_instance()
+        if not bot or not bot.is_ready:
+            logger.warning("Discord bot not available for fetching channels")
+            return channels
+        
+        # Get linked Discord guilds for this organization
+        guilds = await DiscordGuild.filter(organization_id=self.organization.id, is_active=True).all()
+        
+        for guild in guilds:
+            try:
+                # Fetch the Discord guild from Discord API (not cache)
+                discord_guild = await bot.fetch_guild(guild.guild_id)
+                if not discord_guild:
+                    logger.warning("Discord guild %s not found", guild.guild_id)
+                    continue
+                
+                # Fetch all channels for the guild
+                guild_channels = await discord_guild.fetch_channels()
+                
+                # Filter for text channels the bot can view
+                for channel in guild_channels:
+                    # Check if it's a text channel (type 0) or thread
+                    if hasattr(channel, 'type') and channel.type.value == 0:  # Text channel
+                        # Check if bot has view permissions
+                        try:
+                            permissions = channel.permissions_for(discord_guild.me)
+                            if permissions.view_channel:
+                                channels.append((channel.id, f"{guild.guild_name}: #{channel.name}"))
+                        except Exception as e:
+                            logger.debug("Could not check permissions for channel %s: %s", channel.id, e)
+                            # Add anyway if we can't check permissions
+                            channels.append((channel.id, f"{guild.guild_name}: #{channel.name}"))
+            
+            except Exception as e:
+                logger.error("Error fetching channels from guild %s: %s", guild.guild_id, e)
+                continue
+        
+        return channels
+
+    async def _open_create_dialog(self) -> None:
+        """Open dialog to create a new async tournament."""
+        # Get available Discord channels
+        discord_channels = await self._get_discord_channels()
+        
+        async def on_save(data: dict) -> None:
+            tournament = await self.service.create_tournament(
+                user=self.user,
+                organization_id=self.organization.id,
+                name=data['name'],
+                description=data.get('description'),
+                is_active=data.get('is_active', True),
+                discord_channel_id=data.get('discord_channel_id'),
+                runs_per_pool=data.get('runs_per_pool', 1),
+            )
+            if tournament:
+                ui.notify('Async tournament created successfully', type='positive')
+                await self._refresh()
+            else:
+                ui.notify('Failed to create async tournament', type='negative')
+
+        dialog = AsyncTournamentDialog(
+            tournament=None,
+            on_save=on_save,
+            discord_channels=discord_channels
+        )
+        await dialog.show()
+
+    async def _open_edit_dialog(self, tournament: AsyncTournament) -> None:
+        """Open dialog to edit an existing async tournament."""
+        # Get available Discord channels
+        discord_channels = await self._get_discord_channels()
+        
+        async def on_save(data: dict) -> None:
+            updated = await self.service.update_tournament(
+                user=self.user,
+                organization_id=self.organization.id,
+                tournament_id=tournament.id,
+                **data
+            )
+            if updated:
+                ui.notify('Async tournament updated successfully', type='positive')
+                await self._refresh()
+            else:
+                ui.notify('Failed to update async tournament', type='negative')
+
+        dialog = AsyncTournamentDialog(
+            tournament=tournament,
+            on_save=on_save,
+            discord_channels=discord_channels
+        )
+        await dialog.show()
+
+    async def _confirm_delete(self, tournament: AsyncTournament) -> None:
+        """Ask for confirmation and delete the async tournament if confirmed."""
+        async def do_delete() -> None:
+            success = await self.service.delete_tournament(
+                user=self.user,
+                organization_id=self.organization.id,
+                tournament_id=tournament.id
+            )
+            if success:
+                ui.notify('Async tournament deleted successfully', type='positive')
+                await self._refresh()
+            else:
+                ui.notify('Failed to delete async tournament', type='negative')
+
+        dialog = ConfirmDialog(
+            title='Delete Async Tournament',
+            message=f"Are you sure you want to delete '{tournament.name}'? This will also delete all pools, permalinks, and race data.",
+            on_confirm=do_delete,
+        )
+        await dialog.show()
+
+    async def _render_content(self) -> None:
+        """Render async tournaments list and actions."""
+        tournaments = await self.service.list_org_tournaments(self.user, self.organization.id)
+
+        with Card.create(title='Async Tournaments'):
+            with ui.row().classes('w-full justify-between mb-2'):
+                ui.label(f'{len(tournaments)} async tournament(s) in this organization')
+                ui.button(
+                    'New Async Tournament',
+                    icon='add',
+                    on_click=self._open_create_dialog
+                ).props('color=positive').classes('btn')
+
+            if not tournaments:
+                with ui.element('div').classes('text-center mt-4'):
+                    ui.icon('emoji_events').classes('text-secondary icon-large')
+                    ui.label('No async tournaments yet').classes('text-secondary')
+                    ui.label('Click "New Async Tournament" to create one').classes('text-secondary text-sm')
+            else:
+                def render_active(t: AsyncTournament):
+                    if t.is_active:
+                        with ui.row().classes('items-center gap-sm'):
+                            ui.icon('check_circle').classes('text-positive')
+                            ui.label('Active')
+                    else:
+                        with ui.row().classes('items-center gap-sm'):
+                            ui.icon('cancel').classes('text-negative')
+                            ui.label('Inactive')
+
+                def render_discord_channel(t: AsyncTournament):
+                    if t.discord_channel_id:
+                        with ui.row().classes('items-center gap-sm'):
+                            ui.icon('discord').classes('text-info')
+                            ui.label(f'Channel ID: {t.discord_channel_id}')
+                    else:
+                        ui.label('-').classes('text-secondary')
+
+                def render_runs_per_pool(t: AsyncTournament):
+                    ui.label(str(t.runs_per_pool))
+
+                def render_actions(t: AsyncTournament):
+                    with ui.element('div').classes('flex gap-2'):
+                        ui.button(
+                            'Manage',
+                            icon='settings',
+                            on_click=lambda t=t: ui.navigate.to(f'/tournaments/{self.organization.id}/async/{t.id}/pools')
+                        ).classes('btn btn-primary')
+                        ui.button(
+                            'Edit',
+                            icon='edit',
+                            on_click=lambda t=t: self._open_edit_dialog(t)
+                        ).classes('btn')
+                        ui.button(
+                            'Delete',
+                            icon='delete',
+                            on_click=lambda t=t: self._confirm_delete(t)
+                        ).classes('btn btn-danger')
+
+                columns = [
+                    TableColumn('Name', key='name'),
+                    TableColumn(
+                        'Description',
+                        cell_render=lambda t: ui.label(str(t.description or '')).classes('truncate max-w-64')
+                    ),
+                    TableColumn('Status', cell_render=render_active),
+                    TableColumn('Runs/Pool', cell_render=render_runs_per_pool),
+                    TableColumn('Discord Channel', cell_render=render_discord_channel),
+                    TableColumn('Actions', cell_render=render_actions),
+                ]
+                table = ResponsiveTable(columns, tournaments)
+                await table.render()
+
+    async def render(self) -> None:
+        """Render the async tournaments view."""
+        self.container = ui.column().classes('full-width')
+        with self.container:
+            await self._render_content()

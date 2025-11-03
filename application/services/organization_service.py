@@ -318,6 +318,22 @@ class OrganizationService:
         """Get a specific member with permissions loaded."""
         return await self.repo.get_member(organization_id, user_id)
 
+    async def is_member(self, user, organization_id: int) -> bool:
+        """
+        Check if a user is a member of an organization.
+
+        Args:
+            user: User object (can be None)
+            organization_id: Organization ID to check membership in
+
+        Returns:
+            bool: True if user is a member, False otherwise
+        """
+        if not user:
+            return False
+        member = await self.get_member(organization_id, user.id)
+        return member is not None
+
     async def add_member(self, organization_id: int, user_id: int):
         """Add a user as a member of the organization.
 
