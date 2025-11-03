@@ -4,6 +4,7 @@ Discord UI components for async tournaments.
 Provides persistent views and buttons for race management in Discord.
 """
 
+from datetime import datetime, timedelta, timezone
 import discord
 from discord import ui
 import asyncio
@@ -449,7 +450,7 @@ class RaceInProgressView(ui.View):
 
         # Calculate elapsed time for in-progress races
         if race.status == 'in_progress':
-            elapsed = datetime.utcnow() - race.start_time
+            elapsed = datetime.now(timezone.utc) - race.start_time
         else:
             elapsed = race.elapsed_time
 

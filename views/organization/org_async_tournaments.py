@@ -86,7 +86,7 @@ class OrganizationAsyncTournamentsView:
         discord_channels = await self._get_discord_channels()
         
         async def on_save(data: dict) -> None:
-            tournament = await self.service.create_tournament(
+            tournament, warnings = await self.service.create_tournament(
                 user=self.user,
                 organization_id=self.organization.id,
                 name=data['name'],
@@ -97,6 +97,12 @@ class OrganizationAsyncTournamentsView:
             )
             if tournament:
                 ui.notify('Async tournament created successfully', type='positive')
+                
+                # Display warnings if any
+                if warnings:
+                    for warning in warnings:
+                        ui.notify(f'Warning: {warning}', type='warning')
+                
                 await self._refresh()
             else:
                 ui.notify('Failed to create async tournament', type='negative')
@@ -114,7 +120,7 @@ class OrganizationAsyncTournamentsView:
         discord_channels = await self._get_discord_channels()
         
         async def on_save(data: dict) -> None:
-            updated = await self.service.update_tournament(
+            updated, warnings = await self.service.update_tournament(
                 user=self.user,
                 organization_id=self.organization.id,
                 tournament_id=tournament.id,
@@ -122,6 +128,12 @@ class OrganizationAsyncTournamentsView:
             )
             if updated:
                 ui.notify('Async tournament updated successfully', type='positive')
+                
+                # Display warnings if any
+                if warnings:
+                    for warning in warnings:
+                        ui.notify(f'Warning: {warning}', type='warning')
+                
                 await self._refresh()
             else:
                 ui.notify('Failed to update async tournament', type='negative')
@@ -154,9 +166,31 @@ class OrganizationAsyncTournamentsView:
         )
         await dialog.show()
 
+    async def _check_channel_permissions(self, tournament: AsyncTournament) -> list[str]:
+        """Check permissions for a tournament's Discord channel."""
+        if not tournament.discord_channel_id:
+            return []
+        
+        try:
+            from application.services.discord_guild_service import DiscordGuildService
+            discord_service = DiscordGuildService()
+            perm_check = await discord_service.check_async_tournament_channel_permissions(tournament.discord_channel_id)
+            return perm_check.warnings
+        except Exception as e:
+            logger.error("Error checking channel permissions for tournament %s: %s", tournament.id, e)
+            return ["Could not verify channel permissions"]
+
     async def _render_content(self) -> None:
         """Render async tournaments list and actions."""
         tournaments = await self.service.list_org_tournaments(self.user, self.organization.id)
+        
+        # Check permissions for all tournaments with Discord channels
+        tournament_warnings = {}
+        for tournament in tournaments:
+            if tournament.discord_channel_id:
+                warnings = await self._check_channel_permissions(tournament)
+                if warnings:
+                    tournament_warnings[tournament.id] = warnings
 
         with Card.create(title='Async Tournaments'):
             with ui.row().classes('w-full justify-between mb-2'):
@@ -191,6 +225,22 @@ class OrganizationAsyncTournamentsView:
                     else:
                         ui.label('-').classes('text-secondary')
 
+                def render_permissions_warnings(t: AsyncTournament):
+                    warnings = tournament_warnings.get(t.id, [])
+                    if warnings:
+                        with ui.column().classes('gap-1'):
+                            for warning in warnings:
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('warning').classes('text-warning text-sm')
+                                    ui.label(warning).classes('text-warning text-xs')
+                    else:
+                        if t.discord_channel_id:
+                            with ui.row().classes('items-center gap-sm'):
+                                ui.icon('check_circle').classes('text-positive text-sm')
+                                ui.label('OK').classes('text-positive text-xs')
+                        else:
+                            ui.label('-').classes('text-secondary')
+
                 def render_runs_per_pool(t: AsyncTournament):
                     ui.label(str(t.runs_per_pool))
 
@@ -221,6 +271,7 @@ class OrganizationAsyncTournamentsView:
                     TableColumn('Status', cell_render=render_active),
                     TableColumn('Runs/Pool', cell_render=render_runs_per_pool),
                     TableColumn('Discord Channel', cell_render=render_discord_channel),
+                    TableColumn('Permissions', cell_render=render_permissions_warnings),
                     TableColumn('Actions', cell_render=render_actions),
                 ]
                 table = ResponsiveTable(columns, tournaments)

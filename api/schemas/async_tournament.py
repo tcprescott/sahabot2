@@ -1,7 +1,7 @@
 """Async Tournament schemas for API responses."""
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 
@@ -20,6 +20,13 @@ class AsyncTournamentOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AsyncTournamentCreateResponse(BaseModel):
+    """Response schema for creating an async tournament."""
+
+    tournament: AsyncTournamentOut = Field(..., description="Created async tournament")
+    warnings: List[str] = Field(default_factory=list, description="Permission warnings or validation issues")
 
 
 class AsyncTournamentListResponse(BaseModel):

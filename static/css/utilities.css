@@ -144,6 +144,36 @@
 .font-bold { font-weight: 700; }
 .font-semibold { font-weight: 600; }
 
+/* Text colors */
+.text-primary {
+    color: var(--text-primary);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-positive {
+    color: var(--positive-color);
+}
+
+.text-negative {
+    color: var(--negative-color);
+}
+
+.text-warning {
+    color: var(--warning-color);
+}
+
+.text-info {
+    color: var(--info-color);
+}
+
+/* Additional size for icons */
+.text-xs {
+    font-size: 0.75rem;
+}
+
 /* ==================== TITLES ==================== */
 .page-title {
     font-size: 2em;

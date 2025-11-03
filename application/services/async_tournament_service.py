@@ -4,7 +4,7 @@ Contains org-scoped business logic, authorization checks, and scoring algorithms
 """
 
 from __future__ import annotations
-from typing import Optional, List
+from typing import Optional, List, Tuple
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 from functools import cached_property
@@ -82,7 +82,7 @@ class AsyncTournamentService:
 
     def __init__(self) -> None:
         self.repo = AsyncTournamentRepository()
-        self.org_service = OrganizationService()
+        self.org_service: OrganizationService = OrganizationService()
 
     async def can_manage_async_tournaments(self, user: Optional[User], organization_id: int) -> bool:
         """Check if user can manage async tournaments in the organization."""
@@ -130,11 +130,36 @@ class AsyncTournamentService:
         is_active: bool = True,
         discord_channel_id: Optional[int] = None,
         runs_per_pool: int = 1,
-    ) -> Optional[AsyncTournament]:
-        """Create a new async tournament."""
+    ) -> Tuple[Optional[AsyncTournament], List[str]]:
+        """
+        Create a new async tournament.
+        
+        Returns:
+            Tuple of (tournament, warnings) where warnings contains any permission issues
+        """
+        warnings: List[str] = []
+        
         if not await self.can_manage_async_tournaments(user, organization_id):
             logger.warning("Unauthorized create_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
-            return None
+            return None, warnings
+        
+        # Check Discord channel permissions if a channel is specified
+        if discord_channel_id:
+            try:
+                from application.services.discord_guild_service import DiscordGuildService
+                discord_service = DiscordGuildService()
+                perm_check = await discord_service.check_async_tournament_channel_permissions(discord_channel_id)
+                
+                if not perm_check.is_valid or perm_check.has_warnings:
+                    warnings.extend(perm_check.warnings)
+                    logger.warning(
+                        "Channel %s has permission issues for tournament: %s",
+                        discord_channel_id,
+                        ", ".join(perm_check.warnings)
+                    )
+            except Exception as e:
+                logger.error("Error checking channel permissions: %s", e, exc_info=True)
+                warnings.append("Could not verify channel permissions")
 
         tournament = await self.repo.create(
             organization_id=organization_id,
@@ -152,7 +177,7 @@ class AsyncTournamentService:
             user_id=user.id if user else None,
         )
 
-        return tournament
+        return tournament, warnings
 
     async def update_tournament(
         self,
@@ -160,11 +185,36 @@ class AsyncTournamentService:
         organization_id: int,
         tournament_id: int,
         **fields
-    ) -> Optional[AsyncTournament]:
-        """Update a tournament."""
+    ) -> Tuple[Optional[AsyncTournament], List[str]]:
+        """
+        Update a tournament.
+        
+        Returns:
+            Tuple of (tournament, warnings) where warnings contains any permission issues
+        """
+        warnings: List[str] = []
+        
         if not await self.can_manage_async_tournaments(user, organization_id):
             logger.warning("Unauthorized update_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
-            return None
+            return None, warnings
+        
+        # Check Discord channel permissions if channel is being updated
+        if 'discord_channel_id' in fields and fields['discord_channel_id']:
+            try:
+                from application.services.discord_guild_service import DiscordGuildService
+                discord_service = DiscordGuildService()
+                perm_check = await discord_service.check_async_tournament_channel_permissions(fields['discord_channel_id'])
+                
+                if not perm_check.is_valid or perm_check.has_warnings:
+                    warnings.extend(perm_check.warnings)
+                    logger.warning(
+                        "Channel %s has permission issues for tournament: %s",
+                        fields['discord_channel_id'],
+                        ", ".join(perm_check.warnings)
+                    )
+            except Exception as e:
+                logger.error("Error checking channel permissions: %s", e, exc_info=True)
+                warnings.append("Could not verify channel permissions")
 
         tournament = await self.repo.update(tournament_id, organization_id, **fields)
         if tournament:
@@ -175,7 +225,7 @@ class AsyncTournamentService:
                 user_id=user.id if user else None,
             )
 
-        return tournament
+        return tournament, warnings
 
     async def delete_tournament(
         self,
@@ -383,8 +433,6 @@ class AsyncTournamentService:
         is_member = await self.org_service.is_member(user, organization_id)
         if not is_member or not user:
             return []
-
-        return []
 
         return await self.repo.list_races(tournament_id, organization_id, user_id=user.id)
 

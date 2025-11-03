@@ -5,15 +5,18 @@ Handles linking Discord servers to organizations with permission verification.
 
 from __future__ import annotations
 from typing import Optional, List
+from dataclasses import dataclass
 import logging
 import httpx
 from urllib.parse import urlencode
+import discord
 
 from models import User
 from models.discord_guild import DiscordGuild
 from application.repositories.discord_guild_repository import DiscordGuildRepository
 from application.services.organization_service import OrganizationService
 from application.services.authorization_service import AuthorizationService
+from application.services.discord_permissions_config import AsyncTournamentChannelPermissions
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -21,6 +24,19 @@ logger = logging.getLogger(__name__)
 # Discord API endpoints
 DISCORD_API_BASE = "https://discord.com/api/v10"
 DISCORD_OAUTH_AUTHORIZE = "https://discord.com/oauth2/authorize"
+
+
+@dataclass
+class ChannelPermissionCheck:
+    """Result of checking Discord channel permissions."""
+    channel_id: int
+    is_valid: bool
+    warnings: List[str]
+    
+    @property
+    def has_warnings(self) -> bool:
+        """Check if there are any warnings."""
+        return len(self.warnings) > 0
 
 
 class DiscordGuildService:
@@ -300,3 +316,176 @@ class DiscordGuildService:
             )
 
         return success
+
+    async def check_async_tournament_channel_permissions(
+        self,
+        channel_id: int,
+        bot_instance: Optional[discord.Client] = None
+    ) -> ChannelPermissionCheck:
+        """
+        Check if a Discord channel has the correct permissions for async tournaments.
+        
+        This method verifies:
+        1. @everyone role cannot create messages, public threads, or private threads
+        2. Bot can manage threads and create public/private threads
+        
+        Args:
+            channel_id: Discord channel ID to check
+            bot_instance: Discord bot instance (will import if not provided)
+        
+        Returns:
+            ChannelPermissionCheck with validation results and any warnings
+        """
+        warnings: List[str] = []
+        
+        # Import bot if not provided
+        if bot_instance is None:
+            try:
+                from discordbot.client import get_bot_instance
+                bot_instance = get_bot_instance()
+                if not bot_instance:
+                    logger.warning("Bot instance not available for permission check")
+                    warnings.append("Unable to verify permissions: Bot is not running")
+                    return ChannelPermissionCheck(
+                        channel_id=channel_id,
+                        is_valid=False,
+                        warnings=warnings
+                    )
+            except Exception as e:
+                logger.error("Failed to get bot instance: %s", e)
+                warnings.append("Unable to verify permissions: Bot is not available")
+                return ChannelPermissionCheck(
+                    channel_id=channel_id,
+                    is_valid=False,
+                    warnings=warnings
+                )
+        
+        try:
+            # Get the channel
+            channel = await bot_instance.fetch_channel(channel_id)
+            if not channel:
+                warnings.append("Channel not found")
+                return ChannelPermissionCheck(
+                    channel_id=channel_id,
+                    is_valid=False,
+                    warnings=warnings
+                )
+            
+            # Ensure it's a text-based channel
+            if not isinstance(channel, (discord.TextChannel, discord.Thread)):
+                warnings.append("Channel is not a text channel or thread")
+                return ChannelPermissionCheck(
+                    channel_id=channel_id,
+                    is_valid=False,
+                    warnings=warnings
+                )
+            
+            # Fetch the full guild to ensure roles and members are populated
+            guild = await bot_instance.fetch_guild(channel.guild.id)
+            if not guild:
+                warnings.append("Guild not found")
+                return ChannelPermissionCheck(
+                    channel_id=channel_id,
+                    is_valid=False,
+                    warnings=warnings
+                )
+            
+            # For threads, we can't check overwrites, so just verify bot permissions
+            if isinstance(channel, discord.Thread):
+                try:
+                    bot_member = guild.get_member(bot_instance.user.id)
+                    if not bot_member:
+                        bot_member = await guild.fetch_member(bot_instance.user.id)
+                    
+                    if bot_member:
+                        bot_permissions = channel.permissions_for(bot_member)
+                        
+                        # Check bot permissions using config
+                        for perm_name in AsyncTournamentChannelPermissions.get_bot_permission_names():
+                            if not getattr(bot_permissions, perm_name, False):
+                                warnings.append(
+                                    AsyncTournamentChannelPermissions.get_bot_permission_description(perm_name)
+                                )
+                    else:
+                        warnings.append("Unable to verify bot permissions (bot not found in guild)")
+                except Exception as e:
+                    logger.error("Error checking bot permissions in thread: %s", e)
+                    warnings.append("Unable to verify bot permissions")
+                
+                return ChannelPermissionCheck(
+                    channel_id=channel_id,
+                    is_valid=len(warnings) == 0,
+                    warnings=warnings
+                )
+            
+            # For TextChannel, check @everyone and bot permissions
+            everyone_role = guild.default_role
+            
+            # Check @everyone permissions if default_role exists
+            if everyone_role:
+                # Get @everyone permissions for this channel
+                everyone_permissions = channel.permissions_for(everyone_role)
+                
+                # Check @everyone restrictions using config
+                for perm_name in AsyncTournamentChannelPermissions.get_everyone_restriction_names():
+                    if getattr(everyone_permissions, perm_name, False):
+                        warnings.append(
+                            AsyncTournamentChannelPermissions.get_everyone_restriction_description(perm_name)
+                        )
+            else:
+                logger.warning("Guild %s has no default_role", guild.id)
+                warnings.append("Unable to verify @everyone permissions (no default role found)")
+            
+            # Check bot permissions - need to fetch bot's member object
+            try:
+                # Get bot member from guild (guild.me may not be populated from fetch_channel)
+                bot_member = guild.get_member(bot_instance.user.id)
+                if not bot_member:
+                    # Try fetching if not in cache
+                    bot_member = await guild.fetch_member(bot_instance.user.id)
+                
+                if bot_member:
+                    bot_permissions = channel.permissions_for(bot_member)
+                    for perm_name in AsyncTournamentChannelPermissions.get_bot_permission_names():
+                        if not getattr(bot_permissions, perm_name, False):
+                            warnings.append(
+                                AsyncTournamentChannelPermissions.get_bot_permission_description(perm_name)
+                            )
+                else:
+                    logger.warning("Bot member not found in guild %s", guild.id)
+                    warnings.append("Unable to verify bot permissions (bot not found in guild)")
+            except discord.Forbidden:
+                warnings.append("Unable to verify bot permissions (no permission to fetch member)")
+            except Exception as e:
+                logger.error("Error fetching bot member from guild %s: %s", guild.id, e)
+                warnings.append("Unable to verify bot permissions (error fetching member)")
+            
+            return ChannelPermissionCheck(
+                channel_id=channel_id,
+                is_valid=len(warnings) == 0,
+                warnings=warnings
+            )
+            
+        except discord.Forbidden:
+            warnings.append("Bot does not have permission to view this channel")
+            return ChannelPermissionCheck(
+                channel_id=channel_id,
+                is_valid=False,
+                warnings=warnings
+            )
+        except discord.NotFound:
+            warnings.append("Channel not found")
+            return ChannelPermissionCheck(
+                channel_id=channel_id,
+                is_valid=False,
+                warnings=warnings
+            )
+        except Exception as e:
+            logger.error("Error checking channel permissions: %s", e, exc_info=True)
+            warnings.append(f"Error checking permissions: {str(e)}")
+            return ChannelPermissionCheck(
+                channel_id=channel_id,
+                is_valid=False,
+                warnings=warnings
+            )
+

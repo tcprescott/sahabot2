@@ -5,6 +5,7 @@ from api.schemas.async_tournament import (
     AsyncTournamentOut,
     AsyncTournamentListResponse,
     AsyncTournamentCreateRequest,
+    AsyncTournamentCreateResponse,
     AsyncTournamentUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
@@ -71,7 +72,7 @@ async def create_async_tournament(
     data: AsyncTournamentCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
     current_user: User = Depends(get_current_user)
-) -> AsyncTournamentOut:
+) -> AsyncTournamentCreateResponse:
     """
     Create an async tournament.
 
@@ -84,13 +85,13 @@ async def create_async_tournament(
         current_user: Authenticated user making the request
 
     Returns:
-        AsyncTournamentOut: Created async tournament
+        AsyncTournamentCreateResponse: Created async tournament with any warnings
 
     Raises:
         HTTPException: 403 if user lacks permission
     """
     service = AsyncTournamentService()
-    tournament = await service.create_tournament(
+    tournament, warnings = await service.create_tournament(
         user=current_user,
         organization_id=organization_id,
         name=data.name,
@@ -106,7 +107,10 @@ async def create_async_tournament(
             detail="Insufficient permissions to create async tournament"
         )
 
-    return AsyncTournamentOut.model_validate(tournament)
+    return AsyncTournamentCreateResponse(
+        tournament=AsyncTournamentOut.model_validate(tournament),
+        warnings=warnings
+    )
 
 
 @router.get(
@@ -159,7 +163,7 @@ async def get_async_tournament(
 
 @router.patch(
     "/{tournament_id}",
-    response_model=AsyncTournamentOut,
+    response_model=AsyncTournamentCreateResponse,
     dependencies=[Depends(enforce_rate_limit)],
     summary="Update Async Tournament",
     description="Update an async tournament. Authorization enforced at service layer.",
@@ -177,7 +181,7 @@ async def update_async_tournament(
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
     current_user: User = Depends(get_current_user)
-) -> AsyncTournamentOut:
+) -> AsyncTournamentCreateResponse:
     """
     Update an async tournament.
 
@@ -191,7 +195,7 @@ async def update_async_tournament(
         current_user: Authenticated user making the request
 
     Returns:
-        AsyncTournamentOut: Updated async tournament
+        AsyncTournamentCreateResponse: Updated async tournament with any warnings
 
     Raises:
         HTTPException: 403 if user lacks permission
@@ -212,7 +216,7 @@ async def update_async_tournament(
     if data.runs_per_pool is not None:
         update_fields['runs_per_pool'] = data.runs_per_pool
 
-    tournament = await service.update_tournament(
+    tournament, warnings = await service.update_tournament(
         user=current_user,
         organization_id=organization_id,
         tournament_id=tournament_id,
@@ -225,7 +229,10 @@ async def update_async_tournament(
             detail="Async tournament not found or insufficient permissions"
         )
 
-    return AsyncTournamentOut.model_validate(tournament)
+    return AsyncTournamentCreateResponse(
+        tournament=AsyncTournamentOut.model_validate(tournament),
+        warnings=warnings
+    )
 
 
 @router.delete(
