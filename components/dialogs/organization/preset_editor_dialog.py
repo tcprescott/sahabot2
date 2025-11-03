@@ -15,21 +15,22 @@ from models import RandomizerPreset
 class PresetEditorDialog(BaseDialog):
     """Dialog for creating/editing randomizer presets with YAML editor."""
 
-    RANDOMIZERS = [
-        {'label': 'A Link to the Past Randomizer', 'value': 'alttpr'},
-        {'label': 'Super Metroid', 'value': 'sm'},
-        {'label': 'SMZ3 Combo', 'value': 'smz3'},
-        {'label': 'Ocarina of Time Randomizer', 'value': 'ootr'},
-        {'label': 'Aria of Sorrow Randomizer', 'value': 'aosr'},
-        {'label': 'Zelda 1 Randomizer', 'value': 'z1r'},
-        {'label': 'Final Fantasy Randomizer', 'value': 'ffr'},
-        {'label': 'Super Mario Bros 3 Randomizer', 'value': 'smb3r'},
-        {'label': 'Chrono Trigger: Jets of Time', 'value': 'ctjets'},
-        {'label': 'Bingosync', 'value': 'bingosync'},
-    ]
+    RANDOMIZERS = {
+        'alttpr': 'A Link to the Past Randomizer',
+        'sm': 'Super Metroid',
+        'smz3': 'SMZ3 Combo',
+        'ootr': 'Ocarina of Time Randomizer',
+        'aosr': 'Aria of Sorrow Randomizer',
+        'z1r': 'Zelda 1 Randomizer',
+        'ffr': 'Final Fantasy Randomizer',
+        'smb3r': 'Super Mario Bros 3 Randomizer',
+        'ctjets': 'Chrono Trigger: Jets of Time',
+        'bingosync': 'Bingosync',
+    }
 
     def __init__(
         self,
+        user,
         preset: Optional[RandomizerPreset] = None,
         organization_id: Optional[int] = None,
         is_global: bool = False,
@@ -39,12 +40,14 @@ class PresetEditorDialog(BaseDialog):
         Initialize the preset editor dialog.
 
         Args:
+            user: Current authenticated user (User model instance)
             preset: Existing preset to edit (None for new)
             organization_id: Organization ID for org presets (deprecated, use namespaces)
             is_global: Whether to create a global preset (requires SUPERADMIN)
             on_save: Callback after save
         """
         super().__init__()
+        self.user = user
         self.preset = preset
         self.organization_id = organization_id
         self.is_global = is_global
@@ -77,14 +80,6 @@ class PresetEditorDialog(BaseDialog):
 
     def _render_body(self):
         """Render dialog content."""
-        # Include CodeMirror CSS and JS
-        ui.add_head_html('''
-            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@6.0.1/dist/index.css">
-            <script src="https://cdn.jsdelivr.net/npm/codemirror@6.0.1/dist/index.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/@codemirror/lang-yaml@6.0.0/dist/index.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/@codemirror/theme-one-dark@6.0.0/dist/index.js"></script>
-        ''')
-
         # Basic info section
         with self.create_form_grid(columns=2):
             with ui.element('div'):
@@ -101,7 +96,8 @@ class PresetEditorDialog(BaseDialog):
                 self.randomizer_select = ui.select(
                     label='Randomizer',
                     options=self.RANDOMIZERS,
-                    value=self.preset.randomizer if self.preset else 'alttpr'
+                    value=self.preset.randomizer if self.preset else 'alttpr',
+                    with_input=True
                 ).classes('w-full').props('outlined dense')
                 if self.is_edit_mode:
                     self.randomizer_select.props('readonly')  # Can't change randomizer in edit mode
@@ -118,7 +114,7 @@ class PresetEditorDialog(BaseDialog):
         # Public checkbox
         with ui.element('div').classes('mt-4'):
             self.is_public_checkbox = ui.checkbox(
-                'Make this preset public (visible to all organization members)',
+                'Make this preset public (visible to all users)',
                 value=self.preset.is_public if self.preset else False
             )
 
@@ -129,42 +125,12 @@ class PresetEditorDialog(BaseDialog):
             ui.label('YAML Configuration').classes('text-lg font-bold mb-2')
             ui.label('Edit the preset settings in YAML format below:').classes('text-sm text-secondary mb-2')
 
-            # CodeMirror container
-            self.yaml_editor = ui.element('div').classes('border rounded').style('min-height: 400px')
-
-            # Initialize CodeMirror
+            # Simple textarea editor with monospace font
             default_yaml = self._get_default_yaml()
-            self.yaml_editor.run_method(
-                'innerHTML',
-                '''<div id="codemirror-editor" style="height: 400px;"></div>
-                <script>
-                    if (typeof window.editorView !== 'undefined') {
-                        window.editorView.destroy();
-                    }
-                    
-                    const { EditorView, basicSetup } = CM["@codemirror/basic-setup"] || CM;
-                    const { yaml } = CM["@codemirror/lang-yaml"] || CM;
-                    const { oneDark } = CM["@codemirror/theme-one-dark"] || CM;
-                    
-                    const startState = EditorView.state.create({
-                        doc: `''' + default_yaml.replace('`', '\\`').replace('${', '\\${') + '''`,
-                        extensions: [
-                            basicSetup,
-                            yaml(),
-                            EditorView.lineWrapping,
-                            EditorView.theme({
-                                "&": { height: "400px" },
-                                ".cm-scroller": { overflow: "auto" }
-                            })
-                        ]
-                    });
-                    
-                    window.editorView = new EditorView({
-                        state: startState,
-                        parent: document.getElementById('codemirror-editor')
-                    });
-                </script>'''
-            )
+            self.yaml_editor = ui.textarea(
+                label='YAML Content',
+                value=default_yaml
+            ).classes('w-full font-mono').props('outlined rows=20').style('font-family: monospace; tab-size: 2;')
 
             # Validation message area
             self.validation_message = ui.element('div').classes('mt-2')
@@ -204,13 +170,10 @@ settings:
 
     async def _validate_yaml(self):
         """Validate YAML content."""
-        # Get YAML from CodeMirror
-        yaml_content = await ui.run_javascript(
-            'window.editorView.state.doc.toString()',
-            timeout=5.0
-        )
+        # Get YAML from textarea
+        yaml_content = self.yaml_editor.value
 
-        if not yaml_content:
+        if not yaml_content or not yaml_content.strip():
             self.validation_message.clear()
             with self.validation_message:
                 with ui.element('div').classes('p-2 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'):
@@ -259,12 +222,9 @@ settings:
             return
 
         # Get and validate YAML
-        yaml_content = await ui.run_javascript(
-            'window.editorView.state.doc.toString()',
-            timeout=5.0
-        )
+        yaml_content = self.yaml_editor.value
 
-        if not yaml_content:
+        if not yaml_content or not yaml_content.strip():
             ui.notify('Please enter YAML configuration', type='negative')
             return
 
@@ -273,23 +233,14 @@ settings:
             ui.notify('Please fix validation errors before saving', type='negative')
             return
 
-        # Get current user from session
-        from nicegui import app
-        user = app.storage.user.get('user')
-        if not user:
-            ui.notify('User not authenticated', type='negative')
-            return
-
         # Save via service
         from application.services.randomizer_preset_service import (
             RandomizerPresetService,
             PresetValidationError
         )
-        from models import User
 
         try:
             service = RandomizerPresetService()
-            user_obj = await User.get(id=user['id'])
 
             description = self.description_input.value.strip() if self.description_input.value else None
             is_public = self.is_public_checkbox.value
@@ -298,7 +249,7 @@ settings:
                 # Update existing preset
                 await service.update_preset(
                     preset_id=self.preset.id,
-                    user=user_obj,
+                    user=self.user,
                     yaml_content=yaml_content,
                     description=description,
                     is_public=is_public
@@ -307,7 +258,7 @@ settings:
             else:
                 # Create new preset
                 await service.create_preset(
-                    user=user_obj,
+                    user=self.user,
                     randomizer=randomizer,
                     name=name,
                     yaml_content=yaml_content,

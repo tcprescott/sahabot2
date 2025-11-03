@@ -184,3 +184,32 @@ class AuditService:
             ip_address=ip_address,
             organization_id=organization_id,
         )
+
+    async def list_audit_logs(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        user_id: Optional[int] = None,
+        action: Optional[str] = None,
+        organization_id: Optional[int] = None,
+    ) -> tuple[list[AuditLog], int]:
+        """
+        List audit logs with optional filters and pagination.
+
+        Args:
+            limit: Maximum number of logs to return
+            offset: Number of logs to skip
+            user_id: Optional user ID filter
+            action: Optional action filter
+            organization_id: Optional organization ID filter
+
+        Returns:
+            Tuple of (logs, total_count)
+        """
+        return await self.audit_repository.list_with_filters(
+            limit=limit,
+            offset=offset,
+            user_id=user_id,
+            action=action,
+            organization_id=organization_id,
+        )

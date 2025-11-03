@@ -115,3 +115,38 @@ class AuditRepository:
             list[AuditLog]: Audit log entries for the action
         """
         return await AuditLog.filter(action=action).prefetch_related('user').limit(limit)
+
+    async def list_with_filters(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        user_id: Optional[int] = None,
+        action: Optional[str] = None,
+        organization_id: Optional[int] = None,
+    ) -> tuple[list[AuditLog], int]:
+        """
+        List audit logs with optional filters and pagination.
+
+        Args:
+            limit: Maximum number of logs to return
+            offset: Number of logs to skip
+            user_id: Optional user ID filter
+            action: Optional action filter
+            organization_id: Optional organization ID filter
+
+        Returns:
+            Tuple of (logs, total_count)
+        """
+        query = AuditLog.all()
+
+        if user_id is not None:
+            query = query.filter(user_id=user_id)
+        if action is not None:
+            query = query.filter(action=action)
+        if organization_id is not None:
+            query = query.filter(organization_id=organization_id)
+
+        total = await query.count()
+        logs = await query.prefetch_related('user').order_by('-created_at').offset(offset).limit(limit)
+
+        return logs, total

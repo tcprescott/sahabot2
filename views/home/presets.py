@@ -60,10 +60,24 @@ class PresetsView:
     async def _render_content(self) -> None:
         """Render the view content."""
         with Card.create(title='Randomizer Presets'):
-            # Header with description
-            with ui.element('div').classes('mb-4'):
-                ui.label('Browse randomizer presets from your namespace, global presets, and other accessible namespaces.')
-                ui.label('Global presets are available to everyone. Each user also has their own preset namespace.').classes('text-sm text-secondary')
+            # Header with description and create button
+            with ui.element('div').classes('flex justify-between items-start mb-4'):
+                with ui.element('div'):
+                    ui.label('Browse randomizer presets from your namespace, global presets, and other accessible namespaces.')
+                    ui.label('Global presets are available to everyone. Each user also has their own preset namespace.').classes('text-sm text-secondary')
+                
+                # Create preset button
+                async def create_preset():
+                    """Open dialog to create a new preset."""
+                    from components.dialogs.organization.preset_editor_dialog import PresetEditorDialog
+                    
+                    dialog = PresetEditorDialog(
+                        user=self.user,
+                        on_save=self._refresh
+                    )
+                    await dialog.show()
+
+                ui.button('Create Preset', icon='add', on_click=create_preset).classes('btn').props('color=positive')
 
             # Filter bar
             with ui.element('div').classes('flex flex-wrap gap-2 mb-4 items-center'):
@@ -107,7 +121,10 @@ class PresetsView:
 
             except Exception as e:
                 logger.error("Failed to load presets: %s", e, exc_info=True)
-                ui.label('Failed to load presets. Please try again.').classes('text-red-500')
+                with ui.element('div').classes('p-4 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'):
+                    ui.icon('error').classes('mr-2')
+                    ui.label(f'Failed to load presets: {str(e)}').classes('font-bold')
+                    ui.label('Please check the server logs for details.').classes('text-sm mt-2')
 
     async def _render_preset_card(self, preset) -> None:
         """
@@ -147,7 +164,7 @@ class PresetsView:
                 # Created date
                 with ui.element('div').classes('flex items-center gap-1'):
                     ui.icon('schedule', size='14px')
-                    DateTimeLabel(preset.created_at)
+                    DateTimeLabel.create(preset.created_at)
 
             # Visibility badge
             visibility_color = 'positive' if preset.is_public else 'warning'
@@ -181,6 +198,53 @@ class PresetsView:
 
                 yaml_dialog.open()
 
+            # Edit preset handler
+            async def edit_preset():
+                """Open edit dialog for this preset."""
+                from components.dialogs.organization.preset_editor_dialog import PresetEditorDialog
+
+                dialog = PresetEditorDialog(
+                    user=self.user,
+                    preset=preset,
+                    on_save=self._refresh
+                )
+                await dialog.show()
+
+            # Delete preset handler
+            async def delete_preset():
+                """Delete this preset after confirmation."""
+                # Confirmation dialog
+                with ui.dialog() as confirm_dialog, ui.card():
+                    ui.label(f'Delete preset "{preset.name}"?').classes('text-lg font-bold mb-4')
+                    ui.label('This action cannot be undone.').classes('text-secondary mb-4')
+                    
+                    with ui.element('div').classes('flex justify-end gap-2'):
+                        ui.button('Cancel', on_click=confirm_dialog.close).classes('btn')
+                        
+                        async def confirm_delete():
+                            try:
+                                await self.service.delete_preset(preset.id, self.user)
+                                ui.notify(f'Preset "{preset.name}" deleted', type='positive')
+                                confirm_dialog.close()
+                                await self._refresh()
+                            except Exception as e:
+                                logger.error("Failed to delete preset %s: %s", preset.id, e, exc_info=True)
+                                ui.notify(f'Failed to delete preset: {str(e)}', type='negative')
+                        
+                        ui.button('Delete', on_click=confirm_delete).classes('btn').props('color=negative')
+                
+                confirm_dialog.open()
+
+            # Determine if user can edit this preset
+            can_edit = preset.user_id == self.user.id or self.user.has_permission('SUPERADMIN')
+
             ui.separator()
-            with ui.element('div').classes('flex justify-end mt-2'):
+            with ui.element('div').classes('flex justify-between mt-2'):
+                # View button on the left
                 ui.button('View YAML', icon='code', on_click=view_yaml).classes('btn').props('flat dense')
+                
+                # Edit and delete buttons on the right (only if user can edit)
+                if can_edit:
+                    with ui.element('div').classes('flex gap-2'):
+                        ui.button('Edit', icon='edit', on_click=edit_preset).classes('btn').props('flat dense color=primary')
+                        ui.button('Delete', icon='delete', on_click=delete_preset).classes('btn').props('flat dense color=negative')

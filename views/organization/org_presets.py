@@ -80,6 +80,7 @@ class OrgPresetsView:
                 # Create button
                 async def open_create_dialog():
                     dialog = PresetEditorDialog(
+                        user=self.user,
                         organization_id=self.organization.id,
                         on_save=self._refresh
                     )
@@ -176,7 +177,7 @@ class OrgPresetsView:
                 ui.label(f'Created by: {preset.user.discord_username}')
                 with ui.element('div').classes('flex items-center gap-1'):
                     ui.label('Updated:')
-                    DateTimeLabel(preset.updated_at)
+                    DateTimeLabel.create(preset.updated_at)
 
             # Actions
             with ui.element('div').classes('flex gap-2'):
@@ -195,6 +196,7 @@ class OrgPresetsView:
                 if can_edit:
                     async def edit_preset(p=preset):
                         dialog = PresetEditorDialog(
+                            user=self.user,
                             organization_id=self.organization.id,
                             preset=p,
                             on_save=self._refresh
@@ -232,7 +234,7 @@ class OrgPresetsView:
                 ui.label(f'Created by: {preset.user.discord_username}')
                 with ui.element('div').classes('flex items-center gap-1'):
                     ui.label('Updated:')
-                    DateTimeLabel(preset.updated_at)
+                    DateTimeLabel.create(preset.updated_at)
                 if preset.is_public:
                     ui.label('Visibility: Public').classes('text-green-600')
                 else:

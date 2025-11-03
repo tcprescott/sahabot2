@@ -216,8 +216,12 @@ class RandomizerPresetService:
             # Get or create user's namespace
             namespace = await self.namespace_service.get_or_create_user_namespace(user)
             if not namespace:
+                logger.error("Failed to create namespace for user %s", user.id)
                 raise ValueError("Failed to create user namespace")
             namespace_id = namespace.id
+            logger.info("Creating preset in namespace %s for user %s", namespace_id, user.id)
+        else:
+            logger.info("Creating global preset for user %s", user.id)
 
         # Check for duplicate name
         existing = await self.repository.get_by_name(
@@ -230,6 +234,18 @@ class RandomizerPresetService:
             raise ValueError(
                 f"Preset '{name}' already exists for {randomizer} {scope}"
             )
+        
+        # Also check if a global preset exists with this name (to avoid conflicts)
+        if not is_global:
+            global_existing = await self.repository.get_global_preset(
+                randomizer=randomizer,
+                name=name
+            )
+            if global_existing:
+                raise ValueError(
+                    f"A global preset named '{name}' already exists for {randomizer}. "
+                    f"Please choose a different name to avoid conflicts."
+                )
 
         # Create preset
         preset = await self.repository.create(
@@ -364,6 +380,62 @@ class RandomizerPresetService:
         )
 
         return True
+
+    async def list_user_presets(
+        self,
+        user: User,
+        randomizer: Optional[str] = None,
+        namespace_id: Optional[int] = None
+    ) -> list[RandomizerPreset]:
+        """
+        List presets created by a specific user.
+
+        Args:
+            user: User whose presets to list
+            randomizer: Optional randomizer filter
+            namespace_id: Optional namespace filter
+
+        Returns:
+            List of user's presets
+        """
+        # Get user's namespace
+        namespace = await self.namespace_service.get_or_create_user_namespace(user)
+        if not namespace:
+            return []
+
+        # If namespace_id specified, use it; otherwise use user's namespace
+        target_namespace_id = namespace_id if namespace_id is not None else namespace.id
+
+        return await self.repository.list_in_namespace(
+            namespace_id=target_namespace_id,
+            randomizer=randomizer
+        )
+
+    async def list_public_presets(
+        self,
+        randomizer: Optional[str] = None,
+        namespace_id: Optional[int] = None
+    ) -> list[RandomizerPreset]:
+        """
+        List all public presets.
+
+        Args:
+            randomizer: Optional randomizer filter
+            namespace_id: Optional namespace filter
+
+        Returns:
+            List of public presets
+        """
+        if namespace_id is not None:
+            # Get presets from specific namespace that are public
+            presets = await self.repository.list_in_namespace(
+                namespace_id=namespace_id,
+                randomizer=randomizer
+            )
+            return [p for p in presets if p.is_public]
+
+        # Get all global public presets
+        return await self.repository.list_global_presets(randomizer=randomizer)
 
     def validate_yaml_content(self, yaml_content: str) -> dict:
         """

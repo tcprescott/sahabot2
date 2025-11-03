@@ -287,3 +287,87 @@ class PresetNamespaceService:
             return False
 
         return await namespace.can_user_edit(user)
+
+    async def list_user_namespaces(self, user: User) -> list[PresetNamespace]:
+        """
+        List all namespaces owned by a user.
+
+        Args:
+            user: User whose namespaces to list
+
+        Returns:
+            List of namespaces owned by the user
+        """
+        # Get user's personal namespace
+        user_namespace = await self.repository.get_user_namespace(user)
+        if user_namespace:
+            return [user_namespace]
+        return []
+
+    async def create_namespace(
+        self,
+        user: User,
+        name: str,
+        description: Optional[str] = None
+    ) -> Optional[PresetNamespace]:
+        """
+        Create a new namespace for a user.
+
+        Args:
+            user: User creating the namespace
+            name: Namespace name
+            description: Optional description
+
+        Returns:
+            Created namespace or None on failure
+
+        Raises:
+            NamespaceValidationError: If validation fails
+        """
+        self._validate_namespace_name(name)
+
+        # Check for duplicates
+        existing = await self.repository.get_by_name(name)
+        if existing:
+            raise NamespaceValidationError(f"Namespace '{name}' already exists")
+
+        # Create using create_user_namespace which requires display_name
+        return await self.repository.create_user_namespace(
+            user=user,
+            name=name,
+            display_name=name.title(),  # Convert name to title case for display
+            description=description,
+            is_public=True
+        )
+
+    async def delete_namespace(
+        self,
+        user: User,
+        namespace_id: int
+    ) -> bool:
+        """
+        Delete a namespace if user has permission.
+
+        Args:
+            user: User attempting to delete
+            namespace_id: Namespace ID
+
+        Returns:
+            True if deleted, False otherwise
+        """
+        namespace = await self.repository.get_by_id(namespace_id)
+        if not namespace:
+            return False
+
+        # Check if user owns this namespace
+        if namespace.user_id != user.id:
+            logger.warning(
+                "User %s attempted to delete namespace %s (owner: %s)",
+                user.id,
+                namespace_id,
+                namespace.user_id
+            )
+            return False
+
+        return await self.repository.delete(namespace_id)
+

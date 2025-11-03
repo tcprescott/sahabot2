@@ -54,12 +54,12 @@ class RandomizerPreset(Model):
         table = "randomizer_presets"
         unique_together = (
             ("namespace_id", "randomizer", "name"),  # Namespace presets must be unique
-            ("randomizer", "name"),  # Global presets (namespace_id=null) must be unique
         )
         indexes = (
             ("namespace_id", "randomizer"),
             ("randomizer", "user_id"),
             ("is_public",),
+            ("randomizer", "name"),  # For global preset lookups (where namespace_id IS NULL)
         )
 
     def __str__(self):

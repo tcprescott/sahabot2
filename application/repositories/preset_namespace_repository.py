@@ -88,7 +88,7 @@ class PresetNamespaceRepository:
         """
         # Get user's own namespace + public ones
         namespaces = await PresetNamespace.filter(
-            user=user
+            user_id=user.id
         ).prefetch_related('user', 'organization')
 
         public_namespaces = await PresetNamespace.filter(
@@ -201,6 +201,15 @@ class PresetNamespaceRepository:
             )
 
         return namespace
+
+    async def list_all(self) -> list[PresetNamespace]:
+        """
+        List all preset namespaces (admin function).
+
+        Returns:
+            List of all namespaces
+        """
+        return await PresetNamespace.all().prefetch_related('user', 'organization', 'presets').order_by('-created_at')
 
     async def delete(self, namespace_id: int) -> bool:
         """

@@ -78,7 +78,7 @@ class PresetsView:
             with ui.element('div').classes('flex flex-wrap gap-2 mb-4 items-center'):
                 # Create button
                 async def open_create_dialog():
-                    dialog = PresetEditorDialog(is_global=True, on_save=self._refresh)
+                    dialog = PresetEditorDialog(user=self.user, is_global=True, on_save=self._refresh)
                     await dialog.show()
 
                 ui.button('Create Global Preset', icon='add', on_click=open_create_dialog).classes('btn').props('color=positive')
@@ -171,7 +171,7 @@ class PresetsView:
                 ui.label(' • ')
                 with ui.element('span'):
                     ui.label('Updated: ')
-                    DateTimeLabel(preset.updated_at)
+                    DateTimeLabel.create(preset.updated_at)
 
             # Actions
             with ui.element('div').classes('flex gap-2 mt-4'):
@@ -185,7 +185,7 @@ class PresetsView:
                 can_edit = await self.service.can_user_edit_preset(preset.id, self.user)
                 if can_edit:
                     async def edit_preset():
-                        dialog = PresetEditorDialog(preset=preset, on_save=self._refresh)
+                        dialog = PresetEditorDialog(user=self.user, preset=preset, on_save=self._refresh)
                         await dialog.show()
 
                     ui.button('Edit', icon='edit', on_click=edit_preset).classes('btn-secondary btn-sm')
