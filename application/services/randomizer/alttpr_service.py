@@ -91,16 +91,20 @@ class ALTTPRService:
     async def generate_from_preset(
         self,
         preset_name: str,
+        organization_id: int,
         tournament: bool = True,
-        spoilers: str = "off"
+        spoilers: str = "off",
+        allow_quickswap: bool = False
     ) -> RandomizerResult:
         """
         Generate an ALTTPR seed from a preset.
 
         Args:
             preset_name: Name of the preset to use
+            organization_id: Organization ID for loading the preset
             tournament: Whether this is a tournament seed (default: True)
             spoilers: Spoiler level ('on', 'off', 'generate') (default: 'off')
+            allow_quickswap: Whether to allow quick swap (default: False)
 
         Returns:
             RandomizerResult: The generated seed information
@@ -109,8 +113,30 @@ class ALTTPRService:
             ValueError: If preset is not found
             httpx.HTTPError: If the API request fails
         """
-        # In a full implementation, this would load preset from database or file
-        # For now, we'll raise an error
-        raise NotImplementedError(
-            "Preset loading not yet implemented. Use generate() with explicit settings."
+        from application.services.preset_service import PresetService
+
+        # Load preset from database
+        preset_service = PresetService()
+        settings = await preset_service.get_preset_settings(
+            preset_name,
+            organization_id
+        )
+
+        if not settings:
+            raise ValueError(
+                f"Preset '{preset_name}' not found in organization {organization_id}"
+            )
+
+        logger.info(
+            "Generating ALTTPR seed from preset %s for organization %s",
+            preset_name,
+            organization_id
+        )
+
+        # Generate seed using preset settings
+        return await self.generate(
+            settings_dict=settings,
+            tournament=tournament,
+            spoilers=spoilers,
+            allow_quickswap=allow_quickswap
         )
