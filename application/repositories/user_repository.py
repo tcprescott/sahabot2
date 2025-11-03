@@ -124,3 +124,16 @@ class UserRepository:
             int: Number of active users
         """
         return await User.filter(is_active=True).count()
+
+    async def get_by_racetime_id(self, racetime_id: str) -> Optional[User]:
+        """
+        Get user by RaceTime.gg ID.
+
+        Args:
+            racetime_id: RaceTime.gg user ID
+
+        Returns:
+            Optional[User]: User if found, None otherwise
+        """
+        return await User.filter(racetime_id=racetime_id).first()
+

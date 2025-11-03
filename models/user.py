@@ -40,6 +40,9 @@ class User(Model):
         discord_discriminator: Discord discriminator (deprecated by Discord but kept for compatibility)
         discord_avatar: Discord avatar hash
         discord_email: Discord email address
+        racetime_id: RaceTime.gg user ID (unique, nullable)
+        racetime_name: RaceTime.gg username (nullable)
+        racetime_access_token: OAuth2 access token for RaceTime.gg API (nullable)
         permission: User permission level
         is_active: Whether the user account is active
         created_at: Account creation timestamp
@@ -52,6 +55,11 @@ class User(Model):
     discord_discriminator = fields.CharField(max_length=4, null=True)
     discord_avatar = fields.CharField(max_length=255, null=True)
     discord_email = fields.CharField(max_length=255, null=True)
+
+    # RaceTime.gg account linking
+    racetime_id = fields.CharField(max_length=255, null=True, unique=True, index=True)
+    racetime_name = fields.CharField(max_length=255, null=True)
+    racetime_access_token = fields.TextField(null=True)
 
     permission = fields.IntEnumField(Permission, default=Permission.USER)
     is_active = fields.BooleanField(default=True)

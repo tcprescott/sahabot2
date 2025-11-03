@@ -18,7 +18,7 @@ async def init_db() -> None:
     await command.upgrade()
     await Tortoise.init(
         db_url=settings.database_url,
-        modules={'models': ['models.user', 'models.audit_log', 'models.api_token', 'models.match_schedule', 'models.organizations', 'models.organization_invite', 'models.settings', 'models.async_tournament']},
+        modules={'models': ['models.user', 'models.audit_log', 'models.api_token', 'models.match_schedule', 'models.organizations', 'models.organization_invite', 'models.settings', 'models.async_tournament', 'models.scheduled_task']},
         use_tz=True,
         timezone='UTC'
     )
