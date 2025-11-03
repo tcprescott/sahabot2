@@ -7,8 +7,10 @@ across all organizations.
 
 from __future__ import annotations
 import logging
+import yaml
 from nicegui import ui
 from models import User
+from models.user import Permission
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
@@ -44,6 +46,8 @@ class PresetsView:
         self.service = RandomizerPresetService()
         self.container = None
         self.filter_randomizer = None
+        self.filter_mine_only = True  # Default to showing only user's namespace
+        self.filter_include_global = True  # Always include global presets
 
     async def render(self) -> None:
         """Render the presets view."""
@@ -64,8 +68,8 @@ class PresetsView:
             # Header with description and create button
             with ui.element('div').classes('flex justify-between items-start mb-4'):
                 with ui.element('div'):
-                    ui.label('Browse randomizer presets from your namespace, global presets, and other accessible namespaces.')
-                    ui.label('Global presets are available to everyone. Each user also has their own preset namespace.').classes('text-sm text-secondary')
+                    ui.label('Browse randomizer presets from your namespace, global presets, and other public namespaces.')
+                    ui.label('Use filters below to show only your namespace or explore all public presets.').classes('text-sm text-secondary')
                 
                 # Create preset button
                 async def create_preset():
@@ -82,7 +86,7 @@ class PresetsView:
 
             # Filter bar
             with ui.element('div').classes('flex flex-wrap gap-2 mb-4 items-center'):
-                ui.label('Filter:').classes('font-bold')
+                ui.label('Filters:').classes('font-bold')
 
                 # Randomizer filter
                 randomizer_options = {'All Randomizers': None}
@@ -100,12 +104,41 @@ class PresetsView:
                     with_input=True
                 ).classes('w-48').props('outlined dense')
 
-            # Get presets accessible to user (public + user's private)
+                # Scope filter (Mine Only vs All Public)
+                scope_options = {
+                    'mine': 'My Namespace Only',
+                    'all': 'All Public Presets'
+                }
+
+                async def on_scope_change(e):
+                    self.filter_mine_only = (e.value == 'mine')
+                    await self._refresh()
+
+                ui.select(
+                    label='Scope',
+                    options=scope_options,
+                    value='mine' if self.filter_mine_only else 'all',
+                    on_change=on_scope_change
+                ).classes('w-48').props('outlined dense')
+
+                # Include global presets checkbox
+                async def on_include_global_change(e):
+                    self.filter_include_global = e.value
+                    await self._refresh()
+
+                ui.checkbox(
+                    'Include Global Presets',
+                    value=self.filter_include_global,
+                    on_change=on_include_global_change
+                )
+
+            # Get presets accessible to user
             try:
                 presets = await self.service.list_presets(
                     user=self.user,
                     randomizer=self.filter_randomizer,
-                    mine_only=False
+                    mine_only=self.filter_mine_only,
+                    include_global=self.filter_include_global
                 )
 
                 if not presets:
@@ -164,6 +197,40 @@ class PresetsView:
                                     on_click=view_yaml
                                 ).classes('btn btn-sm').props('flat').tooltip('View YAML')
 
+                                # Edit and delete buttons (only if user owns preset or is SUPERADMIN)
+                                can_edit = (preset.user_id == self.user.id or
+                                           self.user.has_permission(Permission.SUPERADMIN))
+
+                                if can_edit:
+                                    async def edit_preset():
+                                        from components.dialogs.organization.preset_editor_dialog import PresetEditorDialog
+                                        dialog = PresetEditorDialog(
+                                            user=self.user,
+                                            preset=preset,
+                                            on_save=self._refresh
+                                        )
+                                        await dialog.show()
+
+                                    ui.button(
+                                        icon='edit',
+                                        on_click=edit_preset
+                                    ).classes('btn btn-sm').props('flat color=primary').tooltip('Edit Preset')
+
+                                    # Delete button
+                                    async def delete_preset():
+                                        from components.dialogs.common.tournament_dialogs import ConfirmDialog
+                                        dialog = ConfirmDialog(
+                                            title='Delete Preset',
+                                            message=f'Are you sure you want to delete "{preset.name}"? This action cannot be undone.',
+                                            on_confirm=lambda: self._delete_preset(preset.id)
+                                        )
+                                        await dialog.show()
+
+                                    ui.button(
+                                        icon='delete',
+                                        on_click=delete_preset
+                                    ).classes('btn btn-sm').props('flat color=negative').tooltip('Delete Preset')
+
                         columns = [
                             TableColumn(label='Name', cell_render=render_name_cell),
                             TableColumn(label='Randomizer', cell_render=render_randomizer_cell),
@@ -194,8 +261,6 @@ class PresetsView:
         Args:
             preset: Preset to view
         """
-        import yaml
-
         # Convert settings dict to YAML string
         try:
             yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
@@ -265,4 +330,23 @@ class PresetsView:
 
         yaml_dialog.open()
 
+    async def _delete_preset(self, preset_id: int) -> None:
+        """
+        Delete a preset.
+
+        Args:
+            preset_id: Preset ID to delete
+        """
+        try:
+            success = await self.service.delete_preset(preset_id, self.user)
+            if success:
+                ui.notify('Preset deleted successfully', type='positive')
+                await self._refresh()
+            else:
+                ui.notify('Failed to delete preset', type='negative')
+        except PermissionError:
+            ui.notify('Not authorized to delete this preset', type='negative')
+        except Exception as e:
+            logger.error("Failed to delete preset %s: %s", preset_id, e, exc_info=True)
+            ui.notify(f'Error deleting preset: {str(e)}', type='negative')
 

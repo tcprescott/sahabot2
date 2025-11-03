@@ -161,7 +161,8 @@ class RandomizerPresetService:
         return await self.repository.list_accessible_presets(
             namespaces=namespaces,
             randomizer=randomizer,
-            include_global=include_global
+            include_global=include_global,
+            user_id=user.id
         )
 
     async def create_preset(

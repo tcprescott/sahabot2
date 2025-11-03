@@ -9,6 +9,7 @@ from views.admin.admin_organizations import AdminOrganizationsView
 from views.admin.admin_settings import AdminSettingsView
 from views.admin.presets import PresetsView
 from views.admin.preset_namespaces import PresetNamespacesView
+from views.admin.org_requests import OrgRequestsView
 
 __all__ = [
     'AdminUsersView',
@@ -16,4 +17,5 @@ __all__ = [
     'AdminSettingsView',
     'PresetsView',
     'PresetNamespacesView',
+    'OrgRequestsView',
 ]

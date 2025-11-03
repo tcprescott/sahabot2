@@ -151,15 +151,20 @@ class RandomizerPresetRepository:
         self,
         namespaces: list[PresetNamespace],
         randomizer: Optional[str] = None,
-        include_global: bool = True
+        include_global: bool = True,
+        user_id: Optional[int] = None
     ) -> list[RandomizerPreset]:
         """
         List presets accessible through given namespaces.
+
+        Shows all presets from user's own namespaces, but only public presets
+        from other namespaces.
 
         Args:
             namespaces: List of accessible namespaces
             randomizer: Optional filter by randomizer type
             include_global: Whether to include global presets
+            user_id: Optional user ID to determine which are user's own namespaces
 
         Returns:
             List of presets from the given namespaces plus global presets
@@ -173,14 +178,34 @@ class RandomizerPresetRepository:
 
         # Get namespace presets
         if namespaces:
-            namespace_ids = [ns.id for ns in namespaces]
-            query = RandomizerPreset.filter(namespace_id__in=namespace_ids)
-
-            if randomizer:
-                query = query.filter(randomizer=randomizer)
-
-            namespace_presets = await query.prefetch_related('user', 'namespace').order_by('-updated_at')
-            presets.extend(namespace_presets)
+            # Separate user's own namespaces from others
+            user_namespace_ids = []
+            other_namespace_ids = []
+            
+            for ns in namespaces:
+                if user_id and ns.user_id == user_id:
+                    user_namespace_ids.append(ns.id)
+                else:
+                    other_namespace_ids.append(ns.id)
+            
+            # Get all presets from user's own namespaces
+            if user_namespace_ids:
+                query = RandomizerPreset.filter(namespace_id__in=user_namespace_ids)
+                if randomizer:
+                    query = query.filter(randomizer=randomizer)
+                user_presets = await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+                presets.extend(user_presets)
+            
+            # Get only public presets from other namespaces
+            if other_namespace_ids:
+                query = RandomizerPreset.filter(
+                    namespace_id__in=other_namespace_ids,
+                    is_public=True
+                )
+                if randomizer:
+                    query = query.filter(randomizer=randomizer)
+                public_presets = await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+                presets.extend(public_presets)
 
         return presets
 

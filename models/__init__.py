@@ -10,6 +10,7 @@ from models.api_token import ApiToken
 from models.match_schedule import Tournament, Match, MatchPlayers, MatchSeed, StreamChannel, TournamentPlayers, Crew
 from models.organizations import Organization, OrganizationMember, OrganizationPermission
 from models.organization_invite import OrganizationInvite
+from models.organization_request import OrganizationRequest
 from models.settings import GlobalSetting, OrganizationSetting
 from models.discord_guild import DiscordGuild
 from models.async_tournament import (
@@ -23,6 +24,7 @@ from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from models.tournament_usage import TournamentUsage
 from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
+from models.preset_namespace_permission import PresetNamespacePermission
 
 __all__ = [
     'User',
@@ -33,6 +35,7 @@ __all__ = [
     'OrganizationMember',
     'OrganizationPermission',
     'OrganizationInvite',
+    'OrganizationRequest',
     'DiscordGuild',
     'GlobalSetting',
     'OrganizationSetting',
@@ -54,4 +57,5 @@ __all__ = [
     'TournamentUsage',
     'RandomizerPreset',
     'PresetNamespace',
+    'PresetNamespacePermission',
 ]

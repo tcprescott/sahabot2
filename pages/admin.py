@@ -13,7 +13,7 @@ This pattern is reusable for other multi-section pages via BasePage.
 
 from nicegui import ui
 from components.base_page import BasePage
-from views.admin import AdminUsersView, AdminOrganizationsView, AdminSettingsView, PresetsView, PresetNamespacesView
+from views.admin import AdminUsersView, AdminOrganizationsView, AdminSettingsView, PresetsView, PresetNamespacesView, OrgRequestsView
 from views.home import overview
 from application.services.randomizer_preset_service import RandomizerPresetService
 
@@ -49,6 +49,7 @@ def register():
             page.register_content_loader('overview', load_overview)
             page.register_content_loader('users', page.create_instance_view_loader(lambda: AdminUsersView(page.user)))
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: AdminOrganizationsView(page.user)))
+            page.register_content_loader('org-requests', page.create_instance_view_loader(lambda: OrgRequestsView(page.user)))
             page.register_content_loader('presets', page.create_instance_view_loader(lambda: PresetsView(page.user, RandomizerPresetService())))
             page.register_content_loader('namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
             page.register_content_loader('settings', page.create_instance_view_loader(lambda: AdminSettingsView(page.user)))
@@ -63,6 +64,7 @@ def register():
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
             base.create_sidebar_item_with_loader('Users', 'people', 'users'),
             base.create_sidebar_item_with_loader('Organizations', 'domain', 'organizations'),
+            base.create_sidebar_item_with_loader('Org Requests', 'pending_actions', 'org-requests'),
             base.create_sidebar_item_with_loader('Presets', 'code', 'presets'),
             base.create_sidebar_item_with_loader('Namespaces', 'folder', 'namespaces'),
             base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
