@@ -25,7 +25,7 @@ class RacetimeOAuthService:
         self.racetime_url = settings.RACETIME_URL
         self.client_id = settings.RACETIME_CLIENT_ID
         self.client_secret = settings.RACETIME_CLIENT_SECRET
-        self.redirect_uri = settings.RACETIME_OAUTH_REDIRECT_URI
+        self.redirect_uri = settings.get_racetime_oauth_redirect_uri()
 
     def get_authorization_url(self, state: str) -> str:
         """
