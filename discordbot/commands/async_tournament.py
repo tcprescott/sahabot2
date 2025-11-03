@@ -229,14 +229,16 @@ class AsyncTournamentCommands(commands.Cog):
 
                 now = datetime.utcnow()
 
-                # Send warning
-                if warning_time <= now < forfeit_time:
+                # Send warning only if not already sent
+                if warning_time <= now < forfeit_time and not getattr(race, "warning_sent", False):
                     await thread.send(
                         f"<@{race.user.discord_id}>, your race will be forfeited on "
                         f"{discord.utils.format_dt(forfeit_time, 'f')} "
                         f"({discord.utils.format_dt(forfeit_time, 'R')}) if you don't start it.",
                         allowed_mentions=discord.AllowedMentions(users=True)
                     )
+                    race.warning_sent = True
+                    await race.save()
 
                 # Auto-forfeit
                 if forfeit_time <= now:
