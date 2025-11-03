@@ -37,7 +37,7 @@ class DiscordBot(commands.Bot):
             help_command=None  # We'll implement custom help if needed
         )
         
-        self._ready = False
+        self._bot_ready = False  # Custom ready flag (don't shadow discord.py's _ready)
         self._last_synced_commands = None  # Store hash of last synced commands
     
     async def _should_sync_commands(self) -> bool:
@@ -163,7 +163,7 @@ class DiscordBot(commands.Bot):
     
     async def on_ready(self) -> None:
         """Event handler called when the bot is ready."""
-        self._ready = True
+        self._bot_ready = True
         logger.info('Bot is ready! Logged in as %s (ID: %s)', self.user, self.user.id)
         logger.info('Connected to %d guilds', len(self.guilds))
         
@@ -202,7 +202,7 @@ class DiscordBot(commands.Bot):
         Returns:
             bool: True if bot is connected and ready
         """
-        return self._ready and not self.is_closed()
+        return self._bot_ready and not self.is_closed()
 
 
 # Singleton instance
