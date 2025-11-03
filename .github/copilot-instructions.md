@@ -412,7 +412,7 @@ ui.navigate.to('/admin/organizations/1?view=members&error=failed_to_add_member')
 # User sees: "Failed To Add Member" (red notification)
 
 # For informational messages
-ui.navigate.to('/tournaments/123?view=matches&message=match_rescheduled')
+ui.navigate.to('/org/123?view=matches&message=match_rescheduled')
 # User sees: "Match Rescheduled" (blue notification)
 ```
 

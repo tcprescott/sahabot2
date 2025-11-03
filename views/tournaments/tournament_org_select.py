@@ -30,7 +30,7 @@ class TournamentOrgSelectView:
                     ui.label('You are not a member of any organizations').classes('text-secondary')
                     ui.label('Ask an administrator to invite you to an organization').classes('text-secondary text-sm')
             else:
-                ui.label('Choose an organization to view its tournaments:').classes('mb-4')
+                ui.label('Choose an organization to view:').classes('mb-4')
                 
                 with ui.element('div').classes('flex flex-col gap-4'):
                     for member in members:
@@ -45,7 +45,7 @@ class TournamentOrgSelectView:
                                             ui.label(org.description).classes('text-sm text-secondary')
                                     
                                     ui.button(
-                                        'View Tournaments',
+                                        'View Organization',
                                         icon='arrow_forward',
-                                        on_click=lambda o=org: ui.navigate.to(f'/tournaments/{o.id}')
-                                    ).classes('btn').props('color=primary')
+                                        on_click=lambda o=org: ui.navigate.to(f'/org/{o.id}')
+                                    ).classes('btn btn-primary')

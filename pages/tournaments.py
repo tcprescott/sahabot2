@@ -9,6 +9,9 @@ from nicegui import ui
 from components.base_page import BasePage
 from application.services.organization_service import OrganizationService
 from application.services.tournament_service import TournamentService
+from models import OrganizationMember
+from models.async_tournament import AsyncTournament
+from models.match_schedule import Tournament
 from views.tournaments import (
     TournamentOrgSelectView,
     EventScheduleView,
@@ -21,15 +24,18 @@ from views.tournaments import (
     AsyncPlayerHistoryView,
     AsyncPermalinkView,
 )
+from views.organization import (
+    OrganizationOverviewView,
+)
 
 
 def register():
     """Register tournament page routes."""
 
-    @ui.page('/tournaments')
+    @ui.page('/org')
     async def tournaments_page():
-        """Tournament page - show organization selector."""
-        base = BasePage.authenticated_page(title="Tournaments")
+        """Organization features page - show organization selector."""
+        base = BasePage.authenticated_page(title="Organizations")
 
         async def content(page: BasePage):
             """Render organization selection page."""
@@ -43,16 +49,250 @@ def register():
 
         await base.render(content, sidebar_items)
 
-    @ui.page('/tournaments/{organization_id}')
-    async def tournament_org_page(organization_id: int):
-        """Tournament page for specific organization."""
-        base = BasePage.authenticated_page(title="Tournaments")
+    @ui.page('/org/{organization_id}')
+    async def organization_page(organization_id: int):
+        """Organization page - show organization features and members."""
+        base = BasePage.authenticated_page(title="Organization")
+        org_service = OrganizationService()
+
+        # Pre-check that user is a member of the organization
+        from middleware.auth import DiscordAuthService
+        user = await DiscordAuthService.get_current_user()
+        
+        # Check if user is a member of this organization
+        member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
+        is_member = member is not None
+        
+        # Get active tournaments for sidebar
+        active_async_tournaments = await AsyncTournament.filter(
+            organization_id=organization_id,
+            is_active=True
+        ).all()
+        
+        active_tournaments = await Tournament.filter(
+            organization_id=organization_id,
+            is_active=True
+        ).all()
+        
+        async def content(page: BasePage):
+            # Re-check membership inside content
+            if not is_member:
+                ui.notify('You must be a member of this organization to view organization features.', color='negative')
+                ui.navigate.to('/org')
+                return
+
+            org = await org_service.get_organization(organization_id)
+            if not org:
+                with ui.element('div').classes('card'):
+                    with ui.element('div').classes('card-header'):
+                        ui.label('Organization not found')
+                    with ui.element('div').classes('card-body'):
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
+                return
+
+            # Register content loaders for different sections
+            async def load_overview():
+                """Load overview view."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = OrganizationOverviewView(org, page.user)
+                        await view.render()
+
+            # Register loaders
+            page.register_content_loader('overview', load_overview)
+
+            # Load initial content
+            await load_overview()
+
+        # Create sidebar items
+        sidebar_items = [
+            base.create_nav_link('Back to Organizations', 'arrow_back', '/org'),
+            base.create_separator(),
+            base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
+            base.create_nav_link('Tournaments', 'emoji_events', f'/org/{organization_id}/tournament'),
+            base.create_nav_link('Async Tournaments', 'schedule', f'/org/{organization_id}/async'),
+        ]
+        
+        # Add active tournament links if there are any
+        if active_tournaments or active_async_tournaments:
+            sidebar_items.append(base.create_separator())
+            
+            # Add regular tournaments
+            for tournament in active_tournaments:
+                sidebar_items.append(
+                    base.create_nav_link(
+                        f'🏆 {tournament.name}',
+                        'emoji_events',
+                        f'/org/{organization_id}/tournament?tournament_id={tournament.id}'
+                    )
+                )
+            
+            # Add async tournaments
+            for tournament in active_async_tournaments:
+                sidebar_items.append(
+                    base.create_nav_link(
+                        f'🏁 {tournament.name}',
+                        'schedule',
+                        f'/org/{organization_id}/async/{tournament.id}'
+                    )
+                )
+
+        await base.render(content, sidebar_items, use_dynamic_content=True)
+
+    @ui.page('/org/{organization_id}/async')
+    @ui.page('/org/{organization_id}/async')
+    async def async_tournament_overview_page(organization_id: int):
+        """Async tournaments overview page for an organization."""
+        base = BasePage.authenticated_page(title="Async Tournaments")
+        org_service = OrganizationService()
+
+        # Pre-check that user is a member of the organization
+        from middleware.auth import DiscordAuthService
+        user = await DiscordAuthService.get_current_user()
+        
+        # Check if user is a member of this organization
+        member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
+        is_member = member is not None
+        
+        # Get active tournaments for sidebar
+        active_async_tournaments = await AsyncTournament.filter(
+            organization_id=organization_id,
+            is_active=True
+        ).all()
+        
+        active_tournaments = await Tournament.filter(
+            organization_id=organization_id,
+            is_active=True
+        ).all()
+        
+        async def content(_page: BasePage):
+            # Re-check membership inside content
+            if not is_member:
+                ui.notify('You must be a member of this organization to view organization features.', color='negative')
+                ui.navigate.to('/org')
+                return
+
+            org = await org_service.get_organization(organization_id)
+            if not org:
+                with ui.element('div').classes('card'):
+                    with ui.element('div').classes('card-header'):
+                        ui.label('Organization not found')
+                    with ui.element('div').classes('card-body'):
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
+                return
+
+            # Get all async tournaments for this organization
+            all_tournaments = await AsyncTournament.filter(organization_id=organization_id).order_by('-created_at').all()
+            active = [t for t in all_tournaments if t.is_active]
+            inactive = [t for t in all_tournaments if not t.is_active]
+            
+            from components.card import Card
+            from components.datetime_label import DateTimeLabel
+            
+            # Header
+            with Card.create(title='Async Tournaments'):
+                with ui.column().classes('gap-md'):
+                    ui.label(f'View and participate in async tournaments for {org.name}').classes('text-secondary')
+                    
+                    if active:
+                        ui.separator()
+                        ui.label('Active Tournaments').classes('text-lg font-semibold')
+                        with ui.column().classes('gap-sm'):
+                            for tournament in active:
+                                with ui.element('div').classes('card'):
+                                    with ui.element('div').classes('card-body'):
+                                        with ui.row().classes('w-full items-center justify-between'):
+                                            with ui.column().classes('gap-1'):
+                                                ui.link(
+                                                    tournament.name,
+                                                    f'/org/{organization_id}/async/{tournament.id}'
+                                                ).classes('text-xl font-semibold')
+                                                if tournament.description:
+                                                    ui.label(tournament.description).classes('text-secondary text-sm')
+                                                with ui.row().classes('gap-md items-center'):
+                                                    ui.label('Created:').classes('text-sm text-secondary')
+                                                    DateTimeLabel.datetime(tournament.created_at)
+                                            with ui.column().classes('items-end gap-1'):
+                                                ui.label('Active').classes('badge badge-success')
+                                                ui.button(
+                                                    'View Dashboard',
+                                                    icon='arrow_forward',
+                                                    on_click=lambda t=tournament: ui.navigate.to(f'/org/{organization_id}/async/{t.id}')
+                                                ).classes('btn btn-primary')
+                    
+                    if inactive:
+                        ui.separator()
+                        ui.label('Past Tournaments').classes('text-lg font-semibold')
+                        with ui.column().classes('gap-sm'):
+                            for tournament in inactive:
+                                with ui.element('div').classes('card'):
+                                    with ui.element('div').classes('card-body'):
+                                        with ui.row().classes('w-full items-center justify-between'):
+                                            with ui.column().classes('gap-1'):
+                                                ui.link(
+                                                    tournament.name,
+                                                    f'/org/{organization_id}/async/{tournament.id}'
+                                                ).classes('text-xl font-semibold')
+                                                if tournament.description:
+                                                    ui.label(tournament.description).classes('text-secondary text-sm')
+                                                with ui.row().classes('gap-md items-center'):
+                                                    ui.label('Created:').classes('text-sm text-secondary')
+                                                    DateTimeLabel.datetime(tournament.created_at)
+                                            with ui.column().classes('items-end gap-1'):
+                                                ui.label('Closed').classes('badge badge-danger')
+                                                ui.button(
+                                                    'View Results',
+                                                    icon='arrow_forward',
+                                                    on_click=lambda t=tournament: ui.navigate.to(f'/org/{organization_id}/async/{t.id}')
+                                                ).classes('btn')
+                    
+                    if not all_tournaments:
+                        with ui.element('div').classes('text-center mt-4'):
+                            ui.icon('schedule').classes('text-secondary icon-large')
+                            ui.label('No async tournaments yet').classes('text-secondary')
+                            ui.label('Ask an administrator to create one').classes('text-secondary text-sm')
+
+        # Create sidebar items (same as organization overview)
+        sidebar_items = [
+            base.create_nav_link('Back to Organization', 'arrow_back', f'/org/{organization_id}'),
+            base.create_separator(),
+        ]
+        
+        # Add active tournament links if there are any
+        if active_tournaments or active_async_tournaments:
+            # Add regular tournaments
+            for tournament in active_tournaments:
+                sidebar_items.append(
+                    base.create_nav_link(
+                        f'🏆 {tournament.name}',
+                        'emoji_events',
+                        f'/org/{organization_id}/tournament?tournament_id={tournament.id}'
+                    )
+                )
+            
+            # Add async tournaments
+            for tournament in active_async_tournaments:
+                sidebar_items.append(
+                    base.create_nav_link(
+                        f'🏁 {tournament.name}',
+                        'schedule',
+                        f'/org/{organization_id}/async/{tournament.id}'
+                    )
+                )
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/org/{organization_id}/tournament')
+    async def tournament_org_page(organization_id: int, tournament_id: int | None = None):
+        """Organization features page for specific organization."""
+        base = BasePage.authenticated_page(title="Organization")
         org_service = OrganizationService()
         tournament_service = TournamentService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
-        from models import OrganizationMember
         user = await DiscordAuthService.get_current_user()
         
         # Check if user is a member of this organization
@@ -62,8 +302,8 @@ def register():
         async def content(page: BasePage):
             # Re-check membership inside content
             if not is_member:
-                ui.notify('You must be a member of this organization to view tournaments.', color='negative')
-                ui.navigate.to('/tournaments')
+                ui.notify('You must be a member of this organization to view organization features.', color='negative')
+                ui.navigate.to('/org')
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -72,7 +312,7 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Organization not found')
                     with ui.element('div').classes('card-body'):
-                        ui.button('Back to Tournaments', on_click=lambda: ui.navigate.to('/tournaments')).classes('btn')
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
                 return
 
             # Register content loaders for different sections
@@ -83,6 +323,8 @@ def register():
                     container.clear()
                     with container:
                         view = EventScheduleView(org, page.user)
+                        if tournament_id:
+                            view.selected_tournaments = [tournament_id]
                         await view.render()
 
             async def load_my_matches():
@@ -92,6 +334,8 @@ def register():
                     container.clear()
                     with container:
                         view = MyMatchesView(org, page.user)
+                        if tournament_id:
+                            view.selected_tournaments = [tournament_id]
                         await view.render()
 
             async def load_my_settings():
@@ -110,6 +354,8 @@ def register():
                     container.clear()
                     with container:
                         view = TournamentManagementView(org, page.user)
+                        if tournament_id:
+                            view.selected_tournaments = [tournament_id]
                         await view.render()
 
             # Register loaders
@@ -123,7 +369,7 @@ def register():
 
         # Create sidebar items
         sidebar_items = [
-            base.create_nav_link('Back to Organizations', 'arrow_back', '/tournaments'),
+            base.create_nav_link('Back to Organization', 'arrow_back', f'/org/{organization_id}'),
             base.create_separator(),
             base.create_sidebar_item_with_loader('Event Schedule', 'event', 'event_schedule'),
             base.create_sidebar_item_with_loader('My Matches', 'sports_esports', 'my_matches'),
@@ -136,7 +382,7 @@ def register():
 
     # Async Tournament Pages
 
-    @ui.page('/tournaments/{organization_id}/async/{tournament_id}')
+    @ui.page('/org/{organization_id}/async/{tournament_id}')
     async def async_tournament_dashboard(organization_id: int, tournament_id: int):
         """Async tournament dashboard - player's own races."""
         base = BasePage.authenticated_page(title="Async Tournament")
@@ -155,12 +401,12 @@ def register():
             await view.render()
 
         sidebar_items = [
-            base.create_nav_link('Back to Tournaments', 'arrow_back', f'/tournaments/{organization_id}'),
+            base.create_nav_link('Back to Organization', 'arrow_back', f'/org/{organization_id}'),
         ]
 
         await base.render(content, sidebar_items)
 
-    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/leaderboard')
+    @ui.page('/org/{organization_id}/async/{tournament_id}/leaderboard')
     async def async_tournament_leaderboard(organization_id: int, tournament_id: int):
         """Async tournament leaderboard."""
         base = BasePage.authenticated_page(title="Async Tournament Leaderboard")
@@ -179,14 +425,14 @@ def register():
             await view.render()
 
         sidebar_items = [
-            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
-            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
-            base.create_nav_link('Pools', 'folder', f'/tournaments/{organization_id}/async/{tournament_id}/pools'),
+            base.create_nav_link('Dashboard', 'dashboard', f'/org/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/org/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/org/{organization_id}/async/{tournament_id}/pools'),
         ]
 
         await base.render(content, sidebar_items)
 
-    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/pools')
+    @ui.page('/org/{organization_id}/async/{tournament_id}/pools')
     async def async_tournament_pools(organization_id: int, tournament_id: int):
         """Async tournament pools."""
         base = BasePage.authenticated_page(title="Async Tournament Pools")
@@ -205,14 +451,14 @@ def register():
             await view.render()
 
         sidebar_items = [
-            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
-            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
-            base.create_nav_link('Pools', 'folder', f'/tournaments/{organization_id}/async/{tournament_id}/pools'),
+            base.create_nav_link('Dashboard', 'dashboard', f'/org/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/org/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/org/{organization_id}/async/{tournament_id}/pools'),
         ]
 
         await base.render(content, sidebar_items)
 
-    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/player/{player_id}')
+    @ui.page('/org/{organization_id}/async/{tournament_id}/player/{player_id}')
     async def async_tournament_player(organization_id: int, tournament_id: int, player_id: int):
         """Async tournament player history."""
         base = BasePage.authenticated_page(title="Player History")
@@ -231,13 +477,13 @@ def register():
             await view.render()
 
         sidebar_items = [
-            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
-            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Dashboard', 'dashboard', f'/org/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/org/{organization_id}/async/{tournament_id}/leaderboard'),
         ]
 
         await base.render(content, sidebar_items)
 
-    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/permalink/{permalink_id}')
+    @ui.page('/org/{organization_id}/async/{tournament_id}/permalink/{permalink_id}')
     async def async_tournament_permalink(organization_id: int, tournament_id: int, permalink_id: int):
         """Async tournament permalink view."""
         base = BasePage.authenticated_page(title="Permalink Races")
@@ -256,9 +502,9 @@ def register():
             await view.render()
 
         sidebar_items = [
-            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
-            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
-            base.create_nav_link('Pools', 'folder', f'/tournaments/{organization_id}/async/{tournament_id}/pools'),
+            base.create_nav_link('Dashboard', 'dashboard', f'/org/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/org/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/org/{organization_id}/async/{tournament_id}/pools'),
         ]
 
         await base.render(content, sidebar_items)

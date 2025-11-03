@@ -110,7 +110,7 @@ class AsyncPoolsView:
         with ui.element('div').classes('flex justify-between items-center p-2 hover-bg'):
             with ui.element('div').classes('flex-grow'):
                 # Link to permalink details page
-                permalink_link = f'/tournaments/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{permalink.id}'
+                permalink_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{permalink.id}'
                 ui.link(permalink.url, permalink_link)
 
                 # Show par time and notes

@@ -35,7 +35,7 @@ def register():
             # Authenticated user navigation
             sidebar_items = [
                 base.create_nav_link('Overview', 'dashboard', '/'),
-                base.create_nav_link('Tournaments', 'emoji_events', '/tournaments'),
+                base.create_nav_link('Organizations', 'group', '/org'),
                 base.create_separator(),
                 base.create_nav_link('My Profile', 'person', '/profile'),
             ]

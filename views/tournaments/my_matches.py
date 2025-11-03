@@ -24,6 +24,7 @@ class MyMatchesView:
         self.service = TournamentService()
         self.container = None
         self.filter_states = ['pending', 'scheduled', 'checked_in']  # Default: show pending, scheduled, checked_in
+        self.selected_tournaments = []  # List of selected tournament IDs
 
     async def _refresh(self) -> None:
         """Refresh the view by clearing and re-rendering."""
@@ -46,15 +47,23 @@ class MyMatchesView:
             return 'pending'
 
     def _filter_matches(self, match_players):
-        """Filter matches based on current filter states."""
-        if not self.filter_states:
+        """Filter matches based on current filter states and selected tournaments."""
+        if not self.filter_states and not self.selected_tournaments:
             return match_players
         
         filtered = []
         for mp in match_players:
-            state = self._get_match_state(mp.match)
-            if state in self.filter_states:
-                filtered.append(mp)
+            # Filter by state (if any states are selected)
+            if self.filter_states:
+                state = self._get_match_state(mp.match)
+                if state not in self.filter_states:
+                    continue
+            
+            # Filter by tournament selection
+            if self.selected_tournaments and mp.match.tournament_id not in self.selected_tournaments:
+                continue
+            
+            filtered.append(mp)
         return filtered
 
     async def _on_filter_change(self, new_states) -> None:
@@ -62,10 +71,19 @@ class MyMatchesView:
         self.filter_states = new_states if new_states else []
         await self._refresh()
 
+    async def _on_tournament_filter_change(self, selected_ids) -> None:
+        """Handle tournament filter change."""
+        self.selected_tournaments = selected_ids if selected_ids else []
+        await self._refresh()
+
     async def _render_content(self) -> None:
         """Render the actual content."""
         # Get all matches the user is participating in for this organization via service
         all_match_players = await self.service.list_user_matches(self.organization.id, self.user.id)
+        
+        # Get all tournaments for filter
+        all_tournaments = await self.service.list_all_org_tournaments(self.organization.id)
+        tournament_options = {t.id: t.name for t in all_tournaments}
         
         async def open_submit_match_dialog():
             """Open the submit match dialog."""
@@ -95,6 +113,15 @@ class MyMatchesView:
                             value=self.filter_states,
                             multiple=True,
                             on_change=lambda e: self._on_filter_change(e.value)
+                        ).classes('min-w-[200px]').props('use-chips')
+                        
+                        # Tournament filter (multi-select)
+                        ui.select(
+                            label='Tournaments',
+                            options=tournament_options,
+                            value=self.selected_tournaments,
+                            multiple=True,
+                            on_change=lambda e: self._on_tournament_filter_change(e.value)
                         ).classes('min-w-[200px]').props('use-chips')
                     
                     # Submit button

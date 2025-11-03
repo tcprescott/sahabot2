@@ -7,7 +7,9 @@ Displays summary information and stats for an organization.
 from __future__ import annotations
 from typing import Any
 from nicegui import ui
-from models import Organization
+from models import Organization, OrganizationMember
+from models.async_tournament import AsyncTournament
+from models.match_schedule import Tournament
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 
@@ -21,6 +23,21 @@ class OrganizationOverviewView:
 
     async def render(self) -> None:
         """Render the organization overview."""
+        # Get member count
+        member_count = await OrganizationMember.filter(organization_id=self.organization.id).count()
+        
+        # Get active tournaments
+        active_tournaments = await Tournament.filter(
+            organization_id=self.organization.id,
+            is_active=True
+        ).all()
+        
+        # Get active async tournaments
+        active_async_tournaments = await AsyncTournament.filter(
+            organization_id=self.organization.id,
+            is_active=True
+        ).all()
+        
         # Welcome card
         with Card.create(title='Organization Overview'):
             with ui.column().classes('gap-md'):
@@ -50,16 +67,16 @@ class OrganizationOverviewView:
                     ui.label('Last Updated:').classes('font-semibold')
                     DateTimeLabel.datetime(self.organization.updated_at)
         
-        # Stats cards (placeholder for future metrics)
+        # Stats cards
         with ui.row().classes('w-full gap-md mt-2'):
             with Card.create(title='Members', classes='flex-1'):
-                ui.label('0').classes('text-4xl font-bold')
+                ui.label(str(member_count)).classes('text-4xl font-bold')
                 ui.label('Total members').classes('text-secondary')
             
-            with Card.create(title='Activity', classes='flex-1'):
-                ui.label('0').classes('text-4xl font-bold')
-                ui.label('Recent actions').classes('text-secondary')
+            with Card.create(title='Active Tournaments', classes='flex-1'):
+                ui.label(str(len(active_tournaments))).classes('text-4xl font-bold')
+                ui.label('Currently running').classes('text-secondary')
             
-            with Card.create(title='Resources', classes='flex-1'):
-                ui.label('0').classes('text-4xl font-bold')
-                ui.label('Total items').classes('text-secondary')
+            with Card.create(title='Active Async Tournaments', classes='flex-1'):
+                ui.label(str(len(active_async_tournaments))).classes('text-4xl font-bold')
+                ui.label('Currently running').classes('text-secondary')

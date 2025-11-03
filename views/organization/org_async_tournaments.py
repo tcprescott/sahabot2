@@ -323,7 +323,7 @@ class OrganizationAsyncTournamentsView:
                         ui.button(
                             'Manage',
                             icon='settings',
-                            on_click=lambda t=t: ui.navigate.to(f'/tournaments/{self.organization.id}/async/{t.id}/pools')
+                            on_click=lambda t=t: ui.navigate.to(f'/org/{self.organization.id}/async/{t.id}/pools')
                         ).classes('btn btn-primary')
                         ui.button(
                             'Edit',

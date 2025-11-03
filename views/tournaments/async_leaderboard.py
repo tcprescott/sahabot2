@@ -202,7 +202,7 @@ class AsyncLeaderboardView:
 
             # Actions
             with ui.element('td'):
-                player_link = f'/tournaments/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
+                player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
                 ui.link('View History', player_link).classes('btn-link')
 
     async def _render_mobile_leaderboard(self, leaderboard: list[LeaderboardEntry]):
@@ -260,7 +260,7 @@ class AsyncLeaderboardView:
                         ui.label('Remaining').classes('text-xs text-secondary')
 
                 # View history button
-                player_link = f'/tournaments/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
+                player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
                 ui.button(
                     'View Race History',
                     on_click=lambda: ui.navigate.to(player_link)

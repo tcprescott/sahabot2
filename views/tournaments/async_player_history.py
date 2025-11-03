@@ -93,7 +93,7 @@ class AsyncPlayerHistoryView:
 
             # Permalink
             with ui.element('td'):
-                permalink_link = f'/tournaments/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{race.permalink_id}'
+                permalink_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{race.permalink_id}'
                 ui.link(race.permalink.url, permalink_link, new_tab=True)
 
             # VOD
