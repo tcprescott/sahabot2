@@ -264,7 +264,56 @@ class AsyncTournamentService:
         if not is_member or not user:
             return []
 
+        return []
+
         return await self.repo.list_races(tournament_id, organization_id, user_id=user.id)
+
+    async def get_permalink(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        permalink_id: int
+    ) -> Optional[AsyncTournamentPermalink]:
+        """Get a permalink by ID."""
+        is_member = await self.org_service.is_member(user, organization_id)
+        if not is_member or not user:
+            return None
+
+        # Verify permalink belongs to this tournament
+        permalink = await AsyncTournamentPermalink.get_or_none(id=permalink_id)
+        if not permalink:
+            return None
+
+        await permalink.fetch_related('pool', 'pool__tournament')
+        if permalink.pool.tournament.id != tournament_id:
+            return None
+        if permalink.pool.tournament.organization_id != organization_id:
+            return None
+
+        return permalink
+
+    async def get_permalink_races(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        permalink_id: int
+    ) -> List[AsyncTournamentRace]:
+        """Get all races for a specific permalink."""
+        is_member = await self.org_service.is_member(user, organization_id)
+        if not is_member or not user:
+            return []
+
+        # Verify permalink belongs to this tournament
+        permalink = await self.get_permalink(user, organization_id, tournament_id, permalink_id)
+        if not permalink:
+            return []
+
+        return await AsyncTournamentRace.filter(
+            permalink_id=permalink_id,
+            tournament_id=tournament_id
+        ).prefetch_related('user').all()
 
     async def get_active_races_for_user(
         self,

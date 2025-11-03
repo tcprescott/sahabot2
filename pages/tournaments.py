@@ -15,6 +15,11 @@ from views.tournaments import (
     MyMatchesView,
     MySettingsView,
     TournamentManagementView,
+    AsyncDashboardView,
+    AsyncLeaderboardView,
+    AsyncPoolsView,
+    AsyncPlayerHistoryView,
+    AsyncPermalinkView,
 )
 
 
@@ -128,3 +133,132 @@ def register():
         ]
 
         await base.render(content, sidebar_items, use_dynamic_content=True)
+
+    # Async Tournament Pages
+
+    @ui.page('/tournaments/{organization_id}/async/{tournament_id}')
+    async def async_tournament_dashboard(organization_id: int, tournament_id: int):
+        """Async tournament dashboard - player's own races."""
+        base = BasePage.authenticated_page(title="Async Tournament")
+        
+        from application.services.async_tournament_service import AsyncTournamentService
+        async_service = AsyncTournamentService()
+
+        async def content(page: BasePage):
+            # Get tournament
+            tournament = await async_service.get_tournament(page.user, organization_id, tournament_id)
+            if not tournament:
+                ui.label('Tournament not found or you do not have access').classes('text-danger')
+                return
+
+            view = AsyncDashboardView(page.user, tournament)
+            await view.render()
+
+        sidebar_items = [
+            base.create_nav_link('Back to Tournaments', 'arrow_back', f'/tournaments/{organization_id}'),
+        ]
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/leaderboard')
+    async def async_tournament_leaderboard(organization_id: int, tournament_id: int):
+        """Async tournament leaderboard."""
+        base = BasePage.authenticated_page(title="Async Tournament Leaderboard")
+        
+        from application.services.async_tournament_service import AsyncTournamentService
+        async_service = AsyncTournamentService()
+
+        async def content(page: BasePage):
+            # Get tournament
+            tournament = await async_service.get_tournament(page.user, organization_id, tournament_id)
+            if not tournament:
+                ui.label('Tournament not found or you do not have access').classes('text-danger')
+                return
+
+            view = AsyncLeaderboardView(page.user, tournament)
+            await view.render()
+
+        sidebar_items = [
+            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/tournaments/{organization_id}/async/{tournament_id}/pools'),
+        ]
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/pools')
+    async def async_tournament_pools(organization_id: int, tournament_id: int):
+        """Async tournament pools."""
+        base = BasePage.authenticated_page(title="Async Tournament Pools")
+        
+        from application.services.async_tournament_service import AsyncTournamentService
+        async_service = AsyncTournamentService()
+
+        async def content(page: BasePage):
+            # Get tournament
+            tournament = await async_service.get_tournament(page.user, organization_id, tournament_id)
+            if not tournament:
+                ui.label('Tournament not found or you do not have access').classes('text-danger')
+                return
+
+            view = AsyncPoolsView(page.user, tournament)
+            await view.render()
+
+        sidebar_items = [
+            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/tournaments/{organization_id}/async/{tournament_id}/pools'),
+        ]
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/player/{player_id}')
+    async def async_tournament_player(organization_id: int, tournament_id: int, player_id: int):
+        """Async tournament player history."""
+        base = BasePage.authenticated_page(title="Player History")
+        
+        from application.services.async_tournament_service import AsyncTournamentService
+        async_service = AsyncTournamentService()
+
+        async def content(page: BasePage):
+            # Get tournament
+            tournament = await async_service.get_tournament(page.user, organization_id, tournament_id)
+            if not tournament:
+                ui.label('Tournament not found or you do not have access').classes('text-danger')
+                return
+
+            view = AsyncPlayerHistoryView(page.user, tournament, player_id)
+            await view.render()
+
+        sidebar_items = [
+            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
+        ]
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/tournaments/{organization_id}/async/{tournament_id}/permalink/{permalink_id}')
+    async def async_tournament_permalink(organization_id: int, tournament_id: int, permalink_id: int):
+        """Async tournament permalink view."""
+        base = BasePage.authenticated_page(title="Permalink Races")
+        
+        from application.services.async_tournament_service import AsyncTournamentService
+        async_service = AsyncTournamentService()
+
+        async def content(page: BasePage):
+            # Get tournament
+            tournament = await async_service.get_tournament(page.user, organization_id, tournament_id)
+            if not tournament:
+                ui.label('Tournament not found or you do not have access').classes('text-danger')
+                return
+
+            view = AsyncPermalinkView(page.user, tournament, permalink_id)
+            await view.render()
+
+        sidebar_items = [
+            base.create_nav_link('Dashboard', 'dashboard', f'/tournaments/{organization_id}/async/{tournament_id}'),
+            base.create_nav_link('Leaderboard', 'leaderboard', f'/tournaments/{organization_id}/async/{tournament_id}/leaderboard'),
+            base.create_nav_link('Pools', 'folder', f'/tournaments/{organization_id}/async/{tournament_id}/pools'),
+        ]
+
+        await base.render(content, sidebar_items)
