@@ -12,6 +12,30 @@ from application.services.task_scheduler_service import TaskSchedulerService
 logger = logging.getLogger(__name__)
 
 
+async def handle_example_log(task: ScheduledTask) -> None:
+    """
+    Example task handler that writes a log message.
+
+    This is a simple example task demonstrating how to create a scheduled task handler.
+    It logs basic task information and a custom message from the task configuration.
+
+    Expected task_config:
+    {
+        "message": "Custom message to log"  # optional
+    }
+
+    Args:
+        task: ScheduledTask to execute
+    """
+    logger.info("Example task executed! Task ID: %s, Name: %s", task.id, task.name)
+
+    if task.task_config:
+        message = task.task_config.get('message', 'No custom message')
+        logger.info("Custom message: %s", message)
+    else:
+        logger.info("No custom message configured")
+
+
 async def handle_racetime_open_room(task: ScheduledTask) -> None:
     """
     Handler for opening a racetime.gg race room.
@@ -86,6 +110,7 @@ def register_task_handlers() -> None:
     This function should be called during application startup to ensure
     all task handlers are available when the scheduler runs.
     """
+    TaskSchedulerService.register_task_handler(TaskType.EXAMPLE_LOG, handle_example_log)
     TaskSchedulerService.register_task_handler(TaskType.RACETIME_OPEN_ROOM, handle_racetime_open_room)
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")

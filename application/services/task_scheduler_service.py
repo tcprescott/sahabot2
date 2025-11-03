@@ -6,7 +6,7 @@ Manages scheduled tasks execution and provides business logic for task schedulin
 from __future__ import annotations
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Callable, Dict, Any
 from croniter import croniter
 
@@ -324,7 +324,7 @@ class TaskSchedulerService:
         while cls._is_running:
             try:
                 # Get tasks due to run
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 tasks = await repo.list_tasks_due_to_run(now)
 
                 for task in tasks:
@@ -358,7 +358,7 @@ class TaskSchedulerService:
         await repo.update_run_status(
             task_id=task.id,
             status='running',
-            last_run_at=datetime.utcnow(),
+            last_run_at=datetime.now(timezone.utc),
         )
 
         try:
@@ -376,14 +376,14 @@ class TaskSchedulerService:
                 interval_seconds=task.interval_seconds,
                 cron_expression=task.cron_expression,
                 scheduled_time=task.scheduled_time,
-                from_time=datetime.utcnow(),
+                from_time=datetime.now(timezone.utc),
             )
 
             # Update status to success
             await repo.update_run_status(
                 task_id=task.id,
                 status='success',
-                last_run_at=datetime.utcnow(),
+                last_run_at=datetime.now(timezone.utc),
                 next_run_at=next_run_at,
             )
 
@@ -398,7 +398,7 @@ class TaskSchedulerService:
             await repo.update_run_status(
                 task_id=task.id,
                 status='failed',
-                last_run_at=datetime.utcnow(),
+                last_run_at=datetime.now(timezone.utc),
                 error=str(e),
             )
 
@@ -424,7 +424,7 @@ class TaskSchedulerService:
             Next run datetime or None
         """
         if from_time is None:
-            from_time = datetime.utcnow()
+            from_time = datetime.now(timezone.utc)
 
         if schedule_type == ScheduleType.INTERVAL and interval_seconds:
             return from_time + timedelta(seconds=interval_seconds)

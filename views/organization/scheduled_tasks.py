@@ -20,19 +20,18 @@ class OrganizationScheduledTasksView:
         self.org = org
         self.user = user
         self.service = TaskSchedulerService()
+        self.tasks_container = None
 
     async def render(self) -> None:
         """Render the scheduled tasks view."""
         with Card.create(title=f'Scheduled Tasks - {self.org.name}'):
             with ui.row().classes('w-full justify-between items-center mb-4'):
                 ui.label('Manage automated tasks for this organization').classes('text-secondary')
-                # TODO: Re-enable when create dialog is implemented
-                # ui.button(
-                #     'Create Task',
-                #     icon='add',
-                #     on_click=self._show_create_dialog
-                # ).classes('btn').props('color=positive')
-                ui.label('Use API to create tasks (UI coming soon)').classes('text-sm text-secondary')
+                ui.button(
+                    'Create Task',
+                    icon='add',
+                    on_click=self._show_create_dialog
+                ).classes('btn').props('color=positive')
 
             # Container for task list
             self.tasks_container = ui.element('div').classes('w-full')
@@ -90,11 +89,10 @@ class OrganizationScheduledTasksView:
 
                     # Actions
                     with ui.column().classes('gap-2'):
-                        # TODO: Re-enable when edit dialog is implemented
-                        # ui.button(
-                        #     icon='edit',
-                        #     on_click=lambda t=task: self._show_edit_dialog(t)
-                        # ).props('flat color=primary').tooltip('Edit Task')
+                        ui.button(
+                            icon='edit',
+                            on_click=lambda t=task: self._show_edit_dialog(t)
+                        ).props('flat color=primary').tooltip('Edit Task')
 
                         if task.is_active:
                             ui.button(
@@ -139,15 +137,29 @@ class OrganizationScheduledTasksView:
         """Format datetime for display."""
         return dt.strftime('%Y-%m-%d %H:%M UTC')
 
-    async def _show_create_dialog(self) -> None:
-        """Show dialog to create a new task."""
-        ui.notify('Task creation dialog coming soon!', type='info')
-        # TODO: Implement create dialog
+    async def _show_create_dialog(self):
+        """Show dialog to create a new scheduled task."""
+        from components.dialogs.organization import ScheduledTaskDialog
 
-    async def _show_edit_dialog(self, task) -> None:
-        """Show dialog to edit a task."""
-        ui.notify(f'Edit dialog for task {task.name} coming soon!', type='info')
-        # TODO: Implement edit dialog
+        dialog = ScheduledTaskDialog(
+            user=self.user,
+            organization_id=self.org.id,
+            task=None,
+            on_save=self._refresh_tasks
+        )
+        await dialog.show()
+
+    async def _show_edit_dialog(self, task):
+        """Show dialog to edit a scheduled task."""
+        from components.dialogs.organization import ScheduledTaskDialog
+
+        dialog = ScheduledTaskDialog(
+            user=self.user,
+            organization_id=self.org.id,
+            task=task,
+            on_save=self._refresh_tasks
+        )
+        await dialog.show()
 
     async def _toggle_task(self, task) -> None:
         """Toggle task active status."""

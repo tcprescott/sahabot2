@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
 class TaskType(IntEnum):
     """Task type enum for scheduled tasks."""
+    EXAMPLE_LOG = 0  # Example task that logs a message
     RACETIME_OPEN_ROOM = 1  # Open a race room on racetime.gg
     CUSTOM = 99  # Custom task type
 
