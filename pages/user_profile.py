@@ -6,7 +6,7 @@ Allow users to view and manage their profile information, API keys, and organiza
 
 from nicegui import ui
 from components.base_page import BasePage
-from views.user_profile import ProfileInfoView, ApiKeysView, UserOrganizationsView
+from views.user_profile import ProfileInfoView, ApiKeysView, UserOrganizationsView, RacetimeAccountView
 
 
 def register():
@@ -28,6 +28,7 @@ def register():
             page.register_content_loader('profile', page.create_instance_view_loader(lambda: ProfileInfoView(page.user)))
             page.register_content_loader('api-keys', page.create_instance_view_loader(lambda: ApiKeysView(page.user)))
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: UserOrganizationsView(page.user)))
+            page.register_content_loader('racetime', page.create_instance_view_loader(lambda: RacetimeAccountView(page.user)))
 
             # Load initial content (profile info)
             await page.create_instance_view_loader(lambda: ProfileInfoView(page.user))()
@@ -39,6 +40,7 @@ def register():
             base.create_sidebar_item_with_loader('Profile Info', 'person', 'profile'),
             base.create_sidebar_item_with_loader('API Keys', 'vpn_key', 'api-keys'),
             base.create_sidebar_item_with_loader('Organizations', 'business', 'organizations'),
+            base.create_sidebar_item_with_loader('RaceTime.gg', 'timer', 'racetime'),
         ]
 
         await base.render(content, sidebar_items, use_dynamic_content=True)
