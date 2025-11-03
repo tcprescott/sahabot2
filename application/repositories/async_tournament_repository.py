@@ -12,7 +12,6 @@ from models.async_tournament import (
     AsyncTournamentRace,
     AsyncTournamentAuditLog,
 )
-from models import User
 
 logger = logging.getLogger(__name__)
 
