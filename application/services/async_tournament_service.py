@@ -529,7 +529,7 @@ class AsyncTournamentService:
                         permalink__pool_id=pool.id,
                         status__in=['finished', 'forfeit', 'disqualified'],
                         reattempted=False,
-                    ).order_by('score').limit(tournament.runs_per_pool)
+                    ).order_by('-score').limit(tournament.runs_per_pool)
 
                     for i in range(tournament.runs_per_pool):
                         try:
