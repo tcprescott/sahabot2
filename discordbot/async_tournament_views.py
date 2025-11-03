@@ -447,12 +447,31 @@ class RaceInProgressView(ui.View):
         """Get current elapsed time."""
         race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id)
 
-        if not race or not race.elapsed_time:
+        if not race or not race.start_time:
             await interaction.response.send_message("Timer not available.", ephemeral=True)
             return
 
+        # Calculate elapsed time for in-progress races
+        if race.status == 'in_progress':
+            elapsed = datetime.utcnow() - race.start_time
+        else:
+            elapsed = race.elapsed_time
+
+        if not elapsed:
+            await interaction.response.send_message("Timer not available.", ephemeral=True)
+            return
+
+        # Format elapsed time as H:MM:SS
+        def format_timedelta(td: timedelta) -> str:
+            total_seconds = int(td.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            return f"{hours}:{minutes:02}:{seconds:02}"
+
+        formatted = format_timedelta(elapsed)
+
         await interaction.response.send_message(
-            f"Timer: **{race.elapsed_time_formatted}**",
+            f"Timer: **{formatted}**",
             ephemeral=True
         )
 
