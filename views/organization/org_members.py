@@ -62,7 +62,7 @@ class OrganizationMembersView:
         dialog = MemberPermissionsDialog(
             organization_id=self.organization.id,
             user_id=member.user_id,
-            username=member.user.discord_username if hasattr(member, 'user') and member.user else f"User {member.user_id}",
+            username=member.user.get_display_name() if hasattr(member, 'user') and member.user else f"User {member.user_id}",
             current_permissions=current_perms,
             available_types=available_types,
             on_save=self._refresh
@@ -199,7 +199,7 @@ class OrganizationMembersView:
             else:
                 def render_username(m):
                     if hasattr(m, 'user') and m.user:
-                        return ui.label(m.user.discord_username)
+                        return ui.label(m.user.get_display_name())
                     return ui.label(f'User {m.user_id}')
 
                 async def render_permissions(m):

@@ -6,7 +6,7 @@ Allow users to view and manage their profile information, API keys, and organiza
 
 from nicegui import ui
 from components.base_page import BasePage
-from views.user_profile import ProfileInfoView, ApiKeysView, UserOrganizationsView, RacetimeAccountView, PresetNamespacesView
+from views.user_profile import ProfileInfoView, ProfileSettingsView, ApiKeysView, UserOrganizationsView, RacetimeAccountView, PresetNamespacesView
 
 
 def register():
@@ -26,6 +26,7 @@ def register():
             """Render profile page content."""
             # Register content loaders for dynamic switching
             page.register_content_loader('profile', page.create_instance_view_loader(lambda: ProfileInfoView(page.user)))
+            page.register_content_loader('settings', page.create_instance_view_loader(lambda: ProfileSettingsView(page.user)))
             page.register_content_loader('api-keys', page.create_instance_view_loader(lambda: ApiKeysView(page.user)))
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: UserOrganizationsView(page.user)))
             page.register_content_loader('racetime', page.create_instance_view_loader(lambda: RacetimeAccountView(page.user)))
@@ -39,6 +40,7 @@ def register():
             base.create_nav_link('Back to Home', 'home', '/'),
             base.create_separator(),
             base.create_sidebar_item_with_loader('Profile Info', 'person', 'profile'),
+            base.create_sidebar_item_with_loader('Profile Settings', 'settings', 'settings'),
             base.create_sidebar_item_with_loader('API Keys', 'vpn_key', 'api-keys'),
             base.create_sidebar_item_with_loader('Organizations', 'business', 'organizations'),
             base.create_sidebar_item_with_loader('Preset Namespaces', 'folder', 'preset-namespaces'),

@@ -108,9 +108,16 @@ class UserMenu:
 
     def render(self) -> None:
         """Render the user menu component."""
-        # Show username if logged in
+        # Show display name (with pronouns if enabled) if logged in
         if self.user:
-            ui.label(self.user.discord_username).classes('header-username')
+            # Use full display name with pronouns in italics
+            display_text = self.user.get_display_name()
+            if self.user.show_pronouns and self.user.pronouns:
+                with ui.row().classes('items-center gap-1 header-username-row'):
+                    ui.label(display_text).classes('header-username')
+                    ui.label(f'({self.user.pronouns})').classes('header-username-pronouns')
+            else:
+                ui.label(display_text).classes('header-username')
 
         # Render menu button with avatar or generic icon
         avatar_url = self._get_avatar_url()

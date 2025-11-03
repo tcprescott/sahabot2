@@ -16,6 +16,7 @@
     --surface-color: #ffffff;
     --text-primary: var(--black);
     --text-secondary: #333333;
+    --text-tertiary: #666666;  /* muted text for less important info */
     --accent-color: var(--olive-2);
     --border-color: #dddddd;
 
@@ -64,6 +65,7 @@
     --surface-color: #161616;
     --text-primary: var(--seasalt);
     --text-secondary: #cfcfcf;
+    --text-tertiary: #999999;  /* muted text for less important info */
     --accent-color: var(--olive-2);
     --border-color: #2a2a2a;
 

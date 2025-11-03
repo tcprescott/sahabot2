@@ -45,10 +45,23 @@
     color: var(--text-primary);
 }
 
+.header-username-row {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
 .header-username {
     font-size: 0.95rem;
     color: var(--text-secondary);
     font-weight: 500;
+}
+
+.header-username-pronouns {
+    font-size: 0.85rem;
+    color: var(--text-tertiary);
+    font-style: italic;
+    font-weight: 400;
 }
 
 .header-menu-button,

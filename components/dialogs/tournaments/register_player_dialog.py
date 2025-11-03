@@ -83,7 +83,7 @@ class RegisterPlayerDialog(BaseDialog):
             for member in members:
                 await member.fetch_related('user')
                 if hasattr(member, 'user') and member.user:
-                    options[member.user.id] = member.user.discord_username
+                    options[member.user.id] = member.user.get_display_name()
 
             if self.user_select:
                 self.user_select.options = options

@@ -146,7 +146,7 @@ class AsyncLeaderboardView:
         if search_term:
             filtered = [
                 e for e in filtered
-                if search_term.lower() in e.user.discord_username.lower()
+                if search_term.lower() in e.user.get_display_name().lower()
             ]
         if min_races > 0:
             filtered = [e for e in filtered if e.finished_race_count >= min_races]
@@ -202,7 +202,7 @@ class AsyncLeaderboardView:
 
             # Player
             with ui.element('td'):
-                player_name = entry.user.discord_username
+                player_name = entry.user.get_display_name()
                 if entry.user.id == self.user.id:
                     player_name += ' (You)'
                 ui.label(player_name).classes('font-bold')
@@ -251,7 +251,7 @@ class AsyncLeaderboardView:
                         ui.label(rank_display).classes('badge badge-primary')
 
                     with ui.element('div'):
-                        player_name = entry.user.discord_username
+                        player_name = entry.user.get_display_name()
                         if entry.user.id == self.user.id:
                             player_name += ' (You)'
                         ui.label(player_name).classes('font-bold')

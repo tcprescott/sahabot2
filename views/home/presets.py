@@ -173,7 +173,7 @@ class PresetsView:
 
                         async def render_creator_cell(preset):
                             if preset.user:
-                                ui.label(preset.user.discord_username).classes('text-sm')
+                                ui.label(preset.user.get_display_name()).classes('text-sm')
                             else:
                                 ui.label('—').classes('text-secondary')
 
@@ -305,7 +305,7 @@ class PresetsView:
                         if preset.user:
                             with ui.row().classes('items-center gap-2'):
                                 ui.icon('person', size='sm')
-                                ui.label(f'Created by: {preset.user.discord_username}').classes('text-sm')
+                                ui.label(f'Created by: {preset.user.get_display_name()}').classes('text-sm')
 
                         # Visibility
                         with ui.row().classes('items-center gap-2'):

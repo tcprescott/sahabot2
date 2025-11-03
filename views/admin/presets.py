@@ -148,7 +148,7 @@ class PresetsView:
                     ui.badge(randomizer_label).props('color=primary')
 
                 async def render_creator_cell(preset):
-                    ui.label(preset.user.discord_username).classes('text-sm')
+                    ui.label(preset.user.get_display_name()).classes('text-sm')
 
                 async def render_visibility_cell(preset):
                     visibility_class = 'badge-success' if preset.is_public else 'badge-warning'
@@ -241,7 +241,7 @@ class PresetsView:
 
                         with ui.row().classes('items-center gap-2'):
                             ui.icon('person', size='sm')
-                            ui.label(f'Created by: {preset.user.discord_username}').classes('text-sm')
+                            ui.label(f'Created by: {preset.user.get_display_name()}').classes('text-sm')
 
                         with ui.row().classes('items-center gap-2'):
                             ui.icon('visibility', size='sm')

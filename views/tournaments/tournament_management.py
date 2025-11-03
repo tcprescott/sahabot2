@@ -141,7 +141,7 @@ class TournamentManagementView:
 
             dialog = ConfirmDialog(
                 title='Unregister Player',
-                message=f'Are you sure you want to unregister {registration.user.discord_username} from this tournament?',
+                message=f'Are you sure you want to unregister {registration.user.get_display_name()} from this tournament?',
                 on_confirm=confirm_unregister
             )
             await dialog.show()
@@ -158,7 +158,7 @@ class TournamentManagementView:
                     ui.label('Click "Register Player" to add players to this tournament').classes('text-secondary text-sm')
             else:
                 def render_username(reg):
-                    ui.label(reg.user.discord_username)
+                    ui.label(reg.user.get_display_name())
 
                 def render_registered_date(reg):
                     from components.datetime_label import DateTimeLabel

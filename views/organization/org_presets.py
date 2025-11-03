@@ -174,7 +174,7 @@ class OrgPresetsView:
 
             # Metadata
             with ui.element('div').classes('text-xs text-secondary mb-3'):
-                ui.label(f'Created by: {preset.user.discord_username}')
+                ui.label(f'Created by: {preset.user.get_display_name()}')
                 with ui.element('div').classes('flex items-center gap-1'):
                     ui.label('Updated:')
                     DateTimeLabel.create(preset.updated_at)
@@ -231,7 +231,7 @@ class OrgPresetsView:
 
             # Metadata
             with ui.element('div').classes('mb-4 text-sm text-secondary'):
-                ui.label(f'Created by: {preset.user.discord_username}')
+                ui.label(f'Created by: {preset.user.get_display_name()}')
                 with ui.element('div').classes('flex items-center gap-1'):
                     ui.label('Updated:')
                     DateTimeLabel.create(preset.updated_at)

@@ -104,7 +104,7 @@ class PresetNamespacesView:
                 # Owner
                 with ui.element('div'):
                     if namespace.user:
-                        ui.badge(f'User: {namespace.user.discord_username}').props('color=primary')
+                        ui.badge(f'User: {namespace.user.get_display_name()}').props('color=primary')
                     elif namespace.organization:
                         ui.badge(f'Org: {namespace.organization.name}').props('color=secondary')
                     else:
@@ -166,7 +166,7 @@ class PresetNamespacesView:
                 with ui.element('div'):
                     ui.label('Owner:').classes('font-bold')
                     if namespace.user:
-                        ui.label(f'User: {namespace.user.discord_username}')
+                        ui.label(f'User: {namespace.user.get_display_name()}')
                     elif namespace.organization:
                         ui.label(f'Organization: {namespace.organization.name}')
                     else:

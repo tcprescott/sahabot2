@@ -119,7 +119,7 @@ class AsyncPermalinkView:
             # Player
             with ui.element('td'):
                 player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{race.user.id}'
-                ui.link(race.user.discord_username, player_link)
+                ui.link(race.user.get_display_name(), player_link)
 
             # VOD
             with ui.element('td'):

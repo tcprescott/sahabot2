@@ -38,11 +38,9 @@ def register():
                     with ui.element('div').classes('card'):
                         with ui.element('div').classes('card-header'):
                             ui.label('Admin Dashboard').classes('text-2xl font-bold')
-                        with ui.element('div').classes('card-body'):
-                            ui.label(f'Welcome, {page.user.discord_username}').classes('text-primary')
-                            ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')
-
-                    # Render overview
+                    with ui.element('div').classes('card-body'):
+                        ui.label(f'Welcome, {page.user.get_display_name()}').classes('text-primary')
+                        ui.label(f'Permission Level: {page.user.permission.name}').classes('text-secondary')                    # Render overview
                     await overview.OverviewView.render(page.user)
 
             # Register content loaders

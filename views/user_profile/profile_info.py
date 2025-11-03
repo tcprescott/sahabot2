@@ -26,7 +26,7 @@ class ProfileInfoView:
                     ui.icon('badge').classes('text-secondary')
                     with ui.column().classes('flex-1'):
                         ui.label('Discord Username').classes('text-sm text-secondary')
-                        ui.label(self.user.discord_username).classes('font-bold')
+                        ui.label(self.user.get_display_name()).classes('font-bold')
 
                 # Discord ID
                 with ui.row().classes('items-center'):

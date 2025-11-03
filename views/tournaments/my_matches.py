@@ -172,7 +172,7 @@ class MyMatchesView:
                     if opponents:
                         with ui.column().classes('gap-1'):
                             for opponent in opponents:
-                                ui.label(opponent.user.discord_username).classes('text-sm')
+                                ui.label(opponent.user.get_display_name()).classes('text-sm')
                     else:
                         ui.label('—').classes('text-secondary')
                 

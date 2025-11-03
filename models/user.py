@@ -44,6 +44,9 @@ class User(Model):
         racetime_id: RaceTime.gg user ID (unique, nullable)
         racetime_name: RaceTime.gg username (nullable)
         racetime_access_token: OAuth2 access token for RaceTime.gg API (nullable)
+        display_name: User's chosen display name (falls back to discord_username if not set)
+        pronouns: User's pronouns (optional)
+        show_pronouns: Whether to display pronouns with the user's name
         permission: User permission level
         is_active: Whether the user account is active
         created_at: Account creation timestamp
@@ -61,6 +64,11 @@ class User(Model):
     racetime_id = fields.CharField(max_length=255, null=True, unique=True, index=True)
     racetime_name = fields.CharField(max_length=255, null=True)
     racetime_access_token = fields.TextField(null=True)
+
+    # User profile preferences
+    display_name = fields.CharField(max_length=255, null=True)
+    pronouns = fields.CharField(max_length=100, null=True)
+    show_pronouns = fields.BooleanField(default=False)
 
     permission = fields.IntEnumField(Permission, default=Permission.USER)
     is_active = fields.BooleanField(default=True)
@@ -116,3 +124,28 @@ class User(Model):
             bool: True if user is moderator or higher
         """
         return self.has_permission(Permission.MODERATOR)
+
+    def get_display_name(self) -> str:
+        """
+        Get the user's display name.
+
+        Returns the user's chosen display name if set, otherwise falls back to discord_username.
+
+        Returns:
+            str: The display name to show in the UI
+        """
+        return self.display_name if self.display_name else self.discord_username
+
+    def get_full_display_name(self) -> str:
+        """
+        Get the user's display name with optional pronouns.
+
+        Returns the display name with pronouns in italics if enabled.
+
+        Returns:
+            str: Display name with pronouns if show_pronouns is True
+        """
+        name = self.get_display_name()
+        if self.show_pronouns and self.pronouns:
+            return f"{name} ({self.pronouns})"
+        return name

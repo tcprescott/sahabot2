@@ -222,7 +222,7 @@ class PresetNamespacesView:
                                     with ui.element('div').classes('card-body'):
                                         with ui.row().classes('items-center justify-between w-full'):
                                             with ui.column().classes('gap-1'):
-                                                ui.label(perm.user.discord_username).classes('font-bold')
+                                                ui.label(perm.user.get_display_name()).classes('font-bold')
                                                 perms_list = []
                                                 if perm.can_create:
                                                     perms_list.append('Create')
@@ -247,7 +247,7 @@ class PresetNamespacesView:
                                                     from components.dialogs.common.tournament_dialogs import ConfirmDialog
                                                     confirm_dialog = ConfirmDialog(
                                                         title='Remove User',
-                                                        message=f'Remove {p.user.discord_username} from this namespace?',
+                                                        message=f'Remove {p.user.get_display_name()} from this namespace?',
                                                         on_confirm=lambda: self._remove_permission(p, perm_dialog)
                                                     )
                                                     await confirm_dialog.show()
@@ -348,7 +348,7 @@ class PresetNamespacesView:
                     with ui.row().classes('items-center justify-between w-full'):
                         with ui.row().classes('items-center gap-2'):
                             ui.icon('edit').classes('icon-medium')
-                            ui.label(f'Edit Permissions: {permission.user.discord_username}').classes('text-xl text-bold')
+                            ui.label(f'Edit Permissions: {permission.user.get_display_name()}').classes('text-xl text-bold')
                         ui.button(icon='close', on_click=edit_dialog.close).props('flat round dense')
 
                 # Body

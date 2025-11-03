@@ -176,7 +176,7 @@ class EventScheduleView:
                     if players:
                         with ui.column().classes('gap-1'):
                             for player in players:
-                                ui.label(player.user.discord_username).classes('text-sm')
+                                ui.label(player.user.get_display_name()).classes('text-sm')
                     else:
                         ui.label('—').classes('text-secondary')
 
@@ -277,7 +277,7 @@ class EventScheduleView:
                                     with ui.row().classes('items-center gap-2'):
                                         # Green for approved, yellow for unapproved
                                         color_class = 'text-positive' if crew.approved else 'text-warning'
-                                        ui.label(crew.user.discord_username).classes(color_class)
+                                        ui.label(crew.user.get_display_name()).classes(color_class)
                                         
                                         # Show approval controls if user has permission
                                         if self.can_approve_crew:
@@ -329,7 +329,7 @@ class EventScheduleView:
                                     with ui.row().classes('items-center gap-2'):
                                         # Green for approved, yellow for unapproved
                                         color_class = 'text-positive' if crew.approved else 'text-warning'
-                                        ui.label(crew.user.discord_username).classes(color_class)
+                                        ui.label(crew.user.get_display_name()).classes(color_class)
                                         
                                         # Show approval controls if user has permission
                                         if self.can_approve_crew:

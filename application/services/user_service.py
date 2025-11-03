@@ -309,3 +309,35 @@ class UserService:
 
         logger.info("Unlinked RaceTime account from user %s", user.id)
         return user
+
+    async def update_user_profile(
+        self,
+        user: User,
+        display_name: Optional[str] = None,
+        pronouns: Optional[str] = None,
+        show_pronouns: Optional[bool] = None
+    ) -> User:
+        """
+        Update a user's profile settings.
+
+        Args:
+            user: User to update
+            display_name: New display name (None to leave unchanged, empty string to clear)
+            pronouns: New pronouns (None to leave unchanged, empty string to clear)
+            show_pronouns: Whether to show pronouns (None to leave unchanged)
+
+        Returns:
+            User: Updated user
+        """
+        if display_name is not None:
+            user.display_name = display_name.strip() if display_name else None
+        
+        if pronouns is not None:
+            user.pronouns = pronouns.strip() if pronouns else None
+        
+        if show_pronouns is not None:
+            user.show_pronouns = show_pronouns
+
+        await user.save()
+        logger.info("Updated profile for user %s", user.id)
+        return user
