@@ -417,7 +417,9 @@ class AsyncTournamentService:
             permalink_id=permalink_id,
             status='finished',
             reattempted=False,
-        ).order_by('elapsed_time')
+        )
+        # Sort races by elapsed_time in Python, treating None as very large (so they go last)
+        races = sorted(races, key=lambda r: r.elapsed_time or timedelta.max)
 
         if not races:
             logger.info("No finished races for permalink %s", permalink_id)
