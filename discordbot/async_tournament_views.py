@@ -339,7 +339,7 @@ class RaceReadyView(ui.View):
             await asyncio.sleep(1)
 
         # Mark race as started
-        race = await service.start_race(
+        await service.start_race(
             user=race.user,
             organization_id=race.tournament.organization_id,
             race_id=race.id,
