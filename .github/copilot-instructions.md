@@ -391,6 +391,38 @@ def register():
 - Built-in authentication/authorization checks
 - Access to current user via `page.user`
 - Automatic logout handling
+- **Automatic notification display from query parameters**
+
+**Query Parameter Notifications:**
+BasePage automatically displays notifications based on query parameters:
+- `?success=message_text` - Shows positive (green) notification
+- `?error=message_text` - Shows negative (red) notification
+- `?message=message_text` - Shows info (blue) notification
+
+Messages with underscores are automatically converted to spaces and title-cased.
+
+**Example Usage:**
+```python
+# After successful operation, redirect with success message
+ui.navigate.to('/admin/organizations/1?view=discord_servers&success=discord_server_linked')
+# User sees: "Discord Server Linked" (green notification)
+
+# After failed operation, redirect with error message
+ui.navigate.to('/admin/organizations/1?view=members&error=failed_to_add_member')
+# User sees: "Failed To Add Member" (red notification)
+
+# For informational messages
+ui.navigate.to('/tournaments/123?view=matches&message=match_rescheduled')
+# User sees: "Match Rescheduled" (blue notification)
+```
+
+**Dynamic Content with View Parameter:**
+For pages using `use_dynamic_content=True`, use `?view=section_name` to load specific views:
+```python
+# Redirect to specific view within organization admin
+ui.navigate.to('/admin/organizations/1?view=discord_servers')
+# Loads the discord_servers view automatically
+```
 
 ### Service Usage
 ```python

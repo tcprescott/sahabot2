@@ -11,6 +11,7 @@ from models.match_schedule import Tournament, Match, MatchPlayers, MatchSeed, St
 from models.organizations import Organization, OrganizationMember, OrganizationPermission
 from models.organization_invite import OrganizationInvite
 from models.settings import GlobalSetting, OrganizationSetting
+from models.discord_guild import DiscordGuild
 from models.async_tournament import (
     AsyncTournament,
     AsyncTournamentPool,
@@ -29,6 +30,7 @@ __all__ = [
     'OrganizationMember',
     'OrganizationPermission',
     'OrganizationInvite',
+    'DiscordGuild',
     'GlobalSetting',
     'OrganizationSetting',
     'Tournament',

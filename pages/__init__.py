@@ -5,7 +5,15 @@ This package contains all page modules.
 """
 
 # Import pages for registration
-from pages import home, auth, admin, organization_admin, user_profile, racetime_oauth
+from pages import (
+    home,
+    auth,
+    admin,
+    organization_admin,
+    user_profile,
+    racetime_oauth,
+    discord_guild_callback
+)
 
 __all__ = [
     'home',
@@ -14,4 +22,5 @@ __all__ = [
     'organization_admin',
     'user_profile',
     'racetime_oauth',
+    'discord_guild_callback',
 ]

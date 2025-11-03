@@ -8,7 +8,17 @@ import logging
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from config import settings
-from pages import home, auth, admin, organization_admin, user_profile, invite, tournaments, racetime_oauth
+from pages import (
+    home,
+    auth,
+    admin,
+    organization_admin,
+    user_profile,
+    invite,
+    tournaments,
+    racetime_oauth,
+    discord_guild_callback
+)
 
 logger = logging.getLogger(__name__)
 
@@ -61,5 +71,6 @@ def register_routes(fastapi_app: FastAPI = None):
     invite.register()
     tournaments.register()
     racetime_oauth.register()
+    discord_guild_callback.register()
 
     logger.info("Frontend routes registered")

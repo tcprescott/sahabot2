@@ -11,6 +11,7 @@ from views.organization.org_settings import OrganizationSettingsView
 from views.organization.org_tournaments import OrganizationTournamentsView
 from views.organization.org_stream_channels import OrganizationStreamChannelsView
 from views.organization.scheduled_tasks import OrganizationScheduledTasksView
+from views.organization.discord_servers import DiscordServersView
 
 __all__ = [
     'OrganizationOverviewView',
@@ -20,4 +21,5 @@ __all__ = [
     'OrganizationTournamentsView',
     'OrganizationStreamChannelsView',
     'OrganizationScheduledTasksView',
+    'DiscordServersView',
 ]

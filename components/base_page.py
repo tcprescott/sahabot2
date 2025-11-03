@@ -47,15 +47,47 @@ class BasePage:
         """Load current user from session."""
         self.user = await DiscordAuthService.get_current_user()
 
-    async def _restore_view_from_hash(self) -> None:
-        """Check URL hash and load corresponding view if it exists."""
-        # Get current hash from browser
-        hash_value = await ui.run_javascript('window.location.hash.substring(1)')
+    async def _show_query_param_notifications(self) -> None:
+        """Display notifications based on query parameters (success, error, message)."""
+        # Get query parameters from URL
+        params = await ui.run_javascript('''
+            const params = new URLSearchParams(window.location.search);
+            return {
+                success: params.get('success'),
+                error: params.get('error'),
+                message: params.get('message')
+            };
+        ''')
         
-        # If there's a hash and a matching loader, trigger it
-        if hash_value and hash_value in self._content_loaders:
+        if not params:
+            return
+        
+        # Show success notification
+        if params.get('success'):
+            message = params['success'].replace('_', ' ').title()
+            ui.notify(message, type='positive', timeout=5000)
+        
+        # Show error notification
+        if params.get('error'):
+            message = params['error'].replace('_', ' ').title()
+            ui.notify(message, type='negative', timeout=5000)
+        
+        # Show info message
+        if params.get('message'):
+            message = params['message'].replace('_', ' ').title()
+            ui.notify(message, type='info', timeout=5000)
+
+    async def _restore_view_from_query(self) -> None:
+        """Check URL query parameter and load corresponding view if it exists."""
+        # Get 'view' query parameter from URL
+        view_value = await ui.run_javascript('''
+            new URLSearchParams(window.location.search).get('view')
+        ''')
+        
+        # If there's a view parameter and a matching loader, trigger it
+        if view_value and view_value in self._content_loaders:
             # Use timer to ensure it runs after initial render completes
-            ui.timer(0.1, lambda: self._content_loaders[hash_value](), once=True)
+            ui.timer(0.1, lambda: self._content_loaders[view_value](), once=True)
 
     def _toggle_sidebar(self) -> None:
         """Toggle sidebar open/closed state."""
@@ -171,10 +203,14 @@ class BasePage:
             loader: Async function that loads content into the dynamic container
         """
         async def wrapped_loader():
-            """Wrapped loader that updates the URL hash when loading content."""
+            """Wrapped loader that updates the URL query parameter when loading content."""
             self._current_view_key = key
-            # Update URL hash to reflect current view
-            ui.run_javascript(f'window.location.hash = "{key}"')
+            # Update URL query parameter to reflect current view
+            ui.run_javascript(f'''
+                const url = new URL(window.location);
+                url.searchParams.set('view', '{key}');
+                window.history.pushState({{}}, '', url);
+            ''')
             await loader()
         
         self._content_loaders[key] = wrapped_loader
@@ -321,8 +357,11 @@ class BasePage:
                     # Footer at the bottom of the page container
                     Footer.render()
                 
-                # After content is loaded, check URL hash and load corresponding view
-                await self._restore_view_from_hash()
+                # After content is loaded, check URL query parameter and load corresponding view
+                await self._restore_view_from_query()
+                
+                # Show any notifications from query parameters
+                await self._show_query_param_notifications()
             else:
                 # Standard static content
                 self._content_container = ui.element('div').classes('page-container')
@@ -330,6 +369,9 @@ class BasePage:
                     await content(self)
                     # Footer at the bottom of the page container
                     Footer.render()
+                
+                # Show any notifications from query parameters
+                await self._show_query_param_notifications()
 
     @staticmethod
     def simple_page(title: str = "SahaBot2") -> 'BasePage':

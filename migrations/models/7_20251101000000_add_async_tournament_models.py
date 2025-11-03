@@ -15,7 +15,7 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     `created_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL  DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     `organization_id` INT NOT NULL,
-    CONSTRAINT `fk_async_to_organiza_0e7e5af4` FOREIGN KEY (`organization_id`) REFERENCES `organizations` (`id`) ON DELETE CASCADE
+    CONSTRAINT `fk_async_to_organiza_0e7e5af4` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE
 ) CHARACTER SET utf8mb4;
 CREATE TABLE IF NOT EXISTS `async_tournament_pools` (
     `id` INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
