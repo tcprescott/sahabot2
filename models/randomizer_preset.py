@@ -12,16 +12,17 @@ from tortoise.models import Model
 
 class RandomizerPreset(Model):
     """
-    Model for storing global randomizer presets.
+    Model for storing randomizer presets.
 
     Presets are user-created YAML configurations for randomizer settings.
-    They are globally accessible to all users.
+    They are organized into namespaces (user or organization owned).
 
     Attributes:
         id: Primary key
-        user: User who created the preset
+        namespace: Namespace this preset belongs to
+        user: User who created the preset (for tracking creator)
         randomizer: Randomizer type (alttpr, sm, smz3, ootr, etc.)
-        name: User-friendly name for the preset
+        name: User-friendly name for the preset (unique within namespace+randomizer)
         description: Optional description of what the preset does
         settings: YAML content as JSON (the actual preset configuration)
         is_public: Whether the preset is visible to all users
@@ -30,7 +31,17 @@ class RandomizerPreset(Model):
     """
 
     id = fields.IntField(pk=True)
-    user = fields.ForeignKeyField('models.User', related_name='presets')
+    namespace = fields.ForeignKeyField(
+        'models.PresetNamespace',
+        related_name='presets',
+        null=True,
+        description="Namespace this preset belongs to (null for global presets)"
+    )
+    user = fields.ForeignKeyField(
+        'models.User',
+        related_name='created_presets',
+        description="User who created the preset"
+    )
     randomizer = fields.CharField(50, description="Randomizer type (alttpr, sm, smz3, etc.)")
     name = fields.CharField(100, description="User-friendly preset name")
     description = fields.TextField(null=True, description="Optional preset description")
@@ -41,8 +52,12 @@ class RandomizerPreset(Model):
 
     class Meta:
         table = "randomizer_presets"
-        unique_together = (("randomizer", "name"),)
+        unique_together = (
+            ("namespace_id", "randomizer", "name"),  # Namespace presets must be unique
+            ("randomizer", "name"),  # Global presets (namespace_id=null) must be unique
+        )
         indexes = (
+            ("namespace_id", "randomizer"),
             ("randomizer", "user_id"),
             ("is_public",),
         )
@@ -53,5 +68,25 @@ class RandomizerPreset(Model):
 
     @property
     def full_name(self) -> str:
-        """Return fully qualified preset name."""
+        """Return fully qualified preset name with namespace."""
+        # Will need to load namespace relationship
         return f"{self.randomizer}/{self.name}"
+
+    @property
+    def qualified_name(self) -> str:
+        """Return namespace-qualified preset name."""
+        # Format: namespace/randomizer/name or global/randomizer/name
+        # Note: This requires namespace to be prefetched
+        return f"{self.randomizer}/{self.name}"
+
+    @property
+    def is_global(self) -> bool:
+        """Check if this is a global (non-namespaced) preset."""
+        return self.namespace_id is None
+
+    @property
+    def scope_display(self) -> str:
+        """Return display text for preset scope."""
+        if self.is_global:
+            return "Global"
+        return "Namespace"

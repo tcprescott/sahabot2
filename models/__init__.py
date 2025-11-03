@@ -22,6 +22,7 @@ from models.async_tournament import (
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from models.tournament_usage import TournamentUsage
 from models.randomizer_preset import RandomizerPreset
+from models.preset_namespace import PresetNamespace
 
 __all__ = [
     'User',
@@ -52,4 +53,5 @@ __all__ = [
     'ScheduleType',
     'TournamentUsage',
     'RandomizerPreset',
+    'PresetNamespace',
 ]

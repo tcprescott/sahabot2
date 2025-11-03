@@ -10,7 +10,7 @@ TORTOISE_ORM = {
     },
     "apps": {
         "models": {
-            "models": ["models.user", "models.audit_log", "models.api_token", "models.match_schedule", "models.organizations", "models.organization_invite", "models.settings", "models.discord_guild", "models.scheduled_task", "models.async_tournament", "models.tournament_usage", "models.randomizer_preset", "aerich.models"],
+            "models": ["models.user", "models.audit_log", "models.api_token", "models.match_schedule", "models.organizations", "models.organization_invite", "models.settings", "models.discord_guild", "models.scheduled_task", "models.async_tournament", "models.tournament_usage", "models.randomizer_preset", "models.preset_namespace", "aerich.models"],
             "default_connection": "default",
         }
     },

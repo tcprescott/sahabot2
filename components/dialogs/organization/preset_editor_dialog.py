@@ -31,6 +31,8 @@ class PresetEditorDialog(BaseDialog):
     def __init__(
         self,
         preset: Optional[RandomizerPreset] = None,
+        organization_id: Optional[int] = None,
+        is_global: bool = False,
         on_save: Optional[Callable] = None
     ):
         """
@@ -38,10 +40,14 @@ class PresetEditorDialog(BaseDialog):
 
         Args:
             preset: Existing preset to edit (None for new)
+            organization_id: Organization ID for org presets (deprecated, use namespaces)
+            is_global: Whether to create a global preset (requires SUPERADMIN)
             on_save: Callback after save
         """
         super().__init__()
         self.preset = preset
+        self.organization_id = organization_id
+        self.is_global = is_global
         self.on_save = on_save
         self.is_edit_mode = preset is not None
 
@@ -55,7 +61,13 @@ class PresetEditorDialog(BaseDialog):
 
     async def show(self):
         """Display the dialog."""
-        title = f"Edit Preset: {self.preset.name}" if self.is_edit_mode else "Create New Preset"
+        if self.is_edit_mode:
+            title = f"Edit Preset: {self.preset.name}"
+        elif self.is_global:
+            title = "Create New Global Preset"
+        else:
+            title = "Create New Preset"
+        
         self.create_dialog(
             title=title,
             icon='edit' if self.is_edit_mode else 'add',
@@ -300,9 +312,11 @@ settings:
                     name=name,
                     yaml_content=yaml_content,
                     description=description,
-                    is_public=is_public
+                    is_public=is_public,
+                    is_global=self.is_global
                 )
-                ui.notify(f'Preset "{name}" created successfully', type='positive')
+                scope = "global preset" if self.is_global else "preset"
+                ui.notify(f'{scope.title()} "{name}" created successfully', type='positive')
 
             # Call callback
             if self.on_save:

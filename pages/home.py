@@ -6,7 +6,7 @@ This module provides the main landing page.
 
 from nicegui import ui
 from components import BasePage
-from views.home import OverviewView, WelcomeView
+from views.home import OverviewView, WelcomeView, PresetsView
 from middleware.auth import DiscordAuthService
 
 
@@ -35,6 +35,7 @@ def register():
             # Authenticated user navigation
             sidebar_items = [
                 base.create_nav_link('Overview', 'dashboard', '/'),
+                base.create_nav_link('Presets', 'code', '/presets'),
                 base.create_nav_link('Organizations', 'group', '/org'),
                 base.create_separator(),
                 base.create_nav_link('My Profile', 'person', '/profile'),
@@ -45,5 +46,26 @@ def register():
                 base.create_nav_link('Welcome', 'home', '/'),
                 base.create_nav_link('Login', 'login', '/auth/login'),
             ]
+
+        await base.render(content, sidebar_items)
+
+    @ui.page('/presets')
+    async def presets_page():
+        """Presets browsing page."""
+        base = BasePage.authenticated_page(title="Randomizer Presets")
+
+        async def content(page: BasePage):
+            """Render presets content."""
+            view = PresetsView(page.user)
+            await view.render()
+
+        # Create sidebar items
+        sidebar_items = [
+            base.create_nav_link('Overview', 'dashboard', '/'),
+            base.create_nav_link('Presets', 'code', '/presets'),
+            base.create_nav_link('Organizations', 'group', '/org'),
+            base.create_separator(),
+            base.create_nav_link('My Profile', 'person', '/profile'),
+        ]
 
         await base.render(content, sidebar_items)

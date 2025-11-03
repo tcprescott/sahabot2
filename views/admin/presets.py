@@ -1,8 +1,8 @@
 """
 Presets View for managing global randomizer presets.
 
-This view allows users to create, edit, delete, and view randomizer presets.
-Presets are globally accessible with public/private visibility.
+This view allows admins to create, edit, delete, and view global randomizer presets.
+Global presets are available to all users and don't belong to any namespace.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class PresetsView:
-    """View for managing global randomizer presets."""
+    """View for managing global randomizer presets (admin only)."""
 
     RANDOMIZER_LABELS = {
         'alttpr': 'ALTTPR',
@@ -68,20 +68,20 @@ class PresetsView:
 
     async def _render_content(self) -> None:
         """Render the view content."""
-        with Card.create(title='Randomizer Presets'):
+        with Card.create(title='Global Randomizer Presets'):
             # Header with description
             with ui.element('div').classes('mb-4'):
-                ui.label('Create and manage YAML presets for randomizer seed generation.')
-                ui.label('Presets can be used to quickly generate seeds with your preferred settings.').classes('text-sm text-secondary')
+                ui.label('Create and manage global YAML presets for randomizer seed generation.')
+                ui.label('Global presets are available to all users and don\'t belong to any namespace.').classes('text-sm text-secondary')
 
             # Action bar
             with ui.element('div').classes('flex flex-wrap gap-2 mb-4 items-center'):
                 # Create button
                 async def open_create_dialog():
-                    dialog = PresetEditorDialog(on_save=self._refresh)
+                    dialog = PresetEditorDialog(is_global=True, on_save=self._refresh)
                     await dialog.show()
 
-                ui.button('Create Preset', icon='add', on_click=open_create_dialog).classes('btn').props('color=positive')
+                ui.button('Create Global Preset', icon='add', on_click=open_create_dialog).classes('btn').props('color=positive')
 
                 # Filters
                 ui.label('Filters:').classes('ml-4 font-bold')
@@ -114,21 +114,23 @@ class PresetsView:
             await self._render_presets_list()
 
     async def _render_presets_list(self) -> None:
-        """Render the list of presets."""
+        """Render the list of global presets."""
         try:
-            # Fetch presets
-            presets = await self.service.list_presets(
-                user=self.user,
-                randomizer=self.filter_randomizer,
-                mine_only=self.filter_mine_only
+            # Fetch global presets only
+            presets = await self.service.repository.list_global_presets(
+                randomizer=self.filter_randomizer
             )
+            
+            # Apply mine_only filter client-side if needed
+            if self.filter_mine_only and presets:
+                presets = [p for p in presets if p.user_id == self.user.id]
 
             if not presets:
                 # Empty state
                 with ui.element('div').classes('text-center py-8'):
                     ui.icon('code_off', size='4rem').classes('text-gray-400')
-                    ui.label('No presets found').classes('text-lg font-bold mt-2')
-                    ui.label('Create a preset to get started').classes('text-sm text-secondary')
+                    ui.label('No global presets found').classes('text-lg font-bold mt-2')
+                    ui.label('Create a global preset to get started').classes('text-sm text-secondary')
                 return
 
             # Render preset cards
@@ -137,7 +139,7 @@ class PresetsView:
                     await self._render_preset_card(preset)
 
         except Exception as e:
-            logger.error("Error loading presets: %s", e, exc_info=True)
+            logger.error("Error loading global presets: %s", e, exc_info=True)
             ui.label(f'Error loading presets: {str(e)}').classes('text-negative')
 
     async def _render_preset_card(self, preset) -> None:

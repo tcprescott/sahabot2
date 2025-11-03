@@ -2,7 +2,7 @@
 Randomizer preset service for business logic.
 
 This module handles business logic for managing randomizer presets,
-including authorization, validation, and YAML parsing.
+including authorization, validation, YAML parsing, and namespace management.
 """
 
 import logging
@@ -10,6 +10,7 @@ import yaml
 from typing import Optional
 from models import User, RandomizerPreset, Permission
 from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
+from application.services.preset_namespace_service import PresetNamespaceService
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ class PresetValidationError(Exception):
 
 
 class RandomizerPresetService:
-    """Service for managing global randomizer presets."""
+    """Service for managing randomizer presets with namespace support."""
 
     SUPPORTED_RANDOMIZERS = [
         'alttpr',
@@ -37,6 +38,7 @@ class RandomizerPresetService:
     def __init__(self):
         """Initialize the preset service."""
         self.repository = RandomizerPresetRepository()
+        self.namespace_service = PresetNamespaceService()
 
     def _can_edit_preset(self, preset: RandomizerPreset, user: User) -> bool:
         """
@@ -118,26 +120,48 @@ class RandomizerPresetService:
         self,
         user: Optional[User] = None,
         randomizer: Optional[str] = None,
-        mine_only: bool = False
+        mine_only: bool = False,
+        include_global: bool = True
     ) -> list[RandomizerPreset]:
         """
-        List presets.
+        List presets accessible to a user through their namespaces.
 
         Args:
-            user: Optional user (to show their private presets)
+            user: Optional user (to show their accessible presets)
             randomizer: Optional filter by randomizer type
-            mine_only: Only show user's presets
+            mine_only: Only show user's own presets (from their namespace)
+            include_global: Whether to include global presets
 
         Returns:
             List of presets user can access
         """
-        user_id = user.id if user and mine_only else None if not user else user.id
-        include_public = not mine_only
+        if not user:
+            # No user - show only global public presets (legacy behavior)
+            if include_global:
+                return await self.repository.list_global_presets(randomizer=randomizer)
+            return []
 
-        return await self.repository.list_presets(
+        if mine_only:
+            # Get user's namespace
+            namespace = await self.namespace_service.get_or_create_user_namespace(user)
+            if not namespace:
+                return []
+            presets = await self.repository.list_in_namespace(
+                namespace_id=namespace.id,
+                randomizer=randomizer
+            )
+            # Optionally include global presets
+            if include_global:
+                global_presets = await self.repository.list_global_presets(randomizer=randomizer)
+                presets.extend(global_presets)
+            return presets
+
+        # Get all accessible namespaces
+        namespaces = await self.namespace_service.list_accessible_namespaces(user)
+        return await self.repository.list_accessible_presets(
+            namespaces=namespaces,
             randomizer=randomizer,
-            user_id=user_id,
-            include_public=include_public
+            include_global=include_global
         )
 
     async def create_preset(
@@ -147,10 +171,14 @@ class RandomizerPresetService:
         name: str,
         yaml_content: str,
         description: Optional[str] = None,
-        is_public: bool = False
+        is_public: bool = False,
+        is_global: bool = False
     ) -> RandomizerPreset:
         """
-        Create a new preset.
+        Create a new preset in the user's namespace or as a global preset.
+
+        If the user doesn't have a namespace, one will be created automatically
+        (unless creating a global preset).
 
         Args:
             user: User creating the preset
@@ -159,12 +187,14 @@ class RandomizerPresetService:
             yaml_content: YAML content as string
             description: Optional description
             is_public: Whether preset is publicly visible
+            is_global: Whether to create as a global preset (requires SUPERADMIN)
 
         Returns:
             Created RandomizerPreset
 
         Raises:
             ValueError: If validation fails
+            PermissionError: If user lacks permission for global presets
             PresetValidationError: If YAML is invalid
         """
         # Validate randomizer type
@@ -174,13 +204,32 @@ class RandomizerPresetService:
                 f"Supported: {', '.join(self.SUPPORTED_RANDOMIZERS)}"
             )
 
+        # Check permissions for global presets
+        if is_global and not user.has_permission(Permission.SUPERADMIN):
+            raise PermissionError("Only SUPERADMIN can create global presets")
+
         # Validate and parse YAML
         settings_dict = self._validate_yaml(yaml_content)
 
+        namespace_id = None
+        if not is_global:
+            # Get or create user's namespace
+            namespace = await self.namespace_service.get_or_create_user_namespace(user)
+            if not namespace:
+                raise ValueError("Failed to create user namespace")
+            namespace_id = namespace.id
+
         # Check for duplicate name
-        existing = await self.repository.get_by_name(randomizer, name)
+        existing = await self.repository.get_by_name(
+            randomizer=randomizer,
+            name=name,
+            namespace_id=namespace_id
+        )
         if existing:
-            raise ValueError(f"Preset '{name}' already exists for {randomizer}")
+            scope = "globally" if is_global else "in your namespace"
+            raise ValueError(
+                f"Preset '{name}' already exists for {randomizer} {scope}"
+            )
 
         # Create preset
         preset = await self.repository.create(
@@ -188,15 +237,18 @@ class RandomizerPresetService:
             randomizer=randomizer,
             name=name,
             settings=settings_dict,
+            namespace_id=namespace_id,
             description=description,
             is_public=is_public
         )
 
+        scope = "global" if is_global else f"namespace {namespace_id}"
         logger.info(
-            "User %s created preset %s for %s (public=%s)",
+            "User %s created preset %s for %s in %s (public=%s)",
             user.id,
             name,
             randomizer,
+            scope,
             is_public
         )
 
@@ -246,9 +298,16 @@ class RandomizerPresetService:
         if name is not None:
             # Check for duplicate if name is changing
             if name != preset.name:
-                existing = await self.repository.get_by_name(preset.randomizer, name)
+                existing = await self.repository.get_by_name(
+                    randomizer=preset.randomizer,
+                    name=name,
+                    namespace_id=preset.namespace_id
+                )
                 if existing and existing.id != preset_id:
-                    raise ValueError(f"Preset '{name}' already exists for {preset.randomizer}")
+                    scope = "globally" if preset.is_global else "in this namespace"
+                    raise ValueError(
+                        f"Preset '{name}' already exists for {preset.randomizer} {scope}"
+                    )
             updates['name'] = name
 
         if description is not None:
