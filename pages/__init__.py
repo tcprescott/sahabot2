@@ -12,7 +12,8 @@ from pages import (
     organization_admin,
     user_profile,
     racetime_oauth,
-    discord_guild_callback
+    discord_guild_callback,
+    privacy
 )
 
 __all__ = [
@@ -23,4 +24,5 @@ __all__ = [
     'user_profile',
     'racetime_oauth',
     'discord_guild_callback',
+    'privacy',
 ]

@@ -17,7 +17,8 @@ from pages import (
     invite,
     tournaments,
     racetime_oauth,
-    discord_guild_callback
+    discord_guild_callback,
+    privacy
 )
 
 logger = logging.getLogger(__name__)
@@ -72,5 +73,6 @@ def register_routes(fastapi_app: FastAPI = None):
     tournaments.register()
     racetime_oauth.register()
     discord_guild_callback.register()
+    privacy.register()
 
     logger.info("Frontend routes registered")
