@@ -8,7 +8,6 @@ import discord
 from discord import ui
 import asyncio
 import logging
-from datetime import datetime, timedelta
 from slugify import slugify
 
 from models import User
