@@ -220,7 +220,7 @@ class AsyncTournamentRepository:
             return None
 
         for field, value in fields.items():
-            if value is not None and hasattr(race, field):
+            if hasattr(race, field):
                 setattr(race, field, value)
 
         await race.save()
