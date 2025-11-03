@@ -14,7 +14,6 @@ from models import OrganizationMember
 from models.async_tournament import AsyncTournament
 from models.match_schedule import Tournament
 from views.tournaments import (
-    TournamentOrgSelectView,
     EventScheduleView,
     MyMatchesView,
     MySettingsView,
@@ -33,23 +32,6 @@ from views.organization import (
 
 def register():
     """Register tournament page routes."""
-
-    @ui.page('/org')
-    async def tournaments_page():
-        """Organization features page - show organization selector."""
-        base = BasePage.authenticated_page(title="Organizations")
-
-        async def content(page: BasePage):
-            """Render organization selection page."""
-            view = TournamentOrgSelectView(page.user)
-            await view.render()
-
-        # Create sidebar items
-        sidebar_items = [
-            base.create_nav_link('Back to Home', 'home', '/'),
-        ]
-
-        await base.render(content, sidebar_items)
 
     @ui.page('/org/{organization_id}')
     async def organization_page(organization_id: int):
@@ -85,7 +67,7 @@ def register():
             # Re-check membership inside content
             if not is_member:
                 ui.notify('You must be a member of this organization to view organization features.', color='negative')
-                ui.navigate.to('/org')
+                ui.navigate.to('/?view=organizations')
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -94,7 +76,7 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Organization not found')
                     with ui.element('div').classes('card-body'):
-                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/?view=organizations')).classes('btn')
                 return
 
             # Register content loaders for different sections
@@ -115,7 +97,7 @@ def register():
 
         # Create sidebar items
         sidebar_items = [
-            base.create_nav_link('Back to Organizations', 'arrow_back', '/org'),
+            base.create_nav_link('Back to Organizations', 'arrow_back', '/?view=organizations'),
             base.create_separator(),
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
             base.create_nav_link('Tournaments', 'emoji_events', f'/org/{organization_id}/tournament'),
@@ -185,7 +167,7 @@ def register():
             # Re-check membership inside content
             if not is_member:
                 ui.notify('You must be a member of this organization to view organization features.', color='negative')
-                ui.navigate.to('/org')
+                ui.navigate.to('/?view=organizations')
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -194,7 +176,7 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Organization not found')
                     with ui.element('div').classes('card-body'):
-                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/?view=organizations')).classes('btn')
                 return
 
             # Get all async tournaments for this organization
@@ -331,7 +313,7 @@ def register():
             # Re-check membership inside content
             if not is_member:
                 ui.notify('You must be a member of this organization to view organization features.', color='negative')
-                ui.navigate.to('/org')
+                ui.navigate.to('/?view=organizations')
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -340,7 +322,7 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Organization not found')
                     with ui.element('div').classes('card-body'):
-                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/?view=organizations')).classes('btn')
                 return
 
             # Register content loaders for different sections

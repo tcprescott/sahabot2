@@ -52,7 +52,7 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Organization not found')
                     with ui.element('div').classes('card-body'):
-                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/?view=organizations')).classes('btn')
                 return
 
             # Register content loaders for different sections

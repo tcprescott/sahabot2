@@ -15,8 +15,9 @@ class Header:
                 # Left side: Hamburger menu, logo and app name
                 with ui.row().classes('header-left gap-md'):
                     ui.button(icon='menu', on_click=self.toggle_sidebar).props('flat round').classes('header-hamburger')
-                    ui.icon('smart_toy', size='lg').classes('header-logo')
-                    ui.label('SahasrahBot').classes('header-brand')
+                    with ui.link(target='/').classes('header-brand-link'):
+                        ui.icon('smart_toy', size='lg').classes('header-logo')
+                        ui.label('SahasrahBot').classes('header-brand')
                 # Right side: User info and menu
                 with ui.row().classes('header-right gap-md'):
                     user_menu = UserMenu(self.user)
