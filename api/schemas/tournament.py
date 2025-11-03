@@ -114,3 +114,25 @@ class TournamentPlayerListResponse(BaseModel):
 
     items: list[TournamentPlayerOut] = Field(..., description="List of player registration objects")
     count: int = Field(..., description="Total number of players in the result")
+
+
+class CrewOut(BaseModel):
+    """Crew member output schema."""
+
+    id: int = Field(..., description="Crew signup ID")
+    user_id: int = Field(..., description="User ID")
+    role: str = Field(..., description="Crew role (e.g., 'commentator', 'tracker')")
+    match_id: int = Field(..., description="Match ID")
+    approved: bool = Field(..., description="Whether the crew signup is approved")
+    approved_by_id: Optional[int] = Field(None, description="User ID of the approver")
+    created_at: datetime = Field(..., description="Signup timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    class Config:
+        from_attributes = True
+
+
+class CrewApprovalRequest(BaseModel):
+    """Request schema for approving/unapproving crew."""
+
+    crew_id: int = Field(..., description="Crew signup ID to approve/unapprove")

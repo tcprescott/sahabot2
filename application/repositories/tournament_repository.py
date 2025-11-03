@@ -265,6 +265,51 @@ class TournamentRepository:
         logger.info("Removed crew signup for user %s as %s for match %s", user_id, role, match_id)
         return True
 
+    async def approve_crew(self, crew_id: int, approver_user_id: int) -> Optional['Crew']:
+        """Approve a crew signup.
+        
+        Args:
+            crew_id: ID of the crew signup to approve
+            approver_user_id: ID of the user approving the crew
+        
+        Returns:
+            The updated Crew record if successful, None if not found.
+        """
+        from models.match_schedule import Crew
+        
+        crew = await Crew.filter(id=crew_id).first()
+        if not crew:
+            logger.warning("No crew signup found with id %s", crew_id)
+            return None
+        
+        crew.approved = True
+        crew.approved_by_id = approver_user_id
+        await crew.save()
+        logger.info("Crew %s approved by user %s", crew_id, approver_user_id)
+        return crew
+
+    async def unapprove_crew(self, crew_id: int) -> Optional['Crew']:
+        """Remove approval from a crew signup.
+        
+        Args:
+            crew_id: ID of the crew signup to unapprove
+        
+        Returns:
+            The updated Crew record if successful, None if not found.
+        """
+        from models.match_schedule import Crew
+        
+        crew = await Crew.filter(id=crew_id).first()
+        if not crew:
+            logger.warning("No crew signup found with id %s", crew_id)
+            return None
+        
+        crew.approved = False
+        crew.approved_by_id = None
+        await crew.save()
+        logger.info("Crew %s approval removed", crew_id)
+        return crew
+
     async def create_or_update_match_seed(self, match_id: int, url: str, description: Optional[str] = None):
         """Create or update seed information for a match.
         

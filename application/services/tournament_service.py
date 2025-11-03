@@ -253,6 +253,50 @@ class TournamentService:
 
         return await self.repo.remove_crew_signup(match_id, user.id, role)
 
+    async def approve_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
+        """Approve a crew signup.
+        
+        Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
+        
+        Args:
+            user: User attempting to approve the crew
+            organization_id: Organization ID for permission check
+            crew_id: ID of the crew signup to approve
+        
+        Returns:
+            The approved Crew record or None if unauthorized.
+        """
+        from models.match_schedule import Crew
+        
+        # Check permission
+        allowed = await self.org_service.user_can_approve_crew(user, organization_id)
+        if not allowed:
+            logger.warning("Unauthorized crew approval by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return None
+        
+        return await self.repo.approve_crew(crew_id, user.id)
+
+    async def unapprove_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
+        """Remove approval from a crew signup.
+        
+        Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
+        
+        Args:
+            user: User attempting to unapprove the crew
+            organization_id: Organization ID for permission check
+            crew_id: ID of the crew signup to unapprove
+        
+        Returns:
+            The unapproved Crew record or None if unauthorized.
+        """
+        # Check permission
+        allowed = await self.org_service.user_can_approve_crew(user, organization_id)
+        if not allowed:
+            logger.warning("Unauthorized crew unapproval by user %s for org %s", getattr(user, 'id', None), organization_id)
+            return None
+        
+        return await self.repo.unapprove_crew(crew_id)
+
     async def set_match_seed(self, user: Optional[User], organization_id: int, match_id: int, url: str, description: Optional[str] = None):
         """Set or update seed information for a match.
         

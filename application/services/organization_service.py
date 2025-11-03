@@ -183,6 +183,29 @@ class OrganizationService:
         permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
         return 'ASYNC_REVIEWER' in permission_names
 
+    async def user_can_approve_crew(self, user: Optional[User], organization_id: int) -> bool:
+        """Check if the user can approve crew members for matches.
+
+        Grants if:
+        - User can admin the org (global or org-level admin), OR
+        - User can manage tournaments (TOURNAMENT_MANAGER), OR
+        - User has the MODERATOR org permission
+        """
+        if await self.user_can_admin_org(user, organization_id):
+            return True
+        if await self.user_can_manage_tournaments(user, organization_id):
+            return True
+        if user is None:
+            return False
+
+        # Check org membership and permissions for MODERATOR
+        member = await self.repo.get_member(organization_id, user.id)
+        if not member:
+            return False
+        await member.fetch_related('permissions')
+        permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
+        return 'MODERATOR' in permission_names
+
     # --- Permissions definitions (per-organization) ---
 
     async def list_permissions(self, organization_id: int):

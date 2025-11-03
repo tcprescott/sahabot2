@@ -12,6 +12,8 @@ from api.schemas.tournament import (
     MatchUpdateRequest,
     TournamentPlayerOut,
     TournamentPlayerListResponse,
+    CrewOut,
+    CrewApprovalRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
 from application.services.tournament_service import TournamentService
@@ -506,3 +508,110 @@ async def update_match(
         )
 
     return MatchOut.model_validate(match)
+
+
+# ==================== CREW MANAGEMENT ====================
+
+
+@router.post(
+    "/crew/approve",
+    response_model=CrewOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Approve Crew Signup",
+    description="Approve a crew signup for a match. Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission.",
+    responses={
+        200: {"description": "Crew signup approved successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Crew signup not found"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def approve_crew(
+    data: CrewApprovalRequest,
+    organization_id: int = Query(..., description="Organization ID"),
+    current_user: User = Depends(get_current_user)
+) -> CrewOut:
+    """
+    Approve a crew signup.
+
+    Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
+
+    Args:
+        data: Crew approval request data
+        organization_id: Organization ID
+        current_user: Authenticated user making the request
+
+    Returns:
+        CrewOut: Approved crew signup
+
+    Raises:
+        HTTPException: 403 if user lacks permission
+        HTTPException: 404 if crew signup not found
+    """
+    service = TournamentService()
+    crew = await service.approve_crew(
+        user=current_user,
+        organization_id=organization_id,
+        crew_id=data.crew_id
+    )
+
+    if not crew:
+        raise HTTPException(
+            status_code=403,
+            detail="Crew signup not found or insufficient permissions"
+        )
+
+    return CrewOut.model_validate(crew)
+
+
+@router.post(
+    "/crew/unapprove",
+    response_model=CrewOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Unapprove Crew Signup",
+    description="Remove approval from a crew signup. Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission.",
+    responses={
+        200: {"description": "Crew signup unapproved successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Crew signup not found"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def unapprove_crew(
+    data: CrewApprovalRequest,
+    organization_id: int = Query(..., description="Organization ID"),
+    current_user: User = Depends(get_current_user)
+) -> CrewOut:
+    """
+    Remove approval from a crew signup.
+
+    Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
+
+    Args:
+        data: Crew approval request data
+        organization_id: Organization ID
+        current_user: Authenticated user making the request
+
+    Returns:
+        CrewOut: Unapproved crew signup
+
+    Raises:
+        HTTPException: 403 if user lacks permission
+        HTTPException: 404 if crew signup not found
+    """
+    service = TournamentService()
+    crew = await service.unapprove_crew(
+        user=current_user,
+        organization_id=organization_id,
+        crew_id=data.crew_id
+    )
+
+    if not crew:
+        raise HTTPException(
+            status_code=403,
+            detail="Crew signup not found or insufficient permissions"
+        )
+
+    return CrewOut.model_validate(crew)

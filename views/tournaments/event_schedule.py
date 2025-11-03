@@ -35,6 +35,7 @@ class EventScheduleView:
         self.selected_tournaments = []  # List of selected tournament IDs
         self.can_manage_tournaments = False  # Set during render
         self.can_edit_matches = False  # Set during render (moderator or tournament admin)
+        self.can_approve_crew = False  # Set during render (admin, tournament manager, or moderator)
 
     def _get_match_state(self, match: Match) -> str:
         """Get the state of a match."""
@@ -94,6 +95,11 @@ class EventScheduleView:
 
         # Check if user can edit matches (tournament manager or moderator)
         self.can_edit_matches = self.can_manage_tournaments or self.auth_service.can_moderate(self.user)
+
+        # Check if user can approve crew
+        self.can_approve_crew = await self.org_service.user_can_approve_crew(
+            self.user, self.organization.id
+        )
 
         # Get all matches for this organization's tournaments via service
         all_matches = await self.service.list_org_matches(self.organization.id)
@@ -219,8 +225,42 @@ class EventScheduleView:
                         logger.error("Failed to remove crew signup: %s", e)
                         ui.notify(f'Failed to remove signup: {str(e)}', type='negative')
 
+                async def approve_crew_signup(crew_id: int, role: str):
+                    """Approve a crew signup."""
+                    try:
+                        result = await self.service.approve_crew(
+                            user=self.user,
+                            organization_id=self.organization.id,
+                            crew_id=crew_id
+                        )
+                        if result:
+                            ui.notify(f'{role.capitalize()} approved', type='positive')
+                            await self._refresh()
+                        else:
+                            ui.notify('Failed to approve crew', type='negative')
+                    except Exception as e:
+                        logger.error("Failed to approve crew: %s", e)
+                        ui.notify(f'Failed to approve: {str(e)}', type='negative')
+
+                async def unapprove_crew_signup(crew_id: int, role: str):
+                    """Remove approval from a crew signup."""
+                    try:
+                        result = await self.service.unapprove_crew(
+                            user=self.user,
+                            organization_id=self.organization.id,
+                            crew_id=crew_id
+                        )
+                        if result:
+                            ui.notify(f'{role.capitalize()} approval removed', type='positive')
+                            await self._refresh()
+                        else:
+                            ui.notify('Failed to unapprove crew', type='negative')
+                    except Exception as e:
+                        logger.error("Failed to unapprove crew: %s", e)
+                        ui.notify(f'Failed to unapprove: {str(e)}', type='negative')
+
                 def render_commentator(match: Match):
-                    """Render commentator(s) with approval status color and signup button."""
+                    """Render commentator(s) with approval status color, signup button, and approval controls."""
                     # Get crew members with commentator role
                     commentators = [
                         crew for crew in getattr(match, 'crew_members', [])
@@ -234,9 +274,25 @@ class EventScheduleView:
                         if commentators:
                             with ui.column().classes('gap-1'):
                                 for crew in commentators:
-                                    # Green for approved, yellow for unapproved
-                                    color_class = 'text-positive' if crew.approved else 'text-warning'
-                                    ui.label(crew.user.discord_username).classes(color_class)
+                                    with ui.row().classes('items-center gap-2'):
+                                        # Green for approved, yellow for unapproved
+                                        color_class = 'text-positive' if crew.approved else 'text-warning'
+                                        ui.label(crew.user.discord_username).classes(color_class)
+                                        
+                                        # Show approval controls if user has permission
+                                        if self.can_approve_crew:
+                                            if crew.approved:
+                                                # Show unapprove button
+                                                ui.button(
+                                                    icon='close',
+                                                    on_click=lambda c=crew: unapprove_crew_signup(c.id, 'commentator')
+                                                ).props('flat round dense size=sm color=negative').tooltip('Remove approval')
+                                            else:
+                                                # Show approve button
+                                                ui.button(
+                                                    icon='check',
+                                                    on_click=lambda c=crew: approve_crew_signup(c.id, 'commentator')
+                                                ).props('flat round dense size=sm color=positive').tooltip('Approve commentator')
                         else:
                             ui.label('—').classes('text-secondary')
 
@@ -253,7 +309,7 @@ class EventScheduleView:
                             ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as commentator')
 
                 def render_tracker(match: Match):
-                    """Render tracker(s) with approval status color and signup button."""
+                    """Render tracker(s) with approval status color, signup button, and approval controls."""
                     # Get crew members with tracker role
                     trackers = [
                         crew for crew in getattr(match, 'crew_members', [])
@@ -270,9 +326,25 @@ class EventScheduleView:
                         if trackers:
                             with ui.column().classes('gap-1'):
                                 for crew in trackers:
-                                    # Green for approved, yellow for unapproved
-                                    color_class = 'text-positive' if crew.approved else 'text-warning'
-                                    ui.label(crew.user.discord_username).classes(color_class)
+                                    with ui.row().classes('items-center gap-2'):
+                                        # Green for approved, yellow for unapproved
+                                        color_class = 'text-positive' if crew.approved else 'text-warning'
+                                        ui.label(crew.user.discord_username).classes(color_class)
+                                        
+                                        # Show approval controls if user has permission
+                                        if self.can_approve_crew:
+                                            if crew.approved:
+                                                # Show unapprove button
+                                                ui.button(
+                                                    icon='close',
+                                                    on_click=lambda c=crew: unapprove_crew_signup(c.id, 'tracker')
+                                                ).props('flat round dense size=sm color=negative').tooltip('Remove approval')
+                                            else:
+                                                # Show approve button
+                                                ui.button(
+                                                    icon='check',
+                                                    on_click=lambda c=crew: approve_crew_signup(c.id, 'tracker')
+                                                ).props('flat round dense size=sm color=positive').tooltip('Approve tracker')
                         else:
                             ui.label('—').classes('text-secondary')
 
