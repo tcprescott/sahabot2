@@ -80,30 +80,31 @@ class PresetEditorDialog(BaseDialog):
 
     def _render_body(self):
         """Render dialog content."""
-        # Basic info section
-        with self.create_form_grid(columns=2):
-            with ui.element('div'):
-                self.name_input = ui.input(
-                    label='Preset Name',
-                    placeholder='e.g., open, standard, keysanity'
-                ).classes('w-full').props('outlined dense')
-                if self.preset:
-                    self.name_input.value = self.preset.name
+        with ui.column().classes('full-width gap-md'):
+            # Basic info section
+            self.create_section_title('Basic Information')
+            with self.create_form_grid(columns=2):
+                with ui.element('div'):
+                    self.name_input = ui.input(
+                        label='Preset Name',
+                        placeholder='e.g., open, standard, keysanity'
+                    ).classes('w-full').props('outlined dense')
+                    if self.preset:
+                        self.name_input.value = self.preset.name
+                        if self.is_edit_mode:
+                            self.name_input.props('readonly')  # Can't change name in edit mode
+
+                with ui.element('div'):
+                    self.randomizer_select = ui.select(
+                        label='Randomizer',
+                        options=self.RANDOMIZERS,
+                        value=self.preset.randomizer if self.preset else 'alttpr',
+                        with_input=True
+                    ).classes('w-full').props('outlined dense')
                     if self.is_edit_mode:
-                        self.name_input.props('readonly')  # Can't change name in edit mode
+                        self.randomizer_select.props('readonly')  # Can't change randomizer in edit mode
 
-            with ui.element('div'):
-                self.randomizer_select = ui.select(
-                    label='Randomizer',
-                    options=self.RANDOMIZERS,
-                    value=self.preset.randomizer if self.preset else 'alttpr',
-                    with_input=True
-                ).classes('w-full').props('outlined dense')
-                if self.is_edit_mode:
-                    self.randomizer_select.props('readonly')  # Can't change randomizer in edit mode
-
-        # Description
-        with ui.element('div').classes('mt-4'):
+            # Description
             self.description_input = ui.textarea(
                 label='Description (optional)',
                 placeholder='Describe what this preset does...'
@@ -111,18 +112,16 @@ class PresetEditorDialog(BaseDialog):
             if self.preset and self.preset.description:
                 self.description_input.value = self.preset.description
 
-        # Public checkbox
-        with ui.element('div').classes('mt-4'):
+            # Public checkbox
             self.is_public_checkbox = ui.checkbox(
                 'Make this preset public (visible to all users)',
                 value=self.preset.is_public if self.preset else False
             )
 
-        ui.separator().classes('my-4')
+            ui.separator()
 
-        # YAML Editor Section
-        with ui.element('div'):
-            ui.label('YAML Configuration').classes('text-lg font-bold mb-2')
+            # YAML Editor Section
+            self.create_section_title('YAML Configuration')
             ui.label('Edit the preset settings in YAML format below:').classes('text-sm text-secondary mb-2')
 
             # Simple textarea editor with monospace font
@@ -135,17 +134,20 @@ class PresetEditorDialog(BaseDialog):
             # Validation message area
             self.validation_message = ui.element('div').classes('mt-2')
 
-        ui.separator().classes('my-4')
+            # Validate button (separate from save)
+            with ui.row().classes('mt-2'):
+                ui.button('Validate YAML', on_click=self._validate_yaml, icon='check_circle').classes('btn').props('color=primary')
 
-        # Action buttons
-        with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Validate', on_click=self._validate_yaml, icon='check_circle').classes('btn').props('color=primary')
-            ui.button(
-                'Save' if self.is_edit_mode else 'Create',
-                on_click=self._save,
-                icon='save'
-            ).classes('btn').props('color=positive')
+            ui.separator()
+
+            # Action buttons
+            with self.create_actions_row():
+                ui.button('Cancel', on_click=self.close).classes('btn')
+                ui.button(
+                    'Save' if self.is_edit_mode else 'Create',
+                    on_click=self._save,
+                    icon='save'
+                ).classes('btn').props('color=positive')
 
     def _get_default_yaml(self) -> str:
         """Get default YAML content for editor."""
@@ -176,8 +178,8 @@ settings:
         if not yaml_content or not yaml_content.strip():
             self.validation_message.clear()
             with self.validation_message:
-                with ui.element('div').classes('p-2 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'):
-                    ui.icon('error').classes('mr-2')
+                with ui.row().classes('items-center gap-2 p-3 rounded bg-negative text-white'):
+                    ui.icon('error')
                     ui.label('YAML content is empty')
             return False
 
@@ -194,8 +196,8 @@ settings:
             # Show success
             self.validation_message.clear()
             with self.validation_message:
-                with ui.element('div').classes('p-2 rounded bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'):
-                    ui.icon('check_circle').classes('mr-2')
+                with ui.row().classes('items-center gap-2 p-3 rounded bg-positive text-white'):
+                    ui.icon('check_circle')
                     ui.label('YAML is valid!')
 
             return True
@@ -203,8 +205,8 @@ settings:
         except PresetValidationError as e:
             self.validation_message.clear()
             with self.validation_message:
-                with ui.element('div').classes('p-2 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'):
-                    ui.icon('error').classes('mr-2')
+                with ui.row().classes('items-center gap-2 p-3 rounded bg-negative text-white'):
+                    ui.icon('error')
                     ui.label(f'Validation Error: {str(e)}')
             return False
 

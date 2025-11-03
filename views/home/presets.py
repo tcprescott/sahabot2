@@ -11,6 +11,7 @@ from nicegui import ui
 from models import User
 from components.card import Card
 from components.datetime_label import DateTimeLabel
+from components.data_table import ResponsiveTable, TableColumn
 from application.services.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
@@ -109,142 +110,159 @@ class PresetsView:
 
                 if not presets:
                     # Empty state
-                    with ui.element('div').classes('text-center mt-8 mb-8'):
-                        ui.icon('code', size='64px').classes('text-secondary')
-                        ui.label('No presets found').classes('text-xl text-secondary mt-2')
-                        ui.label('Create your first preset to get started! Each user has their own preset namespace.').classes('text-sm text-secondary')
+                    with ui.element('div').classes('card'):
+                        with ui.element('div').classes('card-body text-center py-8'):
+                            ui.icon('code', size='64px').classes('text-secondary')
+                            ui.label('No presets found').classes('text-xl text-secondary mt-2')
+                            ui.label('Create your first preset to get started! Each user has their own preset namespace.').classes('text-sm text-secondary')
                 else:
-                    # Presets grid
-                    with ui.element('div').classes('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4'):
-                        for preset in presets:
-                            await self._render_preset_card(preset)
+                    # Presets table
+                    with ui.element('div').classes('card'):
+                        async def render_name_cell(preset):
+                            with ui.column().classes('gap-1'):
+                                ui.label(preset.name).classes('font-bold')
+                                if preset.description:
+                                    ui.label(preset.description).classes('text-sm text-secondary')
+
+                        async def render_randomizer_cell(preset):
+                            randomizer_label = self.RANDOMIZER_LABELS.get(preset.randomizer, preset.randomizer)
+                            ui.badge(randomizer_label).props('color=primary')
+
+                        async def render_scope_cell(preset):
+                            if preset.namespace:
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('folder', size='14px')
+                                    ui.label(preset.namespace.display_name).classes('text-sm')
+                            else:
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('public', size='14px')
+                                    ui.label('Global').classes('text-sm font-bold')
+
+                        async def render_creator_cell(preset):
+                            if preset.user:
+                                ui.label(preset.user.discord_username).classes('text-sm')
+                            else:
+                                ui.label('—').classes('text-secondary')
+
+                        async def render_visibility_cell(preset):
+                            visibility_class = 'badge-success' if preset.is_public else 'badge-warning'
+                            visibility_text = 'Public' if preset.is_public else 'Private'
+                            with ui.element('span').classes(f'badge {visibility_class}'):
+                                ui.label(visibility_text)
+
+                        async def render_created_cell(preset):
+                            DateTimeLabel.create(preset.created_at)
+
+                        async def render_actions_cell(preset):
+                            with ui.row().classes('gap-1'):
+                                # View button
+                                async def view_yaml():
+                                    await self._view_preset_yaml(preset)
+
+                                ui.button(
+                                    icon='visibility',
+                                    on_click=view_yaml
+                                ).classes('btn btn-sm').props('flat').tooltip('View YAML')
+
+                        columns = [
+                            TableColumn(label='Name', cell_render=render_name_cell),
+                            TableColumn(label='Randomizer', cell_render=render_randomizer_cell),
+                            TableColumn(label='Scope', cell_render=render_scope_cell),
+                            TableColumn(label='Creator', cell_render=render_creator_cell),
+                            TableColumn(label='Visibility', cell_render=render_visibility_cell),
+                            TableColumn(label='Created', cell_render=render_created_cell),
+                            TableColumn(label='Actions', cell_render=render_actions_cell),
+                        ]
+
+                        table = ResponsiveTable(columns=columns, rows=presets)
+                        await table.render()
 
             except Exception as e:
                 logger.error("Failed to load presets: %s", e, exc_info=True)
-                with ui.element('div').classes('p-4 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'):
-                    ui.icon('error').classes('mr-2')
-                    ui.label(f'Failed to load presets: {str(e)}').classes('font-bold')
-                    ui.label('Please check the server logs for details.').classes('text-sm mt-2')
+                with ui.element('div').classes('card'):
+                    with ui.element('div').classes('card-body'):
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('error').classes('text-negative')
+                            with ui.column():
+                                ui.label(f'Failed to load presets: {str(e)}').classes('font-bold text-negative')
+                                ui.label('Please check the server logs for details.').classes('text-sm text-secondary')
 
-    async def _render_preset_card(self, preset) -> None:
+    async def _view_preset_yaml(self, preset) -> None:
         """
-        Render a single preset card.
+        Display preset YAML content in a dialog.
 
         Args:
-            preset: Preset to render
+            preset: Preset to view
         """
-        with ui.element('div').classes('card'):
-            # Header with randomizer badge
-            with ui.element('div').classes('flex justify-between items-center mb-2'):
-                ui.label(preset.name).classes('text-lg font-bold')
-                randomizer_label = self.RANDOMIZER_LABELS.get(preset.randomizer, preset.randomizer)
-                ui.badge(randomizer_label).props('color=primary')
+        import yaml
 
-            # Description
-            if preset.description:
-                ui.label(preset.description).classes('text-sm text-secondary mb-2')
+        # Convert settings dict to YAML string
+        try:
+            yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
+        except Exception as e:
+            yaml_content = f'Error formatting YAML: {e}'
 
-            # Metadata
-            with ui.element('div').classes('text-xs text-secondary mb-2'):
-                # Scope badge (Global or Namespace)
-                with ui.element('div').classes('flex items-center gap-1 mb-1'):
-                    if preset.namespace:
-                        ui.icon('folder', size='14px')
-                        ui.label(f'Namespace: {preset.namespace.display_name}')
-                    else:
-                        ui.icon('public', size='14px')
-                        ui.label('Global Preset').classes('font-bold')
-
-                # Creator
-                if preset.user:
-                    with ui.element('div').classes('flex items-center gap-1 mb-1'):
-                        ui.icon('person', size='14px')
-                        ui.label(f'Created by {preset.user.discord_username}')
-
-                # Created date
-                with ui.element('div').classes('flex items-center gap-1'):
-                    ui.icon('schedule', size='14px')
-                    DateTimeLabel.create(preset.created_at)
-
-            # Visibility badge
-            visibility_color = 'positive' if preset.is_public else 'warning'
-            visibility_text = 'Public' if preset.is_public else 'Private'
-            ui.badge(visibility_text).props(f'color={visibility_color}')
-
-            # View YAML button
-            async def view_yaml():
-                """Display preset YAML content."""
-                import yaml
-
-                # Convert settings dict to YAML string
-                try:
-                    yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
-                except Exception as e:
-                    yaml_content = f'Error formatting YAML: {e}'
-
-                # Create a dialog to show the YAML
-                with ui.dialog() as yaml_dialog, ui.card().classes('w-full max-w-3xl'):
-                    with ui.element('div').classes('flex justify-between items-center mb-4'):
-                        ui.label(f'Preset: {preset.name}').classes('text-xl font-bold')
+        # Create a dialog to show the YAML
+        with ui.dialog() as yaml_dialog:
+            with ui.element('div').classes('card dialog-card'):
+                # Header
+                with ui.element('div').classes('card-header'):
+                    with ui.row().classes('items-center justify-between w-full'):
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('visibility').classes('icon-medium')
+                            ui.label(f'Preset: {preset.name}').classes('text-xl text-bold')
                         ui.button(icon='close', on_click=yaml_dialog.close).props('flat round dense')
 
-                    # YAML content in code block
-                    with ui.element('div').classes('mb-4'):
-                        ui.code(yaml_content).classes('w-full').style('max-height: 400px; overflow-y: auto;')
+                # Body
+                with ui.element('div').classes('card-body'):
+                    # Metadata section
+                    with ui.column().classes('gap-2 mb-4'):
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('category', size='sm')
+                            randomizer_label = self.RANDOMIZER_LABELS.get(preset.randomizer, preset.randomizer)
+                            ui.label(f'Randomizer: {randomizer_label}').classes('text-sm')
 
-                    # Close button
-                    with ui.element('div').classes('flex justify-end'):
+                        if preset.description:
+                            with ui.row().classes('items-center gap-2'):
+                                ui.icon('description', size='sm')
+                                ui.label(f'Description: {preset.description}').classes('text-sm')
+
+                        # Scope
+                        with ui.row().classes('items-center gap-2'):
+                            if preset.namespace:
+                                ui.icon('folder', size='sm')
+                                ui.label(f'Namespace: {preset.namespace.display_name}').classes('text-sm')
+                            else:
+                                ui.icon('public', size='sm')
+                                ui.label('Scope: Global').classes('text-sm font-bold')
+
+                        # Creator
+                        if preset.user:
+                            with ui.row().classes('items-center gap-2'):
+                                ui.icon('person', size='sm')
+                                ui.label(f'Created by: {preset.user.discord_username}').classes('text-sm')
+
+                        # Visibility
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('visibility', size='sm')
+                            visibility = 'Public' if preset.is_public else 'Private'
+                            ui.label(f'Visibility: {visibility}').classes('text-sm')
+
+                    ui.separator()
+
+                    # YAML content
+                    ui.label('YAML Content:').classes('font-bold mt-4 mb-2')
+                    ui.code(yaml_content, language='yaml').classes('w-full').style('max-height: 400px; overflow-y: auto;')
+
+                    # Action buttons
+                    with ui.row().classes('justify-end gap-2 mt-4'):
+                        async def copy_yaml():
+                            await ui.run_javascript(f'navigator.clipboard.writeText({yaml_content!r})')
+                            ui.notify('YAML copied to clipboard!', type='positive')
+
+                        ui.button('Copy YAML', icon='content_copy', on_click=copy_yaml).classes('btn').props('color=primary')
                         ui.button('Close', on_click=yaml_dialog.close).classes('btn')
 
-                yaml_dialog.open()
+        yaml_dialog.open()
 
-            # Edit preset handler
-            async def edit_preset():
-                """Open edit dialog for this preset."""
-                from components.dialogs.organization.preset_editor_dialog import PresetEditorDialog
 
-                dialog = PresetEditorDialog(
-                    user=self.user,
-                    preset=preset,
-                    on_save=self._refresh
-                )
-                await dialog.show()
-
-            # Delete preset handler
-            async def delete_preset():
-                """Delete this preset after confirmation."""
-                # Confirmation dialog
-                with ui.dialog() as confirm_dialog, ui.card():
-                    ui.label(f'Delete preset "{preset.name}"?').classes('text-lg font-bold mb-4')
-                    ui.label('This action cannot be undone.').classes('text-secondary mb-4')
-                    
-                    with ui.element('div').classes('flex justify-end gap-2'):
-                        ui.button('Cancel', on_click=confirm_dialog.close).classes('btn')
-                        
-                        async def confirm_delete():
-                            try:
-                                await self.service.delete_preset(preset.id, self.user)
-                                ui.notify(f'Preset "{preset.name}" deleted', type='positive')
-                                confirm_dialog.close()
-                                await self._refresh()
-                            except Exception as e:
-                                logger.error("Failed to delete preset %s: %s", preset.id, e, exc_info=True)
-                                ui.notify(f'Failed to delete preset: {str(e)}', type='negative')
-                        
-                        ui.button('Delete', on_click=confirm_delete).classes('btn').props('color=negative')
-                
-                confirm_dialog.open()
-
-            # Determine if user can edit this preset
-            can_edit = preset.user_id == self.user.id or self.user.has_permission('SUPERADMIN')
-
-            ui.separator()
-            with ui.element('div').classes('flex justify-between mt-2'):
-                # View button on the left
-                ui.button('View YAML', icon='code', on_click=view_yaml).classes('btn').props('flat dense')
-                
-                # Edit and delete buttons on the right (only if user can edit)
-                if can_edit:
-                    with ui.element('div').classes('flex gap-2'):
-                        ui.button('Edit', icon='edit', on_click=edit_preset).classes('btn').props('flat dense color=primary')
-                        ui.button('Delete', icon='delete', on_click=delete_preset).classes('btn').props('flat dense color=negative')

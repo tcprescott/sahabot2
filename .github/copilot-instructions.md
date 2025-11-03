@@ -747,6 +747,129 @@ await dialog.show()
 - Standardized action button placement
 - Reusable helper methods reduce boilerplate
 
+### Dialog Styling Standards
+
+All dialogs in the application must follow these styling conventions for consistency:
+
+#### 1. **Use BaseDialog for All Dialogs**
+- Extend `BaseDialog` from `components.dialogs.common.base_dialog`
+- Call `create_dialog(title, icon, max_width)` in the `show()` method
+- Implement `_render_body()` to add dialog content
+- Use `await super().show()` after creating the dialog
+
+#### 2. **Dialog Structure**
+```python
+async def show(self):
+    """Display the dialog."""
+    self.create_dialog(
+        title='Dialog Title',
+        icon='icon_name',           # Material icon
+        max_width='dialog-card'     # Default width, or custom like '800px'
+    )
+    await super().show()            # Don't forget 'await'!
+
+def _render_body(self):
+    """Render dialog content."""
+    # Wrap entire body in column for consistent spacing
+    with ui.column().classes('full-width gap-md'):
+        # Use section titles
+        self.create_section_title('Section Name')
+        
+        # Use form grid for inputs
+        with self.create_form_grid(columns=2):
+            with ui.element('div'):
+                ui.input(label='Field 1')
+            with ui.element('div'):
+                ui.input(label='Field 2')
+        
+        ui.separator()  # Use plain separator (no classes needed)
+        
+        # Actions at the bottom
+        with self.create_actions_row():
+            ui.button('Cancel', on_click=self.close).classes('btn')
+            ui.button('Save', on_click=self._save).classes('btn').props('color=positive')
+```
+
+#### 3. **Validation Messages**
+Use consistent styling for validation feedback:
+```python
+# Success message
+with ui.row().classes('items-center gap-2 p-3 rounded bg-positive text-white'):
+    ui.icon('check_circle')
+    ui.label('Success message')
+
+# Error message
+with ui.row().classes('items-center gap-2 p-3 rounded bg-negative text-white'):
+    ui.icon('error')
+    ui.label('Error message')
+
+# Warning message
+with ui.row().classes('items-center gap-2 p-3 rounded bg-warning text-white'):
+    ui.icon('warning')
+    ui.label('Warning message')
+```
+
+#### 4. **View-Only Dialogs (Not Using BaseDialog)**
+For simple view dialogs in views (not reusable components), use this pattern:
+```python
+async def _view_item(self, item):
+    """View item details in a dialog."""
+    with ui.dialog() as dialog:
+        with ui.element('div').classes('card dialog-card'):
+            # Header
+            with ui.element('div').classes('card-header'):
+                with ui.row().classes('items-center justify-between w-full'):
+                    with ui.row().classes('items-center gap-2'):
+                        ui.icon('visibility').classes('icon-medium')
+                        ui.label(f'Item: {item.name}').classes('text-xl text-bold')
+                    ui.button(icon='close', on_click=dialog.close).props('flat round dense')
+            
+            # Body
+            with ui.element('div').classes('card-body'):
+                # Metadata section with icons
+                with ui.column().classes('gap-2 mb-4'):
+                    with ui.row().classes('items-center gap-2'):
+                        ui.icon('category', size='sm')
+                        ui.label('Category info').classes('text-sm')
+                    
+                    with ui.row().classes('items-center gap-2'):
+                        ui.icon('person', size='sm')
+                        ui.label('Creator info').classes('text-sm')
+                
+                ui.separator()
+                
+                # Main content
+                ui.label('Content Title').classes('font-bold mt-4 mb-2')
+                ui.label('Content goes here...')
+                
+                # Action buttons
+                with ui.row().classes('justify-end gap-2 mt-4'):
+                    ui.button('Action', on_click=some_action).classes('btn').props('color=primary')
+                    ui.button('Close', on_click=dialog.close).classes('btn')
+    
+    dialog.open()
+```
+
+#### 5. **Key CSS Classes**
+- **Dialog container**: `card dialog-card`
+- **Dialog header**: `card-header`
+- **Dialog body**: `card-body`
+- **Header icon**: `icon-medium` (2rem size)
+- **Metadata icons**: `size='sm'` (small icons inline with text)
+- **Row spacing**: `items-center gap-2` (for icon + text rows)
+- **Button styling**: `.classes('btn')` with `.props('color=positive|primary|negative')`
+
+#### 6. **Common Mistakes to Avoid**
+- ❌ Don't use generic `ui.card()` - use `ui.element('div').classes('card dialog-card')`
+- ❌ Don't forget `await super().show()` in dialog classes
+- ❌ Don't use inline background colors - use `bg-positive`, `bg-negative`, `bg-warning`
+- ❌ Don't mix dialog patterns - either extend BaseDialog OR use view-only pattern
+- ❌ Don't forget to call `dialog.open()` for view-only dialogs
+- ✅ Do use semantic icons with consistent sizing
+- ✅ Do use `text-white` with colored backgrounds for contrast
+- ✅ Do organize metadata with icon + label rows
+- ✅ Do use `ui.separator()` without custom classes
+
         await base.render(content)()
 ```
 
