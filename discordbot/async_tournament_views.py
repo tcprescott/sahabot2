@@ -6,7 +6,6 @@ Provides persistent views and buttons for race management in Discord.
 
 import discord
 from discord import ui
-from typing import Optional
 import asyncio
 import logging
 from datetime import datetime, timedelta
