@@ -11,7 +11,7 @@ Added three new fields to the `users` table:
 - `racetime_name` (VARCHAR) - RaceTime.gg username
 - `racetime_access_token` (LONGTEXT) - OAuth2 access token for API access
 
-Migration: `migrations/models/8_20251101204500_add_racetime_account_fields.py`
+Migration: `migrations/models/8_20251102185717_update.py`
 
 ### Configuration
 Added new settings in `config.py`:
@@ -52,39 +52,43 @@ Added methods:
   - Clears RaceTime fields from user record
   - Returns updated user object
 
-### API Routes
-**File**: `api/routes/racetime.py`
+### OAuth Pages
+**File**: `pages/racetime_oauth.py`
 
-Three main endpoints:
+Two NiceGUI pages for the OAuth flow:
 
-1. **GET /api/racetime/link/status**
-   - Returns current user's link status
-   - Requires authentication
-   - Rate limited
-
-2. **GET /api/racetime/link/initiate**
+1. **GET /racetime/link/initiate**
    - Starts OAuth flow
+   - Requires Discord authentication (redirects to login if not authenticated)
    - Generates CSRF state token
-   - Stores state in session
+   - Stores state in browser storage (with timestamp and user ID)
    - Redirects to RaceTime.gg authorization page
 
-3. **GET /api/racetime/link/callback**
+2. **GET /racetime/link/callback**
    - Handles OAuth callback from RaceTime.gg
    - Verifies CSRF state token
    - Exchanges authorization code for access token
    - Retrieves user info from RaceTime.gg
    - Links account via service layer
-   - Redirects to profile page
+   - Displays success/error message
+   - Provides button to navigate back to profile
 
-4. **POST /api/racetime/link/unlink**
-   - Unlinks RaceTime account
-   - Requires authentication
+### API Routes
+**File**: `api/routes/racetime.py`
+
+Two API endpoints for account status:
+
+1. **GET /api/racetime/link/status**
+   - Returns current user's link status
+   - Requires authentication (Bearer token)
    - Rate limited
 
-Helper functions for session management:
-- `_get_session_value(key)` - Safe session retrieval
-- `_set_session_value(key, value)` - Safe session storage
-- `_remove_session_value(key)` - Safe session cleanup
+2. **POST /api/racetime/link/unlink**
+   - Unlinks RaceTime account
+   - Requires authentication (Bearer token)
+   - Rate limited
+
+OAuth flow is handled via NiceGUI pages (see OAuth Pages section above).
 
 ### UI Components
 **File**: `views/user_profile/racetime_account.py`
@@ -193,23 +197,26 @@ User → /profile (RaceTime tab)
   ↓
 User clicks "Link Account"
   ↓
-/api/racetime/link/initiate
+/racetime/link/initiate (NiceGUI page)
+  • Check Discord authentication
   • Generate state token
-  • Store in session
+  • Store in browser storage (with user ID + timestamp)
   ↓
 Redirect to RaceTime.gg
   ↓
 User authorizes on RaceTime.gg
   ↓
-/api/racetime/link/callback
+/racetime/link/callback (NiceGUI page)
   • Verify state (CSRF)
   • Exchange code for token
   • Get user info
-  • Link account
+  • Link account via service
   ↓
-Redirect to /profile
+Display success/error message
   ↓
-Display linked account info
+User clicks "Go to Profile"
+  ↓
+/profile → Display linked account info
 ```
 
 ## Testing Checklist

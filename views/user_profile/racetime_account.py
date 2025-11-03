@@ -82,7 +82,7 @@ class RacetimeAccountView:
                     # Link button
                     ui.button(
                         'Link RaceTime.gg Account',
-                        on_click=lambda: ui.navigate.to('/api/racetime/link/initiate')
+                        on_click=lambda: ui.navigate.to('/racetime/link/initiate')
                     ).classes('btn btn-primary')
 
     async def _unlink_account(self) -> None:
