@@ -7,6 +7,8 @@ This module provides a singleton Discord bot that runs within the application.
 import discord
 from discord.ext import commands
 import asyncio
+import hashlib
+import json
 import logging
 from typing import Optional
 from config import settings
@@ -38,7 +40,6 @@ class DiscordBot(commands.Bot):
         )
         
         self._bot_ready = False  # Custom ready flag (don't shadow discord.py's _ready)
-        self._last_synced_commands = None  # Store hash of last synced commands
     
     async def _should_sync_commands(self) -> bool:
         """
@@ -57,11 +58,6 @@ class DiscordBot(commands.Bot):
             # Create a signature of local commands (name, description, options)
             local_signature = self._create_command_signature(local_commands)
             
-            # Check if we've synced these exact commands before
-            if self._last_synced_commands == local_signature:
-                logger.debug("Commands unchanged since last sync, skipping")
-                return False
-            
             # Fetch currently registered commands from Discord
             try:
                 registered_commands = await self.tree.fetch_commands()
@@ -77,6 +73,8 @@ class DiscordBot(commands.Bot):
             if local_signature != registered_signature:
                 logger.info("Command changes detected (local: %d, registered: %d)",
                            len(local_commands), len(registered_commands))
+                logger.debug("Local signature: %s", local_signature)
+                logger.debug("Registered signature: %s", registered_signature)
                 return True
             
             logger.info("Commands already in sync, skipping sync")
@@ -87,41 +85,54 @@ class DiscordBot(commands.Bot):
             logger.warning("Error checking if sync needed: %s, will sync", e)
             return True
     
-    def _create_command_signature(self, commands: list) -> str:
+    def _create_command_signature(self, command_list: list) -> str:
         """
         Create a signature hash of commands for comparison.
         
         Args:
-            commands: List of command objects
-            
-        Returns:
-            str: Signature representing the commands
-        """
-        import hashlib
-        import json
+            command_list: List of Discord commands (either app_commands.Command or fetched)
         
+        Returns:
+            str: SHA256 hash of command signatures
+        """
         signature_data = []
-        for cmd in sorted(commands, key=lambda c: c.name):
+        
+        for cmd in sorted(command_list, key=lambda c: c.name):
             cmd_data = {
                 'name': cmd.name,
-                'description': cmd.description,
+                'description': cmd.description or '',  # Normalize None to empty string
                 'options': []
             }
             
-            # Include parameter information if available
+            # Handle both Command objects and fetched AppCommand objects
+            # Command objects have 'parameters', AppCommand objects have 'options'
+            params = []
             if hasattr(cmd, 'parameters'):
-                for param in cmd.parameters:
-                    cmd_data['options'].append({
-                        'name': param.name,
-                        'description': param.description,
-                        'required': param.required,
-                    })
+                params = cmd.parameters
+            elif hasattr(cmd, 'options'):
+                params = cmd.options
+            
+            for param in params:
+                param_data = {
+                    'name': param.name,
+                    'description': param.description or '',  # Normalize None
+                    'required': getattr(param, 'required', False),
+                }
+                cmd_data['options'].append(param_data)
+            
+            # Sort options by name for consistency
+            cmd_data['options'] = sorted(cmd_data['options'], key=lambda x: x['name'])
             
             signature_data.append(cmd_data)
         
-        # Create hash of the signature
+        # Create deterministic JSON and hash it
         signature_json = json.dumps(signature_data, sort_keys=True)
-        return hashlib.sha256(signature_json.encode()).hexdigest()
+        signature_hash = hashlib.sha256(signature_json.encode()).hexdigest()
+        
+        logger.debug("Created signature for %d commands: %s",
+                    len(command_list), signature_hash[:16])
+        
+        return signature_hash
     
     async def setup_hook(self) -> None:
         """
@@ -151,11 +162,6 @@ class DiscordBot(commands.Bot):
                 logger.info("Syncing commands to Discord...")
                 synced = await self.tree.sync()
                 logger.info("Synced %d command(s) to Discord", len(synced))
-                
-                # Store signature of synced commands
-                self._last_synced_commands = self._create_command_signature(
-                    self.tree.get_commands()
-                )
             else:
                 logger.info("Commands already in sync with Discord")
         except Exception as e:
