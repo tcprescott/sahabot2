@@ -202,6 +202,18 @@ class UserService:
 
         return user
 
+    async def get_user_by_id(self, user_id: int) -> Optional[User]:
+        """
+        Get a user by their ID.
+
+        Args:
+            user_id: ID of the user to retrieve
+
+        Returns:
+            User: The user if found, None otherwise
+        """
+        return await self.user_repository.get_by_id(user_id)
+
     async def get_all_users(self, current_user: Optional[User], include_inactive: bool = False) -> list[User]:
         """
         Get all users (requires ADMIN permission).
