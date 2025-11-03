@@ -9,6 +9,7 @@ from nicegui import ui
 from components.base_page import BasePage
 from application.services.organization_service import OrganizationService
 from application.services.tournament_service import TournamentService
+from application.services.tournament_usage_service import TournamentUsageService
 from models import OrganizationMember
 from models.async_tournament import AsyncTournament
 from models.match_schedule import Tournament
@@ -302,6 +303,7 @@ def register():
         base = BasePage.authenticated_page(title="Organization")
         org_service = OrganizationService()
         tournament_service = TournamentService()
+        usage_service = TournamentUsageService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
@@ -310,6 +312,19 @@ def register():
         # Check if user is a member of this organization
         member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
         is_member = member is not None
+        
+        # Track tournament usage if tournament_id is provided
+        if is_member and tournament_id:
+            tournament = await Tournament.filter(id=tournament_id, organization_id=organization_id).first()
+            if tournament:
+                org = await org_service.get_organization(organization_id)
+                if org:
+                    await usage_service.track_tournament_access(
+                        user=user,
+                        tournament=tournament,
+                        organization_id=organization_id,
+                        organization_name=org.name,
+                    )
         
         async def content(page: BasePage):
             # Re-check membership inside content

@@ -103,6 +103,59 @@ async def handle_custom_task(task: ScheduledTask) -> None:
     # This can be extended based on specific requirements
 
 
+async def handle_cleanup_tournament_usage(task: ScheduledTask) -> None:
+    """
+    Handler for cleaning up old tournament usage tracking data.
+
+    This task prevents the tournament_usage table from growing indefinitely
+    by removing old entries based on configured retention policies.
+
+    Expected task_config:
+    {
+        "days_to_keep": 90,  # Keep entries from last N days (default: 90)
+        "keep_per_user": 10,  # Keep at most N entries per user (default: 10)
+        "cleanup_strategy": "both"  # "age", "count", or "both" (default: "both")
+    }
+
+    Args:
+        task: ScheduledTask to execute
+    """
+    from application.services.tournament_usage_service import TournamentUsageService
+
+    logger.info("Starting tournament usage cleanup task: %s", task.name)
+
+    # Extract configuration
+    config = task.task_config or {}
+    days_to_keep = config.get('days_to_keep', 90)
+    keep_per_user = config.get('keep_per_user', 10)
+    cleanup_strategy = config.get('cleanup_strategy', 'both')
+
+    usage_service = TournamentUsageService()
+    total_deleted = 0
+
+    try:
+        # Clean up by age
+        if cleanup_strategy in ('age', 'both'):
+            age_deleted = await usage_service.cleanup_old_usage(days_to_keep)
+            total_deleted += age_deleted
+            logger.info("Cleaned up %d entries older than %d days", age_deleted, days_to_keep)
+
+        # Clean up by count per user
+        if cleanup_strategy in ('count', 'both'):
+            count_deleted = await usage_service.cleanup_excess_usage(keep_per_user)
+            total_deleted += count_deleted
+            logger.info("Cleaned up %d excess entries (keeping %d per user)", count_deleted, keep_per_user)
+
+        logger.info(
+            "Tournament usage cleanup completed: %d total entries removed (strategy: %s)",
+            total_deleted,
+            cleanup_strategy
+        )
+    except Exception as e:
+        logger.error("Error during tournament usage cleanup: %s", e, exc_info=True)
+        raise
+
+
 def register_task_handlers() -> None:
     """
     Register all task handlers with the TaskSchedulerService.
@@ -112,5 +165,6 @@ def register_task_handlers() -> None:
     """
     TaskSchedulerService.register_task_handler(TaskType.EXAMPLE_LOG, handle_example_log)
     TaskSchedulerService.register_task_handler(TaskType.RACETIME_OPEN_ROOM, handle_racetime_open_room)
+    TaskSchedulerService.register_task_handler(TaskType.CLEANUP_TOURNAMENT_USAGE, handle_cleanup_tournament_usage)
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")

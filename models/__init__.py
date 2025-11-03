@@ -20,6 +20,7 @@ from models.async_tournament import (
     AsyncTournamentAuditLog,
 )
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
+from models.tournament_usage import TournamentUsage
 
 __all__ = [
     'User',
@@ -48,4 +49,5 @@ __all__ = [
     'ScheduledTask',
     'TaskType',
     'ScheduleType',
+    'TournamentUsage',
 ]

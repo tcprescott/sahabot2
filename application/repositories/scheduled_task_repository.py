@@ -18,7 +18,7 @@ class ScheduledTaskRepository:
 
     async def create(
         self,
-        organization_id: int,
+        organization_id: int | None,
         name: str,
         task_type: TaskType,
         schedule_type: ScheduleType,
@@ -34,7 +34,7 @@ class ScheduledTaskRepository:
         Create a new scheduled task.
 
         Args:
-            organization_id: Organization ID that owns this task
+            organization_id: Organization ID that owns this task (None for global tasks)
             name: Task name
             task_type: Type of task (TaskType enum)
             schedule_type: How the task is scheduled (ScheduleType enum)
@@ -62,7 +62,8 @@ class ScheduledTaskRepository:
             is_active=is_active,
             created_by_id=created_by_id,
         )
-        logger.info("Created scheduled task %s for organization %s", task.id, organization_id)
+        scope = "global" if organization_id is None else f"organization {organization_id}"
+        logger.info("Created scheduled task %s for %s", task.id, scope)
         return task
 
     async def get_by_id(self, task_id: int) -> Optional[ScheduledTask]:
@@ -89,6 +90,21 @@ class ScheduledTaskRepository:
             List of ScheduledTask instances
         """
         query = ScheduledTask.filter(organization_id=organization_id)
+        if active_only:
+            query = query.filter(is_active=True)
+        return await query.order_by('-created_at')
+
+    async def list_global_tasks(self, active_only: bool = False) -> List[ScheduledTask]:
+        """
+        List all global scheduled tasks (tasks with no organization).
+
+        Args:
+            active_only: If True, only return active tasks
+
+        Returns:
+            List of global ScheduledTask instances
+        """
+        query = ScheduledTask.filter(organization_id=None)
         if active_only:
             query = query.filter(is_active=True)
         return await query.order_by('-created_at')

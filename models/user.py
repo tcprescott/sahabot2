@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from .audit_log import AuditLog
     from .match_schedule import MatchPlayers, TournamentPlayers, Crew
     from .organizations import OrganizationMember
+    from .tournament_usage import TournamentUsage
 
 
 class Permission(IntEnum):
@@ -77,6 +78,7 @@ class User(Model):
     crew_memberships: fields.ReverseRelation["Crew"]
     approved_crew: fields.ReverseRelation["Crew"]
     organizations: fields.ReverseRelation["OrganizationMember"]
+    tournament_usage: fields.ReverseRelation["TournamentUsage"]
 
     class Meta:
         table = "users"

@@ -6,8 +6,10 @@ Views used by the home page.
 
 from views.home.overview import OverviewView
 from views.home.welcome import WelcomeView
+from views.home.recent_tournaments import RecentTournamentsView
 
 __all__ = [
     'OverviewView',
     'WelcomeView',
+    'RecentTournamentsView',
 ]

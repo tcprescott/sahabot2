@@ -7,6 +7,7 @@ Displays dashboard statistics, quick actions, and system status.
 from nicegui import ui
 from components import Card
 from models import User
+from views.home.recent_tournaments import RecentTournamentsView
 
 
 class OverviewView:
@@ -45,3 +46,7 @@ class OverviewView:
                     ('Permission Level', user.permission.name)
                 ]
             )
+            
+            # Recent tournaments
+            recent_view = RecentTournamentsView(user)
+            await recent_view.render()

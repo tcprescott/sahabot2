@@ -18,6 +18,7 @@ class TaskType(IntEnum):
     """Task type enum for scheduled tasks."""
     EXAMPLE_LOG = 0  # Example task that logs a message
     RACETIME_OPEN_ROOM = 1  # Open a race room on racetime.gg
+    CLEANUP_TOURNAMENT_USAGE = 2  # Clean up old tournament usage tracking data
     CUSTOM = 99  # Custom task type
 
 
@@ -33,10 +34,11 @@ class ScheduledTask(Model):
     Scheduled task model.
 
     Represents a task that can be executed at scheduled intervals or specific times.
-    All tasks are scoped to an organization for multi-tenancy.
+    Tasks can be scoped to an organization (organization-specific) or global (organization=None).
+    Built-in tasks are defined in code and loaded at startup, not stored in database.
     """
     id = fields.IntField(pk=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='scheduled_tasks')
+    organization = fields.ForeignKeyField('models.Organization', related_name='scheduled_tasks', null=True)
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     task_type = fields.IntEnumField(TaskType)
