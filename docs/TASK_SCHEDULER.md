@@ -362,10 +362,10 @@ task = await service.create_task(
 ### Schedule a Race for a Specific Time
 
 ```python
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 # Schedule a race for tomorrow at 8 PM UTC
-tomorrow_8pm = datetime.utcnow().replace(hour=20, minute=0, second=0, microsecond=0) + timedelta(days=1)
+tomorrow_8pm = datetime.now(timezone.utc).replace(hour=20, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
 task = await service.create_task(
     user=current_user,

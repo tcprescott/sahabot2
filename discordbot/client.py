@@ -25,8 +25,10 @@ class DiscordBot(commands.Bot):
     
     def __init__(self):
         """Initialize the Discord bot with required intents."""
-        # Configure intents
+        # Configure intents (avoid privileged intents when possible)
         intents = discord.Intents.default()
+        intents.guilds = True  # Explicitly enable guild events
+        # Note: members intent is privileged and not required for basic functionality
         
         # Initialize bot
         super().__init__(
@@ -36,6 +38,90 @@ class DiscordBot(commands.Bot):
         )
         
         self._ready = False
+        self._last_synced_commands = None  # Store hash of last synced commands
+    
+    async def _should_sync_commands(self) -> bool:
+        """
+        Determine if command sync is needed.
+        
+        Compares local commands with Discord's registered commands to avoid
+        unnecessary sync operations.
+        
+        Returns:
+            bool: True if sync is needed, False otherwise
+        """
+        try:
+            # Get current local commands
+            local_commands = self.tree.get_commands()
+            
+            # Create a signature of local commands (name, description, options)
+            local_signature = self._create_command_signature(local_commands)
+            
+            # Check if we've synced these exact commands before
+            if self._last_synced_commands == local_signature:
+                logger.debug("Commands unchanged since last sync, skipping")
+                return False
+            
+            # Fetch currently registered commands from Discord
+            try:
+                registered_commands = await self.tree.fetch_commands()
+            except discord.HTTPException as e:
+                # If we can't fetch, assume we need to sync
+                logger.warning("Could not fetch registered commands: %s, will sync", e)
+                return True
+            
+            # Create signature of registered commands
+            registered_signature = self._create_command_signature(registered_commands)
+            
+            # Compare signatures
+            if local_signature != registered_signature:
+                logger.info("Command changes detected (local: %d, registered: %d)",
+                           len(local_commands), len(registered_commands))
+                return True
+            
+            logger.info("Commands already in sync, skipping sync")
+            return False
+            
+        except Exception as e:
+            # On error, be safe and sync
+            logger.warning("Error checking if sync needed: %s, will sync", e)
+            return True
+    
+    def _create_command_signature(self, commands: list) -> str:
+        """
+        Create a signature hash of commands for comparison.
+        
+        Args:
+            commands: List of command objects
+            
+        Returns:
+            str: Signature representing the commands
+        """
+        import hashlib
+        import json
+        
+        signature_data = []
+        for cmd in sorted(commands, key=lambda c: c.name):
+            cmd_data = {
+                'name': cmd.name,
+                'description': cmd.description,
+                'options': []
+            }
+            
+            # Include parameter information if available
+            if hasattr(cmd, 'parameters'):
+                for param in cmd.parameters:
+                    cmd_data['options'].append({
+                        'name': param.name,
+                        'description': param.description,
+                        'required': param.required,
+                    })
+            
+            signature_data.append(cmd_data)
+        
+        # Create hash of the signature
+        signature_json = json.dumps(signature_data, sort_keys=True)
+        return hashlib.sha256(signature_json.encode()).hexdigest()
     
     async def setup_hook(self) -> None:
         """
@@ -59,10 +145,19 @@ class DiscordBot(commands.Bot):
         except Exception as e:
             logger.error("Failed to load async tournament commands: %s", e, exc_info=True)
         
-        # Sync commands to Discord
+        # Smart sync commands to Discord
         try:
-            synced = await self.tree.sync()
-            logger.info("Synced %d command(s) to Discord", len(synced))
+            if await self._should_sync_commands():
+                logger.info("Syncing commands to Discord...")
+                synced = await self.tree.sync()
+                logger.info("Synced %d command(s) to Discord", len(synced))
+                
+                # Store signature of synced commands
+                self._last_synced_commands = self._create_command_signature(
+                    self.tree.get_commands()
+                )
+            else:
+                logger.info("Commands already in sync with Discord")
         except Exception as e:
             logger.error("Failed to sync commands: %s", e, exc_info=True)
     

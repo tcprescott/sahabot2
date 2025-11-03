@@ -167,16 +167,54 @@ class OrganizationAsyncTournamentsView:
         )
         await dialog.show()
 
-    async def _check_channel_permissions(self, tournament: AsyncTournament) -> list[str]:
-        """Check permissions for a tournament's Discord channel."""
+    async def _check_channel_permissions(self, tournament: AsyncTournament, force_recheck: bool = False) -> list[str]:
+        """
+        Check permissions for a tournament's Discord channel.
+        
+        Uses cached warnings unless force_recheck is True or cache is stale.
+        
+        Args:
+            tournament: The tournament to check permissions for
+            force_recheck: If True, bypass cache and check Discord API
+            
+        Returns:
+            List of warning strings
+        """
         if not tournament.discord_channel_id:
             return []
         
+        # Use cached warnings if available and not forcing recheck
+        if not force_recheck and tournament.discord_warnings is not None:
+            logger.debug(
+                "Using cached permissions for tournament %s (checked at %s)",
+                tournament.id,
+                tournament.discord_warnings_checked_at
+            )
+            return tournament.discord_warnings
+        
+        # Check permissions via Discord API
         try:
             from application.services.discord_guild_service import DiscordGuildService
+            from datetime import datetime, timezone
+            
             discord_service = DiscordGuildService()
-            perm_check = await discord_service.check_async_tournament_channel_permissions(tournament.discord_channel_id)
+            perm_check = await discord_service.check_async_tournament_channel_permissions(
+                tournament.discord_channel_id
+            )
+            
+            # Update cache
+            tournament.discord_warnings = perm_check.warnings
+            tournament.discord_warnings_checked_at = datetime.now(timezone.utc)
+            await tournament.save(update_fields=['discord_warnings', 'discord_warnings_checked_at'])
+            
+            logger.info(
+                "Checked permissions for tournament %s: %d warnings",
+                tournament.id,
+                len(perm_check.warnings)
+            )
+            
             return perm_check.warnings
+            
         except Exception as e:
             logger.error("Error checking channel permissions for tournament %s: %s", tournament.id, e)
             return ["Could not verify channel permissions"]
@@ -200,12 +238,23 @@ class OrganizationAsyncTournamentsView:
                 ui.notify('Discord channel not found', type='negative')
                 return
 
-            # Check if bot has permission to send messages
-            if hasattr(channel, 'permissions_for'):
-                permissions = channel.permissions_for(channel.guild.me)
-                if not permissions.send_messages:
-                    ui.notify('Bot does not have permission to send messages in this channel', type='negative')
-                    return
+            # Try to check permissions if available (without requiring members intent)
+            # We'll attempt to send and let Discord reject if we don't have permission
+            can_send = True
+            if hasattr(channel, 'permissions_for') and hasattr(channel, 'guild'):
+                try:
+                    # Try to get bot member, but don't fail if we can't
+                    bot_member = channel.guild.get_member(bot.user.id)
+                    if bot_member:
+                        permissions = channel.permissions_for(bot_member)
+                        can_send = permissions.send_messages
+                        if not can_send:
+                            ui.notify('Bot does not have permission to send messages in this channel', type='negative')
+                            return
+                except Exception as perm_error:
+                    # Can't check permissions without members intent, will try sending anyway
+                    logger.debug("Could not check permissions (expected without members intent): %s", perm_error)
+            
 
             # Import Discord embed
             import discord
@@ -251,13 +300,27 @@ class OrganizationAsyncTournamentsView:
         """Render async tournaments list and actions."""
         tournaments = await self.service.list_org_tournaments(self.user, self.organization.id)
         
-        # Check permissions for all tournaments with Discord channels
+        # Use cached permissions - avoid API calls on page load
         tournament_warnings = {}
         for tournament in tournaments:
             if tournament.discord_channel_id:
-                warnings = await self._check_channel_permissions(tournament)
+                # Use cached warnings (pass force_recheck=False)
+                warnings = await self._check_channel_permissions(tournament, force_recheck=False)
                 if warnings:
                     tournament_warnings[tournament.id] = warnings
+
+        async def recheck_permissions(tournament: AsyncTournament) -> None:
+            """Force recheck of Discord permissions for a tournament."""
+            ui.notify('Checking Discord permissions...', type='info')
+            warnings = await self._check_channel_permissions(tournament, force_recheck=True)
+            
+            if warnings:
+                ui.notify(f'Found {len(warnings)} permission issue(s)', type='warning')
+            else:
+                ui.notify('All permissions OK', type='positive')
+            
+            # Refresh the view to show updated warnings
+            await self._refresh()
 
         with Card.create(title='Async Tournaments'):
             with ui.row().classes('w-full justify-between mb-2'):
@@ -294,19 +357,43 @@ class OrganizationAsyncTournamentsView:
 
                 def render_permissions_warnings(t: AsyncTournament):
                     warnings = tournament_warnings.get(t.id, [])
-                    if warnings:
-                        with ui.column().classes('gap-1'):
+                    with ui.column().classes('gap-1'):
+                        if warnings:
                             for warning in warnings:
                                 with ui.row().classes('items-center gap-1'):
                                     ui.icon('warning').classes('text-warning text-sm')
                                     ui.label(warning).classes('text-warning text-xs')
-                    else:
-                        if t.discord_channel_id:
-                            with ui.row().classes('items-center gap-sm'):
-                                ui.icon('check_circle').classes('text-positive text-sm')
-                                ui.label('OK').classes('text-positive text-xs')
                         else:
-                            ui.label('-').classes('text-secondary')
+                            if t.discord_channel_id:
+                                with ui.row().classes('items-center gap-sm'):
+                                    ui.icon('check_circle').classes('text-positive text-sm')
+                                    ui.label('OK').classes('text-positive text-xs')
+                            else:
+                                ui.label('-').classes('text-secondary')
+                        
+                        # Add recheck button for tournaments with Discord channels
+                        if t.discord_channel_id:
+                            from datetime import datetime, timezone
+                            checked_text = ''
+                            if t.discord_warnings_checked_at:
+                                # Format as relative time
+                                delta = datetime.now(timezone.utc) - t.discord_warnings_checked_at
+                                if delta.days > 0:
+                                    checked_text = f'(checked {delta.days}d ago)'
+                                elif delta.seconds > 3600:
+                                    checked_text = f'(checked {delta.seconds // 3600}h ago)'
+                                else:
+                                    checked_text = f'(checked {delta.seconds // 60}m ago)'
+                            
+                            with ui.row().classes('items-center gap-1 mt-1'):
+                                ui.button(
+                                    'Recheck',
+                                    icon='refresh',
+                                    on_click=lambda t=t: recheck_permissions(t)
+                                ).props('size=xs flat dense').classes('text-xs')
+                                if checked_text:
+                                    ui.label(checked_text).classes('text-secondary text-xs')
+
 
                 def render_runs_per_pool(t: AsyncTournament):
                     ui.label(str(t.runs_per_pool))

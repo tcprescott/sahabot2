@@ -5,7 +5,7 @@ Contains org-scoped business logic, authorization checks, and scoring algorithms
 
 from __future__ import annotations
 from typing import Optional, List, Tuple
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from dataclasses import dataclass
 from functools import cached_property
 import logging
@@ -171,6 +171,12 @@ class AsyncTournamentService:
             discord_channel_id=discord_channel_id,
             runs_per_pool=runs_per_pool,
         )
+        
+        # Cache permission warnings if channel was checked
+        if discord_channel_id and warnings:
+            tournament.discord_warnings = warnings
+            tournament.discord_warnings_checked_at = datetime.now(timezone.utc)
+            await tournament.save(update_fields=['discord_warnings', 'discord_warnings_checked_at'])
 
         await self.repo.create_audit_log(
             tournament_id=tournament.id,
@@ -200,8 +206,15 @@ class AsyncTournamentService:
             logger.warning("Unauthorized update_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None, warnings
         
+        # Get the current tournament to check if channel is changing
+        current_tournament = await self.repo.get_by_id(tournament_id, organization_id)
+        if not current_tournament:
+            return None, warnings
+        
+        channel_changed = 'discord_channel_id' in fields and fields['discord_channel_id'] != current_tournament.discord_channel_id
+        
         # Check Discord channel permissions if channel is being updated
-        if 'discord_channel_id' in fields and fields['discord_channel_id']:
+        if channel_changed and fields['discord_channel_id']:
             try:
                 from application.services.discord_guild_service import DiscordGuildService
                 discord_service = DiscordGuildService()
@@ -214,9 +227,21 @@ class AsyncTournamentService:
                         fields['discord_channel_id'],
                         ", ".join(perm_check.warnings)
                     )
+                
+                # Cache the warnings
+                fields['discord_warnings'] = perm_check.warnings
+                fields['discord_warnings_checked_at'] = datetime.now(timezone.utc)
+                
             except Exception as e:
                 logger.error("Error checking channel permissions: %s", e, exc_info=True)
                 warnings.append("Could not verify channel permissions")
+                # Invalidate cache on error
+                fields['discord_warnings'] = None
+                fields['discord_warnings_checked_at'] = None
+        elif channel_changed:
+            # Channel was removed or changed to None, clear cache
+            fields['discord_warnings'] = None
+            fields['discord_warnings_checked_at'] = None
 
         tournament = await self.repo.update(tournament_id, organization_id, **fields)
         if tournament:
@@ -555,7 +580,7 @@ class AsyncTournamentService:
             race_id,
             organization_id,
             status='in_progress',
-            start_time=datetime.utcnow(),
+            start_time=datetime.now(timezone.utc),
         )
 
         if race:
@@ -588,7 +613,7 @@ class AsyncTournamentService:
             race_id,
             organization_id,
             status='finished',
-            end_time=datetime.utcnow(),
+            end_time=datetime.now(timezone.utc),
         )
 
         if race:
@@ -674,7 +699,7 @@ class AsyncTournamentService:
 
         # Update permalink par time
         permalink.par_time = par_time_seconds
-        permalink.par_updated_at = datetime.utcnow()
+        permalink.par_updated_at = datetime.now(timezone.utc)
         await permalink.save()
 
         # Calculate scores for all finished races
@@ -692,7 +717,7 @@ class AsyncTournamentService:
                 score = 0.0
 
             race.score = score
-            race.score_updated_at = datetime.utcnow()
+            race.score_updated_at = datetime.now(timezone.utc)
             await race.save(update_fields=['score', 'score_updated_at'])
 
         logger.info("Updated scores for permalink %s (par: %s)", permalink_id, par_time_delta)

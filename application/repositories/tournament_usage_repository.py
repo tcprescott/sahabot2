@@ -135,9 +135,9 @@ class TournamentUsageRepository:
         Returns:
             int: Number of records deleted
         """
-        from datetime import datetime, timedelta
+        from datetime import datetime, timedelta, timezone
         
-        cutoff_date = datetime.utcnow() - timedelta(days=days_to_keep)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_to_keep)
         deleted_count = await TournamentUsage.filter(last_accessed__lt=cutoff_date).delete()
         
         logger.info(

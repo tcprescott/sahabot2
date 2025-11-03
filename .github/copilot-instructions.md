@@ -142,6 +142,27 @@ This application is multi-tenant. All user actions and data are scoped to Organi
   - Interactive/CLI tools where user-facing output is needed
   - Code examples in docstrings
 
+### 4. DateTime Standards
+- **Always use timezone-aware datetimes** - Never use deprecated `datetime.utcnow()`
+- **Use `datetime.now(timezone.utc)` for current UTC time**:
+  ```python
+  from datetime import datetime, timezone
+
+  # ✅ Correct - timezone-aware UTC datetime
+  current_time = datetime.now(timezone.utc)
+  
+  # ❌ Wrong - deprecated and timezone-naive
+  current_time = datetime.utcnow()  # Don't do this!
+  ```
+- **Why this matters**:
+  - Database `DatetimeField` returns timezone-aware datetimes
+  - Mixing naive and aware datetimes causes `TypeError` when calculating deltas
+  - `datetime.utcnow()` is deprecated in Python 3.12+
+- **Import pattern**:
+  ```python
+  from datetime import datetime, timezone, timedelta
+  ```
+
   ### Tenant-aware Authorization
   ```python
   from application.services.authorization_service import AuthorizationService
@@ -862,6 +883,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't create views in the root `views/` directory - always use the appropriate subdirectory
 - ❌ Don't create dialogs in the root `dialogs/` directory - always use the appropriate subdirectory
 - ❌ Don't forget `await` when calling `super().show()` in dialog classes (causes RuntimeWarning)
+- ❌ Don't use `datetime.utcnow()` - it's deprecated and timezone-naive (use `datetime.now(timezone.utc)`)
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -877,6 +899,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do keep all lines clean with no trailing whitespace
 - ✅ Do organize views into subdirectories by page (views/home/, views/admin/, views/organization/)
 - ✅ Do organize dialogs into subdirectories by view usage (dialogs/admin/, dialogs/organization/, dialogs/tournaments/, dialogs/user_profile/, dialogs/common/)
+- ✅ Do use timezone-aware datetimes: `datetime.now(timezone.utc)` for current UTC time
 
 ## References
 - NiceGUI: https://nicegui.io

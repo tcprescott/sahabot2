@@ -5,7 +5,7 @@ Tests the data access layer for scheduled tasks.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from application.repositories.scheduled_task_repository import ScheduledTaskRepository
 
@@ -60,7 +60,7 @@ class TestScheduledTaskRepository:
     async def test_create_onetime_task(self, db):
         """Test creating a one-time scheduled task."""
         repo = ScheduledTaskRepository()
-        future_time = datetime.utcnow() + timedelta(hours=1)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=1)
 
         task = await repo.create(
             organization_id=1,
@@ -213,7 +213,7 @@ class TestScheduledTaskRepository:
             interval_seconds=60,
         )
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         next_run = now + timedelta(seconds=60)
 
         updated_task = await repo.update_run_status(
@@ -231,7 +231,7 @@ class TestScheduledTaskRepository:
     async def test_list_tasks_due_to_run(self, db):
         """Test listing tasks due to run."""
         repo = ScheduledTaskRepository()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Task due to run now
         task1 = await repo.create(

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from models.api_token import ApiToken
 
 
@@ -26,7 +26,7 @@ class ApiTokenRepository:
         await token.save()
 
     async def touch_last_used(self, token: ApiToken) -> None:
-        token.last_used_at = datetime.utcnow()
+        token.last_used_at = datetime.now(timezone.utc)
         await token.save()
 
     async def list_by_user(self, user_id: int) -> list[ApiToken]:

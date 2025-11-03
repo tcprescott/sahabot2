@@ -8,7 +8,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
@@ -140,7 +140,7 @@ class AsyncTournamentCommands(commands.Cog):
         if race.thread_timeout_time:
             new_timeout = race.thread_timeout_time + timedelta(minutes=minutes)
         else:
-            base_time = race.thread_open_time or datetime.utcnow()
+            base_time = race.thread_open_time or datetime.now(timezone.utc)
             new_timeout = base_time + timedelta(minutes=20 + minutes)
 
         race.thread_timeout_time = new_timeout
@@ -226,7 +226,7 @@ class AsyncTournamentCommands(commands.Cog):
                     logger.warning("Cannot access thread for race %s", race.id)
                     continue
 
-                now = datetime.now(datetime.UTC)
+                now = datetime.now(timezone.utc)
 
                 # Send warning only if not already sent
                 if warning_time <= now < forfeit_time and not getattr(race, "warning_sent", False):
@@ -273,7 +273,7 @@ class AsyncTournamentCommands(commands.Cog):
                 # 12 hour timeout
                 timeout_time = race.start_time + timedelta(hours=12)
 
-                if datetime.utcnow() >= timeout_time:
+                if datetime.now(timezone.utc) >= timeout_time:
                     thread = self.bot.get_channel(race.discord_thread_id)
                     if thread:
                         await thread.send(

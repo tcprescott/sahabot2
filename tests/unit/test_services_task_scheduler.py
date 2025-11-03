@@ -5,7 +5,7 @@ Tests the business logic for scheduled tasks.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models.scheduled_task import TaskType, ScheduleType
 from application.services.task_scheduler_service import TaskSchedulerService
 
@@ -18,7 +18,7 @@ class TestTaskSchedulerService:
     def test_calculate_next_run_interval(self):
         """Test calculating next run time for interval tasks."""
         service = TaskSchedulerService()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         next_run = service._calculate_next_run(
             schedule_type=ScheduleType.INTERVAL,
@@ -33,7 +33,7 @@ class TestTaskSchedulerService:
     def test_calculate_next_run_cron(self):
         """Test calculating next run time for cron tasks."""
         service = TaskSchedulerService()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Daily at 14:00 (2 PM)
         next_run = service._calculate_next_run(
@@ -48,7 +48,7 @@ class TestTaskSchedulerService:
     def test_calculate_next_run_onetime_future(self):
         """Test calculating next run time for one-time tasks (future)."""
         service = TaskSchedulerService()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         future_time = now + timedelta(hours=1)
 
         next_run = service._calculate_next_run(
@@ -62,7 +62,7 @@ class TestTaskSchedulerService:
     def test_calculate_next_run_onetime_past(self):
         """Test calculating next run time for one-time tasks (past)."""
         service = TaskSchedulerService()
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         past_time = now - timedelta(hours=1)
 
         next_run = service._calculate_next_run(
