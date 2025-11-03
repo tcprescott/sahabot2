@@ -505,44 +505,43 @@ class AsyncTournamentService:
             logger.warning("Unauthorized get_leaderboard by user %s", getattr(user, 'id', None))
             return []
 
-        async with score_calculation_lock:
-            tournament = await self.repo.get_by_id(tournament_id, organization_id)
-            if not tournament:
-                return []
+        tournament = await self.repo.get_by_id(tournament_id, organization_id)
+        if not tournament:
+            return []
 
-            await tournament.fetch_related('pools')
+        await tournament.fetch_related('pools')
 
-            # Get all user IDs who have participated
-            all_races = await AsyncTournamentRace.filter(tournament_id=tournament_id).values('user_id')
-            user_ids = list(set(r['user_id'] for r in all_races))
+        # Get all user IDs who have participated
+        all_races = await AsyncTournamentRace.filter(tournament_id=tournament_id).values('user_id')
+        user_ids = list(set(r['user_id'] for r in all_races))
 
-            leaderboard: List[LeaderboardEntry] = []
+        leaderboard: List[LeaderboardEntry] = []
 
-            for user_id in user_ids:
-                races_list: List[Optional[AsyncTournamentRace]] = []
+        for user_id in user_ids:
+            races_list: List[Optional[AsyncTournamentRace]] = []
 
-                # For each pool, get runs_per_pool races
-                for pool in tournament.pools:
-                    pool_races = await AsyncTournamentRace.filter(
-                        user_id=user_id,
-                        tournament_id=tournament_id,
-                        permalink__pool_id=pool.id,
-                        status__in=['finished', 'forfeit', 'disqualified'],
-                        reattempted=False,
-                    ).order_by('-score').limit(tournament.runs_per_pool)
+            # For each pool, get runs_per_pool races
+            for pool in tournament.pools:
+                pool_races = await AsyncTournamentRace.filter(
+                    user_id=user_id,
+                    tournament_id=tournament_id,
+                    permalink__pool_id=pool.id,
+                    status__in=['finished', 'forfeit', 'disqualified'],
+                    reattempted=False,
+                ).order_by('score').limit(tournament.runs_per_pool)
 
-                    for i in range(tournament.runs_per_pool):
-                        try:
-                            races_list.append(pool_races[i])
-                        except IndexError:
-                            races_list.append(None)
+                for i in range(tournament.runs_per_pool):
+                    try:
+                        races_list.append(pool_races[i])
+                    except IndexError:
+                        races_list.append(None)
 
-                participant_user = await User.get(id=user_id)
-                entry = LeaderboardEntry(user=participant_user, races=races_list)
-                leaderboard.append(entry)
+            participant_user = await User.get(id=user_id)
+            entry = LeaderboardEntry(user=participant_user, races=races_list)
+            leaderboard.append(entry)
 
-            # Sort by score descending
-            leaderboard.sort(key=lambda e: e.score, reverse=True)
+        # Sort by score descending
+        leaderboard.sort(key=lambda e: e.score, reverse=True)
 
-            logger.info("Generated leaderboard for tournament %s with %s entries", tournament_id, len(leaderboard))
-            return leaderboard
+        logger.info("Generated leaderboard for tournament %s with %s entries", tournament_id, len(leaderboard))
+        return leaderboard
