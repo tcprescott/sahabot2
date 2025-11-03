@@ -51,6 +51,13 @@ class DiscordBot(commands.Bot):
             logger.info("Loaded test commands")
         except Exception as e:
             logger.error("Failed to load test commands: %s", e, exc_info=True)
+
+        # Load async tournament cog
+        try:
+            await self.load_extension('discordbot.commands.async_tournament')
+            logger.info("Loaded async tournament commands")
+        except Exception as e:
+            logger.error("Failed to load async tournament commands: %s", e, exc_info=True)
         
         # Sync commands to Discord
         try:
