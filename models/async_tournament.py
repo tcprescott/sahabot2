@@ -29,6 +29,7 @@ class AsyncTournament(Model):
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     is_active = fields.BooleanField(default=True)
+    hide_results = fields.BooleanField(default=False)  # Hide other players' results until tournament ends
     discord_channel_id = fields.BigIntField(null=True, unique=True)  # Discord channel for race actions
     runs_per_pool = fields.SmallIntField(default=1)  # Number of runs each player can do per pool
     created_at = fields.DatetimeField(auto_now_add=True)

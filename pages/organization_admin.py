@@ -24,7 +24,7 @@ from views.organization import (
 def register():
     """Register organization admin route."""
 
-    @ui.page('/admin/organizations/{organization_id}')
+    @ui.page('/orgs/{organization_id}/admin')
     async def organization_admin_page(organization_id: int):
         """Organization admin page with scoped authorization checks."""
         base = BasePage.authenticated_page(title="Organization Admin")
@@ -43,7 +43,7 @@ def register():
             # Re-check authorization inside content
             if not allowed:
                 ui.notify('You do not have access to administer this organization.', color='negative')
-                ui.navigate.to('/admin')
+                ui.navigate.to(f'/org/{organization_id}')
                 return
 
             org = await service.get_organization(organization_id)
@@ -52,7 +52,7 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Organization not found')
                     with ui.element('div').classes('card-body'):
-                        ui.button('Back to Admin', on_click=lambda: ui.navigate.to('/admin')).classes('btn')
+                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/org')).classes('btn')
                 return
 
             # Register content loaders for different sections
@@ -158,7 +158,7 @@ def register():
 
         # Create sidebar items (conditionally for non-admins)
         sidebar_items = [
-            base.create_nav_link('Back to Admin', 'arrow_back', '/admin'),
+            base.create_nav_link('Back to Organization', 'arrow_back', f'/org/{organization_id}'),
             base.create_separator(),
         ]
 

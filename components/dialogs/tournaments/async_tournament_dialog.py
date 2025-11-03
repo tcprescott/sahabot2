@@ -42,6 +42,7 @@ class AsyncTournamentDialog(BaseDialog):
         self.name_input: Optional[ui.input] = None
         self.description_input: Optional[ui.textarea] = None
         self.is_active_switch: Optional[ui.switch] = None
+        self.hide_results_switch: Optional[ui.switch] = None
         self.runs_per_pool_input: Optional[ui.number] = None
         self.discord_channel_select: Optional[ui.select] = None
         self.manual_channel_input: Optional[ui.input] = None
@@ -100,6 +101,14 @@ class AsyncTournamentDialog(BaseDialog):
                     precision=0
                 ).classes('w-full').props('outlined')
                 ui.label('How many times each pool can be attempted').classes('text-sm text-secondary')
+
+        with self.create_form_grid(columns=1):
+            with ui.element('div'):
+                self.hide_results_switch = ui.switch(
+                    text='Hide Other Players\' Results',
+                    value=self.tournament.hide_results if self.tournament else False
+                )
+                ui.label('Hide run information from other players until the tournament ends').classes('text-sm text-secondary')
 
         ui.separator().classes('my-4')
 
@@ -190,6 +199,7 @@ class AsyncTournamentDialog(BaseDialog):
             'name': self.name_input.value.strip(),
             'description': self.description_input.value.strip() if self.description_input and self.description_input.value else None,
             'is_active': bool(self.is_active_switch.value) if self.is_active_switch else True,
+            'hide_results': bool(self.hide_results_switch.value) if self.hide_results_switch else False,
             'runs_per_pool': int(self.runs_per_pool_input.value),
             'discord_channel_id': discord_channel_id,
         }

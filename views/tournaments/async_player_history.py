@@ -32,6 +32,16 @@ class AsyncPlayerHistoryView:
             ui.label('Player not found').classes('text-danger')
             return
 
+        # Check if results should be hidden
+        is_viewing_own_history = self.current_user.id == player.id
+        if self.tournament.hide_results and self.tournament.is_active and not is_viewing_own_history:
+            with Card.create(title=f'{self.tournament.name} - {player.discord_username}'):
+                with ui.element('div').classes('text-center py-8'):
+                    ui.icon('visibility_off').classes('text-secondary icon-large')
+                    ui.label('Player Results Hidden').classes('text-secondary text-lg mt-4')
+                    ui.label('Player results will be visible after the tournament ends').classes('text-secondary mt-2')
+            return
+
         with Card.create(title=f'{self.tournament.name} - {player.discord_username}'):
             # Get player's races
             races = await self.service.get_user_races(

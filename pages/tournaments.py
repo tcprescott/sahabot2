@@ -63,6 +63,11 @@ def register():
         member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
         is_member = member is not None
         
+        # Check if user can access admin panel
+        can_admin = await org_service.user_can_admin_org(user, organization_id)
+        can_manage_tournaments = await org_service.user_can_manage_tournaments(user, organization_id)
+        can_access_admin = can_admin or can_manage_tournaments
+        
         # Get active tournaments for sidebar
         active_async_tournaments = await AsyncTournament.filter(
             organization_id=organization_id,
@@ -114,6 +119,13 @@ def register():
             base.create_nav_link('Tournaments', 'emoji_events', f'/org/{organization_id}/tournament'),
             base.create_nav_link('Async Tournaments', 'schedule', f'/org/{organization_id}/async'),
         ]
+        
+        # Add admin link if user has permissions
+        if can_access_admin:
+            sidebar_items.append(base.create_separator())
+            sidebar_items.append(
+                base.create_nav_link('Administration', 'admin_panel_settings', f'/orgs/{organization_id}/admin')
+            )
         
         # Add active tournament links if there are any
         if active_tournaments or active_async_tournaments:

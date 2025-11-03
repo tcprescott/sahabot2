@@ -88,7 +88,7 @@ class UserOrganizationsView:
                         can_admin = await self.service.user_can_admin_org(self.user, m.organization.id)
                         if can_admin:
                             ui.button('Admin Panel', icon='admin_panel_settings',
-                                    on_click=lambda org=m.organization: ui.navigate.to(f'/admin/organizations/{org.id}')).classes('btn')
+                                    on_click=lambda org=m.organization: ui.navigate.to(f'/orgs/{org.id}/admin')).classes('btn')
 
                         ui.button('Leave', icon='exit_to_app',
                                 on_click=lambda org=m.organization: self._leave_organization(org.id, org.name)).props('color=warning').classes('btn')

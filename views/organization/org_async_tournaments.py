@@ -92,6 +92,7 @@ class OrganizationAsyncTournamentsView:
                 name=data['name'],
                 description=data.get('description'),
                 is_active=data.get('is_active', True),
+                hide_results=data.get('hide_results', False),
                 discord_channel_id=data.get('discord_channel_id'),
                 runs_per_pool=data.get('runs_per_pool', 1),
             )

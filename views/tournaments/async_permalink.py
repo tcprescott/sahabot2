@@ -43,7 +43,11 @@ class AsyncPermalinkView:
                 with ui.row().classes('gap-4'):
                     ui.label(f'Pool: {permalink.pool.name}').classes('font-weight-bold')
                     if permalink.par_time is not None:
-                        ui.label(f'Par Time: {permalink.par_time_formatted}').classes('badge badge-info')
+                        # Hide par time if results are hidden and tournament is active
+                        if not (self.tournament.hide_results and self.tournament.is_active):
+                            ui.label(f'Par Time: {permalink.par_time_formatted}').classes('badge badge-info')
+                        else:
+                            ui.label('Par Time: Hidden').classes('badge badge-info')
 
                 ui.link(permalink.url, permalink.url, new_tab=True)
 
@@ -51,6 +55,14 @@ class AsyncPermalinkView:
                     with ui.element('div').classes('mt-2'):
                         ui.label('Notes:').classes('font-weight-bold')
                         ui.markdown(permalink.notes)
+
+            # Check if results should be hidden
+            if self.tournament.hide_results and self.tournament.is_active:
+                with ui.element('div').classes('text-center mt-4'):
+                    ui.icon('visibility_off').classes('text-secondary icon-large')
+                    ui.label('Race Results Hidden').classes('text-secondary text-lg mt-4')
+                    ui.label('Race results will be visible after the tournament ends').classes('text-secondary mt-2')
+                return
 
             # Get races for this permalink
             races = await self.service.get_permalink_races(

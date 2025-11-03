@@ -128,6 +128,7 @@ class AsyncTournamentService:
         name: str,
         description: Optional[str] = None,
         is_active: bool = True,
+        hide_results: bool = False,
         discord_channel_id: Optional[int] = None,
         runs_per_pool: int = 1,
     ) -> Tuple[Optional[AsyncTournament], List[str]]:
@@ -166,6 +167,7 @@ class AsyncTournamentService:
             name=name,
             description=description,
             is_active=is_active,
+            hide_results=hide_results,
             discord_channel_id=discord_channel_id,
             runs_per_pool=runs_per_pool,
         )

@@ -404,11 +404,11 @@ Messages with underscores are automatically converted to spaces and title-cased.
 **Example Usage:**
 ```python
 # After successful operation, redirect with success message
-ui.navigate.to('/admin/organizations/1?view=discord_servers&success=discord_server_linked')
+ui.navigate.to('/orgs/1/admin?view=discord_servers&success=discord_server_linked')
 # User sees: "Discord Server Linked" (green notification)
 
 # After failed operation, redirect with error message
-ui.navigate.to('/admin/organizations/1?view=members&error=failed_to_add_member')
+ui.navigate.to('/orgs/1/admin?view=members&error=failed_to_add_member')
 # User sees: "Failed To Add Member" (red notification)
 
 # For informational messages
@@ -420,7 +420,7 @@ ui.navigate.to('/org/123?view=matches&message=match_rescheduled')
 For pages using `use_dynamic_content=True`, use `?view=section_name` to load specific views:
 ```python
 # Redirect to specific view within organization admin
-ui.navigate.to('/admin/organizations/1?view=discord_servers')
+ui.navigate.to('/orgs/1/admin?view=discord_servers')
 # Loads the discord_servers view automatically
 ```
 

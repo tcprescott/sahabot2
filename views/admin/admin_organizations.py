@@ -57,7 +57,7 @@ class AdminOrganizationsView:
         """Render actions for a single organization row."""
         with ui.element('div').classes('flex gap-2'):
             ui.button('Edit', icon='edit', on_click=lambda: self._open_edit(org)).classes('btn')
-            ui.button('Manage', icon='settings', on_click=lambda: ui.navigate.to(f'/admin/organizations/{org.id}')).classes('btn')
+            ui.button('Manage', icon='settings', on_click=lambda: ui.navigate.to(f'/orgs/{org.id}/admin')).classes('btn')
 
     async def _open_create(self) -> None:
         dialog = OrganizationDialog(on_save=self._refresh)

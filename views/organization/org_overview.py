@@ -23,6 +23,13 @@ class OrganizationOverviewView:
 
     async def render(self) -> None:
         """Render the organization overview."""
+        # Check if user can admin this org
+        from application.services.organization_service import OrganizationService
+        org_service = OrganizationService()
+        can_admin = await org_service.user_can_admin_org(self.user, self.organization.id)
+        can_manage_tournaments = await org_service.user_can_manage_tournaments(self.user, self.organization.id)
+        can_access_admin = can_admin or can_manage_tournaments
+        
         # Get member count
         member_count = await OrganizationMember.filter(organization_id=self.organization.id).count()
         
@@ -41,7 +48,16 @@ class OrganizationOverviewView:
         # Welcome card
         with Card.create(title='Organization Overview'):
             with ui.column().classes('gap-md'):
-                ui.label(f'Welcome to {self.organization.name}').classes('text-xl')
+                with ui.row().classes('w-full items-center justify-between'):
+                    ui.label(f'Welcome to {self.organization.name}').classes('text-xl')
+                    # Admin button if user has permissions
+                    if can_access_admin:
+                        ui.button(
+                            'Administration',
+                            icon='admin_panel_settings',
+                            on_click=lambda: ui.navigate.to(f'/orgs/{self.organization.id}/admin')
+                        ).classes('btn btn-primary')
+                
                 if self.organization.description:
                     ui.label(self.organization.description).classes('text-secondary')
                 

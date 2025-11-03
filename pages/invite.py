@@ -67,7 +67,7 @@ def register():
                         success, error = await invite_service.use_invite(slug, page.user.id)
                         if success:
                             ui.notify('Successfully joined the organization!', type='positive')
-                            ui.navigate.to(f'/admin/organizations/{org.id}')
+                            ui.navigate.to(f'/org/{org.id}')
                         else:
                             ui.notify(error or 'Failed to join organization', type='negative')
 

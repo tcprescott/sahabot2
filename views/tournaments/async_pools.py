@@ -113,10 +113,13 @@ class AsyncPoolsView:
                 permalink_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{permalink.id}'
                 ui.link(permalink.url, permalink_link)
 
-                # Show par time and notes
+                # Show par time and notes (hide par time if results are hidden and tournament is active)
                 with ui.element('div').classes('text-sm text-secondary'):
                     if permalink.par_time is not None:
-                        ui.label(f'Par: {permalink.par_time_formatted}')
+                        if not (self.tournament.hide_results and self.tournament.is_active):
+                            ui.label(f'Par: {permalink.par_time_formatted}')
+                        else:
+                            ui.label('Par: Hidden')
                     if permalink.notes:
                         ui.label(f' - {permalink.notes}')
 

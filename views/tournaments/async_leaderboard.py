@@ -22,6 +22,11 @@ class AsyncLeaderboardView:
 
     async def render(self):
         """Render the leaderboard view."""
+        # Check if results should be hidden
+        if self.tournament.hide_results and self.tournament.is_active:
+            await self._render_hidden_state()
+            return
+        
         # Get leaderboard
         leaderboard = await self.service.get_leaderboard(
             self.user,
@@ -41,6 +46,21 @@ class AsyncLeaderboardView:
             await self._render_empty_state()
         else:
             await self._render_leaderboard_table(leaderboard, pools)
+
+    async def _render_hidden_state(self):
+        """Render hidden state when results are private."""
+        with Card.create(title=f'{self.tournament.name} - Leaderboard'):
+            with ui.element('div').classes('flex flex-wrap justify-between items-center gap-md'):
+                # Description
+                if self.tournament.description:
+                    with ui.element('div').classes('flex-grow'):
+                        ui.markdown(self.tournament.description)
+        
+        with Card.create(title='Standings'):
+            with ui.element('div').classes('text-center py-8'):
+                ui.icon('visibility_off').classes('text-secondary icon-large')
+                ui.label('Results Hidden').classes('text-secondary text-lg mt-4')
+                ui.label('Player results will be visible after the tournament ends').classes('text-secondary mt-2')
 
     async def _render_header(self, leaderboard: list[LeaderboardEntry]):
         """Render tournament header with stats."""
