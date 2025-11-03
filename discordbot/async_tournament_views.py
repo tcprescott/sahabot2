@@ -13,7 +13,6 @@ from slugify import slugify
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from application.services.async_tournament_service import AsyncTournamentService
-from application.repositories.async_tournament_repository import AsyncTournamentRepository
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,6 @@ class AsyncTournamentMainView(ui.View):
     async def new_race(self, interaction: discord.Interaction, button: ui.Button):
         """Handle new race button click."""
         # Get tournament for this channel
-        repo = AsyncTournamentRepository()
         tournament = await AsyncTournament.get_or_none(discord_channel_id=interaction.channel_id)
 
         if not tournament:

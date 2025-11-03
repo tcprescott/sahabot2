@@ -166,7 +166,7 @@ class AsyncTournamentRepository:
         if status is not None:
             filters['status'] = status
 
-        return await AsyncTournamentRace.filter(**filters).all()
+        return await AsyncTournamentRace.filter(**filters).prefetch_related('permalink').all()
 
     async def get_race_by_id(
         self,
@@ -202,7 +202,7 @@ class AsyncTournamentRepository:
             permalink_id=permalink_id,
             user_id=user_id,
             discord_thread_id=discord_thread_id,
-            thread_open_time=datetime.utcnow() if discord_thread_id else None,
+            thread_open_time=datetime.now(datetime.UTC) if discord_thread_id else None,
         )
         logger.info("Created race %s for user %s in tournament %s", race.id, user_id, tournament_id)
         return race

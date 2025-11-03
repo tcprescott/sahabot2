@@ -14,7 +14,6 @@ from tortoise.models import Model
 
 if TYPE_CHECKING:
     from .organizations import Organization
-    from .user import User
 
 
 class AsyncTournament(Model):

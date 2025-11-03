@@ -266,6 +266,23 @@ class AsyncTournamentService:
 
         return await self.repo.list_races(tournament_id, organization_id, user_id=user.id)
 
+    async def get_active_races_for_user(
+        self,
+        user: User,
+        organization_id: int,
+        tournament_id: int
+    ) -> List[AsyncTournamentRace]:
+        """Get active (pending or in-progress) races for a user in a tournament."""
+        is_member = await self.org_service.is_member(user, organization_id)
+        if not is_member:
+            return []
+
+        return await AsyncTournamentRace.filter(
+            user_id=user.id,
+            tournament_id=tournament_id,
+            status__in=['pending', 'in_progress']
+        ).all()
+
     async def create_race(
         self,
         user: User,
@@ -472,10 +489,12 @@ class AsyncTournamentService:
         self,
         user: Optional[User],
         organization_id: int,
-        tournament_id: int
+        tournament_id: int,
+        system_task: bool = False,
     ) -> bool:
         """Recalculate all scores for a tournament."""
-        if not await self.can_manage_async_tournaments(user, organization_id):
+        # Allow system tasks to bypass authorization
+        if not system_task and not await self.can_manage_async_tournaments(user, organization_id):
             logger.warning("Unauthorized calculate_tournament_scores by user %s", getattr(user, 'id', None))
             return False
 
@@ -515,6 +534,9 @@ class AsyncTournamentService:
         all_races = await AsyncTournamentRace.filter(tournament_id=tournament_id).values('user_id')
         user_ids = list(set(r['user_id'] for r in all_races))
 
+        # Batch fetch all users to avoid N+1 queries
+        users_dict = {u.id: u for u in await User.filter(id__in=user_ids).all()}
+
         leaderboard: List[LeaderboardEntry] = []
 
         for user_id in user_ids:
@@ -528,7 +550,7 @@ class AsyncTournamentService:
                     permalink__pool_id=pool.id,
                     status__in=['finished', 'forfeit', 'disqualified'],
                     reattempted=False,
-                ).order_by('score').limit(tournament.runs_per_pool)
+                ).order_by('-score').limit(tournament.runs_per_pool)
 
                 for i in range(tournament.runs_per_pool):
                     try:
@@ -536,9 +558,10 @@ class AsyncTournamentService:
                     except IndexError:
                         races_list.append(None)
 
-            participant_user = await User.get(id=user_id)
-            entry = LeaderboardEntry(user=participant_user, races=races_list)
-            leaderboard.append(entry)
+            participant_user = users_dict.get(user_id)
+            if participant_user:
+                entry = LeaderboardEntry(user=participant_user, races=races_list)
+                leaderboard.append(entry)
 
         # Sort by score descending
         leaderboard.sort(key=lambda e: e.score, reverse=True)

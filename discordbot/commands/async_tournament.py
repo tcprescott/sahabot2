@@ -7,7 +7,6 @@ Admin commands for managing async tournaments via Discord.
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
-from typing import Optional
 import logging
 from datetime import datetime, timedelta
 
@@ -227,7 +226,7 @@ class AsyncTournamentCommands(commands.Cog):
                     logger.warning("Cannot access thread for race %s", race.id)
                     continue
 
-                now = datetime.utcnow()
+                now = datetime.now(datetime.UTC)
 
                 # Send warning only if not already sent
                 if warning_time <= now < forfeit_time and not getattr(race, "warning_sent", False):
@@ -306,7 +305,8 @@ class AsyncTournamentCommands(commands.Cog):
                     await self.service.calculate_tournament_scores(
                         user=None,  # System task, no user
                         organization_id=tournament.organization_id,
-                        tournament_id=tournament.id
+                        tournament_id=tournament.id,
+                        system_task=True,  # Bypass authorization for automated task
                     )
                 except Exception as e:
                     logger.error("Error calculating scores for tournament %s: %s", tournament.id, e)
