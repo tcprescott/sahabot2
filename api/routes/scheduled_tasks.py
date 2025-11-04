@@ -241,3 +241,35 @@ async def delete_scheduled_task(
 
     if not success:
         raise HTTPException(status_code=404, detail="Scheduled task not found or insufficient permissions")
+
+
+@router.get(
+    "/scheduler/status",
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Get Scheduler Status",
+    description="Get the current status of the task scheduler including built-in tasks. Requires authentication.",
+    responses={
+        200: {"description": "Scheduler status retrieved successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def get_scheduler_status(
+    current_user: User = Depends(get_current_user)
+) -> dict:
+    """
+    Get task scheduler status.
+
+    Returns the current status of the scheduler and all built-in tasks.
+    Useful for debugging and monitoring.
+
+    Args:
+        current_user: Authenticated user making the request
+
+    Returns:
+        dict: Scheduler status including built-in task execution info
+    """
+    return {
+        "scheduler_running": TaskSchedulerService.is_running(),
+        "builtin_tasks": TaskSchedulerService.get_builtin_tasks_with_status(active_only=False),
+    }

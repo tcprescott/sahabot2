@@ -490,14 +490,20 @@ class TaskSchedulerService:
         last_run = cls._builtin_tasks_last_run.get(task.task_id)
         
         if last_run is None:
-            # Never run before - check if we should run now
-            next_run = cls._calculate_next_run(
-                schedule_type=task.schedule_type,
-                interval_seconds=task.interval_seconds,
-                cron_expression=task.cron_expression,
-                from_time=now - timedelta(seconds=1),  # Slightly in the past to catch immediate tasks
-            )
-            return next_run is not None and next_run <= now
+            # Never run before
+            # For interval tasks, run immediately on first check
+            # For cron tasks, calculate next run from now
+            if task.schedule_type == ScheduleType.INTERVAL:
+                return True  # Run immediately on first check
+            else:
+                # For cron/one-time, calculate next run from now
+                next_run = cls._calculate_next_run(
+                    schedule_type=task.schedule_type,
+                    interval_seconds=task.interval_seconds,
+                    cron_expression=task.cron_expression,
+                    from_time=now,
+                )
+                return next_run is not None and next_run <= now
         
         # Calculate next run from last run
         next_run = cls._calculate_next_run(
