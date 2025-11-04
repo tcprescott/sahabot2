@@ -10,6 +10,7 @@ import discord
 from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
+from models import SYSTEM_USER_ID
 from application.services.task_scheduler_service import TaskSchedulerService
 from application.services.async_tournament_service import AsyncTournamentService
 from discordbot.client import get_bot_instance
@@ -242,7 +243,7 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
                     tournament_id=race.tournament_id,
                     action="auto_forfeit",
                     details=f"Race {race.id} automatically forfeited (pending timeout)",
-                    user_id=None,
+                    user_id=SYSTEM_USER_ID,
                 )
 
         logger.info("Completed async tournament pending race timeout task")
@@ -308,7 +309,7 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
                     tournament_id=race.tournament_id,
                     action="auto_forfeit",
                     details=f"Race {race.id} automatically forfeited ({max_hours} hour timeout)",
-                    user_id=None,
+                    user_id=SYSTEM_USER_ID,
                 )
 
         logger.info("Completed async tournament in-progress race timeout task")

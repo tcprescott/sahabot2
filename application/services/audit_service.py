@@ -32,7 +32,7 @@ class AuditService:
         Log a user action.
 
         Args:
-            user: User who performed the action (None for system actions)
+            user: User who performed the action (use SYSTEM_USER_ID for system actions, None for unknown)
             action: Action name/type
             details: Additional details about the action
             ip_address: IP address of the user

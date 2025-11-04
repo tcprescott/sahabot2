@@ -5,7 +5,7 @@ This module contains all business logic related to user management.
 """
 
 import logging
-from models import User, Permission
+from models import User, Permission, SYSTEM_USER_ID
 from typing import Optional
 from application.repositories.user_repository import UserRepository
 from application.services.authorization_service import AuthorizationService
@@ -83,7 +83,7 @@ class UserService:
         # Emit user created event
         event = UserCreatedEvent(
             entity_id=user.id,
-            user_id=None,  # System/OAuth action
+            user_id=SYSTEM_USER_ID,  # System/OAuth action
             organization_id=None,  # Not org-specific
             discord_id=discord_id,
             discord_username=discord_username,

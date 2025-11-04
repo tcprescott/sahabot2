@@ -230,10 +230,11 @@ Events can be manually emitted for testing:
 
 ```python
 from application.events import EventBus, RacetimeRaceStatusChangedEvent
+from models import SYSTEM_USER_ID
 
 # Emit test event
 await EventBus.emit(RacetimeRaceStatusChangedEvent(
-    user_id=None,
+    user_id=SYSTEM_USER_ID,
     entity_id="alttpr/test-race-1234",
     category="alttpr",
     room_slug="alttpr/test-race-1234",

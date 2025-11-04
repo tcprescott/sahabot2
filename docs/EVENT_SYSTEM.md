@@ -111,9 +111,11 @@ class UserService:
         )
 
         # 2. Emit the event (fire-and-forget)
+        from models import SYSTEM_USER_ID
+        
         event = UserCreatedEvent(
             entity_id=user.id,
-            user_id=None,  # System action (no acting user)
+            user_id=SYSTEM_USER_ID,  # System action (no acting user)
             organization_id=None,  # Not org-specific
             discord_id=discord_id,
             discord_username=username

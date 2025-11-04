@@ -409,8 +409,10 @@ The `SahaRaceHandler` class (in `racetime/client.py`) overrides the `race_data()
 Events are emitted asynchronously via the `EventBus`:
 
 ```python
+from models import SYSTEM_USER_ID
+
 await EventBus.emit(RacetimeRaceStatusChangedEvent(
-    user_id=None,  # System event
+    user_id=SYSTEM_USER_ID,  # System event
     entity_id=room_slug,
     category=category,
     room_slug=room_slug,
@@ -539,10 +541,11 @@ You can manually emit events for testing:
 
 ```python
 from application.events import EventBus, RacetimeRaceStatusChangedEvent
+from models import SYSTEM_USER_ID
 
 # Emit a test event
 await EventBus.emit(RacetimeRaceStatusChangedEvent(
-    user_id=None,
+    user_id=SYSTEM_USER_ID,
     entity_id="alttpr/test-race-1234",
     category="alttpr",
     room_slug="alttpr/test-race-1234",

@@ -179,9 +179,11 @@ tests/unit/test_event_system.py::TestEventBus::test_unregister_all_handlers_for_
 user = await repository.create(discord_id=123, username="alice")
 
 # 2. Service emits event (fire-and-forget)
+from models import SYSTEM_USER_ID
+
 event = UserCreatedEvent(
     entity_id=user.id,           # Entity context
-    user_id=None,                # Acting user (system)
+    user_id=SYSTEM_USER_ID,      # Acting user (system)
     organization_id=None,        # Org context
     discord_id=123,              # Domain data
     discord_username="alice"     # Domain data
