@@ -15,6 +15,7 @@ from views.tournament_admin import (
     TournamentMatchesView,
     TournamentPlayersView,
     TournamentRacetimeSettingsView,
+    TournamentRacetimeChatCommandsView,
     TournamentSettingsView,
 )
 
@@ -97,6 +98,15 @@ def register():
                         view = TournamentRacetimeSettingsView(page.user, org, tournament)
                         await view.render()
 
+            async def load_chat_commands():
+                """Load chat commands."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = TournamentRacetimeChatCommandsView(page.user, org, tournament)
+                        await view.render()
+
             async def load_settings():
                 """Load tournament settings."""
                 container = page.get_dynamic_content_container()
@@ -111,6 +121,7 @@ def register():
             page.register_content_loader('matches', load_matches)
             page.register_content_loader('players', load_players)
             page.register_content_loader('racetime', load_racetime)
+            page.register_content_loader('chat-commands', load_chat_commands)
             page.register_content_loader('settings', load_settings)
 
             # Load initial content only if no view parameter was specified
@@ -125,6 +136,7 @@ def register():
             base.create_sidebar_item_with_loader('Matches', 'event', 'matches'),
             base.create_sidebar_item_with_loader('Players', 'people', 'players'),
             base.create_sidebar_item_with_loader('RaceTime Settings', 'settings', 'racetime'),
+            base.create_sidebar_item_with_loader('Chat Commands', 'chat', 'chat-commands'),
             base.create_sidebar_item_with_loader('Settings', 'tune', 'settings'),
         ]
 

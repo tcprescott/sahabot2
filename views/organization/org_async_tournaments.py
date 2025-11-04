@@ -407,12 +407,17 @@ class OrganizationAsyncTournamentsView:
                                 icon='send',
                                 on_click=lambda t=t: self._post_embed_to_discord(t)
                             ).props('color=info').classes('btn')
-                        
+
+                        ui.button(
+                            'Admin',
+                            icon='admin_panel_settings',
+                            on_click=lambda t=t: ui.navigate.to(f'/org/{self.organization.id}/async/{t.id}/admin')
+                        ).classes('btn btn-primary')
                         ui.button(
                             'Manage',
                             icon='settings',
                             on_click=lambda t=t: ui.navigate.to(f'/org/{self.organization.id}/async/{t.id}/pools')
-                        ).classes('btn btn-primary')
+                        ).classes('btn')
                         ui.button(
                             'Edit',
                             icon='edit',

@@ -59,6 +59,11 @@ from components.dialogs.user_profile import (
     RequestOrganizationDialog,
 )
 
+# Racetime dialogs
+from components.dialogs.racetime import (
+    RacetimeChatCommandDialog,
+)
+
 __all__ = [
     # Common
     'BaseDialog',
@@ -98,4 +103,6 @@ __all__ = [
     'EditPermissionDialog',
     'ManagePermissionsDialog',
     'RequestOrganizationDialog',
+    # Racetime
+    'RacetimeChatCommandDialog',
 ]

@@ -25,9 +25,10 @@ import logging
 from typing import Optional
 import aiohttp
 from racetime_bot import Bot, RaceHandler, monitor_cmd
-from models import BotStatus, SYSTEM_USER_ID
+from models import BotStatus, SYSTEM_USER_ID, User
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
+from application.services.racetime_chat_command_service import RacetimeChatCommandService
 from application.events import (
     EventBus,
     RacetimeRaceStatusChangedEvent,
@@ -43,6 +44,22 @@ from config import settings
 # Configure logging
 logger = logging.getLogger(__name__)
 
+# Global command service instance (shared across all handlers)
+_command_service: Optional[RacetimeChatCommandService] = None
+
+
+def _get_command_service() -> RacetimeChatCommandService:
+    """Get or create the global command service instance."""
+    global _command_service
+    if _command_service is None:
+        _command_service = RacetimeChatCommandService()
+        # Register all built-in handlers
+        from racetime.command_handlers import BUILTIN_HANDLERS
+        for handler_name, handler_func in BUILTIN_HANDLERS.items():
+            _command_service.register_handler(handler_name, handler_func)
+        logger.info("Initialized racetime command service with %d built-in handlers", len(BUILTIN_HANDLERS))
+    return _command_service
+
 
 class SahaRaceHandler(RaceHandler):
     """
@@ -52,8 +69,10 @@ class SahaRaceHandler(RaceHandler):
     Emits events when race or entrant status changes.
     """
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, bot_instance, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # Store reference to bot instance
+        self.bot = bot_instance
         # Track previous entrant statuses to detect changes
         self._previous_entrant_statuses: dict[str, str] = {}
         # Track all known entrants to detect joins/leaves
@@ -64,6 +83,13 @@ class SahaRaceHandler(RaceHandler):
         self._bot_created_room: bool = False
         # Repository for user lookups
         self._user_repository = UserRepository()
+        # Chat command service (use global instance)
+        self._command_service = _get_command_service()
+        # Bot ID for command lookups
+        self._bot_id: Optional[int] = None
+        # Tournament/async tournament IDs (determined from race data)
+        self._tournament_id: Optional[int] = None
+        self._async_tournament_id: Optional[int] = None
     
     async def _get_user_id_from_racetime_id(self, racetime_user_id: str) -> Optional[int]:
         """
@@ -100,6 +126,10 @@ class SahaRaceHandler(RaceHandler):
         """
         race_name = self.data.get('name', 'unknown')
         logger.info("Race handler started for race: %s", race_name)
+        
+        # Get bot ID from the bot instance (if available)
+        if hasattr(self.bot, 'bot_id'):
+            self._bot_id = self.bot.bot_id
         
         # Extract race details
         category = self.data.get('category', {}).get('slug', '')
@@ -322,6 +352,70 @@ class SahaRaceHandler(RaceHandler):
         
         # Call parent implementation to update self.data
         await super().race_data(data)
+
+    async def chat_message(self, message):
+        """
+        Called when a chat message is received in the race room.
+
+        Handles custom ! commands defined in the database.
+
+        Args:
+            message: Message data from racetime.gg
+        """
+        # Extract message details
+        message_text = message.get('message', '').strip()
+        user_data = message.get('user', {})
+        racetime_user_id = user_data.get('id', '')
+        racetime_user_name = user_data.get('name', '')
+
+        # Check if message is a command (starts with !)
+        if not message_text.startswith('!'):
+            return
+
+        # Parse command and arguments
+        parts = message_text[1:].split(maxsplit=1)
+        if not parts:
+            return
+
+        command_name = parts[0].lower()
+        args = parts[1].split() if len(parts) > 1 else []
+
+        logger.debug(
+            "Received command !%s from %s (%s) with args: %s",
+            command_name,
+            racetime_user_name,
+            racetime_user_id,
+            args,
+        )
+
+        # Look up application user (if racetime account is linked)
+        user: Optional[User] = None
+        try:
+            user = await self._user_repository.get_by_racetime_id(racetime_user_id)
+        except Exception as e:
+            logger.warning(
+                "Error looking up user by racetime_id %s: %s", racetime_user_id, e
+            )
+
+        # Execute command
+        try:
+            response = await self._command_service.execute_command(
+                command_name=command_name,
+                args=args,
+                racetime_user_id=racetime_user_id,
+                race_data=self.data if self.data else {},
+                bot_id=self._bot_id,
+                tournament_id=self._tournament_id,
+                async_tournament_id=self._async_tournament_id,
+                user=user,
+            )
+
+            if response:
+                await self.send_message(response)
+        except Exception as e:
+            logger.error(
+                "Error executing command !%s: %s", command_name, e, exc_info=True
+            )
     
     async def invite_user(self, user_id: str):
         """
