@@ -12,6 +12,13 @@ from models import User
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organization_service import OrganizationService
+from application.events import (
+    EventBus,
+    CrewAddedEvent,
+    CrewApprovedEvent,
+    CrewUnapprovedEvent,
+    CrewRemovedEvent,
+)
 
 if TYPE_CHECKING:
     from models.match_schedule import Crew
@@ -238,20 +245,53 @@ class TournamentService:
             logger.warning("User %s is not a member of org %s, cannot sign up as crew", user.id, organization_id)
             return None
 
-        return await self.repo.signup_crew(match_id, user.id, role)
+        crew = await self.repo.signup_crew(match_id, user.id, role)
+        
+        if crew:
+            # Emit crew added event (self-signup, not approved)
+            await EventBus.emit(CrewAddedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=crew.id,
+                match_id=match_id,
+                crew_user_id=user.id,
+                role=role,
+                added_by_admin=False,
+                auto_approved=False,
+            ))
+        
+        return crew
 
     async def remove_crew_signup(self, user: User, organization_id: int, match_id: int, role: str) -> bool:
         """Remove crew signup for a match.
         
         Users can remove their own signups.
         """
+        from models.match_schedule import Crew
+        
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
         if not member:
             logger.warning("User %s is not a member of org %s, cannot remove crew signup", user.id, organization_id)
             return False
 
-        return await self.repo.remove_crew_signup(match_id, user.id, role)
+        # Get crew info before removing for event
+        crew = await Crew.filter(match_id=match_id, user_id=user.id, role=role).first()
+        
+        success = await self.repo.remove_crew_signup(match_id, user.id, role)
+        
+        if success and crew:
+            # Emit crew removed event
+            await EventBus.emit(CrewRemovedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=crew.id,
+                match_id=match_id,
+                crew_user_id=user.id,
+                role=role,
+            ))
+        
+        return success
 
     async def admin_add_crew(
         self,
@@ -300,13 +340,28 @@ class TournamentService:
             )
             return None
         
-        return await self.repo.admin_add_crew(
+        crew = await self.repo.admin_add_crew(
             match_id=match_id,
             user_id=user_id,
             role=role,
             approved=approved,
             approver_user_id=admin_user.id if approved else None
         )
+        
+        if crew:
+            # Emit crew added event (admin action)
+            await EventBus.emit(CrewAddedEvent(
+                user_id=admin_user.id,
+                organization_id=organization_id,
+                entity_id=crew.id,
+                match_id=match_id,
+                crew_user_id=user_id,
+                role=role,
+                added_by_admin=True,
+                auto_approved=approved,
+            ))
+        
+        return crew
 
     async def approve_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
         """Approve a crew signup.
@@ -329,7 +384,24 @@ class TournamentService:
             logger.warning("Unauthorized crew approval by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
         
-        return await self.repo.approve_crew(crew_id, user.id)
+        # Get crew info before approving
+        crew_before = await Crew.filter(id=crew_id).first()
+        
+        crew = await self.repo.approve_crew(crew_id, user.id)
+        
+        if crew and crew_before:
+            # Emit crew approved event
+            await EventBus.emit(CrewApprovedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=crew_id,
+                match_id=crew.match_id,
+                crew_user_id=crew.user_id,
+                role=crew.role,
+                approved_by_user_id=user.id,
+            ))
+        
+        return crew
 
     async def unapprove_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
         """Remove approval from a crew signup.
@@ -344,13 +416,31 @@ class TournamentService:
         Returns:
             The unapproved Crew record or None if unauthorized.
         """
+        from models.match_schedule import Crew
+        
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized crew unapproval by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
         
-        return await self.repo.unapprove_crew(crew_id)
+        # Get crew info before unapproving
+        crew_before = await Crew.filter(id=crew_id).first()
+        
+        crew = await self.repo.unapprove_crew(crew_id)
+        
+        if crew and crew_before:
+            # Emit crew unapproved event
+            await EventBus.emit(CrewUnapprovedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=crew_id,
+                match_id=crew.match_id,
+                crew_user_id=crew.user_id,
+                role=crew.role,
+            ))
+        
+        return crew
 
     async def set_match_seed(self, user: Optional[User], organization_id: int, match_id: int, url: str, description: Optional[str] = None):
         """Set or update seed information for a match.

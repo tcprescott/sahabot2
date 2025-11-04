@@ -195,6 +195,49 @@ class MatchCompletedEvent(EntityEvent):
 
 
 # ============================================================================
+# Crew Events
+# ============================================================================
+
+@dataclass(frozen=True)
+class CrewAddedEvent(EntityEvent):
+    """Emitted when crew is added to a match."""
+    entity_type: str = field(default="Crew", init=False)
+    match_id: Optional[int] = None
+    crew_user_id: Optional[int] = None
+    role: Optional[str] = None
+    added_by_admin: bool = False
+    auto_approved: bool = False
+
+
+@dataclass(frozen=True)
+class CrewApprovedEvent(EntityEvent):
+    """Emitted when crew signup is approved."""
+    entity_type: str = field(default="Crew", init=False)
+    match_id: Optional[int] = None
+    crew_user_id: Optional[int] = None
+    role: Optional[str] = None
+    approved_by_user_id: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class CrewUnapprovedEvent(EntityEvent):
+    """Emitted when crew approval is removed."""
+    entity_type: str = field(default="Crew", init=False)
+    match_id: Optional[int] = None
+    crew_user_id: Optional[int] = None
+    role: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class CrewRemovedEvent(EntityEvent):
+    """Emitted when crew is removed from a match."""
+    entity_type: str = field(default="Crew", init=False)
+    match_id: Optional[int] = None
+    crew_user_id: Optional[int] = None
+    role: Optional[str] = None
+
+
+# ============================================================================
 # Invite Events
 # ============================================================================
 

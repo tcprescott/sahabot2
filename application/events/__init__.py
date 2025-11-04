@@ -51,6 +51,11 @@ from application.events.types import (
     RaceRejectedEvent,
     MatchScheduledEvent,
     MatchCompletedEvent,
+    # Crew events
+    CrewAddedEvent,
+    CrewApprovedEvent,
+    CrewUnapprovedEvent,
+    CrewRemovedEvent,
     # Invite events
     InviteCreatedEvent,
     InviteAcceptedEvent,
@@ -93,6 +98,11 @@ __all__ = [
     "RaceRejectedEvent",
     "MatchScheduledEvent",
     "MatchCompletedEvent",
+    # Crew events
+    "CrewAddedEvent",
+    "CrewApprovedEvent",
+    "CrewUnapprovedEvent",
+    "CrewRemovedEvent",
     # Invite events
     "InviteCreatedEvent",
     "InviteAcceptedEvent",
