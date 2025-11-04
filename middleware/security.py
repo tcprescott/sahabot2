@@ -68,8 +68,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
 
             # Content Security Policy
-            # Note: This is a relatively permissive CSP to allow NiceGUI to work
-            # Adjust based on your specific needs
+            # Note: This CSP allows 'unsafe-inline' and 'unsafe-eval' which weakens XSS protection.
+            # These are required for NiceGUI framework to function properly.
+            # NiceGUI uses inline styles and dynamic script evaluation for its reactive UI system.
+            # Consider implementing CSP nonces or strict-dynamic if moving away from NiceGUI.
+            # For now, we rely on input sanitization and HTML escaping for XSS protection.
+            # See: application/utils/input_validation.py for sanitization utilities
             "Content-Security-Policy": (
                 "default-src 'self'; "
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "

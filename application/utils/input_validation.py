@@ -6,7 +6,7 @@ to prevent security vulnerabilities.
 """
 
 import re
-from typing import Optional
+from typing import Optional, Union
 from html import escape
 
 
@@ -58,7 +58,7 @@ def sanitize_filename(filename: str) -> str:
     return filename or 'unnamed'
 
 
-def validate_url(url: str, allowed_schemes: Optional[list[str]] = None) -> bool:
+def validate_url(url: str, allowed_schemes: Optional[list] = None) -> bool:
     """
     Validate that a URL is safe and uses allowed schemes.
 
@@ -96,7 +96,7 @@ def validate_url(url: str, allowed_schemes: Optional[list[str]] = None) -> bool:
     return True
 
 
-def sanitize_discord_id(discord_id: str) -> Optional[int]:
+def sanitize_discord_id(discord_id: Union[str, int]) -> Optional[int]:
     """
     Sanitize and validate a Discord ID.
 

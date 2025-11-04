@@ -156,7 +156,11 @@ Per-user limits can be customized. When exceeded, the API returns HTTP 429 with 
 )
 
 # Configure CORS
-# In production, this should be restricted to your specific domain(s)
+# In production, this is restricted to BASE_URL only
+# In development, allows all origins for convenience during local development
+# NOTE: The wildcard '*' in development mode can expose the application to
+# cross-origin attacks. For a more secure development setup, replace with:
+# allowed_origins = [settings.BASE_URL, "http://localhost:8080", "http://localhost:3000"]
 allowed_origins = ["*"] if settings.DEBUG else [settings.BASE_URL]
 
 app.add_middleware(

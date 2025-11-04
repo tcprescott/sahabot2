@@ -167,15 +167,40 @@ All responses include the following security headers:
 
 ### Security Headers Configuration
 
-The default CSP is relatively permissive to allow NiceGUI to function. You may want to tighten it based on your specific deployment:
+The default CSP is configured to work with NiceGUI, which requires `unsafe-inline` and `unsafe-eval`:
 
 ```python
-# In middleware/security.py, adjust CSP as needed:
+# In middleware/security.py:
 "Content-Security-Policy": (
     "default-src 'self'; "
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-    # ... customize other directives
+    # ... other directives
 )
+```
+
+**Note**: While `unsafe-inline` and `unsafe-eval` weaken XSS protection, they are required for NiceGUI's reactive UI system. The application compensates with:
+- Comprehensive input sanitization (see `application/utils/input_validation.py`)
+- HTML entity escaping for user-generated content
+- Database-driven content (not user-controlled JavaScript)
+
+**For a stricter CSP** (if not using NiceGUI or migrating away):
+- Implement CSP nonces for inline scripts
+- Use strict-dynamic instead of unsafe-eval
+- Eliminate inline event handlers
+
+### Development Security Notes
+
+**CORS in Development**:
+The application uses `allow_origins=["*"]` in development mode for convenience. This can expose the application to cross-origin attacks during development.
+
+**For more secure development**:
+```python
+# In main.py, use specific origins instead of wildcard:
+allowed_origins = [
+    settings.BASE_URL,
+    "http://localhost:8080",
+    "http://localhost:3000",
+] if settings.DEBUG else [settings.BASE_URL]
 ```
 
 ## Security Best Practices
