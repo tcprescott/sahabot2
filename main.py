@@ -5,6 +5,7 @@ This module initializes the FastAPI application with NiceGUI integration.
 """
 
 import logging
+import asyncio
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
@@ -23,7 +24,7 @@ import application.events.listeners  # noqa: F401
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG if settings.DEBUG else logging.INFO,
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -58,8 +59,19 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Discord bot disabled by configuration")
 
-    # Start Racetime bots from database (active bots only)
-    await RacetimeService.start_all()
+    # Start Racetime bots in background (non-blocking) - they'll start after app is running
+    async def start_racetime_bots_background():
+        """Start racetime bots in background without blocking startup."""
+        try:
+            logger.info("Starting racetime bots in background...")
+            started = await RacetimeService.start_all()
+            logger.info("Started %d racetime bot(s) in background", started)
+        except Exception as e:
+            logger.error("Error starting racetime bots: %s", e, exc_info=True)
+
+    # Schedule the background task (don't await it)
+    asyncio.create_task(start_racetime_bots_background())
+    logger.info("Racetime bots scheduled to start in background")
 
     # Register task handlers
     register_task_handlers()

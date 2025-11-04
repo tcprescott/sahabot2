@@ -942,6 +942,30 @@ async def _view_item(self, item):
   await table.render()
   ```
 
+**DateTime Display**:
+- **Always use `DateTimeLabel.create()`** (from `components/datetime_label.py`) for displaying datetime values
+- DateTimeLabel is a **static utility class**, not a constructor-based component
+- Provides automatic timezone conversion and locale-aware formatting
+- **CORRECT usage**:
+  ```python
+  from components.datetime_label import DateTimeLabel
+  
+  # Relative time (e.g., "2 hours ago")
+  DateTimeLabel.create(user.created_at, format_type='relative')
+  
+  # Full datetime
+  DateTimeLabel.create(match.scheduled_at, format_type='datetime', classes='text-bold')
+  
+  # Date only
+  DateTimeLabel.create(event.start_date, format_type='date')
+  ```
+- **WRONG usage**:
+  ```python
+  DateTimeLabel(dt)  # ❌ TypeError - not a constructor!
+  DateTimeLabel.create(dt, format='relative')  # ❌ Parameter is 'format_type' not 'format'
+  dt.strftime('%Y-%m-%d')  # ❌ Use DateTimeLabel for consistent timezone handling
+  ```
+
 ### New View
 Views are page-specific content modules. They should be organized by which page uses them.
 

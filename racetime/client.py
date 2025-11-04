@@ -152,26 +152,34 @@ async def start_racetime_bot(
     client_id: str,
     client_secret: str,
     bot_id: Optional[int] = None,
+    max_retries: int = 5,
+    initial_backoff: float = 5.0,
 ) -> RacetimeBot:
     """
-    Start a racetime bot for a specific category.
+    Start a racetime bot for a specific category with retry logic.
+    
+    The bot will automatically retry on connection failures with exponential backoff.
+    Authentication failures will not be retried.
     
     Args:
-        category: The racetime.gg category slug (e.g., 'alttpr')
+        category: The racetime.gg category slug
         client_id: OAuth2 client ID for this category
         client_secret: OAuth2 client secret for this category
         bot_id: Optional database ID for status tracking
-    
+        max_retries: Maximum number of retry attempts (default: 5)
+        initial_backoff: Initial backoff delay in seconds (default: 5.0)
+        
     Returns:
-        RacetimeBot instance for the category
+        RacetimeBot instance (bot runs in background task)
         
     Raises:
-        RuntimeError: If bot for this category is already running
+        Exception: If bot initialization or starting fails
     """
-    if category in _racetime_bots:
-        raise RuntimeError("Racetime bot for category %s is already running" % category)
-    
-    logger.info("Starting racetime bot for category: %s (bot_id=%s)", category, bot_id)
+    logger.info(
+        "Starting racetime bot for category: %s (bot_id=%s)",
+        category,
+        bot_id
+    )
     
     try:
         # Create bot instance with category-specific credentials
@@ -185,57 +193,109 @@ async def start_racetime_bot(
         # Store the bot instance
         _racetime_bots[category] = bot
         
-        # Start the bot in a background task with error handling
+        # Start the bot in a background task with error handling and retry logic
         async def run_with_status_tracking():
-            """Run bot and track connection status."""
+            """Run bot and track connection status with automatic retry on failure."""
             repository = RacetimeBotRepository()
-            try:
-                logger.info("Starting bot.run() for category: %s", category)
-                logger.debug("Bot configuration - host: %s, secure: %s", bot.racetime_host, bot.racetime_secure)
-                # Update status to connected when starting
-                if bot_id:
-                    await repository.record_connection_success(bot_id)
-                
-                # Instead of calling bot.run() which tries to take over the event loop,
-                # we manually create the tasks that run() would create
-                # This allows the bot to work within our existing async context
-                reauth_task = asyncio.create_task(bot.reauthorize())
-                refresh_task = asyncio.create_task(bot.refresh_races())
-                
-                # Wait for both tasks (they run forever until cancelled)
-                await asyncio.gather(reauth_task, refresh_task)
-                
-                logger.info("bot tasks completed normally for category: %s", category)
-                
-            except asyncio.CancelledError:
-                # Bot was cancelled (stopped manually)
-                logger.info("Racetime bot %s was cancelled (CancelledError caught)", category)
-                if bot_id:
-                    await repository.update_bot_status(
-                        bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped"
+            retry_count = 0
+            backoff_delay = initial_backoff
+            
+            while True:
+                try:
+                    logger.info("Starting bot.run() for category: %s (attempt %d/%d)", 
+                               category, retry_count + 1, max_retries + 1)
+                    logger.debug("Bot configuration - host: %s, secure: %s", 
+                                bot.racetime_host, bot.racetime_secure)
+                    
+                    # Update status to connected when starting
+                    if bot_id:
+                        await repository.record_connection_success(bot_id)
+                    
+                    # Reset retry count on successful connection
+                    retry_count = 0
+                    backoff_delay = initial_backoff
+                    
+                    # Instead of calling bot.run() which tries to take over the event loop,
+                    # we manually create the tasks that run() would create
+                    # This allows the bot to work within our existing async context
+                    reauth_task = asyncio.create_task(bot.reauthorize())
+                    refresh_task = asyncio.create_task(bot.refresh_races())
+                    
+                    # Wait for both tasks (they run forever until cancelled)
+                    await asyncio.gather(reauth_task, refresh_task)
+                    
+                    logger.info("bot tasks completed normally for category: %s", category)
+                    break  # Exit retry loop on normal completion
+                    
+                except asyncio.CancelledError:
+                    # Bot was cancelled (stopped manually) - don't retry
+                    logger.info("Racetime bot %s was cancelled (CancelledError caught)", category)
+                    if bot_id:
+                        await repository.update_bot_status(
+                            bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped"
+                        )
+                    raise  # Re-raise to properly handle cancellation
+                    
+                except Exception as e:
+                    # Always log the full exception with traceback
+                    logger.error(
+                        "Racetime bot error for %s (attempt %d/%d): %s",
+                        category,
+                        retry_count + 1,
+                        max_retries + 1,
+                        e,
+                        exc_info=True
                     )
-                raise  # Re-raise to properly handle cancellation
-                
-            except Exception as e:
-                # Always log the full exception with traceback
-                logger.error(
-                    "Racetime bot error for %s: %s",
-                    category,
-                    e,
-                    exc_info=True
-                )
-                
-                # Update status based on error type
-                if bot_id:
+                    
+                    # Check if this is an auth error (don't retry auth failures)
                     error_msg = str(e)
-                    if "auth" in error_msg.lower() or "unauthorized" in error_msg.lower():
-                        await repository.record_connection_failure(
-                            bot_id, error_msg, BotStatus.AUTH_FAILED
+                    is_auth_error = "auth" in error_msg.lower() or "unauthorized" in error_msg.lower() or "401" in error_msg
+                    
+                    # Update status based on error type
+                    if bot_id:
+                        if is_auth_error:
+                            await repository.record_connection_failure(
+                                bot_id, error_msg, BotStatus.AUTH_FAILED
+                            )
+                        else:
+                            await repository.record_connection_failure(
+                                bot_id, error_msg, BotStatus.CONNECTION_ERROR
+                            )
+                    
+                    # Don't retry on auth errors
+                    if is_auth_error:
+                        logger.error("Authentication failed for bot %s - not retrying", category)
+                        break
+                    
+                    # Check if we should retry
+                    retry_count += 1
+                    if retry_count > max_retries:
+                        logger.error(
+                            "Max retries (%d) reached for bot %s - giving up",
+                            max_retries,
+                            category
                         )
-                    else:
-                        await repository.record_connection_failure(
-                            bot_id, error_msg, BotStatus.CONNECTION_ERROR
-                        )
+                        break
+                    
+                    # Wait with exponential backoff before retrying
+                    logger.info(
+                        "Retrying bot %s in %.1f seconds (attempt %d/%d)...",
+                        category,
+                        backoff_delay,
+                        retry_count + 1,
+                        max_retries + 1
+                    )
+                    await asyncio.sleep(backoff_delay)
+                    
+                    # Exponential backoff (double the delay each time, max 5 minutes)
+                    backoff_delay = min(backoff_delay * 2, 300.0)
+            
+            # Cleanup happens in finally block below
+            
+        async def run_wrapper():
+            """Wrapper to ensure cleanup happens."""
+            try:
+                await run_with_status_tracking()
             finally:
                 # Clean up bot instance when task completes (for any reason)
                 logger.info("Cleaning up racetime bot for category: %s", category)
@@ -245,7 +305,7 @@ async def start_racetime_bot(
                 _racetime_bot_tasks.pop(category, None)
                 logger.info("Racetime bot task completed and cleaned up for category: %s", category)
         
-        _racetime_bot_tasks[category] = asyncio.create_task(run_with_status_tracking())
+        _racetime_bot_tasks[category] = asyncio.create_task(run_wrapper())
         
         logger.info("Racetime bot started successfully for category: %s", category)
         return bot

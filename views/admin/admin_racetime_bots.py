@@ -6,6 +6,7 @@ Provides interface for managing RaceTime bot configurations and organization ass
 
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
+from components.datetime_label import DateTimeLabel
 from models import User, RacetimeBot
 from application.services.racetime_bot_service import RacetimeBotService
 from application.services.organization_service import OrganizationService
@@ -169,9 +170,15 @@ class AdminRacetimeBotsView:
                         ui.icon('cloud_off', size='xs')
                         ui.label('Disconnected')
 
-                # Last connected timestamp
+                # Last connected timestamp using DateTimeLabel
                 if bot.last_connected_at:
-                    ui.label(f'Last: {bot.last_connected_at.strftime("%Y-%m-%d %H:%M:%S")}').classes('text-xs text-grey-7')
+                    with ui.row().classes('items-center gap-1'):
+                        ui.label('Last:').classes('text-xs text-grey-7')
+                        DateTimeLabel.create(
+                            bot.last_connected_at,
+                            format_type='datetime',
+                            classes='text-xs text-grey-7'
+                        )
 
         def render_actions(row):
             bot = row['bot']
