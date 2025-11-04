@@ -61,8 +61,9 @@ def register():
             page.register_content_loader('namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
             page.register_content_loader('settings', page.create_instance_view_loader(lambda: AdminSettingsView(page.user)))
 
-            # Load initial content (overview)
-            await load_overview()
+            # Load initial content only if no view parameter was specified
+            if not page.initial_view:
+                await load_overview()
 
         # Create sidebar items with dynamic content loaders
         sidebar_items = [

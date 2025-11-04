@@ -92,8 +92,9 @@ def register():
             # Register loaders
             page.register_content_loader('overview', load_overview)
 
-            # Load initial content
-            await load_overview()
+            # Load initial content only if no view parameter was specified
+            if not page.initial_view:
+                await load_overview()
 
         # Create sidebar items
         sidebar_items = [
@@ -374,8 +375,9 @@ def register():
             page.register_content_loader('my_settings', load_my_settings)
             page.register_content_loader('tournament_management', load_tournament_management)
 
-            # Load initial content
-            await load_event_schedule()
+            # Load initial content only if no view parameter was specified
+            if not page.initial_view:
+                await load_event_schedule()
 
         # Create sidebar items
         sidebar_items = [

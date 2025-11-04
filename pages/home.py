@@ -60,8 +60,9 @@ def register():
                 page.register_content_loader('presets', load_presets)
                 page.register_content_loader('organizations', load_organizations)
 
-                # Load initial content (overview)
-                await load_overview()
+                # Load initial content only if no view parameter was specified
+                if not page.initial_view:
+                    await load_overview()
 
             # Create sidebar items with dynamic content loaders
             sidebar_items = [

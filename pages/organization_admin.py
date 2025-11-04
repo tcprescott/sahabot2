@@ -150,11 +150,13 @@ def register():
             page.register_content_loader('tournaments', load_tournaments)
             page.register_content_loader('async_tournaments', load_async_tournaments)
 
-            # Load initial content: overview for admins, tournaments for managers
-            if allowed_admin:
-                await load_overview()
-            else:
-                await load_tournaments()
+            # Load initial content only if no view parameter was specified
+            if not page.initial_view:
+                # Load default view: overview for admins, tournaments for managers
+                if allowed_admin:
+                    await load_overview()
+                else:
+                    await load_tournaments()
 
         # Create sidebar items (conditionally for non-admins)
         sidebar_items = [

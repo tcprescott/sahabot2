@@ -93,6 +93,7 @@ class BasePage:
         self._dynamic_content_container = None
         self._content_loaders: dict[str, Callable[[], Awaitable[None]]] = {}
         self._current_view_key: Optional[str] = None
+        self.initial_view: Optional[str] = None  # View from query parameter
 
     async def _load_user(self) -> None:
         """Load current user from session."""
@@ -121,15 +122,16 @@ class BasePage:
             message = params['message'].replace('_', ' ').title()
             ui.notify(message, type='info', timeout=5000)
 
-    async def _restore_view_from_query(self) -> None:
-        """Check URL query parameter and load corresponding view if it exists."""
+    async def _get_view_from_query(self) -> Optional[str]:
+        """
+        Get the view parameter from URL query string.
+        
+        Returns:
+            The view key from the query parameter if it exists, None otherwise
+        """
         # Get 'view' query parameter from URL using URLManager
         view_value = await ui.run_javascript("return window.URLManager.getParam('view');")
-        
-        # If there's a view parameter and a matching loader, trigger it
-        if view_value and view_value in self._content_loaders:
-            # Use timer to ensure it runs after initial render completes
-            ui.timer(0.1, lambda: self._content_loaders[view_value](), once=True)
+        return view_value if view_value else None
 
     def _toggle_sidebar(self) -> None:
         """Toggle sidebar open/closed state."""
@@ -400,17 +402,26 @@ class BasePage:
         # Render content if provided
         if content:
             if use_dynamic_content:
+                # Check for view parameter BEFORE rendering content
+                # Store it so pages can check if they should skip default rendering
+                self.initial_view = await self._get_view_from_query()
+                
                 # Create a dynamic content container that can be cleared/reloaded
                 self._content_container = ui.element('div').classes('page-container')
                 with self._content_container:
                     self._dynamic_content_container = ui.column().classes('full-width')
                     with self._dynamic_content_container:
+                        # Call content() which registers loaders and may render default view
+                        # Pages can check page.initial_view to skip default rendering
                         await content(self)
                     # Footer at the bottom of the page container
                     Footer.render()
                 
-                # After content is loaded, check URL query parameter and load corresponding view
-                await self._restore_view_from_query()
+                # If there was a view parameter and it's now registered, load it
+                # (verify it's valid after loaders are registered)
+                if self.initial_view and self.initial_view in self._content_loaders:
+                    # Load the view from query parameter
+                    await self._content_loaders[self.initial_view]()
                 
                 # Show any notifications from query parameters
                 await self._show_query_param_notifications()

@@ -41,8 +41,9 @@ def register():
             page.register_content_loader('preset-namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
             page.register_content_loader('notifications', page.create_instance_view_loader(lambda: NotificationPreferencesView(page.user)))
 
-            # Load initial content (profile info)
-            await page.create_instance_view_loader(lambda: ProfileInfoView(page.user))()
+            # Load initial content only if no view parameter was specified
+            if not page.initial_view:
+                await page.create_instance_view_loader(lambda: ProfileInfoView(page.user))()
 
         # Create sidebar items
         sidebar_items = [
