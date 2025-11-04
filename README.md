@@ -12,6 +12,7 @@
 - 💅 **External CSS** - No inline styling, human-friendly class names
 - ⚡ **Async/Await** - Modern asynchronous Python throughout
 - 📝 **High Code Quality** - Comprehensive docstrings and type hints
+- 🛡️ **Enterprise Security** - HTTPS enforcement, security headers, CSRF protection, input validation
 
 ## Architecture
 
@@ -286,6 +287,22 @@ Run tests with pytest:
 poetry run pytest
 ```
 
+## Security
+
+This application implements comprehensive security best practices. See [SECURITY.md](SECURITY.md) for details on:
+
+- 🛡️ Security headers (HSTS, CSP, X-Frame-Options)
+- 🔒 HTTPS enforcement in production
+- 🔐 Secure OAuth2 implementation with CSRF protection
+- 🚫 Input validation and sanitization
+- 🔑 Cryptographically secure token generation
+- 📝 Audit logging without sensitive data exposure
+- 🚨 Vulnerability reporting process
+
+**Security Scan Results**: CodeQL - 0 alerts ✅
+
+To report a security vulnerability, please see our [Security Policy](SECURITY.md).
+
 ## Contributing
 
 1. Follow the established architecture patterns
@@ -294,6 +311,7 @@ poetry run pytest
 4. Add CSS classes to external stylesheet
 5. Test on mobile viewport sizes
 6. Update documentation as needed
+7. Follow security best practices (see SECURITY.md)
 
 ## License
 
