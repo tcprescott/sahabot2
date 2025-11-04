@@ -76,6 +76,16 @@ class Settings(BaseSettings):
         return f"mysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
+    def safe_database_url(self) -> str:
+        """
+        Generate a safe database URL for logging (password masked).
+
+        Returns:
+            str: MySQL connection URL with password masked
+        """
+        return f"mysql://{self.DB_USER}:***@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+
+    @property
     def is_production(self) -> bool:
         """
         Check if running in production environment.

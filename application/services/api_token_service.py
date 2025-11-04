@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
 import secrets
 import logging
 from datetime import datetime
@@ -16,7 +17,33 @@ logger = logging.getLogger(__name__)
 
 
 def _hash_token(token: str) -> str:
+    """
+    Hash a token using SHA256.
+
+    Args:
+        token: Plaintext token to hash
+
+    Returns:
+        str: Hex-encoded hash of the token
+    """
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _compare_hashes(hash1: str, hash2: str) -> bool:
+    """
+    Constant-time comparison of two hash strings.
+
+    This prevents timing attacks by ensuring the comparison
+    time is independent of where the strings differ.
+
+    Args:
+        hash1: First hash to compare
+        hash2: Second hash to compare
+
+    Returns:
+        bool: True if hashes match, False otherwise
+    """
+    return hmac.compare_digest(hash1, hash2)
 
 
 class ApiTokenService:
