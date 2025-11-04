@@ -10,6 +10,7 @@ from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
+from components.datetime_label import DateTimeLabel
 from components.dialogs import StreamChannelDialog, ConfirmDialog
 from application.services.stream_channel_service import StreamChannelService
 
@@ -104,6 +105,13 @@ class OrganizationStreamChannelsView:
                             ui.icon('cancel').classes('text-negative')
                             ui.label('Inactive')
 
+                def render_created(c):
+                    created_at = getattr(c, 'created_at', None)
+                    if created_at:
+                        DateTimeLabel.create(created_at, format_type='relative')
+                    else:
+                        ui.label('—').classes('text-secondary')
+
                 def render_actions(c):
                     with ui.element('div').classes('flex gap-2'):
                         ui.button('Edit', icon='edit', on_click=lambda c=c: self._open_edit_dialog(c)).classes('btn')
@@ -113,7 +121,7 @@ class OrganizationStreamChannelsView:
                     TableColumn('Name', key='name'),
                     TableColumn('Stream URL', cell_render=render_url),
                     TableColumn('Status', cell_render=render_active),
-                    TableColumn('Created', key='created_at'),
+                    TableColumn('Created', cell_render=render_created),
                     TableColumn('Actions', cell_render=render_actions),
                 ]
                 table = ResponsiveTable(columns, channels)

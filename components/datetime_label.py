@@ -68,6 +68,7 @@ class DateTimeLabel:
                 - 'time': Time only (e.g., "2:45 PM")
                 - 'full': Full verbose format (e.g., "Thursday, October 31, 2025 at 2:45:30 PM EDT")
                 - 'relative': Relative time (e.g., "2 hours ago", "in 5 minutes")
+                  * When using 'relative', a tooltip with the full datetime is automatically added
                 - 'short': Short format (e.g., "10/31/25, 2:45 PM")
             classes: CSS classes to apply to the label (e.g., 'text-bold text-lg')
             fallback: Text to display if dt is None (default: 'N/A')
@@ -76,7 +77,7 @@ class DateTimeLabel:
             A NiceGUI label element with formatted datetime
             
         Example:
-            # Show relative time
+            # Show relative time (includes tooltip with full datetime)
             DateTimeLabel.create(user.last_login, format_type='relative')
             
             # Show full datetime with custom styling
@@ -89,6 +90,11 @@ class DateTimeLabel:
             return ui.label(fallback).classes(classes)
 
         # Convert datetime to ISO format for JavaScript
+        # If datetime is naive, assume it's UTC
+        from datetime import timezone as dt_timezone
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=dt_timezone.utc)
+        
         iso_string = dt.isoformat()
 
         # Format options for Intl.DateTimeFormat
@@ -121,12 +127,13 @@ class DateTimeLabel:
             # Use relative time formatting (requires modern browsers)
             js_code = f'''
             const date = new Date('{iso_string}');
+            const now = new Date();
             const rtf = new Intl.RelativeTimeFormat(undefined, {{ numeric: 'auto' }});
-            const diff = date - new Date();
-            const seconds = Math.floor(diff / 1000);
-            const minutes = Math.floor(seconds / 60);
-            const hours = Math.floor(minutes / 60);
-            const days = Math.floor(hours / 24);
+            const diffMs = date.getTime() - now.getTime();
+            const seconds = Math.round(diffMs / 1000);
+            const minutes = Math.round(diffMs / 60000);
+            const hours = Math.round(diffMs / 3600000);
+            const days = Math.round(diffMs / 86400000);
             
             let text;
             if (Math.abs(days) > 0) text = rtf.format(days, 'day');
@@ -147,6 +154,16 @@ class DateTimeLabel:
             result = await ui.run_javascript(f'(function() {{ {js_code} }})()', timeout=5.0)
             if result:
                 label.set_text(result)
+                
+                # For relative time, also add tooltip with full datetime
+                if format_type == 'relative':
+                    tooltip_options = {'dateStyle': 'full', 'timeStyle': 'long'}
+                    tooltip_options_json = str(tooltip_options).replace("'", '"')
+                    tooltip_js = f'return new Intl.DateTimeFormat(undefined, {tooltip_options_json}).format(new Date("{iso_string}"));'
+                    tooltip_result = await ui.run_javascript(f'(function() {{ {tooltip_js} }})()', timeout=5.0)
+                    if tooltip_result:
+                        # Add tooltip with the formatted datetime
+                        label.tooltip(tooltip_result)
         
         ui.timer(0.1, set_text, once=True)
 
