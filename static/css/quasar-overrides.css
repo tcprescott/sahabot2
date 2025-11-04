@@ -112,17 +112,145 @@
 }
 
 /* ==================== INPUT ==================== */
+/* Overall field container - provides vertical spacing between fields */
+.q-field {
+    margin-bottom: var(--spacing-md) !important;
+}
+
+/* Field control - the main input area */
 .q-field__control {
-    background-color: var(--surface-color);
-    color: var(--text-primary);
+    background-color: var(--surface-color) !important;
+    color: var(--text-primary) !important;
+    min-height: 56px !important;
+    border-radius: var(--radius-sm) !important;
 }
 
+/* Remove all underlines from inner field elements */
+.q-field__inner::before,
+.q-field__inner::after,
+.q-field__inner:before,
+.q-field__inner:after {
+    content: none !important;
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Control before/after pseudo-elements - completely disable */
+.q-field__control::before,
+.q-field__control::after,
+.q-field__control:before,
+.q-field__control:after {
+    content: none !important;
+    display: none !important;
+    border: none !important;
+    background: none !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+}
+
+/* Also hide on all field type variants */
+.q-field--standard .q-field__control::before,
+.q-field--standard .q-field__control::after,
+.q-field--standard .q-field__control:before,
+.q-field--standard .q-field__control:after,
+.q-field--outlined .q-field__control::before,
+.q-field--outlined .q-field__control::after,
+.q-field--outlined .q-field__control:before,
+.q-field--outlined .q-field__control:after,
+.q-field--filled .q-field__control::before,
+.q-field--filled .q-field__control::after,
+.q-field--filled .q-field__control:before,
+.q-field--filled .q-field__control:after {
+    content: none !important;
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* Ensure proper height and padding for all field types */
+.q-field--standard .q-field__control,
+.q-field--outlined .q-field__control,
+.q-field--filled .q-field__control {
+    padding-top: 20px !important;
+    padding-bottom: 4px !important;
+    position: relative !important;
+    border-bottom: none !important;
+}
+
+/* Control-container - inner wrapper */
+.q-field__control-container {
+    padding-top: 20px !important;
+}
+
+/* Remove any borders/underlines from control-container */
+.q-field__control-container::before,
+.q-field__control-container::after,
+.q-field__control-container:before,
+.q-field__control-container:after {
+    content: none !important;
+    display: none !important;
+    visibility: hidden !important;
+    border: none !important;
+    background: none !important;
+}
+
+/* Field label styling */
 .q-field__label {
-    color: var(--text-secondary);
+    color: var(--text-secondary) !important;
+    top: 16px !important;
+    font-size: 1rem !important;
 }
 
+/* Focused field label */
 .q-field--focused .q-field__label {
-    color: var(--primary-color);
+    color: var(--primary-color) !important;
+}
+
+/* Floating label positioning - prevents overlap with input content */
+.q-field--float .q-field__label,
+.q-field--filled .q-field__label {
+    transform: translateY(-40%) scale(0.75) !important;
+    top: 8px !important;
+}
+
+/* Autofilled fields */
+.q-field--highlighted .q-field__label {
+    transform: translateY(-40%) scale(0.75) !important;
+    top: 8px !important;
+}
+
+/* Native input element positioning */
+.q-field__native,
+.q-field__input {
+    padding: 0 !important;
+    padding-top: 2px !important;
+    line-height: 1.5 !important;
+    font-size: 1rem !important;
+}
+
+/* Select element specific styling */
+.q-select .q-field__native {
+    padding: 0 !important;
+}
+
+/* Bottom area (hints, errors) spacing */
+.q-field__bottom {
+    padding-top: 2px !important;
+    font-size: 0.875rem !important;
+}
+
+/* Outlined variant - add border */
+.q-field--outlined .q-field__control {
+    border: 1px solid var(--border-color) !important;
+}
+
+.q-field--outlined.q-field--focused .q-field__control {
+    border-color: var(--primary-color) !important;
+}
+
+/* Filled variant - remove any underlines */
+.q-field--filled .q-field__control:before,
+.q-field--filled .q-field__control:after {
+    display: none !important;
 }
 
 /* ==================== BUTTON ==================== */

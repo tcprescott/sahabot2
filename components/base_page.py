@@ -8,12 +8,37 @@ including a header with branding, user info, and navigation menu.
 from __future__ import annotations
 from typing import Optional, Callable, Awaitable, Any
 import inspect
+import hashlib
+from pathlib import Path
 from nicegui import ui
 from middleware.auth import DiscordAuthService
 from models import User, Permission
 from components.header import Header
 from components.footer import Footer
 from components.sidebar import Sidebar
+
+
+def get_css_version() -> str:
+    """
+    Get CSS cache-busting version based on main.css content hash.
+    
+    Returns:
+        Version string (MD5 hash of main.css content, first 8 chars)
+    """
+    try:
+        css_file = Path(__file__).parent.parent / 'static' / 'css' / 'main.css'
+        if not css_file.exists():
+            return '1'
+        
+        # Calculate MD5 hash of file content
+        content = css_file.read_bytes()
+        hash_digest = hashlib.md5(content).hexdigest()
+        
+        # Return first 8 characters of hash (sufficient for cache busting)
+        return hash_digest[:8]
+    except Exception:
+        # Fallback to static version if anything goes wrong
+        return '1'
 
 
 class BasePage:
@@ -329,8 +354,9 @@ class BasePage:
             sidebar_items: Optional list of sidebar items with 'label', 'icon', and 'action'
             use_dynamic_content: If True, creates a dynamic content container for content switching
         """
-        # Load CSS
-        ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')
+        # Load CSS with automatic cache busting
+        css_version = get_css_version()
+        ui.add_head_html(f'<link rel="stylesheet" href="/static/css/main.css?v={css_version}">')
 
         # Set page title
         ui.page_title(self.title)
