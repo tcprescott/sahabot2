@@ -81,7 +81,48 @@ BUILTIN_TASKS: Dict[str, BuiltInTask] = {
         },
         is_active=True,
     ),
-    
+
+    'async_tournament_timeout_pending': BuiltInTask(
+        task_id='async_tournament_timeout_pending',
+        name='Async Tournament - Timeout Pending Races',
+        description='Checks pending async tournament races and sends warnings or auto-forfeits races that exceed timeout',
+        task_type=TaskType.ASYNC_TOURNAMENT_TIMEOUT_PENDING,
+        schedule_type=ScheduleType.INTERVAL,
+        is_global=True,
+        interval_seconds=60,  # Every minute
+        task_config={
+            'warning_minutes': 10,
+            'timeout_minutes': 20,
+        },
+        is_active=True,
+    ),
+
+    'async_tournament_timeout_in_progress': BuiltInTask(
+        task_id='async_tournament_timeout_in_progress',
+        name='Async Tournament - Timeout In-Progress Races',
+        description='Checks in-progress async tournament races and auto-forfeits those exceeding maximum allowed time',
+        task_type=TaskType.ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS,
+        schedule_type=ScheduleType.INTERVAL,
+        is_global=True,
+        interval_seconds=60,  # Every minute
+        task_config={
+            'max_hours': 12,
+        },
+        is_active=True,
+    ),
+
+    'async_tournament_score_calculation': BuiltInTask(
+        task_id='async_tournament_score_calculation',
+        name='Async Tournament - Score Calculation',
+        description='Recalculates scores for all active async tournaments',
+        task_type=TaskType.ASYNC_TOURNAMENT_SCORE_CALCULATION,
+        schedule_type=ScheduleType.INTERVAL,
+        is_global=True,
+        interval_seconds=3600,  # Every hour
+        task_config={},
+        is_active=True,
+    ),
+
     # Example of a disabled built-in task
     'example_builtin_log': BuiltInTask(
         task_id='example_builtin_log',

@@ -19,6 +19,9 @@ class TaskType(IntEnum):
     EXAMPLE_LOG = 0  # Example task that logs a message
     RACETIME_OPEN_ROOM = 1  # Open a race room on racetime.gg
     CLEANUP_TOURNAMENT_USAGE = 2  # Clean up old tournament usage tracking data
+    ASYNC_TOURNAMENT_TIMEOUT_PENDING = 3  # Timeout pending async tournament races
+    ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS = 4  # Timeout in-progress async tournament races
+    ASYNC_TOURNAMENT_SCORE_CALCULATION = 5  # Recalculate async tournament scores
     CUSTOM = 99  # Custom task type
 
 

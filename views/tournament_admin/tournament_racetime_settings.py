@@ -1,7 +1,7 @@
 """
 Tournament RaceTime Settings View.
 
-Allows tournament managers to configure RaceTime room opening settings.
+Allows tournament managers to configure RaceTime room opening settings using race room profiles.
 """
 
 from __future__ import annotations
@@ -26,12 +26,21 @@ class TournamentRacetimeSettingsView:
         self.user = user
         self.organization = organization
         self.tournament = tournament
+        self.profiles = []
+        self.selected_profile_id = None
+        self.profile_select = None
+        self.profile_preview_container = None
 
     async def render(self):
         """Render the RaceTime settings view."""
+        # Load available profiles
+        await self._load_profiles()
+
         with ui.element('div').classes('card'):
             with ui.element('div').classes('card-header'):
-                ui.label('RaceTime Room Settings').classes('text-xl font-bold')
+                with ui.row().classes('items-center justify-between w-full'):
+                    ui.label('RaceTime Room Settings').classes('text-xl font-bold')
+                    ui.button('Manage Profiles', icon='tune', on_click=self._manage_profiles).classes('btn')
 
             with ui.element('div').classes('card-body'):
                 ui.label('Configure how RaceTime rooms are created for this tournament').classes('text-sm text-grey mb-4')
@@ -71,70 +80,26 @@ class TournamentRacetimeSettingsView:
 
                 ui.separator()
 
-                # Advanced Room Settings Section
-                ui.label('Advanced Room Settings').classes('text-lg font-bold mt-4 mb-3')
+                # Race Room Profile Section
+                ui.label('Race Room Configuration Profile').classes('text-lg font-bold mt-4 mb-3')
+                ui.label('Select a profile to configure room settings (start delay, time limit, chat permissions, etc.)').classes('text-sm text-grey mb-4')
 
-                # Race timing
+                # Profile selection
                 with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Start countdown (seconds):').classes('w-64')
-                    start_delay = ui.number(
-                        value=getattr(self.tournament, 'racetime_start_delay', 15),
-                        min=10,
-                        max=60,
-                        step=5
-                    ).classes('w-32')
-                    ui.label('Countdown timer before race starts').classes('text-sm text-grey')
+                    ui.label('Profile:').classes('w-64')
+                    profile_options = {
+                        None: 'Use defaults (no profile)',
+                        **{p.id: f"{p.name}{' (Default)' if p.is_default else ''}" for p in self.profiles}
+                    }
+                    self.profile_select = ui.select(
+                        options=profile_options,
+                        value=self.tournament.race_room_profile_id,
+                        on_change=self._on_profile_change
+                    ).classes('w-96')
 
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Time limit (hours):').classes('w-64')
-                    time_limit = ui.number(
-                        value=getattr(self.tournament, 'racetime_time_limit', 24),
-                        min=1,
-                        max=72,
-                        step=1
-                    ).classes('w-32')
-                    ui.label('Maximum time allowed for race completion').classes('text-sm text-grey')
-
-                # Stream & automation settings
-                ui.label('Stream & Automation').classes('font-bold mt-4 mb-2')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Require streaming:').classes('w-64')
-                    streaming_required = ui.switch(value=getattr(self.tournament, 'racetime_streaming_required', False))
-                    ui.label('All participants must be streaming').classes('text-sm text-grey')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Auto-start when ready:').classes('w-64')
-                    auto_start = ui.switch(value=getattr(self.tournament, 'racetime_auto_start', True))
-                    ui.label('Start automatically when all racers ready').classes('text-sm text-grey')
-
-                # Chat permissions
-                ui.label('Chat Permissions').classes('font-bold mt-4 mb-2')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Allow race comments:').classes('w-64')
-                    allow_comments = ui.switch(value=getattr(self.tournament, 'racetime_allow_comments', True))
-                    ui.label('Racers can leave comments on the race').classes('text-sm text-grey')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Hide comments until finish:').classes('w-64')
-                    hide_comments = ui.switch(value=getattr(self.tournament, 'racetime_hide_comments', False))
-                    ui.label('Comments hidden until race ends').classes('text-sm text-grey')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Pre-race chat:').classes('w-64')
-                    allow_prerace_chat = ui.switch(value=getattr(self.tournament, 'racetime_allow_prerace_chat', True))
-                    ui.label('Chat enabled before race starts').classes('text-sm text-grey')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Mid-race chat:').classes('w-64')
-                    allow_midrace_chat = ui.switch(value=getattr(self.tournament, 'racetime_allow_midrace_chat', True))
-                    ui.label('Chat enabled during the race').classes('text-sm text-grey')
-
-                with ui.row().classes('items-center gap-4 mb-4'):
-                    ui.label('Non-entrant chat:').classes('w-64')
-                    allow_non_entrant_chat = ui.switch(value=getattr(self.tournament, 'racetime_allow_non_entrant_chat', True))
-                    ui.label('Spectators can chat in the room').classes('text-sm text-grey')
+                # Profile preview (shows settings when profile selected)
+                self.profile_preview_container = ui.element('div').classes('mt-4')
+                await self._render_profile_preview()
 
                 ui.separator()
 
@@ -145,16 +110,90 @@ class TournamentRacetimeSettingsView:
                         open_minutes.value,
                         require_link_toggle.value,
                         default_goal.value,
-                        start_delay.value,
-                        time_limit.value,
-                        streaming_required.value,
-                        auto_start.value,
-                        allow_comments.value,
-                        hide_comments.value,
-                        allow_prerace_chat.value,
-                        allow_midrace_chat.value,
-                        allow_non_entrant_chat.value,
                     )).classes('btn').props('color=positive')
+
+    async def _load_profiles(self):
+        """Load available race room profiles for the organization."""
+        from application.services.race_room_profile_service import RaceRoomProfileService
+
+        service = RaceRoomProfileService()
+        self.profiles = await service.list_profiles(self.user, self.organization.id)
+
+        # Set selected profile to tournament's current profile
+        if self.tournament.race_room_profile_id:
+            await self.tournament.fetch_related('race_room_profile')
+            self.selected_profile_id = self.tournament.race_room_profile_id
+
+    async def _on_profile_change(self, e):
+        """Handle profile selection change."""
+        self.selected_profile_id = e.value
+        await self._render_profile_preview()
+
+    async def _render_profile_preview(self):
+        """Render preview of selected profile's settings."""
+        self.profile_preview_container.clear()
+
+        with self.profile_preview_container:
+            if self.selected_profile_id is None:
+                # Show defaults
+                with ui.element('div').classes('p-4 rounded bg-grey-2'):
+                    ui.label('Default Settings (No Profile)').classes('font-bold mb-2')
+                    ui.label('Start delay: 15 seconds').classes('text-sm')
+                    ui.label('Time limit: 24 hours').classes('text-sm')
+                    ui.label('Streaming required: No').classes('text-sm')
+                    ui.label('Auto-start: Yes').classes('text-sm')
+                    ui.label('All chat permissions: Enabled').classes('text-sm')
+            else:
+                # Find and show selected profile
+                profile = next((p for p in self.profiles if p.id == self.selected_profile_id), None)
+                if profile:
+                    with ui.element('div').classes('p-4 rounded bg-grey-2'):
+                        ui.label(f'Profile: {profile.name}').classes('font-bold mb-2')
+                        if profile.description:
+                            ui.label(profile.description).classes('text-sm text-grey mb-2')
+
+                        # Display settings in a grid
+                        with ui.element('div').classes('grid grid-cols-2 gap-2 mt-3'):
+                            ui.label(f'Start delay: {profile.start_delay}s').classes('text-sm')
+                            ui.label(f'Time limit: {profile.time_limit}h').classes('text-sm')
+                            ui.label(f'Streaming required: {"Yes" if profile.streaming_required else "No"}').classes('text-sm')
+                            ui.label(f'Auto-start: {"Yes" if profile.auto_start else "No"}').classes('text-sm')
+                            ui.label(f'Allow comments: {"Yes" if profile.allow_comments else "No"}').classes('text-sm')
+                            ui.label(f'Hide comments: {"Yes" if profile.hide_comments else "No"}').classes('text-sm')
+                            ui.label(f'Pre-race chat: {"Yes" if profile.allow_prerace_chat else "No"}').classes('text-sm')
+                            ui.label(f'Mid-race chat: {"Yes" if profile.allow_midrace_chat else "No"}').classes('text-sm')
+                            ui.label(f'Non-entrant chat: {"Yes" if profile.allow_non_entrant_chat else "No"}').classes('text-sm')
+
+    async def _manage_profiles(self):
+        """Open dialog to manage race room profiles."""
+        from views.organization.race_room_profile_management import RaceRoomProfileManagementView
+
+        # Create a dialog to show the profile management view
+        with ui.dialog() as dialog:
+            with ui.element('div').classes('card dialog-card-xl'):
+                # Header
+                with ui.element('div').classes('card-header'):
+                    with ui.row().classes('items-center justify-between w-full'):
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('tune').classes('icon-medium')
+                            ui.label('Manage Race Room Profiles').classes('text-xl font-bold')
+                        ui.button(icon='close', on_click=dialog.close).props('flat round dense')
+
+                # Body with profile management view
+                with ui.element('div').classes('card-body'):
+                    view = RaceRoomProfileManagementView(self.user, self.organization)
+                    await view.render()
+
+        dialog.open()
+
+        # Reload profiles when dialog closes
+        async def on_close():
+            await self._load_profiles()
+            if self.profile_select:
+                self.profile_select.update()
+            await self._render_profile_preview()
+
+        dialog.on('close', on_close)
 
     async def _save_settings(
         self,
@@ -162,15 +201,6 @@ class TournamentRacetimeSettingsView:
         open_minutes: float,
         require_link: bool,
         default_goal: str,
-        start_delay: float,
-        time_limit: float,
-        streaming_required: bool,
-        auto_start: bool,
-        allow_comments: bool,
-        hide_comments: bool,
-        allow_prerace_chat: bool,
-        allow_midrace_chat: bool,
-        allow_non_entrant_chat: bool,
     ):
         """
         Save RaceTime settings.
@@ -180,15 +210,6 @@ class TournamentRacetimeSettingsView:
             open_minutes: Minutes before scheduled time to open room
             require_link: Whether to require RaceTime link
             default_goal: Default race goal text
-            start_delay: Countdown seconds before race starts
-            time_limit: Time limit in hours
-            streaming_required: Whether streaming is required
-            auto_start: Whether to auto-start when ready
-            allow_comments: Whether to allow race comments
-            hide_comments: Whether to hide comments until race ends
-            allow_prerace_chat: Whether to allow pre-race chat
-            allow_midrace_chat: Whether to allow mid-race chat
-            allow_non_entrant_chat: Whether to allow non-entrant chat
         """
         from application.services.tournament_service import TournamentService
 
@@ -200,16 +221,13 @@ class TournamentRacetimeSettingsView:
             racetime_auto_create=auto_create,
             room_open_minutes=int(open_minutes),
             require_racetime_link=require_link,
-            racetime_default_goal=default_goal if default_goal else None,
-            racetime_start_delay=int(start_delay),
-            racetime_time_limit=int(time_limit),
-            racetime_streaming_required=streaming_required,
-            racetime_auto_start=auto_start,
-            racetime_allow_comments=allow_comments,
-            racetime_hide_comments=hide_comments,
-            racetime_allow_prerace_chat=allow_prerace_chat,
-            racetime_allow_midrace_chat=allow_midrace_chat,
-            racetime_allow_non_entrant_chat=allow_non_entrant_chat,
+            racetime_default_goal=default_goal,
+            race_room_profile_id=self.selected_profile_id,
         )
 
-        ui.notify('RaceTime settings saved successfully', type='positive')
+        ui.notify('RaceTime settings saved successfully!', type='positive')
+        # Reload tournament
+        await self.tournament.refresh_from_db()
+        await self._load_profiles()
+        if self.profile_select:
+            self.profile_select.value = self.tournament.race_room_profile_id

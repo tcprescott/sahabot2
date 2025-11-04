@@ -91,15 +91,7 @@ class TournamentService:
         room_open_minutes: Optional[int] = None,
         require_racetime_link: Optional[bool] = None,
         racetime_default_goal: Optional[str] = None,
-        racetime_start_delay: Optional[int] = None,
-        racetime_time_limit: Optional[int] = None,
-        racetime_streaming_required: Optional[bool] = None,
-        racetime_auto_start: Optional[bool] = None,
-        racetime_allow_comments: Optional[bool] = None,
-        racetime_hide_comments: Optional[bool] = None,
-        racetime_allow_prerace_chat: Optional[bool] = None,
-        racetime_allow_midrace_chat: Optional[bool] = None,
-        racetime_allow_non_entrant_chat: Optional[bool] = None,
+        race_room_profile_id: Optional[int] = None,
     ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
@@ -127,24 +119,8 @@ class TournamentService:
             updates['require_racetime_link'] = require_racetime_link
         if racetime_default_goal is not None:
             updates['racetime_default_goal'] = racetime_default_goal
-        if racetime_start_delay is not None:
-            updates['racetime_start_delay'] = racetime_start_delay
-        if racetime_time_limit is not None:
-            updates['racetime_time_limit'] = racetime_time_limit
-        if racetime_streaming_required is not None:
-            updates['racetime_streaming_required'] = racetime_streaming_required
-        if racetime_auto_start is not None:
-            updates['racetime_auto_start'] = racetime_auto_start
-        if racetime_allow_comments is not None:
-            updates['racetime_allow_comments'] = racetime_allow_comments
-        if racetime_hide_comments is not None:
-            updates['racetime_hide_comments'] = racetime_hide_comments
-        if racetime_allow_prerace_chat is not None:
-            updates['racetime_allow_prerace_chat'] = racetime_allow_prerace_chat
-        if racetime_allow_midrace_chat is not None:
-            updates['racetime_allow_midrace_chat'] = racetime_allow_midrace_chat
-        if racetime_allow_non_entrant_chat is not None:
-            updates['racetime_allow_non_entrant_chat'] = racetime_allow_non_entrant_chat
+        if race_room_profile_id is not None:
+            updates['race_room_profile_id'] = race_room_profile_id
 
         return await self.repo.update(organization_id, tournament_id, **updates)
 
@@ -495,22 +471,53 @@ class TournamentService:
                 logger.info("Creating race room with goal: %s, invitational: %s", 
                            goal, match.racetime_invitational)
                 
-                # Use tournament-specific settings with fallback to defaults
+                # Use race room profile settings if tournament has one configured
                 tournament = match.tournament
+                
+                # Fetch race room profile if configured
+                if tournament.race_room_profile_id:
+                    await tournament.fetch_related('race_room_profile')
+                    profile = tournament.race_room_profile
+                    logger.info("Using race room profile %s (%s) for match %s", 
+                               profile.id, profile.name, match_id)
+                    # Use profile settings
+                    start_delay = profile.start_delay
+                    time_limit = profile.time_limit
+                    streaming_required = profile.streaming_required
+                    auto_start = profile.auto_start
+                    allow_comments = profile.allow_comments
+                    hide_comments = profile.hide_comments
+                    allow_prerace_chat = profile.allow_prerace_chat
+                    allow_midrace_chat = profile.allow_midrace_chat
+                    allow_non_entrant_chat = profile.allow_non_entrant_chat
+                else:
+                    logger.info("No race room profile configured for tournament %s, using defaults", 
+                               tournament.id)
+                    # Use default settings
+                    start_delay = 15
+                    time_limit = 24
+                    streaming_required = False
+                    auto_start = True
+                    allow_comments = True
+                    hide_comments = False
+                    allow_prerace_chat = True
+                    allow_midrace_chat = True
+                    allow_non_entrant_chat = True
+                
                 handler = await racetime_bot.startrace(
                     custom_goal=goal,
                     invitational=match.racetime_invitational,
                     unlisted=False,
                     info_user=match.title or f"Match #{match_id}",
-                    start_delay=getattr(tournament, 'racetime_start_delay', 15),
-                    time_limit=getattr(tournament, 'racetime_time_limit', 24),
-                    streaming_required=getattr(tournament, 'racetime_streaming_required', False),
-                    auto_start=getattr(tournament, 'racetime_auto_start', True),
-                    allow_comments=getattr(tournament, 'racetime_allow_comments', True),
-                    hide_comments=getattr(tournament, 'racetime_hide_comments', False),
-                    allow_prerace_chat=getattr(tournament, 'racetime_allow_prerace_chat', True),
-                    allow_midrace_chat=getattr(tournament, 'racetime_allow_midrace_chat', True),
-                    allow_non_entrant_chat=getattr(tournament, 'racetime_allow_non_entrant_chat', True),
+                    start_delay=start_delay,
+                    time_limit=time_limit,
+                    streaming_required=streaming_required,
+                    auto_start=auto_start,
+                    allow_comments=allow_comments,
+                    hide_comments=hide_comments,
+                    allow_prerace_chat=allow_prerace_chat,
+                    allow_midrace_chat=allow_midrace_chat,
+                    allow_non_entrant_chat=allow_non_entrant_chat,
                 )
                 
                 logger.info("startrace() returned: %s", handler)

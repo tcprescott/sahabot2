@@ -14,6 +14,7 @@ from views.organization.org_stream_channels import OrganizationStreamChannelsVie
 from views.organization.scheduled_tasks import OrganizationScheduledTasksView
 from views.organization.discord_servers import DiscordServersView
 from views.organization.org_presets import OrgPresetsView
+from views.organization.race_room_profile_management import RaceRoomProfileManagementView
 
 __all__ = [
     'OrganizationOverviewView',
@@ -26,4 +27,5 @@ __all__ = [
     'OrganizationScheduledTasksView',
     'DiscordServersView',
     'OrgPresetsView',
+    'RaceRoomProfileManagementView',
 ]

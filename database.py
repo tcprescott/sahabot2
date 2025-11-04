@@ -4,7 +4,7 @@ Database initialization and management utilities.
 
 from tortoise import Tortoise
 from config import settings
-from migrations.tortoise_config import TORTOISE_ORM
+from migrations.tortoise_config import TORTOISE_ORM, get_model_modules
 from aerich import Command
 
 async def init_db() -> None:
@@ -18,7 +18,7 @@ async def init_db() -> None:
     await command.upgrade()
     await Tortoise.init(
         db_url=settings.database_url,
-        modules={'models': ['models.user', 'models.audit_log', 'models.api_token', 'models.match_schedule', 'models.organizations', 'models.organization_invite', 'models.organization_request', 'models.settings', 'models.discord_guild', 'models.async_tournament', 'models.scheduled_task', 'models.tournament_usage', 'models.randomizer_preset', 'models.preset_namespace', 'models.preset_namespace_permission', 'models.racetime_bot', 'models.notification_subscription', 'models.notification_log']},
+        modules={'models': get_model_modules()},
         use_tz=True,
         timezone='UTC'
     )

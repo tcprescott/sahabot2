@@ -6,7 +6,7 @@ Admin commands for managing async tournaments via Discord.
 
 import discord
 from discord import app_commands
-from discord.ext import commands, tasks
+from discord.ext import commands
 import logging
 from datetime import datetime, timedelta, timezone
 
@@ -26,20 +26,12 @@ class AsyncTournamentCommands(commands.Cog):
         self.service = AsyncTournamentService()
         self._views_added = False
 
-        # Start background tasks
-        self.timeout_pending_races.start()
-        self.timeout_in_progress_races.start()
-        self.score_calculation.start()
-
     async def cog_load(self):
         """Called when the cog is loaded."""
         logger.info("AsyncTournamentCommands cog loaded")
 
     async def cog_unload(self):
         """Called when the cog is unloaded."""
-        self.timeout_pending_races.cancel()
-        self.timeout_in_progress_races.cancel()
-        self.score_calculation.cancel()
         logger.info("AsyncTournamentCommands cog unloaded")
 
     @commands.Cog.listener()
@@ -196,138 +188,6 @@ class AsyncTournamentCommands(commands.Cog):
             await interaction.followup.send("Scores recalculated successfully!", ephemeral=True)
         else:
             await interaction.followup.send("Failed to recalculate scores.", ephemeral=True)
-
-    # Background tasks
-
-    @tasks.loop(seconds=60)
-    async def timeout_pending_races(self):
-        """Background task to timeout pending races."""
-        try:
-            pending_races = await AsyncTournamentRace.filter(
-                status='pending',
-                discord_thread_id__isnull=False
-            ).prefetch_related('user')
-
-            for race in pending_races:
-                # Set default timeout if not set
-                if not race.thread_timeout_time:
-                    if race.thread_open_time:
-                        race.thread_timeout_time = race.thread_open_time + timedelta(minutes=20)
-                        await race.save()
-
-                if not race.thread_timeout_time:
-                    continue
-
-                warning_time = race.thread_timeout_time - timedelta(minutes=10)
-                forfeit_time = race.thread_timeout_time
-
-                thread = self.bot.get_channel(race.discord_thread_id)
-                if not thread:
-                    logger.warning("Cannot access thread for race %s", race.id)
-                    continue
-
-                now = datetime.now(timezone.utc)
-
-                # Send warning only if not already sent
-                if warning_time <= now < forfeit_time and not getattr(race, "warning_sent", False):
-                    await thread.send(
-                        f"<@{race.user.discord_id}>, your race will be forfeited on "
-                        f"{discord.utils.format_dt(forfeit_time, 'f')} "
-                        f"({discord.utils.format_dt(forfeit_time, 'R')}) if you don't start it.",
-                        allowed_mentions=discord.AllowedMentions(users=True)
-                    )
-                    race.warning_sent = True
-                    await race.save()
-
-                # Auto-forfeit
-                if forfeit_time <= now:
-                    await thread.send(
-                        f"<@{race.user.discord_id}>, this race has been automatically forfeited due to timeout.",
-                        allowed_mentions=discord.AllowedMentions(users=True)
-                    )
-                    race.status = 'forfeit'
-                    await race.save()
-                    await self.service.repo.create_audit_log(
-                        tournament_id=race.tournament_id,
-                        action="auto_forfeit",
-                        details=f"Race {race.id} automatically forfeited (pending timeout)",
-                        user_id=None,
-                    )
-
-        except Exception as e:
-            logger.error("Error in timeout_pending_races: %s", e, exc_info=True)
-
-    @tasks.loop(seconds=60)
-    async def timeout_in_progress_races(self):
-        """Background task to timeout in-progress races."""
-        try:
-            in_progress = await AsyncTournamentRace.filter(
-                status='in_progress',
-                discord_thread_id__isnull=False
-            ).prefetch_related('user')
-
-            for race in in_progress:
-                if not race.start_time:
-                    continue
-
-                # 12 hour timeout
-                timeout_time = race.start_time + timedelta(hours=12)
-
-                if datetime.now(timezone.utc) >= timeout_time:
-                    thread = self.bot.get_channel(race.discord_thread_id)
-                    if thread:
-                        await thread.send(
-                            f"<@{race.user.discord_id}>, this race has exceeded 12 hours and has been forfeited.",
-                            allowed_mentions=discord.AllowedMentions(users=True)
-                        )
-
-                    race.status = 'forfeit'
-                    await race.save()
-                    await self.service.repo.create_audit_log(
-                        tournament_id=race.tournament_id,
-                        action="auto_forfeit",
-                        details=f"Race {race.id} automatically forfeited (12 hour timeout)",
-                        user_id=None,
-                    )
-
-        except Exception as e:
-            logger.error("Error in timeout_in_progress_races: %s", e, exc_info=True)
-
-    @tasks.loop(hours=1)
-    async def score_calculation(self):
-        """Background task to recalculate scores hourly."""
-        try:
-            active_tournaments = await AsyncTournament.filter(is_active=True)
-
-            for tournament in active_tournaments:
-                logger.info("Recalculating scores for tournament %s", tournament.id)
-                try:
-                    await self.service.calculate_tournament_scores(
-                        user=None,  # System task, no user
-                        organization_id=tournament.organization_id,
-                        tournament_id=tournament.id,
-                        system_task=True,  # Bypass authorization for automated task
-                    )
-                except Exception as e:
-                    logger.error("Error calculating scores for tournament %s: %s", tournament.id, e)
-
-        except Exception as e:
-            logger.error("Error in score_calculation: %s", e, exc_info=True)
-
-    @timeout_pending_races.before_loop
-    async def before_timeout_pending_races(self):
-        """Wait for bot to be ready."""
-        await self.bot.wait_until_ready()
-
-    @timeout_in_progress_races.before_loop
-    async def before_timeout_in_progress_races(self):
-        """Wait for bot to be ready."""
-        await self.bot.wait_until_ready()
-
-    @score_calculation.before_loop
-    async def before_score_calculation(self):
-        """Wait for bot to be ready."""
-        await self.bot.wait_until_ready()
 
 
 async def setup(bot: commands.Bot):

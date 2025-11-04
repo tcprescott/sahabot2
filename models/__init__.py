@@ -26,6 +26,7 @@ from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
 from models.preset_namespace_permission import PresetNamespacePermission
 from models.racetime_bot import RacetimeBot, RacetimeBotOrganization, BotStatus
+from models.race_room_profile import RaceRoomProfile
 from models.notification_subscription import NotificationSubscription, NotificationMethod, NotificationEventType
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
 
@@ -65,6 +66,7 @@ __all__ = [
     'RacetimeBot',
     'RacetimeBotOrganization',
     'BotStatus',
+    'RaceRoomProfile',
     'NotificationSubscription',
     'NotificationMethod',
     'NotificationEventType',
