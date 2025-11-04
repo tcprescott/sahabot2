@@ -40,6 +40,9 @@ class NotificationService:
         """
         Subscribe a user to event notifications.
 
+        Authorization: User can only create subscriptions for themselves
+        (enforced by passing user parameter to repository).
+
         Args:
             user: User creating the subscription
             event_type: Event type to subscribe to
@@ -116,6 +119,9 @@ class NotificationService:
         """
         Get all subscriptions for a user.
 
+        Authorization: User can only view their own subscriptions
+        (enforced by user_id filter in repository query).
+
         Args:
             user: User
             organization: Optional organization filter
@@ -174,6 +180,9 @@ class NotificationService:
 
         This method creates notification log entries that will be processed
         by the appropriate handlers (Discord, Email, etc).
+
+        Authorization: Notifications are created for the specified user only
+        (user parameter scopes the operation).
 
         Args:
             user: User to notify

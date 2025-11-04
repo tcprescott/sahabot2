@@ -60,6 +60,9 @@ class TournamentUsageService:
 
         Returns a list of tournament info with organization context.
 
+        Authorization: Users can only view their own tournament history
+        (enforced by user parameter scoping in repository query).
+
         Args:
             user: User to fetch history for
             limit: Maximum number of tournaments to return (default 5)
