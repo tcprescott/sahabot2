@@ -25,6 +25,7 @@ from models.async_tournament import (
     AsyncTournamentPool,
     AsyncTournamentPermalink,
     AsyncTournamentRace,
+    AsyncTournamentLiveRace,
     AsyncTournamentAuditLog,
 )
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
@@ -62,6 +63,7 @@ __all__ = [
     'AsyncTournamentPool',
     'AsyncTournamentPermalink',
     'AsyncTournamentRace',
+    'AsyncTournamentLiveRace',
     'AsyncTournamentAuditLog',
     'ScheduledTask',
     'TaskType',

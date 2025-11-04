@@ -13,6 +13,7 @@ from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from models import SYSTEM_USER_ID
 from application.services.task_scheduler_service import TaskSchedulerService
 from application.services.async_tournament_service import AsyncTournamentService
+from application.services.async_live_race_service import AsyncLiveRaceService
 from discordbot.client import get_bot_instance
 
 logger = logging.getLogger(__name__)
@@ -366,6 +367,59 @@ async def handle_async_tournament_score_calculation(task: ScheduledTask) -> None
         raise
 
 
+async def handle_async_live_race_open(task: ScheduledTask) -> None:
+    """
+    Handler for opening a RaceTime.gg room for a scheduled live race.
+
+    This task handler opens a race room on RaceTime.gg for an async tournament live race.
+    It should be triggered 30-60 minutes before the scheduled race time.
+
+    Expected task_config:
+    {
+        "live_race_id": 123,  # ID of AsyncTournamentLiveRace
+        "organization_id": 1,  # Organization ID for context
+    }
+
+    Args:
+        task: ScheduledTask to execute
+
+    Raises:
+        ValueError: If required configuration is missing
+        RuntimeError: If room opening fails
+    """
+    logger.info("Opening RaceTime.gg room for live race task: %s", task.name)
+
+    try:
+        # Extract configuration
+        config = task.task_config or {}
+        live_race_id = config.get('live_race_id')
+        organization_id = config.get('organization_id')
+
+        if not live_race_id:
+            raise ValueError("live_race_id is required in task_config")
+        if not organization_id:
+            raise ValueError("organization_id is required in task_config")
+
+        # Use service to open race room
+        service = AsyncLiveRaceService()
+        live_race = await service.open_race_room(live_race_id)
+
+        logger.info(
+            "Successfully opened race room for live race %s: %s",
+            live_race_id,
+            live_race.racetime_url,
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error opening race room for live race (task %s): %s",
+            task.id,
+            e,
+            exc_info=True,
+        )
+        raise
+
+
 def register_task_handlers() -> None:
     """
     Register all task handlers with the TaskSchedulerService.
@@ -379,5 +433,6 @@ def register_task_handlers() -> None:
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_TIMEOUT_PENDING, handle_async_tournament_timeout_pending)
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS, handle_async_tournament_timeout_in_progress)
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_SCORE_CALCULATION, handle_async_tournament_score_calculation)
+    TaskSchedulerService.register_task_handler(TaskType.ASYNC_LIVE_RACE_OPEN, handle_async_live_race_open)
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")

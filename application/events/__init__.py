@@ -51,6 +51,13 @@ from application.events.types import (
     RaceRejectedEvent,
     MatchScheduledEvent,
     MatchCompletedEvent,
+    # Async Live Race events
+    AsyncLiveRaceCreatedEvent,
+    AsyncLiveRaceUpdatedEvent,
+    AsyncLiveRaceRoomOpenedEvent,
+    AsyncLiveRaceStartedEvent,
+    AsyncLiveRaceFinishedEvent,
+    AsyncLiveRaceCancelledEvent,
     # Crew events
     CrewAddedEvent,
     CrewApprovedEvent,
@@ -116,6 +123,13 @@ __all__ = [
     "RaceRejectedEvent",
     "MatchScheduledEvent",
     "MatchCompletedEvent",
+    # Async Live Race events
+    "AsyncLiveRaceCreatedEvent",
+    "AsyncLiveRaceUpdatedEvent",
+    "AsyncLiveRaceRoomOpenedEvent",
+    "AsyncLiveRaceStartedEvent",
+    "AsyncLiveRaceFinishedEvent",
+    "AsyncLiveRaceCancelledEvent",
     # Crew events
     "CrewAddedEvent",
     "CrewApprovedEvent",

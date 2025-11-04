@@ -14,6 +14,7 @@ from tortoise.models import Model
 
 if TYPE_CHECKING:
     from .organizations import Organization
+    from .race_room_profile import RaceRoomProfile
 
 
 class AsyncTournament(Model):
@@ -43,6 +44,7 @@ class AsyncTournament(Model):
     # related fields (reverse relations)
     pools: fields.ReverseRelation["AsyncTournamentPool"]
     races: fields.ReverseRelation["AsyncTournamentRace"]
+    live_races: fields.ReverseRelation["AsyncTournamentLiveRace"]
     audit_logs: fields.ReverseRelation["AsyncTournamentAuditLog"]
 
     class Meta:
@@ -121,6 +123,14 @@ class AsyncTournamentRace(Model):
     tournament = fields.ForeignKeyField('models.AsyncTournament', related_name='races')
     permalink = fields.ForeignKeyField('models.AsyncTournamentPermalink', related_name='races')
     user = fields.ForeignKeyField('models.User', related_name='async_tournament_races')
+    
+    # Link to live race (if this race was part of a live event)
+    live_race = fields.ForeignKeyField(
+        'models.AsyncTournamentLiveRace',
+        related_name='participant_races',
+        null=True
+    )
+    
     discord_thread_id = fields.BigIntField(null=True)  # Discord thread for this race
     thread_open_time = fields.DatetimeField(null=True)
     thread_timeout_time = fields.DatetimeField(null=True)
@@ -192,6 +202,94 @@ class AsyncTournamentRace(Model):
             'rejected': 'Pending Second Review'
         }
         return status_map.get(self.review_status, self.review_status.title())
+
+
+class AsyncTournamentLiveRace(Model):
+    """
+    Live race event for async tournaments.
+    
+    Represents a scheduled race where all eligible participants race the same
+    seed simultaneously on RaceTime.gg. Results are automatically recorded.
+    Unlike standard async races (individual, thread-based), live races are:
+    - Scheduled at specific times
+    - Open to all eligible tournament participants
+    - Hosted on RaceTime.gg with automatic result tracking
+    """
+    id = fields.IntField(pk=True)
+    tournament = fields.ForeignKeyField('models.AsyncTournament', related_name='live_races')
+    pool = fields.ForeignKeyField('models.AsyncTournamentPool', related_name='live_races')
+    permalink = fields.ForeignKeyField('models.AsyncTournamentPermalink', related_name='live_races', null=True)
+    
+    # Scheduling
+    episode_id = fields.IntField(null=True, unique=True)  # SpeedGaming episode ID (if applicable)
+    scheduled_at = fields.DatetimeField(null=True)  # When race is scheduled to start
+    match_title = fields.CharField(max_length=200, null=True)  # Display name for race
+    
+    # RaceTime.gg integration
+    racetime_slug = fields.CharField(max_length=200, null=True, unique=True)  # e.g., "alttpr/cool-icerod-1234"
+    racetime_goal = fields.CharField(max_length=255, null=True)  # RaceTime.gg goal
+    room_open_time = fields.DatetimeField(null=True)  # When room was opened
+    
+    # Room configuration (optional override of tournament's profile)
+    # If null, inherits from tournament.race_room_profile or org default profile
+    race_room_profile = fields.ForeignKeyField(
+        'models.RaceRoomProfile',
+        related_name='live_races',
+        null=True
+    )
+    
+    # Status tracking
+    status = fields.CharField(max_length=45, default='scheduled')
+    # scheduled: Room not yet created
+    # pending: Room created, waiting for race to start
+    # in_progress: Race started
+    # finished: Race completed
+    # cancelled: Race cancelled
+    
+    created_at = fields.DatetimeField(auto_now_add=True)
+    updated_at = fields.DatetimeField(auto_now=True)
+
+    # related fields (reverse relations)
+    participant_races: fields.ReverseRelation["AsyncTournamentRace"]
+
+    class Meta:
+        table = "async_tournament_live_races"
+
+    @property
+    def racetime_url(self) -> Optional[str]:
+        """Get RaceTime.gg URL for this race."""
+        if not self.racetime_slug:
+            return None
+        return f"https://racetime.gg/{self.racetime_slug}"
+    
+    async def get_effective_profile(self) -> Optional[RaceRoomProfile]:
+        """
+        Get the effective race room profile for this live race.
+        
+        Priority:
+        1. Live race's specific profile (if set)
+        2. Tournament's profile (if set)
+        3. Organization's default profile
+        4. None (use system defaults)
+        
+        Returns:
+            RaceRoomProfile if found, None otherwise
+        """
+        # Check if this live race has a specific profile
+        await self.fetch_related('race_room_profile')
+        if self.race_room_profile is not None:
+            return self.race_room_profile
+        
+        # Check if tournament has a profile
+        await self.fetch_related('tournament__race_room_profile')
+        if self.tournament.race_room_profile is not None:
+            return self.tournament.race_room_profile
+        
+        # Get org default profile (no auth check needed for internal model method)
+        from application.repositories.race_room_profile_repository import RaceRoomProfileRepository
+        await self.fetch_related('tournament__organization')
+        repo = RaceRoomProfileRepository()
+        return await repo.get_default_for_org(self.tournament.organization_id)
 
 
 class AsyncTournamentAuditLog(Model):

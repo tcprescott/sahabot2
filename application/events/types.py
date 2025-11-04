@@ -195,6 +195,68 @@ class MatchCompletedEvent(EntityEvent):
 
 
 # ============================================================================
+# Async Live Race Events
+# ============================================================================
+
+@dataclass(frozen=True)
+class AsyncLiveRaceCreatedEvent(EntityEvent):
+    """Emitted when a new live race is scheduled."""
+    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    tournament_id: Optional[int] = None
+    pool_id: Optional[int] = None
+    scheduled_at: Optional[str] = None  # ISO format
+    match_title: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class AsyncLiveRaceUpdatedEvent(EntityEvent):
+    """Emitted when a live race is updated."""
+    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    tournament_id: Optional[int] = None
+    changed_fields: List[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class AsyncLiveRaceRoomOpenedEvent(EntityEvent):
+    """Emitted when a RaceTime.gg room is opened for a live race."""
+    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    tournament_id: Optional[int] = None
+    racetime_slug: Optional[str] = None
+    racetime_url: Optional[str] = None
+    scheduled_at: Optional[str] = None  # ISO format
+    priority: EventPriority = EventPriority.HIGH
+
+
+@dataclass(frozen=True)
+class AsyncLiveRaceStartedEvent(EntityEvent):
+    """Emitted when a live race countdown completes and race begins."""
+    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    tournament_id: Optional[int] = None
+    racetime_slug: Optional[str] = None
+    participant_count: int = 0
+    priority: EventPriority = EventPriority.HIGH
+
+
+@dataclass(frozen=True)
+class AsyncLiveRaceFinishedEvent(EntityEvent):
+    """Emitted when a live race completes and results are recorded."""
+    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    tournament_id: Optional[int] = None
+    racetime_slug: Optional[str] = None
+    finisher_count: int = 0
+    priority: EventPriority = EventPriority.HIGH
+
+
+@dataclass(frozen=True)
+class AsyncLiveRaceCancelledEvent(EntityEvent):
+    """Emitted when a live race is cancelled."""
+    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    tournament_id: Optional[int] = None
+    reason: Optional[str] = None
+    priority: EventPriority = EventPriority.NORMAL
+
+
+# ============================================================================
 # Crew Events
 # ============================================================================
 
