@@ -9,6 +9,7 @@ import asyncio
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from nicegui import app as nicegui_app, ui
 from config import settings
 from database import init_db, close_db
@@ -17,6 +18,7 @@ from application.services.racetime_service import RacetimeService
 from application.services.task_scheduler_service import TaskSchedulerService
 from application.services.task_handlers import register_task_handlers
 from application.services.notification_processor import start_notification_processor, stop_notification_processor
+from middleware.security import SecurityHeadersMiddleware, HTTPSRedirectMiddleware
 from api import register_api
 import frontend
 
@@ -152,6 +154,27 @@ Per-user limits can be customized. When exceeded, the API returns HTTP 429 with 
         },
     ],
 )
+
+# Configure CORS
+# In production, this is restricted to BASE_URL only
+# In development, allows all origins for convenience during local development
+# NOTE: The wildcard '*' in development mode can expose the application to
+# cross-origin attacks. For a more secure development setup, replace with:
+# allowed_origins = [settings.BASE_URL, "http://localhost:8080", "http://localhost:3000"]
+allowed_origins = ["*"] if settings.DEBUG else [settings.BASE_URL]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
+)
+
+# Add security middleware
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(HTTPSRedirectMiddleware)
 
 # Register API routes
 register_api(app)

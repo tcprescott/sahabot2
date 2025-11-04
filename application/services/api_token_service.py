@@ -16,6 +16,19 @@ logger = logging.getLogger(__name__)
 
 
 def _hash_token(token: str) -> str:
+    """
+    Hash a token using SHA256.
+
+    Note: The token lookup is performed by the database using an indexed query,
+    so timing attacks are not a concern. The hash comparison happens at the
+    database level, not in application code.
+
+    Args:
+        token: Plaintext token to hash
+
+    Returns:
+        str: Hex-encoded hash of the token
+    """
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
