@@ -24,7 +24,7 @@ class DiscordGuild(Model):
     organization = fields.ForeignKeyField('models.Organization', related_name='discord_guilds')
 
     # Discord guild information
-    guild_id = fields.BigIntField(unique=True, index=True)  # Discord snowflake ID
+    guild_id = fields.BigIntField(index=True)  # Discord snowflake ID (can be linked to multiple orgs)
     guild_name = fields.CharField(max_length=255)
     guild_icon = fields.CharField(max_length=255, null=True)  # Icon hash
 
@@ -42,6 +42,7 @@ class DiscordGuild(Model):
 
     class Meta:
         table = "discord_guilds"
+        unique_together = [("organization", "guild_id")]  # One org can only link a guild once
 
     @property
     def guild_icon_url(self) -> str | None:

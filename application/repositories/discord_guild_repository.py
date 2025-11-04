@@ -13,8 +13,20 @@ class DiscordGuildRepository:
     """Data access methods for Discord guilds."""
 
     async def get_by_guild_id(self, guild_id: int) -> Optional[DiscordGuild]:
-        """Get a Discord guild by its Discord guild ID."""
+        """
+        Get a Discord guild by its Discord guild ID.
+
+        Note: This returns the first match. Since guilds can be linked to multiple
+        organizations, use get_guild(organization_id, guild_id) for organization-specific lookup.
+        """
         return await DiscordGuild.get_or_none(guild_id=guild_id).prefetch_related('organization', 'linked_by')
+
+    async def get_guild(self, organization_id: int, guild_id: int) -> Optional[DiscordGuild]:
+        """Get a Discord guild for a specific organization."""
+        return await DiscordGuild.get_or_none(
+            organization_id=organization_id,
+            guild_id=guild_id
+        ).prefetch_related('organization', 'linked_by')
 
     async def get_by_id(self, guild_pk: int) -> Optional[DiscordGuild]:
         """Get a Discord guild by primary key."""

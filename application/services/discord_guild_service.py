@@ -82,22 +82,21 @@ class DiscordGuildService:
         code: str,
         redirect_uri: str,
         guild_id: Optional[str] = None
-    ) -> Optional[DiscordGuild]:
+    ) -> tuple[Optional[DiscordGuild], Optional[str]]:
         """
-        Verify OAuth2 code and link guild to organization.
-
-        This exchanges the OAuth2 code for tokens, verifies the user has
-        admin permissions in the guild, and creates the guild link.
+        Verify and link a Discord guild to an organization.
 
         Args:
             user: User linking the guild
             organization_id: Organization to link to
-            code: OAuth2 authorization code
+            code: OAuth2 code from Discord
             redirect_uri: Redirect URI used in OAuth2 flow
-            guild_id: Discord guild ID (from callback, if provided)
+            guild_id: Expected guild ID (optional)
 
         Returns:
-            Created DiscordGuild or None if verification failed
+            Tuple of (DiscordGuild or None, error_code or None)
+            Error codes: 'no_membership', 'oauth_failed', 'no_access_token',
+                        'guild_not_found', 'no_admin_permissions', 'already_linked'
         """
         # Verify user has permission to manage this organization
         member = await self.org_service.get_member(organization_id, user.id)
@@ -107,7 +106,7 @@ class DiscordGuildService:
                 user.id,
                 organization_id
             )
-            return None
+            return None, 'no_membership'
 
         logger.info(
             "User %s linking guild %s to org %s",
@@ -120,12 +119,12 @@ class DiscordGuildService:
         token_data = await self._exchange_code(code, redirect_uri)
         if not token_data:
             logger.error("Failed to exchange OAuth2 code for org %s", organization_id)
-            return None
+            return None, 'oauth_failed'
 
         access_token = token_data.get('access_token')
         if not access_token:
             logger.error("No access token in response for org %s", organization_id)
-            return None
+            return None, 'no_access_token'
 
         logger.debug("Successfully obtained access token")
 
@@ -136,7 +135,7 @@ class DiscordGuildService:
                 "Failed to get guild info from Discord API (guild_id=%s)",
                 guild_id or "not provided"
             )
-            return None
+            return None, 'guild_not_found'
 
         logger.debug("Guild info retrieved: %s", guild_info.get('name'))
 
@@ -153,17 +152,17 @@ class DiscordGuildService:
                 user.id,
                 actual_guild_id
             )
-            return None
+            return None, 'no_admin_permissions'
 
-        # Check if guild is already linked
-        existing = await self.repo.get_by_guild_id(int(actual_guild_id))
+        # Check if this organization already has this guild linked
+        existing = await self.repo.get_guild(organization_id, int(actual_guild_id))
         if existing:
             logger.warning(
                 "Guild %s is already linked to org %s",
                 actual_guild_id,
-                existing.organization_id
+                organization_id
             )
-            return None
+            return None, 'already_linked'
 
         # Create the guild link
         guild = await self.repo.create(
@@ -183,7 +182,7 @@ class DiscordGuildService:
             user.id
         )
 
-        # Emit guild linked event
+        # Emit event
         await EventBus.emit(DiscordGuildLinkedEvent(
             user_id=user.id,
             organization_id=organization_id,
@@ -192,7 +191,7 @@ class DiscordGuildService:
             guild_name=guild.guild_name,
         ))
 
-        return guild
+        return guild, None
 
     async def _exchange_code(self, code: str, redirect_uri: str) -> Optional[dict]:
         """Exchange OAuth2 code for access token."""

@@ -98,7 +98,7 @@ def register():
             redirect_uri = f"{base_url}/discord-guild/callback"
 
             try:
-                guild = await service.verify_and_link_guild(
+                guild, error_code = await service.verify_and_link_guild(
                     user=page.user,
                     organization_id=organization_id,
                     code=code,
@@ -117,14 +117,27 @@ def register():
                         f'/orgs/{organization_id}/admin?view=discord_servers&success=discord_server_linked'
                     )
                 else:
-                    # Failed to link
+                    # Failed to link - use specific error message
                     logger.warning(
-                        "Failed to link Discord guild for organization %s",
-                        organization_id
+                        "Failed to link Discord guild for organization %s (error: %s)",
+                        organization_id,
+                        error_code or 'unknown'
                     )
-                    # Redirect to organization admin page with error
+
+                    # Map error codes to user-friendly messages
+                    error_messages = {
+                        'no_membership': 'not_organization_member',
+                        'oauth_failed': 'oauth_authentication_failed',
+                        'no_access_token': 'oauth_authentication_failed',
+                        'guild_not_found': 'discord_server_not_found',
+                        'no_admin_permissions': 'insufficient_discord_permissions',
+                        'already_linked': 'discord_server_already_linked',
+                    }
+                    error_msg = error_messages.get(error_code, 'failed_to_link_discord_server')
+
+                    # Redirect to organization admin page with specific error
                     ui.navigate.to(
-                        f'/orgs/{organization_id}/admin?view=discord_servers&error=failed_to_link_discord_server'
+                        f'/orgs/{organization_id}/admin?view=discord_servers&error={error_msg}'
                     )
 
             except Exception as e:
