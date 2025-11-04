@@ -385,3 +385,171 @@ class RacetimeRoomOpenedEvent(EntityEvent):
     opened_by_user_id: Optional[int] = None
 
 
+@dataclass(frozen=True)
+class RacetimeRaceStatusChangedEvent(EntityEvent):
+    """
+    Emitted when a RaceTime.gg race changes status.
+
+    Status values from racetime.gg:
+    - open: Race room is open for entrants to join
+    - invitational: Race room is invite-only
+    - pending: Race countdown has started
+    - in_progress: Race is currently running
+    - finished: Race has completed
+    - cancelled: Race was cancelled
+    """
+    entity_type: str = field(default="RacetimeRace", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    old_status: Optional[str] = None  # Previous status value
+    new_status: str = ""  # Current status value
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    entrant_count: int = 0  # Number of entrants in race
+    started_at: Optional[str] = None  # ISO 8601 datetime when race started (if in_progress or finished)
+    ended_at: Optional[str] = None  # ISO 8601 datetime when race ended (if finished or cancelled)
+    priority: EventPriority = EventPriority.HIGH
+
+
+@dataclass(frozen=True)
+class RacetimeEntrantStatusChangedEvent(EntityEvent):
+    """
+    Emitted when a racer's status changes in a RaceTime.gg race.
+
+    Tracks status changes like joining, readying up, starting, finishing, forfeiting, etc.
+
+    Entrant status values from racetime.gg:
+    - requested: User has requested to join (invitational races only)
+    - invited: User has been invited but not yet joined
+    - not_ready: User has joined but not marked ready
+    - ready: User is ready to race
+    - in_progress: User is currently racing
+    - done: User has finished the race
+    - dnf: User did not finish (forfeited)
+    - dq: User was disqualified
+    """
+    entity_type: str = field(default="RacetimeEntrant", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    racetime_user_id: str = ""  # Racetime.gg user hash ID
+    racetime_user_name: str = ""  # Racetime.gg user name
+    user_id: Optional[int] = None  # Application user ID (None if racetime account not linked)
+    old_status: Optional[str] = None  # Previous status value
+    new_status: str = ""  # Current status value
+    finish_time: Optional[str] = None  # ISO 8601 duration (e.g., "PT1H23M45S") if done
+    place: Optional[int] = None  # Placement if finished (1, 2, 3, etc.)
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    race_status: str = ""  # Current overall race status
+    priority: EventPriority = EventPriority.NORMAL
+
+
+@dataclass(frozen=True)
+class RacetimeEntrantJoinedEvent(EntityEvent):
+    """
+    Emitted when a player joins a RaceTime.gg race room.
+    
+    This event fires when a new entrant first appears in the race,
+    regardless of their initial status (requested, invited, not_ready, etc.).
+    """
+    entity_type: str = field(default="RacetimeEntrant", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    racetime_user_id: str = ""  # Racetime.gg user hash ID
+    racetime_user_name: str = ""  # Racetime.gg user name
+    user_id: Optional[int] = None  # Application user ID (None if racetime account not linked)
+    initial_status: str = ""  # Initial status when joining (usually "not_ready" or "requested")
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    race_status: str = ""  # Current overall race status
+    priority: EventPriority = EventPriority.NORMAL
+
+
+@dataclass(frozen=True)
+class RacetimeEntrantLeftEvent(EntityEvent):
+    """
+    Emitted when a player leaves a RaceTime.gg race room.
+    
+    This event fires when an entrant is removed from the race
+    (either voluntarily or by race monitors).
+    """
+    entity_type: str = field(default="RacetimeEntrant", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    racetime_user_id: str = ""  # Racetime.gg user hash ID
+    racetime_user_name: str = ""  # Racetime.gg user name
+    user_id: Optional[int] = None  # Application user ID (None if racetime account not linked)
+    last_status: str = ""  # Status when they left
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    race_status: str = ""  # Current overall race status
+    priority: EventPriority = EventPriority.NORMAL
+
+
+@dataclass(frozen=True)
+class RacetimeEntrantInvitedEvent(EntityEvent):
+    """
+    Emitted when a player is invited to a RaceTime.gg race room.
+    
+    This event fires when the bot invites a user to the race.
+    Note: This only fires for invitations sent by this bot instance,
+    not for invitations sent via the web UI or by other bots.
+    """
+    entity_type: str = field(default="RacetimeEntrant", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    racetime_user_id: str = ""  # Racetime.gg user hash ID being invited
+    racetime_user_name: Optional[str] = None  # Racetime.gg user name (if available)
+    user_id: Optional[int] = None  # Application user ID (None if racetime account not linked)
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    race_status: str = ""  # Current overall race status
+    priority: EventPriority = EventPriority.NORMAL
+
+
+@dataclass(frozen=True)
+class RacetimeBotJoinedRaceEvent(EntityEvent):
+    """
+    Emitted when the bot joins an existing RaceTime.gg race room.
+    
+    This event fires when the bot's handler is created for a race
+    it is joining (not creating).
+    """
+    entity_type: str = field(default="RacetimeRace", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    race_status: str = ""  # Current race status when bot joined
+    entrant_count: int = 0  # Number of entrants when bot joined
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    bot_action: str = "join"  # Always "join" for this event
+    priority: EventPriority = EventPriority.HIGH
+
+
+@dataclass(frozen=True)
+class RacetimeBotCreatedRaceEvent(EntityEvent):
+    """
+    Emitted when the bot creates/opens a new RaceTime.gg race room.
+    
+    This event fires when the bot successfully creates a new race room
+    (via startrace or equivalent).
+    """
+    entity_type: str = field(default="RacetimeRace", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    goal: str = ""  # Race goal text
+    invitational: bool = False  # Whether race is invite-only
+    match_id: Optional[int] = None  # Associated match ID if any
+    tournament_id: Optional[int] = None  # Associated tournament ID if any
+    bot_action: str = "create"  # Always "create" for this event
+    priority: EventPriority = EventPriority.HIGH
+
+
+

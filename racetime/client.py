@@ -27,6 +27,17 @@ import aiohttp
 from racetime_bot import Bot, RaceHandler, monitor_cmd
 from models import BotStatus
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
+from application.repositories.user_repository import UserRepository
+from application.events import (
+    EventBus,
+    RacetimeRaceStatusChangedEvent,
+    RacetimeEntrantStatusChangedEvent,
+    RacetimeEntrantJoinedEvent,
+    RacetimeEntrantLeftEvent,
+    RacetimeEntrantInvitedEvent,
+    RacetimeBotJoinedRaceEvent,
+    RacetimeBotCreatedRaceEvent,
+)
 from config import settings
 
 # Configure logging
@@ -38,7 +49,38 @@ class SahaRaceHandler(RaceHandler):
     Race handler for SahaBot2.
     
     Handles individual race rooms and commands.
+    Emits events when race or entrant status changes.
     """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Track previous entrant statuses to detect changes
+        self._previous_entrant_statuses: dict[str, str] = {}
+        # Track all known entrants to detect joins/leaves
+        self._previous_entrant_ids: set[str] = set()
+        # Flag to track if this is the first data update (to avoid false join events on bot startup)
+        self._first_data_update: bool = True
+        # Flag to track if bot created this room (vs joining existing)
+        self._bot_created_room: bool = False
+        # Repository for user lookups
+        self._user_repository = UserRepository()
+    
+    async def _get_user_id_from_racetime_id(self, racetime_user_id: str) -> Optional[int]:
+        """
+        Look up application user ID from racetime user ID.
+        
+        Args:
+            racetime_user_id: Racetime.gg user hash ID
+            
+        Returns:
+            Optional[int]: Application user ID if found, None if racetime account not linked
+        """
+        try:
+            user = await self._user_repository.get_by_racetime_id(racetime_user_id)
+            return user.id if user else None
+        except Exception as e:
+            logger.warning("Error looking up user by racetime_id %s: %s", racetime_user_id, e)
+            return None
     
     @monitor_cmd
     async def ex_test(self, _args, _message):
@@ -54,13 +96,48 @@ class SahaRaceHandler(RaceHandler):
         Called when the handler is first created.
         
         Use this to perform initial setup for the race.
+        Emits RacetimeBotJoinedRaceEvent or RacetimeBotCreatedRaceEvent.
         """
-        logger.info("Race handler started for race: %s", self.data.get('name'))
+        race_name = self.data.get('name', 'unknown')
+        logger.info("Race handler started for race: %s", race_name)
+        
+        # Extract race details
+        category = self.data.get('category', {}).get('slug', '')
+        room_slug = race_name
+        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        race_status = self.data.get('status', {}).get('value', 'unknown')
+        entrant_count = len(self.data.get('entrants', []))
+        
+        # Emit appropriate event based on whether bot created or joined the room
+        if self._bot_created_room:
+            logger.info("Bot created race room: %s", room_slug)
+            await EventBus.emit(RacetimeBotCreatedRaceEvent(
+                user_id=None,  # System event
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                goal=self.data.get('goal', {}).get('name', ''),
+                invitational=not self.data.get('unlisted', False),
+                bot_action="create",
+            ))
+        else:
+            logger.info("Bot joined existing race room: %s", room_slug)
+            await EventBus.emit(RacetimeBotJoinedRaceEvent(
+                user_id=None,  # System event
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                race_status=race_status,
+                entrant_count=entrant_count,
+                bot_action="join",
+            ))
     # Initial setup hook for race handler
     
     async def end(self):
         """
-        Called when the handler is being torn down.
+        Called when the handler is being tear down.
         
         Use this to perform cleanup.
         """
@@ -71,11 +148,214 @@ class SahaRaceHandler(RaceHandler):
         """
         Called whenever race data is updated.
         
+        Tracks race status changes, entrant status changes, joins, and leaves,
+        emitting appropriate events for each.
+        
         Args:
             data: Updated race data from racetime.gg
         """
-    # Handle race data updates (placeholder)
-    logger.debug("Race data update received")
+        new_race_data = data.get('race', {})
+        old_race_data = self.data if self.data else {}
+        
+        # Extract identifiers
+        category = new_race_data.get('category', {}).get('slug', '')
+        room_slug = new_race_data.get('name', '')
+        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        new_status = new_race_data.get('status', {}).get('value')
+        
+        # Check for race status changes
+        old_status = old_race_data.get('status', {}).get('value') if old_race_data else None
+        
+        if old_status and new_status and old_status != new_status:
+            logger.info(
+                "Race %s status changed: %s -> %s",
+                room_slug,
+                old_status,
+                new_status
+            )
+            
+            # Emit race status changed event
+            await EventBus.emit(RacetimeRaceStatusChangedEvent(
+                user_id=None,  # System event, no specific user
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                old_status=old_status,
+                new_status=new_status,
+                entrant_count=len(new_race_data.get('entrants', [])),
+                started_at=new_race_data.get('started_at'),
+                ended_at=new_race_data.get('ended_at'),
+            ))
+        
+        # Process entrants
+        new_entrants = new_race_data.get('entrants', [])
+        current_entrant_statuses = {}
+        current_entrant_ids = set()
+        current_entrant_names = {}
+        
+        for entrant in new_entrants:
+            user_id = entrant.get('user', {}).get('id', '')
+            user_name = entrant.get('user', {}).get('name', '')
+            entrant_status = entrant.get('status', {}).get('value', '')
+            
+            current_entrant_ids.add(user_id)
+            current_entrant_statuses[user_id] = entrant_status
+            current_entrant_names[user_id] = user_name
+        
+        # Detect joins (new entrants) - skip on first data update to avoid false positives
+        if not self._first_data_update:
+            new_entrants_ids = current_entrant_ids - self._previous_entrant_ids
+            for user_id in new_entrants_ids:
+                user_name = current_entrant_names.get(user_id, '')
+                initial_status = current_entrant_statuses.get(user_id, '')
+                
+                # Look up application user ID
+                app_user_id = await self._get_user_id_from_racetime_id(user_id)
+                
+                logger.info(
+                    "Entrant %s (%s) joined race %s with status: %s",
+                    user_name,
+                    user_id,
+                    room_slug,
+                    initial_status
+                )
+                
+                await EventBus.emit(RacetimeEntrantJoinedEvent(
+                    user_id=app_user_id,  # Application user ID (None if not linked)
+                    entity_id=f"{room_slug}/{user_id}",
+                    category=category,
+                    room_slug=room_slug,
+                    room_name=room_name,
+                    racetime_user_id=user_id,
+                    racetime_user_name=user_name,
+                    initial_status=initial_status,
+                    race_status=new_status,
+                ))
+        
+        # Detect leaves (removed entrants) - skip on first data update
+        if not self._first_data_update:
+            left_entrant_ids = self._previous_entrant_ids - current_entrant_ids
+            for user_id in left_entrant_ids:
+                # Get name from previous data (no longer in current data)
+                user_name = ""
+                last_status = self._previous_entrant_statuses.get(user_id, '')
+                
+                # Try to find name from old data
+                if old_race_data:
+                    for old_entrant in old_race_data.get('entrants', []):
+                        if old_entrant.get('user', {}).get('id') == user_id:
+                            user_name = old_entrant.get('user', {}).get('name', '')
+                            break
+                
+                # Look up application user ID
+                app_user_id = await self._get_user_id_from_racetime_id(user_id)
+                
+                logger.info(
+                    "Entrant %s (%s) left race %s (was %s)",
+                    user_name,
+                    user_id,
+                    room_slug,
+                    last_status
+                )
+                
+                await EventBus.emit(RacetimeEntrantLeftEvent(
+                    user_id=app_user_id,  # Application user ID (None if not linked)
+                    entity_id=f"{room_slug}/{user_id}",
+                    category=category,
+                    room_slug=room_slug,
+                    room_name=room_name,
+                    racetime_user_id=user_id,
+                    racetime_user_name=user_name,
+                    last_status=last_status,
+                    race_status=new_status,
+                ))
+        
+        # Detect status changes (for existing entrants)
+        for user_id, entrant_status in current_entrant_statuses.items():
+            old_entrant_status = self._previous_entrant_statuses.get(user_id)
+            
+            if old_entrant_status and old_entrant_status != entrant_status:
+                user_name = current_entrant_names.get(user_id, '')
+                
+                # Find full entrant data for finish_time and place
+                finish_time = None
+                place = None
+                for entrant in new_entrants:
+                    if entrant.get('user', {}).get('id') == user_id:
+                        finish_time = entrant.get('finish_time')
+                        place = entrant.get('place')
+                        break
+                
+                # Look up application user ID
+                app_user_id = await self._get_user_id_from_racetime_id(user_id)
+                
+                logger.info(
+                    "Entrant %s (%s) status changed in race %s: %s -> %s",
+                    user_name,
+                    user_id,
+                    room_slug,
+                    old_entrant_status,
+                    entrant_status
+                )
+                
+                # Emit entrant status changed event
+                await EventBus.emit(RacetimeEntrantStatusChangedEvent(
+                    user_id=app_user_id,  # Application user ID (None if not linked)
+                    entity_id=f"{room_slug}/{user_id}",
+                    category=category,
+                    room_slug=room_slug,
+                    room_name=room_name,
+                    racetime_user_id=user_id,
+                    racetime_user_name=user_name,
+                    old_status=old_entrant_status,
+                    new_status=entrant_status,
+                    finish_time=finish_time,
+                    place=place,
+                    race_status=new_status,
+                ))
+        
+        # Update tracked state
+        self._previous_entrant_statuses = current_entrant_statuses
+        self._previous_entrant_ids = current_entrant_ids
+        self._first_data_update = False
+        
+        # Call parent implementation to update self.data
+        await super().race_data(data)
+    
+    async def invite_user(self, user_id: str):
+        """
+        Invite a user to the race.
+        
+        Overrides the base RaceHandler.invite_user() to emit an event
+        when the bot invites a player.
+        
+        Args:
+            user_id: The racetime.gg user ID to invite
+        """
+        # Extract race details
+        category = self.data.get('category', {}).get('slug', '') if self.data else ''
+        room_slug = self.data.get('name', '') if self.data else ''
+        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        race_status = self.data.get('status', {}).get('value', '') if self.data else ''
+        
+        # Look up application user ID
+        app_user_id = await self._get_user_id_from_racetime_id(user_id)
+        
+        # Emit invite event
+        logger.info("Bot inviting user %s to race %s", user_id, room_slug)
+        await EventBus.emit(RacetimeEntrantInvitedEvent(
+            user_id=app_user_id,  # Application user ID (None if not linked)
+            entity_id=f"{room_slug}/{user_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            racetime_user_id=user_id,
+            race_status=race_status,
+        ))
+        
+        # Call parent implementation to send the actual invite
+        await super().invite_user(user_id)
 
 
 class RacetimeBot(Bot):
@@ -239,6 +519,12 @@ class RacetimeBot(Bot):
         # Create handler for the race
         try:
             handler = self.create_handler(race_data)
+            
+            # If force=True, this means the bot created the room (via startrace)
+            # Set flag so begin() knows to emit RacetimeBotCreatedRaceEvent
+            if force:
+                handler._bot_created_room = True
+            
             logger.info("Created handler for race %s", race_name)
             return handler
             

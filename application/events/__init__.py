@@ -77,6 +77,14 @@ from application.events.types import (
     # RaceTime room events
     RacetimeRoomCreatedEvent,
     RacetimeRoomOpenedEvent,
+    # RaceTime race/entrant events
+    RacetimeRaceStatusChangedEvent,
+    RacetimeEntrantStatusChangedEvent,
+    RacetimeEntrantJoinedEvent,
+    RacetimeEntrantLeftEvent,
+    RacetimeEntrantInvitedEvent,
+    RacetimeBotJoinedRaceEvent,
+    RacetimeBotCreatedRaceEvent,
 )
 
 __all__ = [
@@ -134,4 +142,12 @@ __all__ = [
     # RaceTime room events
     "RacetimeRoomCreatedEvent",
     "RacetimeRoomOpenedEvent",
+    # RaceTime race/entrant events
+    "RacetimeRaceStatusChangedEvent",
+    "RacetimeEntrantStatusChangedEvent",
+    "RacetimeEntrantJoinedEvent",
+    "RacetimeEntrantLeftEvent",
+    "RacetimeEntrantInvitedEvent",
+    "RacetimeBotJoinedRaceEvent",
+    "RacetimeBotCreatedRaceEvent",
 ]
