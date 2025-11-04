@@ -10,6 +10,7 @@ from typing import Optional
 from racetime_bot import Bot, RaceHandler, monitor_cmd
 from models import BotStatus
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
+from config import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -68,6 +69,12 @@ class RacetimeBot(Bot):
     and monitoring functionality.
     """
     
+    # Override the default racetime host and security settings with configured values
+    # Extract just the hostname from the full URL (e.g., "http://localhost:8000" -> "localhost:8000")
+    racetime_host = settings.RACETIME_URL.replace('https://', '').replace('http://', '').rstrip('/')
+    # Determine if TLS/SSL should be used based on URL scheme
+    racetime_secure = settings.RACETIME_URL.startswith('https://')
+    
     def __init__(self, category_slug: str, client_id: str, client_secret: str, bot_id: Optional[int] = None):
         """
         Initialize the racetime bot with configuration.
@@ -78,15 +85,36 @@ class RacetimeBot(Bot):
             client_secret: OAuth2 client secret for this category
             bot_id: Optional database ID for status tracking
         """
-        super().__init__(
-            category_slug=category_slug,
-            client_id=client_id,
-            client_secret=client_secret,
-            logger=logger,
+        logger.info(
+            "Initializing racetime bot with category=%s, client_id=%s, client_secret=%s... (host: %s, secure: %s)",
+            category_slug,
+            client_id,
+            client_secret[:10] + "..." if len(client_secret) > 10 else "***",
+            self.racetime_host,
+            self.racetime_secure
         )
+        try:
+            super().__init__(
+                category_slug=category_slug,
+                client_id=client_id,
+                client_secret=client_secret,
+                logger=logger,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to initialize racetime bot for category %s: %s. "
+                "Please verify that an OAuth2 application exists in your racetime instance "
+                "with these credentials and uses the 'client_credentials' grant type.",
+                category_slug,
+                e
+            )
+            raise
         self.category_slug = category_slug
         self.bot_id = bot_id
-        logger.info("Racetime bot initialized for category: %s", category_slug)
+        logger.info(
+            "Racetime bot initialized successfully for category: %s",
+            category_slug
+        )
     
     def should_handle(self, race_data: dict) -> bool:
         """
@@ -162,15 +190,40 @@ async def start_racetime_bot(
             """Run bot and track connection status."""
             repository = RacetimeBotRepository()
             try:
+                logger.info("Starting bot.run() for category: %s", category)
+                logger.debug("Bot configuration - host: %s, secure: %s", bot.racetime_host, bot.racetime_secure)
                 # Update status to connected when starting
                 if bot_id:
                     await repository.record_connection_success(bot_id)
                 
-                # Run the bot
-                await bot.run()
+                # Instead of calling bot.run() which tries to take over the event loop,
+                # we manually create the tasks that run() would create
+                # This allows the bot to work within our existing async context
+                reauth_task = asyncio.create_task(bot.reauthorize())
+                refresh_task = asyncio.create_task(bot.refresh_races())
+                
+                # Wait for both tasks (they run forever until cancelled)
+                await asyncio.gather(reauth_task, refresh_task)
+                
+                logger.info("bot tasks completed normally for category: %s", category)
+                
+            except asyncio.CancelledError:
+                # Bot was cancelled (stopped manually)
+                logger.info("Racetime bot %s was cancelled (CancelledError caught)", category)
+                if bot_id:
+                    await repository.update_bot_status(
+                        bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped"
+                    )
+                raise  # Re-raise to properly handle cancellation
                 
             except Exception as e:
-                logger.error("Racetime bot error for %s: %s", category, e, exc_info=True)
+                # Always log the full exception with traceback
+                logger.error(
+                    "Racetime bot error for %s: %s",
+                    category,
+                    e,
+                    exc_info=True
+                )
                 
                 # Update status based on error type
                 if bot_id:
@@ -183,7 +236,14 @@ async def start_racetime_bot(
                         await repository.record_connection_failure(
                             bot_id, error_msg, BotStatus.CONNECTION_ERROR
                         )
-                raise
+            finally:
+                # Clean up bot instance when task completes (for any reason)
+                logger.info("Cleaning up racetime bot for category: %s", category)
+                logger.debug("Removing from _racetime_bots: %s", category)
+                _racetime_bots.pop(category, None)
+                logger.debug("Removing from _racetime_bot_tasks: %s", category)
+                _racetime_bot_tasks.pop(category, None)
+                logger.info("Racetime bot task completed and cleaned up for category: %s", category)
         
         _racetime_bot_tasks[category] = asyncio.create_task(run_with_status_tracking())
         
@@ -215,40 +275,35 @@ async def stop_racetime_bot(category: str) -> None:
     Args:
         category: The racetime.gg category slug
     """
-    if category not in _racetime_bots:
-        logger.warning("Racetime bot for category %s is not running", category)
+    logger.info("Attempting to stop racetime bot for category: %s", category)
+    logger.debug("Current bots: %s", list(_racetime_bots.keys()))
+    logger.debug("Current tasks: %s", list(_racetime_bot_tasks.keys()))
+    
+    # Check for the task (not the bot instance, which may already be cleaned up)
+    task = _racetime_bot_tasks.get(category)
+    if not task:
+        logger.warning("No task found for racetime bot category %s", category)
         return
     
-    logger.info("Stopping racetime bot for category: %s", category)
+    if task.done():
+        logger.info("Racetime bot task for category %s is already done", category)
+        return
     
-    bot = _racetime_bots.get(category)
-    bot_id = bot.bot_id if bot else None
+    logger.info("Cancelling racetime bot task for category: %s", category)
     
     try:
-        # Stop the bot task
-        task = _racetime_bot_tasks.get(category)
-        if task and not task.done():
-            task.cancel()
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-        
-        # Update status to disconnected
-        if bot_id:
-            repository = RacetimeBotRepository()
-            await repository.update_bot_status(
-                bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped manually"
-            )
+        # Cancel the bot task (cleanup happens in the task's finally block)
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            # Expected when cancelling
+            logger.info("Racetime bot task cancelled successfully for category: %s", category)
         
         logger.info("Racetime bot stopped successfully for category: %s", category)
     
     except Exception as e:
         logger.error("Error stopping racetime bot for category %s: %s", category, e, exc_info=True)
-    
-    finally:
-        _racetime_bots.pop(category, None)
-        _racetime_bot_tasks.pop(category, None)
 
 
 async def stop_all_racetime_bots() -> None:

@@ -20,6 +20,9 @@ from components.dialogs.admin import (
     UserAddDialog,
     OrganizationDialog,
     GlobalSettingDialog,
+    RacetimeBotAddDialog,
+    RacetimeBotEditDialog,
+    RacetimeBotOrganizationsDialog,
 )
 
 # Organization dialogs
@@ -57,6 +60,9 @@ __all__ = [
     'UserAddDialog',
     'OrganizationDialog',
     'GlobalSettingDialog',
+    'RacetimeBotAddDialog',
+    'RacetimeBotEditDialog',
+    'RacetimeBotOrganizationsDialog',
     # Organization
     'OrgSettingDialog',
     'MemberPermissionsDialog',

@@ -102,7 +102,7 @@ class RacetimeBotAddDialog(BaseDialog):
 
             # Active status
             status_switch = ui.switch('Active', value=self.is_active)
-            status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
+            status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args[0] if isinstance(e.args, list) else e.args))
 
             ui.separator()
 

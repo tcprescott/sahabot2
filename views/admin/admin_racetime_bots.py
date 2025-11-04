@@ -6,7 +6,7 @@ Provides interface for managing RaceTime bot configurations and organization ass
 
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
-from models import User, RacetimeBot, Organization
+from models import User, RacetimeBot
 from application.services.racetime_bot_service import RacetimeBotService
 from application.services.organization_service import OrganizationService
 from components.dialogs import RacetimeBotEditDialog, RacetimeBotAddDialog, RacetimeBotOrganizationsDialog
@@ -112,119 +112,106 @@ class AdminRacetimeBotsView:
                         ui.label('No RaceTime bots found. Click "Add Bot" to create one.')
             return
 
-        # Define columns
-        columns = [
-            TableColumn(name='category', label='Category', field='category', sortable=True, mobile_primary=True),
-            TableColumn(name='name', label='Name', field='name', sortable=True),
-            TableColumn(name='client_id', label='Client ID', field='client_id', mobile_hide=True),
-            TableColumn(name='status', label='Status', field='status', align='center'),
-            TableColumn(name='actions', label='Actions', field='actions', align='center', sortable=False),
-        ]
-
-        # Prepare rows
+        # Prepare rows with organization counts
         rows = []
         for bot in self.bots:
-            # Get organization count
             orgs = await self.bot_service.get_organizations_for_bot(bot.id, self.current_user)
-
             rows.append({
-                'id': bot.id,
-                'category': bot.category,
-                'name': bot.name,
-                'client_id': bot.client_id[:20] + '...' if len(bot.client_id) > 20 else bot.client_id,
-                'status': bot,  # Pass bot object for custom rendering
-                'actions': bot,  # Pass bot object for action buttons
-                '_org_count': len(orgs),
+                'bot': bot,
+                'org_count': len(orgs),
             })
 
-        # Create table
-        table = ResponsiveTable(
-            columns=columns,
-            rows=rows,
-            row_key='id',
-        )
+        # Define cell renderers
+        def render_category(row):
+            ui.label(row['bot'].category)
 
-        # Custom cell rendering for status
-        table.add_slot(
-            'body-cell-status',
-            '''
-            <q-td :props="props">
-                <div style="display: flex; flex-direction: column; gap: 4px;">
-                    <div>
-                        <q-badge v-if="props.row.status.is_active" color="positive" style="margin-right: 4px;">Active</q-badge>
-                        <q-badge v-else color="grey" style="margin-right: 4px;">Inactive</q-badge>
-                    </div>
-                    <div v-if="props.row.status.status === 0">
-                        <q-badge color="grey-7">
-                            <q-icon name="help" size="xs" style="margin-right: 4px;"/>
-                            Unknown
-                        </q-badge>
-                    </div>
-                    <div v-else-if="props.row.status.status === 1">
-                        <q-badge color="positive">
-                            <q-icon name="check_circle" size="xs" style="margin-right: 4px;"/>
-                            Connected
-                        </q-badge>
-                    </div>
-                    <div v-else-if="props.row.status.status === 2">
-                        <q-badge color="negative">
-                            <q-icon name="key_off" size="xs" style="margin-right: 4px;"/>
-                            Auth Failed
-                            <q-tooltip v-if="props.row.status.status_message" max-width="300px">
-                                {{ props.row.status.status_message }}
-                            </q-tooltip>
-                        </q-badge>
-                    </div>
-                    <div v-else-if="props.row.status.status === 3">
-                        <q-badge color="negative">
-                            <q-icon name="error" size="xs" style="margin-right: 4px;"/>
-                            Connection Error
-                            <q-tooltip v-if="props.row.status.status_message" max-width="300px">
-                                {{ props.row.status.status_message }}
-                            </q-tooltip>
-                        </q-badge>
-                    </div>
-                    <div v-else-if="props.row.status.status === 4">
-                        <q-badge color="warning">
-                            <q-icon name="cloud_off" size="xs" style="margin-right: 4px;"/>
-                            Disconnected
-                        </q-badge>
-                    </div>
-                    <div v-if="props.row.status.last_connected_at" class="text-caption text-grey-7" style="font-size: 0.7rem;">
-                        Last: {{ new Date(props.row.status.last_connected_at).toLocaleString() }}
-                    </div>
-                </div>
-            </q-td>
-            '''
-        )
+        def render_name(row):
+            ui.label(row['bot'].name)
 
-        # Custom cell rendering for actions
-        def render_actions_cell():
-            return '''
-            <q-td :props="props" auto-width>
-                <q-btn flat round dense icon="edit" color="primary" size="sm"
-                       @click="$parent.$emit('edit-bot', props.row.id)">
-                    <q-tooltip>Edit Bot</q-tooltip>
-                </q-btn>
-                <q-btn flat round dense icon="groups" color="primary" size="sm"
-                       @click="$parent.$emit('manage-orgs', props.row.id)">
-                    <q-tooltip>Manage Organizations ({{ props.row._org_count }})</q-tooltip>
-                </q-btn>
-                <q-btn flat round dense icon="delete" color="negative" size="sm"
-                       @click="$parent.$emit('delete-bot', props.row.id)">
-                    <q-tooltip>Delete Bot</q-tooltip>
-                </q-btn>
-            </q-td>
-            '''
+        def render_client_id(row):
+            bot = row['bot']
+            client_id_display = bot.client_id[:20] + '...' if len(bot.client_id) > 20 else bot.client_id
+            ui.label(client_id_display)
 
-        table.add_slot('body-cell-actions', render_actions_cell())
+        async def render_status(row):
+            bot = row['bot']
+            with ui.column().classes('gap-1'):
+                # Active/Inactive badge
+                with ui.row().classes('gap-1'):
+                    if bot.is_active:
+                        ui.badge('Active', color='positive')
+                    else:
+                        ui.badge('Inactive', color='grey')
 
-        # Event handlers
-        table.on('edit-bot', lambda e: self._open_edit_bot(e.args))
-        table.on('manage-orgs', lambda e: self._open_manage_organizations(e.args))
-        table.on('delete-bot', lambda e: self._confirm_delete_bot(e.args))
+                # Connection status badge
+                if bot.status == 0:  # UNKNOWN
+                    with ui.badge(color='grey-7').classes('gap-1'):
+                        ui.icon('help', size='xs')
+                        ui.label('Unknown')
+                elif bot.status == 1:  # CONNECTED
+                    with ui.badge(color='positive').classes('gap-1'):
+                        ui.icon('check_circle', size='xs')
+                        ui.label('Connected')
+                elif bot.status == 2:  # AUTH_FAILED
+                    with ui.badge(color='negative').classes('gap-1'):
+                        ui.icon('key_off', size='xs')
+                        ui.label('Auth Failed')
+                        if bot.status_message:
+                            ui.tooltip(bot.status_message)
+                elif bot.status == 3:  # CONNECTION_ERROR
+                    with ui.badge(color='negative').classes('gap-1'):
+                        ui.icon('error', size='xs')
+                        ui.label('Connection Error')
+                        if bot.status_message:
+                            ui.tooltip(bot.status_message)
+                elif bot.status == 4:  # DISCONNECTED
+                    with ui.badge(color='warning').classes('gap-1'):
+                        ui.icon('cloud_off', size='xs')
+                        ui.label('Disconnected')
 
-        await table.render()
+                # Last connected timestamp
+                if bot.last_connected_at:
+                    ui.label(f'Last: {bot.last_connected_at.strftime("%Y-%m-%d %H:%M:%S")}').classes('text-xs text-grey-7')
+
+        def render_actions(row):
+            bot = row['bot']
+            org_count = row['org_count']
+            with ui.row().classes('gap-1'):
+                ui.button(
+                    icon='edit',
+                    on_click=lambda b=bot: self._open_edit_bot(b.id)
+                ).props('flat round dense size=sm').tooltip('Edit Bot')
+                
+                # Restart button (only for active bots)
+                if bot.is_active:
+                    ui.button(
+                        icon='refresh',
+                        on_click=lambda b=bot: self._restart_bot(b.id)
+                    ).props('flat round dense size=sm color=primary').tooltip('Restart Bot')
+                
+                ui.button(
+                    icon='groups',
+                    on_click=lambda b=bot: self._open_manage_organizations(b.id)
+                ).props('flat round dense size=sm').tooltip(f'Manage Organizations ({org_count})')
+                ui.button(
+                    icon='delete',
+                    on_click=lambda b=bot: self._confirm_delete_bot(b.id)
+                ).props('flat round dense size=sm color=negative').tooltip('Delete Bot')
+
+        # Define columns
+        columns = [
+            TableColumn(label='Category', cell_render=render_category),
+            TableColumn(label='Name', cell_render=render_name),
+            TableColumn(label='Client ID', cell_render=render_client_id),
+            TableColumn(label='Status', cell_render=render_status),
+            TableColumn(label='Actions', cell_render=render_actions),
+        ]
+
+        # Render table wrapped in card
+        with ui.element('div').classes('card'):
+            with ui.element('div').classes('card-body'):
+                table = ResponsiveTable(columns=columns, rows=rows)
+                await table.render()
 
     async def _on_search_change(self, value: str):
         """Handle search query change."""
@@ -257,6 +244,28 @@ class AdminRacetimeBotsView:
             on_save=self._refresh_bots
         )
         await dialog.show()
+
+    async def _restart_bot(self, bot_id: int):
+        """Restart a bot."""
+        bot = await self.bot_service.get_bot_by_id(bot_id, self.current_user)
+        if not bot:
+            ui.notify('Bot not found', type='negative')
+            return
+
+        if not bot.is_active:
+            ui.notify('Cannot restart inactive bot', type='warning')
+            return
+
+        # Show loading notification
+        ui.notify(f'Restarting bot "{bot.name}"...', type='info')
+
+        success = await self.bot_service.restart_bot(bot_id, self.current_user)
+
+        if success:
+            ui.notify(f'Bot "{bot.name}" restarted successfully', type='positive')
+            await self._refresh_bots()
+        else:
+            ui.notify(f'Failed to restart bot "{bot.name}"', type='negative')
 
     async def _open_manage_organizations(self, bot_id: int):
         """Open the manage organizations dialog."""

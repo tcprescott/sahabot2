@@ -921,6 +921,27 @@ async def _view_item(self, item):
 4. Add component-specific CSS to `static/css/main.css`
 5. Use in pages by importing from `components`
 
+**Table Components**:
+- **Always prefer `ResponsiveTable`** (from `components/data_table.py`) for displaying tabular data
+- Only use raw HTML `<table>` elements when absolutely necessary (e.g., complex custom rendering that ResponsiveTable doesn't support)
+- `ResponsiveTable` provides:
+  - Automatic mobile-responsive layout (stacks on small screens)
+  - Consistent styling via `.data-table` class
+  - Support for custom cell rendering via `cell_render` callbacks
+  - `data-label` attributes for mobile accessibility
+- **Example usage**:
+  ```python
+  from components.data_table import ResponsiveTable, TableColumn
+  
+  columns = [
+      TableColumn(label='Name', key='name'),
+      TableColumn(label='Status', cell_render=lambda row: ui.badge(row.status)),
+  ]
+  
+  table = ResponsiveTable(columns=columns, rows=data)
+  await table.render()
+  ```
+
 ### New View
 Views are page-specific content modules. They should be organized by which page uses them.
 
@@ -1070,11 +1091,13 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't create dialogs in the root `dialogs/` directory - always use the appropriate subdirectory
 - ❌ Don't forget `await` when calling `super().show()` in dialog classes (causes RuntimeWarning)
 - ❌ Don't use `datetime.utcnow()` - it's deprecated and timezone-naive (use `datetime.now(timezone.utc)`)
+- ❌ Don't use raw HTML `<table>` elements for tabular data - use `ResponsiveTable` component instead
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
 - ✅ Do use repositories for data access
 - ✅ Do enforce permissions server-side
+- ✅ Do use `ResponsiveTable` for all tabular data displays
 - ✅ Do test on mobile viewports
 - ✅ Do use application commands (slash commands) for Discord bot
 - ✅ Do always use `await super().show()` in dialog `show()` methods (not `super().show()`)

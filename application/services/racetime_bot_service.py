@@ -15,6 +15,7 @@ from application.events import (
     RacetimeBotUpdatedEvent,
     RacetimeBotDeletedEvent,
 )
+from racetime.client import start_racetime_bot, stop_racetime_bot
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,11 @@ class RacetimeBotService:
             )
             return None
 
+        # Get current bot state before update
+        old_bot = await self.repository.get_bot_by_id(bot_id)
+        if not old_bot:
+            return None
+
         # If updating category, check for duplicates
         if 'category' in updates:
             existing = await self.repository.get_bot_by_category(updates['category'])
@@ -184,9 +190,42 @@ class RacetimeBotService:
                     f"Bot for category '{updates['category']}' already exists"
                 )
 
+        # Update bot in database
         bot = await self.repository.update_bot(bot_id, **updates)
         if not bot:
             return None
+
+        # Handle bot lifecycle changes when is_active is modified
+        logger.debug("Checking for is_active change. updates keys: %s", list(updates.keys()))
+        if 'is_active' in updates:
+            was_active = old_bot.is_active
+            is_now_active = updates['is_active']
+            logger.info(
+                "Bot is_active changed: was_active=%s, is_now_active=%s",
+                was_active,
+                is_now_active
+            )
+
+            if was_active and not is_now_active:
+                # Bot was deactivated - stop it
+                logger.info("Stopping RaceTime bot for category %s (deactivated)", bot.category)
+                try:
+                    await stop_racetime_bot(bot.category)
+                except Exception as e:
+                    logger.error("Failed to stop bot %s: %s", bot.category, e, exc_info=True)
+
+            elif not was_active and is_now_active:
+                # Bot was activated - start it
+                logger.info("Starting RaceTime bot for category %s (activated)", bot.category)
+                try:
+                    await start_racetime_bot(
+                        bot.category,
+                        bot.client_id,
+                        bot.client_secret,
+                        bot_id=bot.id
+                    )
+                except Exception as e:
+                    logger.error("Failed to start bot %s: %s", bot.category, e, exc_info=True)
 
         # Emit event
         await EventBus.emit(
@@ -239,6 +278,63 @@ class RacetimeBotService:
             )
 
         return deleted
+
+    async def restart_bot(self, bot_id: int, current_user: User) -> bool:
+        """
+        Restart a RaceTime bot (stop and start).
+
+        Authorization: Only ADMIN and SUPERADMIN can restart bots.
+
+        Args:
+            bot_id: Bot ID
+            current_user: Current user
+
+        Returns:
+            True if restarted successfully, False if not found/unauthorized/inactive
+        """
+        if not self.auth_service.can_access_admin_panel(current_user):
+            logger.warning(
+                "Unauthorized attempt to restart RaceTime bot %s by user %s",
+                bot_id,
+                current_user.id,
+            )
+            return False
+
+        bot = await self.repository.get_bot_by_id(bot_id)
+        if not bot:
+            logger.warning("Bot %s not found for restart", bot_id)
+            return False
+
+        if not bot.is_active:
+            logger.warning("Cannot restart inactive bot %s", bot_id)
+            return False
+
+        logger.info("Restarting RaceTime bot %s (category: %s)", bot_id, bot.category)
+
+        try:
+            # Stop the bot
+            logger.debug("Stopping bot %s for restart", bot.category)
+            await stop_racetime_bot(bot.category)
+
+            # Small delay to ensure cleanup completes
+            import asyncio
+            await asyncio.sleep(0.5)
+
+            # Start the bot again
+            logger.debug("Starting bot %s after restart", bot.category)
+            await start_racetime_bot(
+                bot.category,
+                bot.client_id,
+                bot.client_secret,
+                bot_id=bot.id
+            )
+
+            logger.info("Successfully restarted bot %s", bot.category)
+            return True
+
+        except Exception as e:
+            logger.error("Failed to restart bot %s: %s", bot.category, e, exc_info=True)
+            return False
 
     async def get_bots_for_organization(
         self, organization_id: int, current_user: Optional[User]
