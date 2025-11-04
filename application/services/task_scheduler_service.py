@@ -33,6 +33,7 @@ class TaskSchedulerService:
     _is_running: bool = False
     _task_handlers: Dict[TaskType, Callable] = {}
     _builtin_tasks_last_run: Dict[str, datetime] = {}  # Track last run time for built-in tasks
+    _builtin_tasks_status: Dict[str, Dict] = {}  # Track status of built-in tasks (last_status, last_error, next_run)
 
     def __init__(self) -> None:
         self.repo = ScheduledTaskRepository()
@@ -49,6 +50,16 @@ class TaskSchedulerService:
         """
         cls._task_handlers[task_type] = handler
         logger.info("Registered task handler for task type: %s", task_type.name)
+
+    @classmethod
+    def is_running(cls) -> bool:
+        """
+        Check if the task scheduler is currently running.
+        
+        Returns:
+            True if scheduler is running, False otherwise
+        """
+        return cls._is_running
 
     async def create_task(
         self,
@@ -222,6 +233,55 @@ class TaskSchedulerService:
             else:
                 result['builtin'] = get_all_builtin_tasks()
 
+        return result
+
+    @classmethod
+    def get_builtin_tasks_with_status(cls, active_only: bool = False) -> List[Dict]:
+        """
+        Get all builtin tasks with their current status information.
+        
+        Args:
+            active_only: If True, only return active tasks
+            
+        Returns:
+            List of dicts containing builtin task info and status
+        """
+        if active_only:
+            builtin_tasks = get_active_builtin_tasks()
+        else:
+            builtin_tasks = get_all_builtin_tasks()
+        
+        result = []
+        
+        for task in builtin_tasks:
+            status_info = cls._builtin_tasks_status.get(task.task_id, {})
+            last_run = cls._builtin_tasks_last_run.get(task.task_id)
+            
+            # Calculate next run if not in status
+            next_run = status_info.get('next_run')
+            if next_run is None and last_run is not None:
+                next_run = cls._calculate_next_run(
+                    schedule_type=task.schedule_type,
+                    interval_seconds=task.interval_seconds,
+                    cron_expression=task.cron_expression,
+                    from_time=last_run,
+                )
+            
+            result.append({
+                'task_id': task.task_id,
+                'name': task.name,
+                'description': task.description,
+                'task_type': task.task_type,
+                'schedule_type': task.schedule_type,
+                'interval_seconds': task.interval_seconds,
+                'cron_expression': task.cron_expression,
+                'is_active': task.is_active,
+                'last_run_at': last_run,
+                'last_status': status_info.get('last_status'),
+                'last_error': status_info.get('last_error'),
+                'next_run_at': next_run,
+            })
+        
         return result
 
     async def get_task(
@@ -460,6 +520,14 @@ class TaskSchedulerService:
         """
         logger.info("Executing built-in task: %s", builtin.name)
         
+        # Initialize status if not exists
+        if builtin.task_id not in cls._builtin_tasks_status:
+            cls._builtin_tasks_status[builtin.task_id] = {
+                'last_status': None,
+                'last_error': None,
+                'next_run': None,
+            }
+        
         try:
             # Get handler for this task type
             handler = cls._task_handlers.get(builtin.task_type)
@@ -488,10 +556,32 @@ class TaskSchedulerService:
             # Update last run time
             cls._builtin_tasks_last_run[builtin.task_id] = now
             
+            # Calculate next run time
+            next_run = cls._calculate_next_run(
+                schedule_type=builtin.schedule_type,
+                interval_seconds=builtin.interval_seconds,
+                cron_expression=builtin.cron_expression,
+                from_time=now,
+            )
+            
+            # Update status
+            cls._builtin_tasks_status[builtin.task_id] = {
+                'last_status': 'success',
+                'last_error': None,
+                'next_run': next_run,
+            }
+            
             logger.info("Built-in task %s executed successfully", builtin.task_id)
 
         except Exception as e:
             logger.error("Error executing built-in task %s: %s", builtin.task_id, e, exc_info=True)
+            
+            # Update status with error
+            cls._builtin_tasks_status[builtin.task_id] = {
+                'last_status': 'failed',
+                'last_error': str(e),
+                'next_run': cls._builtin_tasks_status[builtin.task_id].get('next_run'),
+            }
 
     @classmethod
     async def _execute_task(cls, task: ScheduledTask) -> None:

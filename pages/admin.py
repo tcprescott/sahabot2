@@ -20,7 +20,8 @@ from views.admin import (
     AdminRacetimeBotsView,
     PresetsView,
     PresetNamespacesView,
-    OrgRequestsView
+    OrgRequestsView,
+    ScheduledTasksView,
 )
 from views.home import overview
 from application.services.randomizer_preset_service import RandomizerPresetService
@@ -59,6 +60,7 @@ def register():
             page.register_content_loader('racetime-bots', page.create_instance_view_loader(lambda: AdminRacetimeBotsView(page.user)))
             page.register_content_loader('presets', page.create_instance_view_loader(lambda: PresetsView(page.user, RandomizerPresetService())))
             page.register_content_loader('namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
+            page.register_content_loader('scheduled-tasks', page.create_instance_view_loader(lambda: ScheduledTasksView(page.user)))
             page.register_content_loader('settings', page.create_instance_view_loader(lambda: AdminSettingsView(page.user)))
 
             # Load initial content only if no view parameter was specified
@@ -76,6 +78,7 @@ def register():
             base.create_sidebar_item_with_loader('RaceTime Bots', 'smart_toy', 'racetime-bots'),
             base.create_sidebar_item_with_loader('Presets', 'code', 'presets'),
             base.create_sidebar_item_with_loader('Namespaces', 'folder', 'namespaces'),
+            base.create_sidebar_item_with_loader('Scheduled Tasks', 'schedule', 'scheduled-tasks'),
             base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
         ]
 
