@@ -5,6 +5,7 @@ This package contains view modules for different sections of the application.
 Views are organized into subdirectories based on which pages use them:
 - admin: Views used by the admin page
 - organization: Views used by the organization admin page
+- tournament_admin: Views used by the tournament admin page
 - user_profile: Views used by the user profile page
 - tournaments: Views used by the tournaments page
 """
@@ -23,6 +24,14 @@ from views.organization import (
     OrganizationSettingsView,
     OrganizationTournamentsView,
     OrganizationStreamChannelsView,
+)
+
+from views.tournament_admin import (
+    TournamentOverviewView,
+    TournamentMatchesView,
+    TournamentPlayersView,
+    TournamentRacetimeSettingsView,
+    TournamentSettingsView,
 )
 
 from views.user_profile import (
@@ -50,6 +59,12 @@ __all__ = [
     'OrganizationSettingsView',
     'OrganizationTournamentsView',
     'OrganizationStreamChannelsView',
+    # Tournament Admin views
+    'TournamentOverviewView',
+    'TournamentMatchesView',
+    'TournamentPlayersView',
+    'TournamentRacetimeSettingsView',
+    'TournamentSettingsView',
     # User Profile views
     'ProfileInfoView',
     'ApiKeysView',

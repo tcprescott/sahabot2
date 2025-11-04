@@ -126,6 +126,7 @@ class OrganizationTournamentsView:
 
                 def render_actions(t):
                     with ui.element('div').classes('flex gap-2'):
+                        ui.button('Manage', icon='settings', on_click=lambda t=t: ui.navigate.to(f'/org/{self.organization.id}/tournament/{t.id}/admin')).classes('btn').props('color=primary')
                         ui.button('Edit', icon='edit', on_click=lambda t=t: self._open_edit_dialog(t)).classes('btn')
                         ui.button('Delete', icon='delete', on_click=lambda t=t: self._confirm_delete(t)).classes('btn')
 

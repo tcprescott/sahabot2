@@ -24,6 +24,17 @@ class Tournament(Model):
     room_open_minutes_before = fields.IntField(default=60)  # How long before match to open room
     require_racetime_link = fields.BooleanField(default=False)  # Require players to have RaceTime linked
     racetime_default_goal = fields.CharField(max_length=255, null=True)  # Default goal for race rooms
+    
+    # Advanced RaceTime room settings
+    racetime_start_delay = fields.IntField(default=15)  # Countdown seconds before race starts
+    racetime_time_limit = fields.IntField(default=24)  # Time limit in hours
+    racetime_streaming_required = fields.BooleanField(default=False)  # Require streaming
+    racetime_auto_start = fields.BooleanField(default=True)  # Auto-start when ready
+    racetime_allow_comments = fields.BooleanField(default=True)  # Allow race comments
+    racetime_hide_comments = fields.BooleanField(default=False)  # Hide comments until race ends
+    racetime_allow_prerace_chat = fields.BooleanField(default=True)  # Chat before race
+    racetime_allow_midrace_chat = fields.BooleanField(default=True)  # Chat during race
+    racetime_allow_non_entrant_chat = fields.BooleanField(default=True)  # Non-racers can chat
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
