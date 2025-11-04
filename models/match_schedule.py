@@ -1,6 +1,14 @@
 from __future__ import annotations
+from enum import Enum
 from tortoise import fields
 from tortoise.models import Model
+
+
+class CrewRole(str, Enum):
+    """Enum for crew member roles."""
+    COMMENTATOR = "commentator"
+    TRACKER = "tracker"
+    RESTREAMER = "restreamer"
 
 class Tournament(Model):
     id = fields.IntField(pk=True)
@@ -75,7 +83,7 @@ class StreamChannel(Model):
 class Crew(Model):
     id = fields.IntField(pk=True)
     user = fields.ForeignKeyField('models.User', related_name='crew_memberships')
-    role = fields.CharField(max_length=100)  # e.g., 'commentator', 'tracker'
+    role = fields.CharEnumField(CrewRole, max_length=100)  # e.g., 'commentator', 'tracker', 'restreamer'
     match = fields.ForeignKeyField('models.Match', related_name='crew_members')
     approved = fields.BooleanField(default=False)
     approved_by = fields.ForeignKeyField('models.User', related_name='approved_crew', null=True)

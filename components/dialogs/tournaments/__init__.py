@@ -8,6 +8,7 @@ from components.dialogs.tournaments.pool_dialog import PoolDialog
 from components.dialogs.tournaments.permalink_dialog import PermalinkDialog
 from components.dialogs.tournaments.async_tournament_dialog import AsyncTournamentDialog
 from components.dialogs.tournaments.race_review_dialog import RaceReviewDialog
+from components.dialogs.tournaments.add_crew_dialog import AddCrewDialog
 
 __all__ = [
     'MatchSeedDialog',
@@ -18,4 +19,5 @@ __all__ = [
     'PermalinkDialog',
     'AsyncTournamentDialog',
     'RaceReviewDialog',
+    'AddCrewDialog',
 ]

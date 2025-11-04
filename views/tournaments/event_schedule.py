@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Optional
 from nicegui import ui
-from models import Organization, User
+from models import Organization, User, CrewRole
 from models.match_schedule import Match
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
@@ -192,32 +192,32 @@ class EventScheduleView:
                     else:
                         ui.label('Pending').classes('badge')
 
-                async def signup_crew(match_id: int, role: str):
+                async def signup_crew(match_id: int, role: CrewRole):
                     """Sign up for a crew role."""
                     try:
                         await self.service.signup_crew(
                             user=self.user,
                             organization_id=self.organization.id,
                             match_id=match_id,
-                            role=role
+                            role=role.value
                         )
-                        ui.notify(f'Signed up as {role}', type='positive')
+                        ui.notify(f'Signed up as {role.value}', type='positive')
                         await self._refresh()
                     except Exception as e:
                         logger.error("Failed to sign up as crew: %s", e)
                         ui.notify(f'Failed to sign up: {str(e)}', type='negative')
 
-                async def remove_crew(match_id: int, role: str):
+                async def remove_crew(match_id: int, role: CrewRole):
                     """Remove crew signup."""
                     try:
                         result = await self.service.remove_crew_signup(
                             user=self.user,
                             organization_id=self.organization.id,
                             match_id=match_id,
-                            role=role
+                            role=role.value
                         )
                         if result:
-                            ui.notify(f'Removed {role} signup', type='positive')
+                            ui.notify(f'Removed {role.value} signup', type='positive')
                             await self._refresh()
                         else:
                             ui.notify('Signup not found', type='warning')
@@ -225,7 +225,7 @@ class EventScheduleView:
                         logger.error("Failed to remove crew signup: %s", e)
                         ui.notify(f'Failed to remove signup: {str(e)}', type='negative')
 
-                async def approve_crew_signup(crew_id: int, role: str):
+                async def approve_crew_signup(crew_id: int, role: CrewRole):
                     """Approve a crew signup."""
                     try:
                         result = await self.service.approve_crew(
@@ -234,7 +234,7 @@ class EventScheduleView:
                             crew_id=crew_id
                         )
                         if result:
-                            ui.notify(f'{role.capitalize()} approved', type='positive')
+                            ui.notify(f'{role.value.capitalize()} approved', type='positive')
                             await self._refresh()
                         else:
                             ui.notify('Failed to approve crew', type='negative')
@@ -242,7 +242,7 @@ class EventScheduleView:
                         logger.error("Failed to approve crew: %s", e)
                         ui.notify(f'Failed to approve: {str(e)}', type='negative')
 
-                async def unapprove_crew_signup(crew_id: int, role: str):
+                async def unapprove_crew_signup(crew_id: int, role: CrewRole):
                     """Remove approval from a crew signup."""
                     try:
                         result = await self.service.unapprove_crew(
@@ -251,7 +251,7 @@ class EventScheduleView:
                             crew_id=crew_id
                         )
                         if result:
-                            ui.notify(f'{role.capitalize()} approval removed', type='positive')
+                            ui.notify(f'{role.value.capitalize()} approval removed', type='positive')
                             await self._refresh()
                         else:
                             ui.notify('Failed to unapprove crew', type='negative')
@@ -259,12 +259,30 @@ class EventScheduleView:
                         logger.error("Failed to unapprove crew: %s", e)
                         ui.notify(f'Failed to unapprove: {str(e)}', type='negative')
 
+                async def open_add_crew_dialog(match: Match, default_role: CrewRole = CrewRole.COMMENTATOR):
+                    """Open dialog to add crew to a match (admin action)."""
+                    from components.dialogs.tournaments import AddCrewDialog
+
+                    async def on_save():
+                        await self._refresh()
+
+                    dialog = AddCrewDialog(
+                        admin_user=self.user,
+                        organization=self.organization,
+                        match=match,
+                        on_save=on_save
+                    )
+                    # Pre-fill the role if provided
+                    await dialog.show()
+                    if dialog.role_input and default_role:
+                        dialog.role_input.value = default_role.value
+
                 def render_commentator(match: Match):
                     """Render commentator(s) with approval status color, signup button, and approval controls."""
                     # Get crew members with commentator role
                     commentators = [
                         crew for crew in getattr(match, 'crew_members', [])
-                        if crew.role.lower() == 'commentator'
+                        if crew.role == CrewRole.COMMENTATOR
                     ]
 
                     # Check if current user is signed up
@@ -285,27 +303,34 @@ class EventScheduleView:
                                                 # Show unapprove button
                                                 ui.button(
                                                     icon='close',
-                                                    on_click=lambda c=crew: unapprove_crew_signup(c.id, 'commentator')
+                                                    on_click=lambda c=crew: unapprove_crew_signup(c.id, CrewRole.COMMENTATOR)
                                                 ).props('flat round dense size=sm color=negative').tooltip('Remove approval')
                                             else:
                                                 # Show approve button
                                                 ui.button(
                                                     icon='check',
-                                                    on_click=lambda c=crew: approve_crew_signup(c.id, 'commentator')
+                                                    on_click=lambda c=crew: approve_crew_signup(c.id, CrewRole.COMMENTATOR)
                                                 ).props('flat round dense size=sm color=positive').tooltip('Approve commentator')
                         else:
                             ui.label('—').classes('text-secondary')
 
-                        # Sign up or remove button
+                        # Admin add commentator button (for admins/tournament managers)
+                        if self.can_approve_crew:
+                            ui.button(
+                                icon='mic',
+                                on_click=lambda m=match: open_add_crew_dialog(m, CrewRole.COMMENTATOR)
+                            ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Add Commentator')
+
+                        # Sign up or remove button (for regular users)
                         if user_signed_up:
                             ui.button(
                                 icon='remove_circle',
-                                on_click=lambda m=match: remove_crew(m.id, 'commentator')
+                                on_click=lambda m=match: remove_crew(m.id, CrewRole.COMMENTATOR)
                             ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Remove your commentator signup')
                         else:
                             ui.button(
                                 icon='add_circle',
-                                on_click=lambda m=match: signup_crew(m.id, 'commentator')
+                                on_click=lambda m=match: signup_crew(m.id, CrewRole.COMMENTATOR)
                             ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as commentator')
 
                 def render_tracker(match: Match):
@@ -313,7 +338,7 @@ class EventScheduleView:
                     # Get crew members with tracker role
                     trackers = [
                         crew for crew in getattr(match, 'crew_members', [])
-                        if crew.role.lower() == 'tracker'
+                        if crew.role == CrewRole.TRACKER
                     ]
 
                     # Check if tracker is enabled for this tournament
@@ -337,28 +362,35 @@ class EventScheduleView:
                                                 # Show unapprove button
                                                 ui.button(
                                                     icon='close',
-                                                    on_click=lambda c=crew: unapprove_crew_signup(c.id, 'tracker')
+                                                    on_click=lambda c=crew: unapprove_crew_signup(c.id, CrewRole.TRACKER)
                                                 ).props('flat round dense size=sm color=negative').tooltip('Remove approval')
                                             else:
                                                 # Show approve button
                                                 ui.button(
                                                     icon='check',
-                                                    on_click=lambda c=crew: approve_crew_signup(c.id, 'tracker')
+                                                    on_click=lambda c=crew: approve_crew_signup(c.id, CrewRole.TRACKER)
                                                 ).props('flat round dense size=sm color=positive').tooltip('Approve tracker')
                         else:
                             ui.label('—').classes('text-secondary')
+
+                        # Admin add tracker button (for admins/tournament managers)
+                        if self.can_approve_crew and tracker_enabled:
+                            ui.button(
+                                icon='timeline',
+                                on_click=lambda m=match: open_add_crew_dialog(m, CrewRole.TRACKER)
+                            ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Add Tracker')
 
                         # Sign up or remove button (only if tracker enabled for this tournament)
                         if tracker_enabled:
                             if user_signed_up:
                                 ui.button(
                                     icon='remove_circle',
-                                    on_click=lambda m=match: remove_crew(m.id, 'tracker')
+                                    on_click=lambda m=match: remove_crew(m.id, CrewRole.TRACKER)
                                 ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Remove your tracker signup')
                             else:
                                 ui.button(
                                     icon='add_circle',
-                                    on_click=lambda m=match: signup_crew(m.id, 'tracker')
+                                    on_click=lambda m=match: signup_crew(m.id, CrewRole.TRACKER)
                                 ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as tracker')
                         else:
                             # Show disabled button with tooltip explaining why

@@ -253,6 +253,61 @@ class TournamentService:
 
         return await self.repo.remove_crew_signup(match_id, user.id, role)
 
+    async def admin_add_crew(
+        self,
+        admin_user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        user_id: int,
+        role: str,
+        approved: bool = True
+    ) -> Optional['Crew']:
+        """Add a user as crew for a match (admin action).
+        
+        Requires ADMIN or TOURNAMENT_MANAGER permission in the organization.
+        Admin-added crew is automatically approved by default.
+        
+        Args:
+            admin_user: User performing the admin action
+            organization_id: Organization ID for permission check
+            match_id: Match ID
+            user_id: User ID to add as crew
+            role: Crew role (e.g., 'commentator', 'tracker')
+            approved: Whether the crew is pre-approved (default True)
+        
+        Returns:
+            The Crew record if successful, None if unauthorized.
+        """
+        from models.match_schedule import Crew
+        
+        # Check if admin user has permission to approve crew (same permission level)
+        allowed = await self.org_service.user_can_approve_crew(admin_user, organization_id)
+        if not allowed:
+            logger.warning(
+                "Unauthorized admin_add_crew by user %s for org %s",
+                getattr(admin_user, 'id', None),
+                organization_id
+            )
+            return None
+        
+        # Verify the user being added is a member of the organization
+        member = await self.org_service.get_member(organization_id, user_id)
+        if not member:
+            logger.warning(
+                "Cannot add user %s as crew - not a member of org %s",
+                user_id,
+                organization_id
+            )
+            return None
+        
+        return await self.repo.admin_add_crew(
+            match_id=match_id,
+            user_id=user_id,
+            role=role,
+            approved=approved,
+            approver_user_id=admin_user.id if approved else None
+        )
+
     async def approve_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
         """Approve a crew signup.
         

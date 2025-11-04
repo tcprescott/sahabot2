@@ -249,6 +249,47 @@ class TournamentRepository:
         logger.info("User %s signed up as %s for match %s", user_id, role, match_id)
         return crew
 
+    async def admin_add_crew(
+        self,
+        match_id: int,
+        user_id: int,
+        role: str,
+        approved: bool = True,
+        approver_user_id: Optional[int] = None
+    ) -> Optional['Crew']:
+        """Add a user as crew for a match (admin action).
+        
+        Admin-added crew is automatically approved by default.
+        
+        Args:
+            match_id: Match ID
+            user_id: User ID to add as crew
+            role: Crew role (e.g., 'commentator', 'tracker')
+            approved: Whether the crew is pre-approved (default True)
+            approver_user_id: ID of the admin who added the crew
+        
+        Returns:
+            The Crew record if successful, None if already signed up.
+        """
+        from models.match_schedule import Crew
+        
+        # Check if already signed up for this role
+        existing = await Crew.filter(match_id=match_id, user_id=user_id, role=role).first()
+        if existing:
+            logger.info("User %s already signed up as %s for match %s", user_id, role, match_id)
+            return existing
+        
+        # Create crew signup with approval
+        crew = await Crew.create(
+            match_id=match_id,
+            user_id=user_id,
+            role=role,
+            approved=approved,
+            approved_by_id=approver_user_id if approved else None
+        )
+        logger.info("Admin added user %s as %s for match %s (approved=%s)", user_id, role, match_id, approved)
+        return crew
+
     async def remove_crew_signup(self, match_id: int, user_id: int, role: str) -> bool:
         """Remove a user's crew signup for a match.
         
