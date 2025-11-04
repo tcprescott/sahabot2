@@ -61,63 +61,62 @@ class AddCrewDialog(BaseDialog):
 
     def _render_body(self) -> None:
         """Render the dialog body content."""
-        with ui.column().classes('full-width gap-md'):
-            # Info section
-            self.create_section_title('Match Information')
-            match_title = self.match.title or f'Match #{self.match.id}'
-            self.create_info_row('Match', match_title)
-            if self.match.scheduled_at:
-                with ui.row().classes('items-center gap-2'):
-                    ui.label('Scheduled:').classes('font-semibold')
-                    from components.datetime_label import DateTimeLabel
-                    DateTimeLabel.create(self.match.scheduled_at, format_type='relative')
+        # Info section
+        self.create_section_title('Match Information')
+        match_title = self.match.title or f'Match #{self.match.id}'
+        self.create_info_row('Match', match_title)
+        if self.match.scheduled_at:
+            with ui.row().classes('items-center gap-2'):
+                ui.label('Scheduled:').classes('font-semibold')
+                from components.datetime_label import DateTimeLabel
+                DateTimeLabel.create(self.match.scheduled_at, format_type='relative')
 
-            ui.separator()
+        ui.separator()
 
-            # Form section
-            self.create_section_title('Crew Details')
+        # Form section
+        self.create_section_title('Crew Details')
 
-            with self.create_form_grid(columns=1):
-                # User selection
-                with ui.element('div'):
-                    ui.label('Select User').classes('text-sm font-semibold mb-1')
-                    self.user_select = ui.select(
-                        options={},
-                        label='User',
-                        with_input=True
-                    ).classes('w-full')
-                    ui.label('Start typing to search organization members').classes('text-xs text-secondary')
+        with self.create_form_grid(columns=1):
+            # User selection
+            with ui.element('div'):
+                ui.label('Select User').classes('text-sm font-semibold mb-1')
+                self.user_select = ui.select(
+                    options={},
+                    label='User',
+                    with_input=True
+                ).classes('w-full')
+                ui.label('Start typing to search organization members').classes('text-xs text-secondary')
 
-                # Role selection
-                with ui.element('div'):
-                    ui.label('Role').classes('text-sm font-semibold mb-1')
-                    self.role_input = ui.select(
-                        options={
-                            CrewRole.COMMENTATOR.value: 'Commentator',
-                            CrewRole.TRACKER.value: 'Tracker',
-                            CrewRole.RESTREAMER.value: 'Restreamer'
-                        },
-                        label='Crew Role'
-                    ).classes('w-full')
-                    ui.label('Select the role for this crew member').classes('text-xs text-secondary')
+            # Role selection
+            with ui.element('div'):
+                ui.label('Role').classes('text-sm font-semibold mb-1')
+                self.role_input = ui.select(
+                    options={
+                        CrewRole.COMMENTATOR.value: 'Commentator',
+                        CrewRole.TRACKER.value: 'Tracker',
+                        CrewRole.RESTREAMER.value: 'Restreamer'
+                    },
+                    label='Crew Role'
+                ).classes('w-full')
+                ui.label('Select the role for this crew member').classes('text-xs text-secondary')
 
-                # Approved checkbox
-                with ui.element('div'):
-                    self.approved_checkbox = ui.checkbox(
-                        'Pre-approve this crew member',
-                        value=True
-                    ).classes('mt-2')
-                    ui.label('Uncheck if crew needs manual approval later').classes('text-xs text-secondary ml-7')
+            # Approved checkbox
+            with ui.element('div'):
+                self.approved_checkbox = ui.checkbox(
+                    'Pre-approve this crew member',
+                    value=True
+                ).classes('mt-2')
+                ui.label('Uncheck if crew needs manual approval later').classes('text-xs text-secondary ml-7')
 
-            # Load organization members
-            ui.timer(0.1, self._load_members, once=True)
+        # Load organization members
+        ui.timer(0.1, self._load_members, once=True)
 
-            ui.separator()
+        ui.separator()
 
-            # Actions
-            with self.create_actions_row():
-                ui.button('Cancel', on_click=self.close).classes('btn')
-                ui.button('Add Crew', on_click=self._handle_add_crew).classes('btn').props('color=positive')
+        # Actions
+        with self.create_actions_row():
+            ui.button('Cancel', on_click=self.close).classes('btn')
+            ui.button('Add Crew', on_click=self._handle_add_crew).classes('btn').props('color=positive')
 
     async def _load_members(self) -> None:
         """Load organization members for selection."""

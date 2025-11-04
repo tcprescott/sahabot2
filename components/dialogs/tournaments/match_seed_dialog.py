@@ -58,16 +58,14 @@ class MatchSeedDialog(BaseDialog):
                 ).classes('w-full')
 
         with self.create_actions_row():
-            # Left side - delete button if seed exists
+            # Left side - delete button if seed exists (or empty spacer)
             if self._initial_url and self._on_delete:
                 ui.button('Delete', icon='delete', on_click=self._handle_delete).classes('btn').props('color=negative')
             else:
-                ui.element('div')  # Spacer
-            
-            # Right side - cancel and save
-            with ui.row().classes('gap-2'):
                 ui.button('Cancel', on_click=self.close).classes('btn')
-                ui.button('Save', on_click=self._handle_submit).classes('btn').props('color=positive')
+            
+            # Right side - save button
+            ui.button('Save', on_click=self._handle_submit).classes('btn').props('color=positive')
 
     async def _handle_submit(self) -> None:
         """Handle Save click and call callback."""

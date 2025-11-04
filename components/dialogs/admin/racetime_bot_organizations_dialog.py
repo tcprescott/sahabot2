@@ -58,30 +58,29 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
 
     def _render_body(self) -> None:
         """Render the dialog body content."""
-        with ui.column().classes('full-width gap-md'):
-            # Bot info
-            with ui.row().classes('items-center gap-2'):
-                ui.icon('category')
-                ui.label(f'Category: {self.bot.category}').classes('font-bold')
+        # Bot info
+        with ui.row().classes('items-center gap-2'):
+            ui.icon('category')
+            ui.label(f'Category: {self.bot.category}').classes('font-bold')
 
-            # Instructions
-            with ui.row().classes('items-center gap-2 p-3 rounded bg-info text-white'):
-                ui.icon('info')
-                ui.label('Select organizations that can use this RaceTime bot.')
+        # Instructions
+        with ui.row().classes('items-center gap-2 p-3 rounded bg-info text-white'):
+            ui.icon('info')
+            ui.label('Select organizations that can use this RaceTime bot.')
 
-            ui.separator()
+        ui.separator()
 
-            # Organization list
-            self.org_list_container = ui.column().classes('full-width gap-2')
-            ui.run_javascript('async () => { await new Promise(resolve => setTimeout(resolve, 0)); }', respond=False)
-            self._render_org_list()
+        # Organization list
+        self.org_list_container = ui.column().classes('full-width gap-2')
+        ui.run_javascript('async () => { await new Promise(resolve => setTimeout(resolve, 0)); }', respond=False)
+        self._render_org_list()
 
-            ui.separator()
+        ui.separator()
 
-            # Actions
-            with self.create_actions_row():
-                ui.button('Close', on_click=self._close_and_callback).classes('btn')
-                ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
+        # Actions
+        with self.create_actions_row():
+            ui.button('Close', on_click=self._close_and_callback).classes('btn')
+            ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
 
     def _render_org_list(self) -> None:
         """Render the organization checklist (synchronous helper)."""

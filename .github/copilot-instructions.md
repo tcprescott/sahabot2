@@ -722,11 +722,14 @@ All dialogs should extend `BaseDialog` for consistent structure and behavior.
 **BaseDialog provides:**
 - `create_dialog(title, icon, max_width)` - Create dialog with standard card structure
 - `create_form_grid(columns)` - Responsive form grid (1-2 columns)
-- `create_actions_row()` - Standardized action buttons container
+- `create_actions_row()` - Standardized action buttons container (see [Action Row Pattern](../docs/DIALOG_ACTION_ROW_PATTERN.md))
 - `create_permission_select(...)` - Permission dropdown with proper enum handling
 - `create_info_row(label, value)` - Read-only information display
 - `create_section_title(text)` - Section header within dialog
 - `show()` / `close()` - Display and dismiss dialog
+
+**CRITICAL: Action Row Pattern**
+The `create_actions_row()` must be placed **directly in `_render_body()`**, NOT nested inside wrapper containers like `ui.column().classes('full-width')`. Wrapping breaks the `justify-content: space-between` CSS layout. See full details in [docs/DIALOG_ACTION_ROW_PATTERN.md](../docs/DIALOG_ACTION_ROW_PATTERN.md).
 
 Example:
 ```python
@@ -748,10 +751,11 @@ class MyDialog(BaseDialog):
             title=f'Edit {self.user.discord_username}',
             icon='edit',
         )
-        super().show()
+        await super().show()            # Don't forget 'await'!
 
     def _render_body(self):
         """Render dialog content."""
+        # Content at root level (NOT wrapped in ui.column()!)
         # Use form grid for responsive layout
         with self.create_form_grid(columns=2):
             with ui.element('div'):
@@ -761,7 +765,7 @@ class MyDialog(BaseDialog):
 
         ui.separator()
 
-        # Use actions row for buttons (Convention: neutral/negative left, positive right)
+        # Actions row at root level (Convention: neutral/negative left, positive right)
         with self.create_actions_row():
             # Neutral/negative action on the far left
             ui.button('Cancel', on_click=self.close).classes('btn')

@@ -80,74 +80,73 @@ class PresetEditorDialog(BaseDialog):
 
     def _render_body(self):
         """Render dialog content."""
-        with ui.column().classes('full-width gap-md'):
-            # Basic info section
-            self.create_section_title('Basic Information')
-            with self.create_form_grid(columns=2):
-                with ui.element('div'):
-                    self.name_input = ui.input(
-                        label='Preset Name',
-                        placeholder='e.g., open, standard, keysanity'
-                    ).classes('w-full').props('outlined dense')
-                    if self.preset:
-                        self.name_input.value = self.preset.name
-                        if self.is_edit_mode:
-                            self.name_input.props('readonly')  # Can't change name in edit mode
-
-                with ui.element('div'):
-                    self.randomizer_select = ui.select(
-                        label='Randomizer',
-                        options=self.RANDOMIZERS,
-                        value=self.preset.randomizer if self.preset else 'alttpr',
-                        with_input=True
-                    ).classes('w-full').props('outlined dense')
+        # Basic info section
+        self.create_section_title('Basic Information')
+        with self.create_form_grid(columns=2):
+            with ui.element('div'):
+                self.name_input = ui.input(
+                    label='Preset Name',
+                    placeholder='e.g., open, standard, keysanity'
+                ).classes('w-full').props('outlined dense')
+                if self.preset:
+                    self.name_input.value = self.preset.name
                     if self.is_edit_mode:
-                        self.randomizer_select.props('readonly')  # Can't change randomizer in edit mode
+                        self.name_input.props('readonly')  # Can't change name in edit mode
 
-            # Description
-            self.description_input = ui.textarea(
-                label='Description (optional)',
-                placeholder='Describe what this preset does...'
-            ).classes('w-full').props('outlined dense rows=2')
-            if self.preset and self.preset.description:
-                self.description_input.value = self.preset.description
+            with ui.element('div'):
+                self.randomizer_select = ui.select(
+                    label='Randomizer',
+                    options=self.RANDOMIZERS,
+                    value=self.preset.randomizer if self.preset else 'alttpr',
+                    with_input=True
+                ).classes('w-full').props('outlined dense')
+                if self.is_edit_mode:
+                    self.randomizer_select.props('readonly')  # Can't change randomizer in edit mode
 
-            # Public checkbox
-            self.is_public_checkbox = ui.checkbox(
-                'Make this preset public (visible to all users)',
-                value=self.preset.is_public if self.preset else False
-            )
+        # Description
+        self.description_input = ui.textarea(
+            label='Description (optional)',
+            placeholder='Describe what this preset does...'
+        ).classes('w-full').props('outlined dense rows=2')
+        if self.preset and self.preset.description:
+            self.description_input.value = self.preset.description
 
-            ui.separator()
+        # Public checkbox
+        self.is_public_checkbox = ui.checkbox(
+            'Make this preset public (visible to all users)',
+            value=self.preset.is_public if self.preset else False
+        )
 
-            # YAML Editor Section
-            self.create_section_title('YAML Configuration')
-            ui.label('Edit the preset settings in YAML format below:').classes('text-sm text-secondary mb-2')
+        ui.separator()
 
-            # Simple textarea editor with monospace font
-            default_yaml = self._get_default_yaml()
-            self.yaml_editor = ui.textarea(
-                label='YAML Content',
-                value=default_yaml
-            ).classes('w-full font-mono').props('outlined rows=20').style('font-family: monospace; tab-size: 2;')
+        # YAML Editor Section
+        self.create_section_title('YAML Configuration')
+        ui.label('Edit the preset settings in YAML format below:').classes('text-sm text-secondary mb-2')
 
-            # Validation message area
-            self.validation_message = ui.element('div').classes('mt-2')
+        # Simple textarea editor with monospace font
+        default_yaml = self._get_default_yaml()
+        self.yaml_editor = ui.textarea(
+            label='YAML Content',
+            value=default_yaml
+        ).classes('w-full font-mono').props('outlined rows=20').style('font-family: monospace; tab-size: 2;')
 
-            # Validate button (separate from save)
-            with ui.row().classes('mt-2'):
-                ui.button('Validate YAML', on_click=self._validate_yaml, icon='check_circle').classes('btn').props('color=primary')
+        # Validation message area
+        self.validation_message = ui.element('div').classes('mt-2')
 
-            ui.separator()
+        # Validate button (separate from save)
+        with ui.row().classes('mt-2'):
+            ui.button('Validate YAML', on_click=self._validate_yaml, icon='check_circle').classes('btn').props('color=primary')
 
-            # Action buttons
-            with self.create_actions_row():
-                ui.button('Cancel', on_click=self.close).classes('btn')
-                ui.button(
-                    'Save' if self.is_edit_mode else 'Create',
-                    on_click=self._save,
-                    icon='save'
-                ).classes('btn').props('color=positive')
+        ui.separator()
+
+        # Action buttons
+        with self.create_actions_row():
+            ui.button('Cancel', on_click=self.close).classes('btn')
+            ui.button(
+                'Save' if self.is_edit_mode else 'Create',
+                on_click=self._save,
+                icon='save'
+            ).classes('btn').props('color=positive')
 
     def _get_default_yaml(self) -> str:
         """Get default YAML content for editor."""

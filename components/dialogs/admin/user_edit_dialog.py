@@ -56,40 +56,39 @@ class UserEditDialog(BaseDialog):
 
     def _render_body(self) -> None:
         """Render the dialog body content."""
-        with ui.column().classes('full-width gap-md'):
-            # User info (read-only)
-            self.create_section_title('User Information')
-            self.create_info_row('Discord ID', str(self.target_user.discord_id))
-            self.create_info_row('Username', self.target_user.discord_username)
-            if self.target_user.discord_email:
-                self.create_info_row('Email', self.target_user.discord_email)
+        # User info (read-only)
+        self.create_section_title('User Information')
+        self.create_info_row('Discord ID', str(self.target_user.discord_id))
+        self.create_info_row('Username', self.target_user.discord_username)
+        if self.target_user.discord_email:
+            self.create_info_row('Email', self.target_user.discord_email)
 
-            ui.separator()
+        ui.separator()
 
-            # Editable fields
-            self.create_section_title('Account Status')
-            status_switch = ui.switch('Active Account', value=self.is_active)
-            status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
+        # Editable fields
+        self.create_section_title('Account Status')
+        status_switch = ui.switch('Active Account', value=self.is_active)
+        status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
 
-            # Permission level (only if user can change permissions)
-            if self.auth_service.can_change_permissions(self.current_user, self.target_user, Permission.USER):
-                self.create_section_title('Permission Level')
-                self.create_permission_select(
-                    current_permission=self.permission,
-                    max_permission=self.current_user.permission,
-                    on_change=lambda p: setattr(self, 'permission', p),
-                )
-            else:
-                self.create_info_row('Permission', self.target_user.permission.name)
+        # Permission level (only if user can change permissions)
+        if self.auth_service.can_change_permissions(self.current_user, self.target_user, Permission.USER):
+            self.create_section_title('Permission Level')
+            self.create_permission_select(
+                current_permission=self.permission,
+                max_permission=self.current_user.permission,
+                on_change=lambda p: setattr(self, 'permission', p),
+            )
+        else:
+            self.create_info_row('Permission', self.target_user.permission.name)
 
-            ui.separator()
+        ui.separator()
 
-            # Actions
-            with self.create_actions_row():
-                # Neutral/negative action on the far left
-                ui.button('Cancel', on_click=self.close).classes('btn')
-                # Positive action on the far right
-                ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
+        # Actions
+        with self.create_actions_row():
+            # Neutral/negative action on the far left
+            ui.button('Cancel', on_click=self.close).classes('btn')
+            # Positive action on the far right
+            ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
 
     async def _save_and_close(self) -> None:
         """Save changes and close dialog."""
