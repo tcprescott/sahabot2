@@ -243,6 +243,52 @@ async def delete_scheduled_task(
         raise HTTPException(status_code=404, detail="Scheduled task not found or insufficient permissions")
 
 
+@router.post(
+    "/organizations/{organization_id}/tasks/{task_id}/execute",
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Execute Scheduled Task Now",
+    description="Trigger immediate execution of a scheduled task. Authorization enforced at service layer.",
+    responses={
+        200: {"description": "Task execution triggered successfully"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Scheduled task not found"},
+        429: {"description": "Rate limit exceeded"},
+    },
+    status_code=200,
+)
+async def execute_scheduled_task_now(
+    organization_id: int = Path(..., description="Organization ID"),
+    task_id: int = Path(..., description="Scheduled task ID"),
+    current_user: User = Depends(get_current_user)
+) -> dict:
+    """
+    Execute a scheduled task immediately.
+
+    Triggers the task to run immediately in the background, regardless of its schedule.
+    This does not affect the task's normal schedule - it will continue to run at its
+    scheduled times.
+
+    Args:
+        organization_id: ID of the organization
+        task_id: ID of the scheduled task
+        current_user: Authenticated user making the request
+
+    Returns:
+        dict: Confirmation message
+
+    Raises:
+        HTTPException: If task not found or unauthorized
+    """
+    service = TaskSchedulerService()
+    success = await service.execute_task_now(current_user, organization_id, task_id)
+
+    if not success:
+        raise HTTPException(status_code=404, detail="Scheduled task not found or insufficient permissions")
+
+    return {"message": "Task execution triggered successfully", "task_id": task_id}
+
+
 @router.get(
     "/scheduler/status",
     dependencies=[Depends(enforce_rate_limit)],

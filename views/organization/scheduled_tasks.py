@@ -91,6 +91,11 @@ class OrganizationScheduledTasksView:
                     # Actions
                     with ui.column().classes('gap-2'):
                         ui.button(
+                            icon='play_circle',
+                            on_click=lambda t=task: self._execute_now(t)
+                        ).props('flat color=primary').tooltip('Run Now')
+
+                        ui.button(
                             icon='edit',
                             on_click=lambda t=task: self._show_edit_dialog(t)
                         ).props('flat color=primary').tooltip('Edit Task')
@@ -178,6 +183,17 @@ class OrganizationScheduledTasksView:
             await self._refresh_tasks()
         else:
             ui.notify('Failed to update task', type='negative')
+
+    async def _execute_now(self, task) -> None:
+        """Execute a task immediately."""
+        success = await self.service.execute_task_now(self.user, self.org.id, task.id)
+
+        if success:
+            ui.notify(f'Task "{task.name}" execution triggered', type='positive')
+            # Refresh to show updated last run time (after a brief delay)
+            await self._refresh_tasks()
+        else:
+            ui.notify('Failed to execute task', type='negative')
 
     async def _delete_task(self, task) -> None:
         """Delete a task."""

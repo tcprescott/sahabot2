@@ -191,6 +191,35 @@ class ScheduledTasksView:
         
         dialog.open()
 
+    async def _execute_builtin_task_now(self, task_info: dict) -> None:
+        """Execute a built-in task immediately."""
+        task_id = task_info['task_id']
+        task_name = task_info['name']
+
+        success = await TaskSchedulerService.execute_builtin_task_now(self.user, task_id)
+
+        if success:
+            ui.notify(f'Built-in task "{task_name}" execution triggered', type='positive')
+            # Refresh after a short delay to allow task to update status
+            await self._refresh()
+        else:
+            ui.notify('Failed to execute task - check permissions or task status', type='negative')
+
+    async def _execute_db_task_now(self, task) -> None:
+        """Execute a database task immediately (admin global tasks only)."""
+        # Global tasks have organization_id = None
+        success = await self.service.execute_task_now(
+            self.user,
+            task.organization_id,  # Will be None for global tasks
+            task.id
+        )
+
+        if success:
+            ui.notify(f'Task "{task.name}" execution triggered', type='positive')
+            await self._refresh()
+        else:
+            ui.notify('Failed to execute task', type='negative')
+
     async def _view_db_task_details(self, task) -> None:
         """Show detailed information about a database task."""
         with ui.dialog() as dialog:
@@ -306,9 +335,20 @@ class ScheduledTasksView:
         dialog.open()
 
     def _render_actions(self, task_info: dict) -> None:
-        """Render action buttons."""
+        """Render action buttons for built-in tasks."""
         with ui.element('div').classes('flex gap-2'):
-            ui.button('Details', icon='info', on_click=lambda t=task_info: self._view_task_details(t)).classes('btn')
+            # Only show Run Now for active tasks
+            if task_info.get('is_active', False):
+                ui.button(
+                    'Run Now',
+                    icon='play_circle',
+                    on_click=lambda t=task_info: self._execute_builtin_task_now(t)
+                ).classes('btn').props('color=primary size=sm')
+            ui.button(
+                'Details',
+                icon='info',
+                on_click=lambda t=task_info: self._view_task_details(t)
+            ).classes('btn').props('size=sm')
 
     async def _render_content(self) -> None:
         """Render the scheduled tasks monitoring interface."""
@@ -436,7 +476,16 @@ class ScheduledTasksView:
 
                 def render_db_actions(task):
                     with ui.element('div').classes('flex gap-2'):
-                        ui.button('Details', icon='info', on_click=lambda t=task: self._view_db_task_details(t)).classes('btn')
+                        ui.button(
+                            'Run Now',
+                            icon='play_circle',
+                            on_click=lambda t=task: self._execute_db_task_now(t)
+                        ).classes('btn').props('color=primary size=sm')
+                        ui.button(
+                            'Details',
+                            icon='info',
+                            on_click=lambda t=task: self._view_db_task_details(t)
+                        ).classes('btn').props('size=sm')
 
                 db_columns = [
                     TableColumn('Name', key='name'),

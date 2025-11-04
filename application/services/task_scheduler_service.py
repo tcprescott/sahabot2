@@ -399,6 +399,113 @@ class TaskSchedulerService:
 
         return await self.repo.delete(task_id)
 
+    async def execute_task_now(
+        self,
+        user: Optional[User],
+        organization_id: int | None,
+        task_id: int
+    ) -> bool:
+        """
+        Execute a scheduled task immediately.
+
+        Args:
+            user: User requesting the execution
+            organization_id: Organization ID (None for global tasks)
+            task_id: Task ID
+
+        Returns:
+            True if executed, False otherwise
+        """
+        task = await self.repo.get_by_id(task_id)
+        if not task:
+            return False
+
+        # Check authorization based on task type
+        if organization_id is None or task.organization_id is None:
+            # Global task - require admin
+            if not user or not user.is_admin():
+                logger.warning(
+                    "Unauthorized execute_task_now (global) by user %s",
+                    getattr(user, 'id', None)
+                )
+                return False
+            # Verify task is actually global
+            if task.organization_id is not None:
+                logger.warning("Task %s is not a global task", task_id)
+                return False
+        else:
+            # Organization task - check tournament management permission
+            allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+            if not allowed:
+                logger.warning(
+                    "Unauthorized execute_task_now by user %s for org %s",
+                    getattr(user, 'id', None),
+                    organization_id
+                )
+                return False
+            # Verify task belongs to this organization
+            if task.organization_id != organization_id:
+                logger.warning(
+                    "Task %s does not belong to org %s",
+                    task_id,
+                    organization_id
+                )
+                return False
+
+        # Execute the task in background
+        logger.info(
+            "Manually triggering task %s (%s) by user %s",
+            task_id,
+            task.name,
+            getattr(user, 'id', None)
+        )
+        asyncio.create_task(self._execute_task(task))
+        return True
+
+    @classmethod
+    async def execute_builtin_task_now(cls, user: Optional[User], task_id: str) -> bool:
+        """
+        Execute a built-in task immediately.
+
+        Args:
+            user: User requesting the execution (must be admin)
+            task_id: Built-in task ID
+
+        Returns:
+            True if executed, False otherwise
+        """
+        # Built-in tasks are global - require admin permission
+        if not user or not user.is_admin():
+            logger.warning(
+                "Unauthorized execute_builtin_task_now by user %s",
+                getattr(user, 'id', None)
+            )
+            return False
+
+        # Find the built-in task
+        from application.services.builtin_tasks import get_all_builtin_tasks
+        builtin_tasks = get_all_builtin_tasks()
+        task = next((t for t in builtin_tasks if t.task_id == task_id), None)
+
+        if not task:
+            logger.warning("Built-in task %s not found", task_id)
+            return False
+
+        if not task.is_active:
+            logger.warning("Built-in task %s is not active", task_id)
+            return False
+
+        # Execute the built-in task in background
+        logger.info(
+            "Manually triggering built-in task %s (%s) by user %s",
+            task_id,
+            task.name,
+            getattr(user, 'id', None)
+        )
+        now = datetime.now(timezone.utc)
+        asyncio.create_task(cls._execute_builtin_task(task, now))
+        return True
+
     @classmethod
     async def start_scheduler(cls) -> None:
         """
