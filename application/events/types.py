@@ -329,3 +329,31 @@ class PresetUpdatedEvent(EntityEvent):
     entity_type: str = field(default="RandomizerPreset", init=False)
     preset_name: Optional[str] = None
     changed_fields: List[str] = field(default_factory=list)
+
+
+# ============================================================================
+# RaceTime Bot Events
+# ============================================================================
+
+@dataclass(frozen=True)
+class RacetimeBotCreatedEvent(EntityEvent):
+    """Emitted when a RaceTime bot is created."""
+    entity_type: str = field(default="RacetimeBot", init=False)
+    category: Optional[str] = None
+    name: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class RacetimeBotUpdatedEvent(EntityEvent):
+    """Emitted when a RaceTime bot is updated."""
+    entity_type: str = field(default="RacetimeBot", init=False)
+    category: Optional[str] = None
+    changed_fields: List[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class RacetimeBotDeletedEvent(EntityEvent):
+    """Emitted when a RaceTime bot is deleted."""
+    entity_type: str = field(default="RacetimeBot", init=False)
+    category: Optional[str] = None
+

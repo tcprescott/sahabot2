@@ -70,6 +70,10 @@ from application.events.types import (
     # Preset events
     PresetCreatedEvent,
     PresetUpdatedEvent,
+    # RaceTime bot events
+    RacetimeBotCreatedEvent,
+    RacetimeBotUpdatedEvent,
+    RacetimeBotDeletedEvent,
 )
 
 __all__ = [
@@ -120,4 +124,8 @@ __all__ = [
     # Preset events
     "PresetCreatedEvent",
     "PresetUpdatedEvent",
+    # RaceTime bot events
+    "RacetimeBotCreatedEvent",
+    "RacetimeBotUpdatedEvent",
+    "RacetimeBotDeletedEvent",
 ]

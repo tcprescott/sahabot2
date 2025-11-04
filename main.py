@@ -58,11 +58,8 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Discord bot disabled by configuration")
 
-    # Start Racetime bots for configured categories (if enabled)
-    if settings.RACETIME_BOTS_ENABLED:
-        await RacetimeService.start_all()
-    else:
-        logger.info("Racetime bots disabled by configuration")
+    # Start Racetime bots from database (active bots only)
+    await RacetimeService.start_all()
 
     # Register task handlers
     register_task_handlers()
@@ -80,9 +77,8 @@ async def lifespan(app: FastAPI):
     await TaskSchedulerService.stop_scheduler()
     logger.info("Task scheduler stopped")
 
-    # Stop all Racetime bots (if they were enabled)
-    if settings.RACETIME_BOTS_ENABLED:
-        await RacetimeService.stop_all()
+    # Stop all Racetime bots
+    await RacetimeService.stop_all()
 
     # Stop Discord bot via service (if it was enabled)
     if settings.DISCORD_BOT_ENABLED:

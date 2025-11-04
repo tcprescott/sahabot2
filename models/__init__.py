@@ -25,6 +25,7 @@ from models.tournament_usage import TournamentUsage
 from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
 from models.preset_namespace_permission import PresetNamespacePermission
+from models.racetime_bot import RacetimeBot, RacetimeBotOrganization, BotStatus
 
 __all__ = [
     'User',
@@ -59,4 +60,7 @@ __all__ = [
     'RandomizerPreset',
     'PresetNamespace',
     'PresetNamespacePermission',
+    'RacetimeBot',
+    'RacetimeBotOrganization',
+    'BotStatus',
 ]

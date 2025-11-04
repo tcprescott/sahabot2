@@ -34,10 +34,12 @@ class Settings(BaseSettings):
     DISCORD_BOT_TOKEN: str
     DISCORD_BOT_ENABLED: bool = True  # Set to False to disable Discord bot
 
-    # Racetime.gg Configuration
+    # Racetime.gg Configuration (DEPRECATED - use database RaceTime bot configuration)
+    # These settings are deprecated and will be removed in a future version.
+    # Bot configurations are now managed through the database and admin UI.
     # Format: category1:client_id:client_secret,category2:client_id:client_secret
-    RACETIME_BOTS: str = ""  # Comma-separated list of category:client_id:client_secret
-    RACETIME_BOTS_ENABLED: bool = True  # Set to False to disable Racetime bots
+    RACETIME_BOTS: str = ""  # DEPRECATED: Use database configuration
+    RACETIME_BOTS_ENABLED: bool = False  # DEPRECATED: Bots are now loaded from database
 
     # Racetime.gg OAuth2 Configuration (for user account linking)
     RACETIME_CLIENT_ID: str = ""

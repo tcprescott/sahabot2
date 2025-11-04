@@ -8,6 +8,8 @@ import asyncio
 import logging
 from typing import Optional
 from racetime_bot import Bot, RaceHandler, monitor_cmd
+from models import BotStatus
+from application.repositories.racetime_bot_repository import RacetimeBotRepository
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -66,7 +68,7 @@ class RacetimeBot(Bot):
     and monitoring functionality.
     """
     
-    def __init__(self, category_slug: str, client_id: str, client_secret: str):
+    def __init__(self, category_slug: str, client_id: str, client_secret: str, bot_id: Optional[int] = None):
         """
         Initialize the racetime bot with configuration.
         
@@ -74,6 +76,7 @@ class RacetimeBot(Bot):
             category_slug: The racetime.gg category (e.g., 'alttpr')
             client_id: OAuth2 client ID for this category
             client_secret: OAuth2 client secret for this category
+            bot_id: Optional database ID for status tracking
         """
         super().__init__(
             category_slug=category_slug,
@@ -82,6 +85,7 @@ class RacetimeBot(Bot):
             logger=logger,
         )
         self.category_slug = category_slug
+        self.bot_id = bot_id
         logger.info("Racetime bot initialized for category: %s", category_slug)
     
     def should_handle(self, race_data: dict) -> bool:
@@ -118,7 +122,8 @@ _racetime_bot_tasks: dict[str, asyncio.Task] = {}
 async def start_racetime_bot(
     category: str,
     client_id: str,
-    client_secret: str
+    client_secret: str,
+    bot_id: Optional[int] = None,
 ) -> RacetimeBot:
     """
     Start a racetime bot for a specific category.
@@ -127,6 +132,7 @@ async def start_racetime_bot(
         category: The racetime.gg category slug (e.g., 'alttpr')
         client_id: OAuth2 client ID for this category
         client_secret: OAuth2 client secret for this category
+        bot_id: Optional database ID for status tracking
     
     Returns:
         RacetimeBot instance for the category
@@ -137,23 +143,69 @@ async def start_racetime_bot(
     if category in _racetime_bots:
         raise RuntimeError("Racetime bot for category %s is already running" % category)
     
-    logger.info("Starting racetime bot for category: %s", category)
+    logger.info("Starting racetime bot for category: %s (bot_id=%s)", category, bot_id)
     
-    # Create bot instance with category-specific credentials
-    bot = RacetimeBot(
-        category_slug=category,
-        client_id=client_id,
-        client_secret=client_secret,
-    )
-    
-    # Store the bot instance
-    _racetime_bots[category] = bot
-    
-    # Start the bot in a background task
-    _racetime_bot_tasks[category] = asyncio.create_task(bot.run())
-    
-    logger.info("Racetime bot started successfully for category: %s", category)
-    return bot
+    try:
+        # Create bot instance with category-specific credentials
+        bot = RacetimeBot(
+            category_slug=category,
+            client_id=client_id,
+            client_secret=client_secret,
+            bot_id=bot_id,
+        )
+        
+        # Store the bot instance
+        _racetime_bots[category] = bot
+        
+        # Start the bot in a background task with error handling
+        async def run_with_status_tracking():
+            """Run bot and track connection status."""
+            repository = RacetimeBotRepository()
+            try:
+                # Update status to connected when starting
+                if bot_id:
+                    await repository.record_connection_success(bot_id)
+                
+                # Run the bot
+                await bot.run()
+                
+            except Exception as e:
+                logger.error("Racetime bot error for %s: %s", category, e, exc_info=True)
+                
+                # Update status based on error type
+                if bot_id:
+                    error_msg = str(e)
+                    if "auth" in error_msg.lower() or "unauthorized" in error_msg.lower():
+                        await repository.record_connection_failure(
+                            bot_id, error_msg, BotStatus.AUTH_FAILED
+                        )
+                    else:
+                        await repository.record_connection_failure(
+                            bot_id, error_msg, BotStatus.CONNECTION_ERROR
+                        )
+                raise
+        
+        _racetime_bot_tasks[category] = asyncio.create_task(run_with_status_tracking())
+        
+        logger.info("Racetime bot started successfully for category: %s", category)
+        return bot
+        
+    except Exception as e:
+        logger.error("Failed to start racetime bot for %s: %s", category, e, exc_info=True)
+        
+        # Update status to connection error
+        if bot_id:
+            repository = RacetimeBotRepository()
+            error_msg = str(e)
+            if "auth" in error_msg.lower() or "unauthorized" in error_msg.lower():
+                await repository.record_connection_failure(
+                    bot_id, error_msg, BotStatus.AUTH_FAILED
+                )
+            else:
+                await repository.record_connection_failure(
+                    bot_id, error_msg, BotStatus.CONNECTION_ERROR
+                )
+        raise
 
 
 async def stop_racetime_bot(category: str) -> None:
@@ -169,6 +221,9 @@ async def stop_racetime_bot(category: str) -> None:
     
     logger.info("Stopping racetime bot for category: %s", category)
     
+    bot = _racetime_bots.get(category)
+    bot_id = bot.bot_id if bot else None
+    
     try:
         # Stop the bot task
         task = _racetime_bot_tasks.get(category)
@@ -178,6 +233,13 @@ async def stop_racetime_bot(category: str) -> None:
                 await task
             except asyncio.CancelledError:
                 pass
+        
+        # Update status to disconnected
+        if bot_id:
+            repository = RacetimeBotRepository()
+            await repository.update_bot_status(
+                bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped manually"
+            )
         
         logger.info("Racetime bot stopped successfully for category: %s", category)
     
