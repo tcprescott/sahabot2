@@ -11,6 +11,13 @@ import logging
 from typing import Optional, Sequence, Iterable, Dict, List
 from models import Organization, User, Permission
 from application.repositories.organization_repository import OrganizationRepository
+from application.events import (
+    EventBus,
+    OrganizationCreatedEvent,
+    OrganizationUpdatedEvent,
+    OrganizationMemberAddedEvent,
+    OrganizationMemberPermissionChangedEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +102,16 @@ class OrganizationService:
             await self.initialize_default_permissions(organization.id)
             logger.info("Initialized default permissions for organization %s", organization.id)
 
+            # Emit organization created event
+            event = OrganizationCreatedEvent(
+                entity_id=organization.id,
+                user_id=current_user.id if current_user else None,
+                organization_id=organization.id,
+                organization_name=name,
+            )
+            await EventBus.emit(event)
+            logger.debug("Emitted OrganizationCreatedEvent for organization %s", organization.id)
+
         return organization
 
     async def update_organization(
@@ -128,7 +145,34 @@ class OrganizationService:
             )
             return None
 
-        return await self.repo.update(organization_id=organization_id, name=name, description=description, is_active=is_active)
+        updated_org = await self.repo.update(organization_id=organization_id, name=name, description=description, is_active=is_active)
+
+        # Emit organization updated event if successful
+        if updated_org:
+            # Track changed fields
+            changed_fields = []
+            if updated_org.name != name:
+                changed_fields.append('name')
+            if updated_org.description != description:
+                changed_fields.append('description')
+            if updated_org.is_active != is_active:
+                changed_fields.append('is_active')
+
+            if changed_fields:
+                event = OrganizationUpdatedEvent(
+                    entity_id=organization_id,
+                    user_id=current_user.id if current_user else None,
+                    organization_id=organization_id,
+                    changed_fields=changed_fields,
+                )
+                await EventBus.emit(event)
+                logger.debug(
+                    "Emitted OrganizationUpdatedEvent for organization %s, changed: %s",
+                    organization_id,
+                    changed_fields
+                )
+
+        return updated_org
 
     async def user_can_admin_org(self, user: Optional[User], organization_id: int) -> bool:
         """Check if the user can administer the given organization.
@@ -385,13 +429,36 @@ class OrganizationService:
         member = await self.get_member(organization_id, user.id)
         return member is not None
 
-    async def add_member(self, organization_id: int, user_id: int):
+    async def add_member(
+        self,
+        organization_id: int,
+        user_id: int,
+        added_by_user_id: Optional[int] = None
+    ):
         """Add a user as a member of the organization.
 
         For now, this immediately adds the member (auto-accept).
         Future: this will create an invite that must be accepted.
         """
-        return await self.repo.add_member(organization_id, user_id)
+        member = await self.repo.add_member(organization_id, user_id)
+
+        # Emit member added event
+        if member:
+            event = OrganizationMemberAddedEvent(
+                entity_id=member.id,
+                user_id=added_by_user_id,
+                organization_id=organization_id,
+                member_user_id=user_id,
+                added_by_user_id=added_by_user_id,
+            )
+            await EventBus.emit(event)
+            logger.debug(
+                "Emitted OrganizationMemberAddedEvent: user %s added to org %s",
+                user_id,
+                organization_id
+            )
+
+        return member
 
     async def list_user_memberships(self, user_id: int):
         """List all organizations a user is a member of."""

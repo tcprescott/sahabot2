@@ -18,6 +18,9 @@ from application.services.task_handlers import register_task_handlers
 from api import register_api
 import frontend
 
+# Import to register event listeners
+import application.events.listeners  # noqa: F401
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +45,9 @@ async def lifespan(app: FastAPI):
     # Initialize database
     await init_db()
     logger.info("Database initialized")
+
+    # Event system is automatically initialized via import
+    logger.info("Event system initialized with registered listeners")
 
     # Configure NiceGUI storage
     nicegui_app.storage.secret = settings.SECRET_KEY

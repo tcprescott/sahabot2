@@ -163,6 +163,47 @@ This application is multi-tenant. All user actions and data are scoped to Organi
   from datetime import datetime, timezone, timedelta
   ```
 
+### 5. Event System for Async Notifications
+- **Always emit events** for create, update, delete operations in service layer
+- Events enable async notifications and decoupled side effects
+- **Import EventBus and event types**:
+  ```python
+  from application.events import EventBus, UserCreatedEvent, UserPermissionChangedEvent
+  ```
+- **Emit events after successful operations**:
+  ```python
+  # After creating an entity
+  user = await self.repository.create_user(...)
+  await EventBus.emit(UserCreatedEvent(
+      user_id=current_user.id,
+      entity_id=user.id,
+      discord_id=user.discord_id,
+      username=user.discord_username,
+  ))
+
+  # After updating an entity
+  updated_org = await self.repository.update(org_id, **updates)
+  await EventBus.emit(OrganizationUpdatedEvent(
+      user_id=current_user.id,
+      organization_id=org_id,
+      entity_id=org_id,
+      changed_fields=list(updates.keys()),
+  ))
+  ```
+- **Event categories available**:
+  - User events: `UserCreatedEvent`, `UserUpdatedEvent`, `UserDeletedEvent`, `UserPermissionChangedEvent`
+  - Organization events: `OrganizationCreatedEvent`, `OrganizationUpdatedEvent`, `OrganizationMemberAddedEvent`, `OrganizationMemberPermissionChangedEvent`, etc.
+  - Tournament events: `TournamentCreatedEvent`, `TournamentUpdatedEvent`, `TournamentStartedEvent`, `TournamentEndedEvent`
+  - Race/Match events: `RaceSubmittedEvent`, `RaceApprovedEvent`, `RaceRejectedEvent`, `MatchScheduledEvent`, `MatchCompletedEvent`
+  - Invite events: `InviteCreatedEvent`, `InviteAcceptedEvent`, `InviteRejectedEvent`, `InviteExpiredEvent`
+  - Other events: `DiscordGuildLinkedEvent`, `DiscordGuildUnlinkedEvent`, `PresetCreatedEvent`, `PresetUpdatedEvent`
+- **Event best practices**:
+  - Emit events AFTER successful database operations (not before)
+  - Include all relevant context in the event (user_id, organization_id, entity_id, domain-specific fields)
+  - Fire-and-forget pattern - don't await event handler results
+  - Event handlers run async and errors are isolated (won't affect main operation)
+- **See docs/EVENT_SYSTEM.md for full documentation**
+
   ### Tenant-aware Authorization
   ```python
   from application.services.authorization_service import AuthorizationService
@@ -934,8 +975,30 @@ class MyView:
 ### New Business Logic
 1. Create service in `application/services/`
 2. Create repository in `application/repositories/` for data access
-3. Use service from UI pages
-4. Add docstrings and type hints
+3. **Import and emit events for all create/update/delete operations**:
+   ```python
+   from application.events import EventBus, EntityCreatedEvent, EntityUpdatedEvent
+   
+   # After successful create
+   entity = await self.repository.create(...)
+   await EventBus.emit(EntityCreatedEvent(
+       user_id=current_user.id,
+       organization_id=org_id,  # if tenant-scoped
+       entity_id=entity.id,
+       # ... domain-specific fields
+   ))
+   
+   # After successful update
+   updated = await self.repository.update(entity_id, **updates)
+   await EventBus.emit(EntityUpdatedEvent(
+       user_id=current_user.id,
+       organization_id=org_id,
+       entity_id=entity_id,
+       changed_fields=list(updates.keys()),
+   ))
+   ```
+4. Use service from UI pages
+5. Add docstrings and type hints
 
 ### New Authorization Check
 1. Add method to `AuthorizationService`

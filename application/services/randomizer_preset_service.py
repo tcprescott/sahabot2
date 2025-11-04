@@ -11,6 +11,7 @@ from typing import Optional
 from models import User, RandomizerPreset, Permission
 from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
 from application.services.preset_namespace_service import PresetNamespaceService
+from application.events import EventBus, PresetCreatedEvent, PresetUpdatedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -269,6 +270,14 @@ class RandomizerPresetService:
             is_public
         )
 
+        # Emit preset created event
+        await EventBus.emit(PresetCreatedEvent(
+            user_id=user.id,
+            entity_id=preset.id,
+            preset_name=name,
+            namespace=f"namespace:{namespace_id}" if namespace_id else "global",
+        ))
+
         return preset
 
     async def update_preset(
@@ -346,6 +355,14 @@ class RandomizerPresetService:
             preset_id,
             list(updates.keys())
         )
+
+        # Emit preset updated event
+        await EventBus.emit(PresetUpdatedEvent(
+            user_id=user.id,
+            entity_id=preset_id,
+            preset_name=updated_preset.name,
+            changed_fields=list(updates.keys()),
+        ))
 
         return updated_preset
 

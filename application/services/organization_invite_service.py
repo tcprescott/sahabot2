@@ -13,6 +13,7 @@ from models import User
 from models.organization_invite import OrganizationInvite
 from application.repositories.organization_invite_repository import OrganizationInviteRepository
 from application.services.organization_service import OrganizationService
+from application.events import EventBus, InviteCreatedEvent, InviteAcceptedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,16 @@ class OrganizationInviteService:
             return None, "This invite link is already in use"
 
         invite = await self.repo.create(organization_id, slug, user.id, max_uses, expires_at)
+
+        # Emit invite created event
+        await EventBus.emit(InviteCreatedEvent(
+            user_id=user.id,
+            organization_id=organization_id,
+            entity_id=invite.id,
+            invite_code=slug,
+            inviter_user_id=user.id,
+        ))
+
         return invite, None
 
     async def update_invite(
@@ -146,9 +157,18 @@ class OrganizationInviteService:
         
         # Add user to organization
         await self.org_service.add_member(invite.organization_id, user_id)
-        
+
         # Increment uses
         await self.repo.increment_uses(invite.id)
-        
+
+        # Emit invite accepted event
+        await EventBus.emit(InviteAcceptedEvent(
+            user_id=user_id,
+            organization_id=invite.organization_id,
+            entity_id=invite.id,
+            invite_code=slug,
+            accepted_by_user_id=user_id,
+        ))
+
         logger.info("User %s joined org %s via invite %s", user_id, invite.organization_id, invite.id)
         return True, None

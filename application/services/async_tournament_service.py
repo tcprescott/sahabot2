@@ -20,6 +20,13 @@ from models.async_tournament import (
 )
 from application.repositories.async_tournament_repository import AsyncTournamentRepository
 from application.services.organization_service import OrganizationService
+from application.events import (
+    EventBus,
+    TournamentCreatedEvent,
+    RaceSubmittedEvent,
+    RaceApprovedEvent,
+    RaceRejectedEvent,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +204,17 @@ class AsyncTournamentService:
             details=f"Created tournament '{name}'",
             user_id=user.id if user else None,
         )
+
+        # Emit tournament created event
+        event = TournamentCreatedEvent(
+            entity_id=tournament.id,
+            user_id=user.id if user else None,
+            organization_id=organization_id,
+            tournament_name=name,
+            tournament_type="async",
+        )
+        await EventBus.emit(event)
+        logger.debug("Emitted TournamentCreatedEvent for tournament %s", tournament.id)
 
         return tournament, warnings
 
@@ -637,6 +655,19 @@ class AsyncTournamentService:
                 user_id=user.id,
             )
 
+            # Emit race submitted event
+            event = RaceSubmittedEvent(
+                entity_id=race.id,
+                user_id=user.id,
+                organization_id=organization_id,
+                tournament_id=race.tournament_id,
+                permalink_id=race.permalink_id,
+                racer_user_id=user.id,
+                time_seconds=int(race.elapsed_time.total_seconds()) if race.elapsed_time else None,
+            )
+            await EventBus.emit(event)
+            logger.debug("Emitted RaceSubmittedEvent for race %s", race.id)
+
             # Trigger score recalculation for the permalink
             await self.calculate_permalink_scores(race.permalink_id, organization_id)
 
@@ -974,6 +1005,31 @@ class AsyncTournamentService:
                 details=f"Race {race_id} reviewed: {review_status}",
                 user_id=user.id if user else None,
             )
+
+            # Emit race review event
+            if review_status == 'accepted':
+                event = RaceApprovedEvent(
+                    entity_id=race_id,
+                    user_id=user.id if user else None,
+                    organization_id=organization_id,
+                    tournament_id=updated_race.tournament_id,
+                    racer_user_id=updated_race.user_id,
+                    reviewer_user_id=user.id if user else None,
+                )
+                await EventBus.emit(event)
+                logger.debug("Emitted RaceApprovedEvent for race %s", race_id)
+            elif review_status == 'rejected':
+                event = RaceRejectedEvent(
+                    entity_id=race_id,
+                    user_id=user.id if user else None,
+                    organization_id=organization_id,
+                    tournament_id=updated_race.tournament_id,
+                    racer_user_id=updated_race.user_id,
+                    reviewer_user_id=user.id if user else None,
+                    reason=reviewer_notes,
+                )
+                await EventBus.emit(event)
+                logger.debug("Emitted RaceRejectedEvent for race %s", race_id)
 
             # If elapsed time was corrected, recalculate scores
             if elapsed_time_override:

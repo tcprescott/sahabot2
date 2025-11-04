@@ -9,6 +9,7 @@ from models import User, Permission
 from typing import Optional
 from application.repositories.user_repository import UserRepository
 from application.services.authorization_service import AuthorizationService
+from application.events import EventBus, UserCreatedEvent, UserPermissionChangedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +80,17 @@ class UserService:
             permission=Permission.USER
         )
 
+        # Emit user created event
+        event = UserCreatedEvent(
+            entity_id=user.id,
+            user_id=None,  # System/OAuth action
+            organization_id=None,  # Not org-specific
+            discord_id=discord_id,
+            discord_username=discord_username,
+        )
+        await EventBus.emit(event)
+        logger.debug("Emitted UserCreatedEvent for user %s", user.id)
+
         return user
 
     async def create_user_manual(
@@ -133,15 +145,32 @@ class UserService:
             user.is_active = is_active
             await user.save()
 
+        # Emit user created event
+        event = UserCreatedEvent(
+            entity_id=user.id,
+            user_id=None,  # Manual creation, could be admin
+            organization_id=None,  # Not org-specific
+            discord_id=discord_id,
+            discord_username=discord_username,
+        )
+        await EventBus.emit(event)
+        logger.debug("Emitted UserCreatedEvent for manually created user %s", user.id)
+
         return user
 
-    async def update_user_permission(self, user_id: int, new_permission: Permission) -> User:
+    async def update_user_permission(
+        self,
+        user_id: int,
+        new_permission: Permission,
+        acting_user_id: Optional[int] = None
+    ) -> User:
         """
         Update a user's permission level.
 
         Args:
             user_id: ID of the user to update
             new_permission: New permission level
+            acting_user_id: ID of user performing the action (for audit)
 
         Returns:
             User: Updated user
@@ -153,8 +182,25 @@ class UserService:
         if not user:
             raise ValueError(f"User with ID {user_id} not found")
 
+        old_permission = user.permission
         user.permission = new_permission
         await user.save()
+
+        # Emit permission changed event
+        event = UserPermissionChangedEvent(
+            entity_id=user.id,
+            user_id=acting_user_id,
+            organization_id=None,  # Global permission change
+            old_permission=old_permission.name,
+            new_permission=new_permission.name,
+        )
+        await EventBus.emit(event)
+        logger.debug(
+            "Emitted UserPermissionChangedEvent for user %s: %s -> %s",
+            user.id,
+            old_permission.name,
+            new_permission.name
+        )
 
         return user
 
