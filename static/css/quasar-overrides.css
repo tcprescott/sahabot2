@@ -106,6 +106,12 @@
     background: rgba(0, 0, 0, 0.5);
 }
 
+/* Dark mode - slightly lighter backdrop for better contrast */
+.body--dark .q-dialog__backdrop,
+.q-dark .q-dialog__backdrop {
+    background: rgba(0, 0, 0, 0.7);
+}
+
 .q-card {
     background-color: var(--surface-color);
     color: var(--text-primary);
@@ -225,6 +231,26 @@
     padding-top: 2px !important;
     line-height: 1.5 !important;
     font-size: 1rem !important;
+    color: var(--text-primary) !important;
+}
+
+/* Textarea specific styling */
+textarea.q-field__native,
+textarea.q-field__input {
+    resize: vertical !important;
+    min-height: 80px !important;
+}
+
+/* Dark mode input text color */
+.body--dark .q-field__native,
+.body--dark .q-field__input,
+.body--dark textarea.q-field__native,
+.body--dark textarea.q-field__input,
+.q-dark .q-field__native,
+.q-dark .q-field__input,
+.q-dark textarea.q-field__native,
+.q-dark textarea.q-field__input {
+    color: var(--text-primary) !important;
 }
 
 /* Select element specific styling */
@@ -283,4 +309,111 @@
 
 .q-btn--outline.text-positive {
     border-color: var(--success-color) !important;
+}
+
+/* ==================== SELECT DROPDOWN ==================== */
+/* Select option list */
+.q-select__dropdown {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+}
+
+/* Selected option highlighting */
+.q-item--active,
+.q-item.q-manual-focusable--focused {
+    background-color: var(--background-color);
+}
+
+.body--dark .q-item--active,
+.body--dark .q-item.q-manual-focusable--focused,
+.q-dark .q-item--active,
+.q-dark .q-item.q-manual-focusable--focused {
+    background-color: rgba(230, 214, 90, 0.1); /* subtle old-gold tint */
+}
+
+/* ==================== CHECKBOX ==================== */
+/* Checkbox container */
+.q-checkbox {
+    color: var(--text-primary);
+}
+
+/* Unchecked checkbox */
+.q-checkbox__bg {
+    border-color: var(--border-color);
+}
+
+/* Checked checkbox */
+.q-checkbox--truthy .q-checkbox__bg {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Checkbox label text */
+.q-checkbox__label {
+    color: var(--text-primary);
+}
+
+/* ==================== EXPANSION PANEL ==================== */
+.q-expansion-item {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+}
+
+.q-expansion-item__container {
+    border-color: var(--border-color);
+}
+
+.q-expansion-item__toggle-icon {
+    color: var(--text-secondary);
+}
+
+/* Expansion header */
+.q-item__section--side {
+    color: var(--text-secondary);
+}
+
+/* ==================== SPINNER ==================== */
+.q-spinner {
+    color: var(--primary-color);
+}
+
+/* ==================== TOOLTIP ==================== */
+.q-tooltip {
+    background-color: var(--surface-color);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+}
+
+/* Dark mode tooltip - more contrast */
+.body--dark .q-tooltip,
+.q-dark .q-tooltip {
+    background-color: #2a2a2a;
+    color: var(--text-primary);
+    border-color: #3a3a3a;
+}
+
+/* ==================== CHIP ==================== */
+.q-chip {
+    background-color: var(--background-color);
+    color: var(--text-primary);
+}
+
+.body--dark .q-chip,
+.q-dark .q-chip {
+    background-color: #2a2a2a;
+}
+
+/* ==================== PAGINATION ==================== */
+.q-pagination__content button {
+    color: var(--text-primary);
+}
+
+.q-pagination__content .q-btn--outline {
+    border-color: var(--border-color);
+}
+
+.q-pagination__content .q-btn--unelevated {
+    background-color: var(--primary-color);
+    color: #ffffff;
 }
