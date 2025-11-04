@@ -11,7 +11,7 @@ from nicegui import ui
 from models import Organization, User
 from components.card import Card
 from components.datetime_label import DateTimeLabel
-from components.dialogs.organization import PresetEditorDialog
+from components.dialogs.organization import PresetEditorDialog, ViewPresetDialog
 from application.services.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
@@ -213,60 +213,8 @@ class OrgPresetsView:
 
     async def _view_preset(self, preset) -> None:
         """View preset details in a dialog."""
-        import yaml
-
-        with ui.dialog() as dialog, ui.card().classes('w-full max-w-3xl'):
-            # Header
-            with ui.element('div').classes('flex justify-between items-start mb-4'):
-                with ui.element('div'):
-                    ui.label(preset.name).classes('text-xl font-bold')
-                    ui.label(self.RANDOMIZER_LABELS.get(preset.randomizer, preset.randomizer)).classes('badge badge-secondary')
-                ui.button(icon='close', on_click=dialog.close).props('flat dense')
-
-            # Description
-            if preset.description:
-                with ui.element('div').classes('mb-4'):
-                    ui.label('Description:').classes('font-bold text-sm')
-                    ui.label(preset.description).classes('text-sm')
-
-            # Metadata
-            with ui.element('div').classes('mb-4 text-sm text-secondary'):
-                ui.label(f'Created by: {preset.user.get_display_name()}')
-                with ui.element('div').classes('flex items-center gap-1'):
-                    ui.label('Updated:')
-                    DateTimeLabel.create(preset.updated_at)
-                if preset.is_public:
-                    ui.label('Visibility: Public').classes('text-green-600')
-                else:
-                    ui.label('Visibility: Private').classes('text-secondary')
-
-            ui.separator()
-
-            # YAML content
-            with ui.element('div').classes('mt-4'):
-                ui.label('YAML Configuration:').classes('font-bold mb-2')
-                yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
-                with ui.element('pre').classes('bg-gray-100 dark:bg-gray-800 p-4 rounded overflow-x-auto'):
-                    ui.label(yaml_content).classes('text-sm font-mono')
-
-            # Actions
-            with ui.element('div').classes('flex gap-2 mt-4 justify-end'):
-                ui.button('Close', on_click=dialog.close).classes('btn')
-
-                # Copy YAML button
-                async def copy_yaml():
-                    yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
-                    success = await ui.run_javascript(
-                        f'return window.ClipboardUtils.copy(`{yaml_content.replace("`", "\\`")}`);'
-                    )
-                    if success:
-                        ui.notify('YAML copied to clipboard', type='positive')
-                    else:
-                        ui.notify('Failed to copy YAML', type='negative')
-
-                ui.button('Copy YAML', icon='content_copy', on_click=copy_yaml).classes('btn').props('color=primary')
-
-        dialog.open()
+        dialog = ViewPresetDialog(preset=preset)
+        await dialog.show()
 
     async def _delete_preset(self, preset) -> None:
         """Delete a preset with confirmation."""

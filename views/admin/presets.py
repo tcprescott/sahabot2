@@ -7,12 +7,12 @@ Global presets are available to all users and don't belong to any namespace.
 
 from __future__ import annotations
 import logging
-import yaml
 from nicegui import ui
 from models import User
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
+from components.dialogs.common import ViewYamlDialog
 from components.dialogs.organization import PresetEditorDialog
 from components.dialogs.common.tournament_dialogs import ConfirmDialog
 from application.services.randomizer_preset_service import RandomizerPresetService
@@ -216,60 +216,8 @@ class PresetsView:
         Args:
             preset: RandomizerPreset to view
         """
-        with ui.dialog() as dialog:
-            with ui.element('div').classes('card dialog-card'):
-                # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('visibility').classes('icon-medium')
-                            ui.label(f'Preset: {preset.name}').classes('text-xl text-bold')
-                        ui.button(icon='close', on_click=dialog.close).props('flat round dense')
-
-                # Body
-                with ui.element('div').classes('card-body'):
-                    # Metadata section
-                    with ui.column().classes('gap-2 mb-4'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('category', size='sm')
-                            ui.label(f'Randomizer: {self.RANDOMIZER_LABELS.get(preset.randomizer, preset.randomizer)}').classes('text-sm')
-
-                        if preset.description:
-                            with ui.row().classes('items-center gap-2'):
-                                ui.icon('description', size='sm')
-                                ui.label(f'Description: {preset.description}').classes('text-sm')
-
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('person', size='sm')
-                            ui.label(f'Created by: {preset.user.get_display_name()}').classes('text-sm')
-
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('visibility', size='sm')
-                            visibility = 'Public' if preset.is_public else 'Private'
-                            ui.label(f'Visibility: {visibility}').classes('text-sm')
-
-                    ui.separator()
-
-                    # YAML content
-                    ui.label('YAML Content:').classes('font-bold mt-4 mb-2')
-                    yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
-                    ui.code(yaml_content, language='yaml').classes('w-full').style('max-height: 400px; overflow-y: auto;')
-
-                    # Action buttons
-                    with ui.row().classes('justify-end gap-2 mt-4'):
-                        async def copy_yaml():
-                            success = await ui.run_javascript(
-                                f'return window.ClipboardUtils.copy({yaml_content!r});'
-                            )
-                            if success:
-                                ui.notify('YAML copied to clipboard!', type='positive')
-                            else:
-                                ui.notify('Failed to copy YAML', type='negative')
-
-                        ui.button('Copy YAML', icon='content_copy', on_click=copy_yaml).classes('btn').props('color=primary')
-                        ui.button('Close', on_click=dialog.close).classes('btn')
-
-        dialog.open()
+        dialog = ViewYamlDialog(preset=preset)
+        await dialog.show()
 
     async def _delete_preset(self, preset) -> None:
         """

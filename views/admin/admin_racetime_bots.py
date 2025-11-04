@@ -10,7 +10,7 @@ from components.datetime_label import DateTimeLabel
 from models import User, RacetimeBot
 from application.services.racetime_bot_service import RacetimeBotService
 from application.services.organization_service import OrganizationService
-from components.dialogs import RacetimeBotEditDialog, RacetimeBotAddDialog, RacetimeBotOrganizationsDialog
+from components.dialogs import RacetimeBotEditDialog, RacetimeBotAddDialog, RacetimeBotOrganizationsDialog, ConfirmDialog
 import logging
 
 logger = logging.getLogger(__name__)
@@ -306,26 +306,16 @@ class AdminRacetimeBotsView:
             else:
                 ui.notify('Failed to delete bot (permission denied)', type='negative')
 
+        # Build confirmation message
+        message = f'Are you sure you want to delete bot "{bot.name}" ({bot.category})?'
+        if orgs:
+            message += f'\n\nThis bot is assigned to {len(orgs)} organization(s). Deleting will remove all assignments.'
+
         # Show confirmation dialog
-        with ui.dialog() as dialog:
-            with ui.element('div').classes('card dialog-card'):
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('warning', color='negative').classes('icon-medium')
-                            ui.label('Confirm Delete').classes('text-xl font-bold')
-                        ui.button(icon='close', on_click=dialog.close).props('flat round dense')
+        dialog = ConfirmDialog(
+            title='Confirm Delete',
+            message=message,
+            on_confirm=do_delete
+        )
+        await dialog.show()
 
-                with ui.element('div').classes('card-body'):
-                    ui.label(f'Are you sure you want to delete bot "{bot.name}" ({bot.category})?').classes('mb-4')
-
-                    if orgs:
-                        with ui.row().classes('items-center gap-2 p-3 rounded bg-warning text-white mb-4'):
-                            ui.icon('info')
-                            ui.label(f'This bot is assigned to {len(orgs)} organization(s). Deleting will remove all assignments.')
-
-                    with ui.row().classes('justify-end gap-2'):
-                        ui.button('Cancel', on_click=dialog.close).classes('btn')
-                        ui.button('Delete', on_click=lambda: [dialog.close(), do_delete()]).classes('btn').props('color=negative')
-
-        dialog.open()

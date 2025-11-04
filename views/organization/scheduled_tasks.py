@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User, Organization
 from models.scheduled_task import TaskType, ScheduleType
 from components.card import Card
+from components.dialogs.common import ConfirmDialog
 from application.services.task_scheduler_service import TaskSchedulerService
 from datetime import datetime
 
@@ -180,28 +181,17 @@ class OrganizationScheduledTasksView:
 
     async def _delete_task(self, task) -> None:
         """Delete a task."""
-        # Show confirmation dialog
-        with ui.dialog() as dialog, ui.card():
-            ui.label(f'Delete task "{task.name}"?').classes('text-lg')
-            ui.label('This action cannot be undone.').classes('text-secondary')
+        async def do_delete():
+            success = await self.service.delete_task(self.user, self.org.id, task.id)
+            if success:
+                ui.notify('Task deleted successfully', type='positive')
+                await self._refresh_tasks()
+            else:
+                ui.notify('Failed to delete task', type='negative')
 
-            with ui.row().classes('w-full justify-end gap-2 mt-4'):
-                ui.button('Cancel', on_click=dialog.close).classes('btn')
-                ui.button(
-                    'Delete',
-                    on_click=lambda: self._confirm_delete(task, dialog)
-                ).classes('btn').props('color=negative')
-
-        dialog.open()
-
-    async def _confirm_delete(self, task, dialog) -> None:
-        """Confirm and execute task deletion."""
-        success = await self.service.delete_task(self.user, self.org.id, task.id)
-
-        if success:
-            ui.notify('Task deleted successfully', type='positive')
-            await self._refresh_tasks()
-        else:
-            ui.notify('Failed to delete task', type='negative')
-
-        dialog.close()
+        dialog = ConfirmDialog(
+            title=f'Delete task "{task.name}"?',
+            message='This action cannot be undone.',
+            on_confirm=do_delete
+        )
+        await dialog.show()

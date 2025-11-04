@@ -9,7 +9,7 @@ from nicegui import ui
 from models import User, OrganizationRequest
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs import LeaveOrganizationDialog
+from components.dialogs import LeaveOrganizationDialog, RequestOrganizationDialog
 from application.services.organization_service import OrganizationService
 from application.services.authorization_service import AuthorizationService
 import logging
@@ -135,61 +135,8 @@ class UserOrganizationsView:
 
     async def _show_request_dialog(self) -> None:
         """Show dialog to request a new organization."""
-        with ui.dialog() as request_dialog:
-            with ui.element('div').classes('card dialog-card'):
-                # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('add_business').classes('icon-medium')
-                            ui.label('Request New Organization').classes('text-xl text-bold')
-                        ui.button(icon='close', on_click=request_dialog.close).props('flat round dense')
-
-                # Body
-                with ui.element('div').classes('card-body'):
-                    with ui.column().classes('gap-4 w-full'):
-                        ui.label('Submit a request to create a new organization. A SUPERADMIN will review your request.').classes('text-sm text-secondary')
-
-                        # Input fields
-                        name_input = ui.input(
-                            label='Organization Name',
-                            placeholder='Enter organization name'
-                        ).classes('w-full').props('outlined')
-
-                        description_input = ui.textarea(
-                            label='Description',
-                            placeholder='Describe the purpose of this organization'
-                        ).classes('w-full').props('outlined rows=4')
-
-                        # Action buttons
-                        with ui.row().classes('justify-end gap-2 mt-4'):
-                            ui.button('Cancel', on_click=request_dialog.close).classes('btn')
-
-                            async def submit_request():
-                                if not name_input.value or not name_input.value.strip():
-                                    ui.notify('Organization name is required', type='warning')
-                                    return
-
-                                try:
-                                    # Create the request
-                                    await OrganizationRequest.create(
-                                        name=name_input.value.strip(),
-                                        description=description_input.value.strip() if description_input.value else None,
-                                        requested_by=self.user,
-                                        status=OrganizationRequest.RequestStatus.PENDING
-                                    )
-
-                                    ui.notify('Organization request submitted successfully. A SUPERADMIN will review it.', type='positive')
-                                    request_dialog.close()
-                                    await self._refresh()
-
-                                except Exception as e:
-                                    logger.error("Failed to create organization request: %s", e, exc_info=True)
-                                    ui.notify(f'Failed to submit request: {str(e)}', type='negative')
-
-                            ui.button('Submit Request', on_click=submit_request).classes('btn').props('color=positive')
-
-        request_dialog.open()
+        dialog = RequestOrganizationDialog(user=self.user, on_save=self._refresh)
+        await dialog.show()
 
     async def render(self) -> None:
         """Render the organizations view."""

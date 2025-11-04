@@ -9,8 +9,8 @@ import logging
 from nicegui import ui
 from models import User, PresetNamespace
 from components.card import Card
-from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
+from components.dialogs import ViewNamespaceDialog, ConfirmDialog
 from application.services.preset_namespace_service import PresetNamespaceService
 
 logger = logging.getLogger(__name__)
@@ -157,64 +157,9 @@ class PresetNamespacesView:
         # Fetch related data
         await namespace.fetch_related('user', 'organization', 'presets')
 
-        with ui.dialog() as view_dialog, ui.card().classes('w-full max-w-2xl'):
-            with ui.element('div').classes('flex justify-between items-center mb-4'):
-                ui.label(f'Namespace: {namespace.display_name}').classes('text-xl font-bold')
-                ui.button(icon='close', on_click=view_dialog.close).props('flat round dense')
-
-            # Details
-            with ui.element('div').classes('space-y-3'):
-                # Name
-                with ui.element('div'):
-                    ui.label('Name:').classes('font-bold')
-                    ui.label(namespace.name).classes('font-mono')
-
-                # Display Name
-                with ui.element('div'):
-                    ui.label('Display Name:').classes('font-bold')
-                    ui.label(namespace.display_name)
-
-                # Description
-                if namespace.description:
-                    with ui.element('div'):
-                        ui.label('Description:').classes('font-bold')
-                        ui.label(namespace.description)
-
-                # Owner
-                with ui.element('div'):
-                    ui.label('Owner:').classes('font-bold')
-                    if namespace.user:
-                        ui.label(f'User: {namespace.user.get_display_name()}')
-                    elif namespace.organization:
-                        ui.label(f'Organization: {namespace.organization.name}')
-                    else:
-                        ui.label('System')
-
-                # Visibility
-                with ui.element('div'):
-                    ui.label('Visibility:').classes('font-bold')
-                    ui.label('Public' if namespace.is_public else 'Private')
-
-                # Preset count
-                with ui.element('div'):
-                    ui.label('Presets:').classes('font-bold')
-                    ui.label(f'{len(namespace.presets)} preset(s)')
-
-                # Timestamps
-                with ui.element('div'):
-                    ui.label('Created:').classes('font-bold')
-                    DateTimeLabel.create(namespace.created_at)
-
-                with ui.element('div'):
-                    ui.label('Updated:').classes('font-bold')
-                    DateTimeLabel.create(namespace.updated_at)
-
-            # Close button
-            ui.separator().classes('my-4')
-            with ui.element('div').classes('flex justify-end'):
-                ui.button('Close', on_click=view_dialog.close).classes('btn')
-
-        view_dialog.open()
+        # Show dialog
+        dialog = ViewNamespaceDialog(namespace=namespace)
+        await dialog.show()
 
     async def _delete_namespace(self, namespace: PresetNamespace) -> None:
         """
@@ -227,31 +172,29 @@ class PresetNamespacesView:
         await namespace.fetch_related('presets')
         preset_count = len(namespace.presets)
 
-        # Confirmation dialog
-        with ui.dialog() as confirm_dialog, ui.card():
-            ui.label(f'Delete namespace "{namespace.display_name}"?').classes('text-lg font-bold mb-4')
-            
-            if preset_count > 0:
-                ui.label(f'Warning: This namespace has {preset_count} preset(s).').classes('text-red-600 font-bold mb-2')
-                ui.label('Deleting this namespace will also delete all its presets.').classes('text-secondary mb-4')
-            else:
-                ui.label('This action cannot be undone.').classes('text-secondary mb-4')
+        # Build confirmation message
+        message = f'Are you sure you want to delete namespace "{namespace.display_name}"?'
+        if preset_count > 0:
+            message += f'\n\nWarning: This namespace has {preset_count} preset(s). Deleting this namespace will also delete all its presets.'
+        else:
+            message += '\n\nThis action cannot be undone.'
 
-            with ui.element('div').classes('flex justify-end gap-2'):
-                ui.button('Cancel', on_click=confirm_dialog.close).classes('btn')
+        async def confirm_delete():
+            """Delete the namespace."""
+            try:
+                from application.repositories.preset_namespace_repository import PresetNamespaceRepository
+                repo = PresetNamespaceRepository()
+                await repo.delete(namespace.id)
+                ui.notify(f'Namespace "{namespace.display_name}" deleted', type='positive')
+                await self._refresh()
+            except Exception as e:
+                logger.error("Failed to delete namespace %s: %s", namespace.id, e, exc_info=True)
+                ui.notify(f'Failed to delete namespace: {str(e)}', type='negative')
 
-                async def confirm_delete():
-                    try:
-                        from application.repositories.preset_namespace_repository import PresetNamespaceRepository
-                        repo = PresetNamespaceRepository()
-                        await repo.delete(namespace.id)
-                        ui.notify(f'Namespace "{namespace.display_name}" deleted', type='positive')
-                        confirm_dialog.close()
-                        await self._refresh()
-                    except Exception as e:
-                        logger.error("Failed to delete namespace %s: %s", namespace.id, e, exc_info=True)
-                        ui.notify(f'Failed to delete namespace: {str(e)}', type='negative')
-
-                ui.button('Delete', on_click=confirm_delete).classes('btn').props('color=negative')
-
-        confirm_dialog.open()
+        # Show confirmation dialog
+        dialog = ConfirmDialog(
+            title='Delete Namespace',
+            message=message,
+            on_confirm=confirm_delete
+        )
+        await dialog.show()

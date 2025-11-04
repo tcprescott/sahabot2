@@ -10,6 +10,7 @@ from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentPool
 from components.card import Card
 from components.dialogs.tournaments import PoolDialog, PermalinkDialog
+from components.dialogs.common import ConfirmDialog
 from application.services.async_tournament_service import AsyncTournamentService
 from application.services.authorization_service import AuthorizationService
 import logging
@@ -185,59 +186,43 @@ class AsyncPoolsView:
 
     async def _confirm_delete_pool(self, pool: AsyncTournamentPool):
         """Confirm and delete a pool."""
-        with ui.dialog() as dialog, ui.card():
-            ui.label(f'Delete Pool: {pool.name}?').classes('text-lg font-bold')
-            ui.label('This will delete all permalinks and races in this pool.').classes('text-danger')
+        async def do_delete():
+            success = await self.service.delete_pool(
+                self.user,
+                self.tournament.organization_id,
+                pool.id
+            )
+            if success:
+                ui.notify('Pool deleted successfully', type='positive')
+                await self._refresh_pools()
+            else:
+                ui.notify('Failed to delete pool', type='negative')
 
-            with ui.element('div').classes('flex justify-end gap-2 mt-4'):
-                ui.button('Cancel', on_click=dialog.close).classes('btn')
-                ui.button(
-                    'Delete',
-                    on_click=lambda: self._delete_pool(pool, dialog)
-                ).classes('btn').props('color=negative')
-
-        dialog.open()
-
-    async def _delete_pool(self, pool: AsyncTournamentPool, dialog):
-        """Delete a pool after confirmation."""
-        success = await self.service.delete_pool(
-            self.user,
-            self.tournament.organization_id,
-            pool.id
+        dialog = ConfirmDialog(
+            title=f'Delete Pool: {pool.name}?',
+            message='This will delete all permalinks and races in this pool.',
+            on_confirm=do_delete
         )
-        if success:
-            ui.notify('Pool deleted successfully', type='positive')
-            await self._refresh_pools()
-        else:
-            ui.notify('Failed to delete pool', type='negative')
-        dialog.close()
+        await dialog.show()
 
     async def _confirm_delete_permalink(self, permalink):
         """Confirm and delete a permalink."""
-        with ui.dialog() as dialog, ui.card():
-            ui.label('Delete this permalink?').classes('text-lg font-bold')
-            ui.label('This will delete all races for this permalink.').classes('text-danger')
+        async def do_delete():
+            success = await self.service.delete_permalink(
+                self.user,
+                self.tournament.organization_id,
+                permalink.id
+            )
+            if success:
+                ui.notify('Permalink deleted successfully', type='positive')
+                await self._refresh_pools()
+            else:
+                ui.notify('Failed to delete permalink', type='negative')
 
-            with ui.element('div').classes('flex justify-end gap-2 mt-4'):
-                ui.button('Cancel', on_click=dialog.close).classes('btn')
-                ui.button(
-                    'Delete',
-                    on_click=lambda: self._delete_permalink(permalink, dialog)
-                ).classes('btn').props('color=negative')
-
-        dialog.open()
-
-    async def _delete_permalink(self, permalink, dialog):
-        """Delete a permalink after confirmation."""
-        success = await self.service.delete_permalink(
-            self.user,
-            self.tournament.organization_id,
-            permalink.id
+        dialog = ConfirmDialog(
+            title='Delete this permalink?',
+            message='This will delete all races for this permalink.',
+            on_confirm=do_delete
         )
-        if success:
-            ui.notify('Permalink deleted successfully', type='positive')
-            await self._refresh_pools()
-        else:
-            ui.notify('Failed to delete permalink', type='negative')
-        dialog.close()
+        await dialog.show()
 

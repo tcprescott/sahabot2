@@ -12,7 +12,7 @@ For backward compatibility, all dialogs are re-exported from this module.
 """
 
 # Common dialogs (used across multiple views)
-from components.dialogs.common import BaseDialog, TournamentDialog, ConfirmDialog
+from components.dialogs.common import BaseDialog, TournamentDialog, ConfirmDialog, ViewYamlDialog
 
 # Admin dialogs
 from components.dialogs.admin import (
@@ -23,6 +23,9 @@ from components.dialogs.admin import (
     RacetimeBotAddDialog,
     RacetimeBotEditDialog,
     RacetimeBotOrganizationsDialog,
+    ApproveOrgRequestDialog,
+    RejectOrgRequestDialog,
+    ViewNamespaceDialog,
 )
 
 # Organization dialogs
@@ -32,6 +35,7 @@ from components.dialogs.organization import (
     OrganizationInviteDialog,
     OrgSettingDialog,
     StreamChannelDialog,
+    ViewPresetDialog,
 )
 
 # Tournament dialogs
@@ -48,6 +52,11 @@ from components.dialogs.user_profile import (
     CreateApiKeyDialog,
     DisplayTokenDialog,
     LeaveOrganizationDialog,
+    RenameNamespaceDialog,
+    AddPermissionDialog,
+    EditPermissionDialog,
+    ManagePermissionsDialog,
+    RequestOrganizationDialog,
 )
 
 __all__ = [
@@ -55,6 +64,7 @@ __all__ = [
     'BaseDialog',
     'TournamentDialog',
     'ConfirmDialog',
+    'ViewYamlDialog',
     # Admin
     'UserEditDialog',
     'UserAddDialog',
@@ -63,12 +73,16 @@ __all__ = [
     'RacetimeBotAddDialog',
     'RacetimeBotEditDialog',
     'RacetimeBotOrganizationsDialog',
+    'ApproveOrgRequestDialog',
+    'RejectOrgRequestDialog',
+    'ViewNamespaceDialog',
     # Organization
     'OrgSettingDialog',
     'MemberPermissionsDialog',
     'InviteMemberDialog',
     'OrganizationInviteDialog',
     'StreamChannelDialog',
+    'ViewPresetDialog',
     # Tournaments
     'SubmitMatchDialog',
     'RegisterPlayerDialog',
@@ -79,4 +93,9 @@ __all__ = [
     'CreateApiKeyDialog',
     'DisplayTokenDialog',
     'LeaveOrganizationDialog',
+    'RenameNamespaceDialog',
+    'AddPermissionDialog',
+    'EditPermissionDialog',
+    'ManagePermissionsDialog',
+    'RequestOrganizationDialog',
 ]

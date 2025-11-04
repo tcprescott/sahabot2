@@ -6,11 +6,11 @@ Allows SUPERADMINs to review and approve/reject organization creation requests.
 
 from __future__ import annotations
 import logging
-from datetime import datetime, timezone
 from nicegui import ui
-from models import User, OrganizationRequest, Organization, OrganizationMember
+from models import User, OrganizationRequest
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
+from components.dialogs.admin import ApproveOrgRequestDialog, RejectOrgRequestDialog
 from application.services.organization_service import OrganizationService
 
 logger = logging.getLogger(__name__)
@@ -158,123 +158,10 @@ class OrgRequestsView:
 
     async def _show_approve_dialog(self, request: OrganizationRequest) -> None:
         """Show dialog to approve an organization request."""
-        with ui.dialog() as approve_dialog:
-            with ui.element('div').classes('card dialog-card'):
-                # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('check_circle').classes('icon-medium')
-                            ui.label('Approve Organization Request').classes('text-xl text-bold')
-                        ui.button(icon='close', on_click=approve_dialog.close).props('flat round dense')
-
-                # Body
-                with ui.element('div').classes('card-body'):
-                    with ui.column().classes('gap-4 w-full'):
-                        ui.label(f'Organization: {request.name}').classes('font-bold')
-                        if request.description:
-                            ui.label(request.description).classes('text-sm text-secondary')
-                        ui.label(f'Requested by: {request.requested_by.discord_username}').classes('text-sm')
-
-                        ui.separator()
-
-                        ui.label('Approving this request will:').classes('font-bold mt-2')
-                        with ui.column().classes('gap-1 ml-4'):
-                            ui.label('• Create the organization').classes('text-sm')
-                            ui.label('• Add the requester as an admin member').classes('text-sm')
-                            ui.label('• Mark the request as approved').classes('text-sm')
-
-                        notes_input = ui.textarea(
-                            label='Notes (optional)',
-                            placeholder='Add any notes about this approval'
-                        ).classes('w-full mt-4').props('outlined rows=3')
-
-                        # Action buttons
-                        with ui.row().classes('justify-end gap-2 mt-4'):
-                            ui.button('Cancel', on_click=approve_dialog.close).classes('btn')
-
-                            async def confirm_approve():
-                                try:
-                                    # Create the organization
-                                    org = await Organization.create(
-                                        name=request.name,
-                                        description=request.description
-                                    )
-
-                                    # Add the requester as an admin member
-                                    await OrganizationMember.create(
-                                        organization=org,
-                                        user=request.requested_by,
-                                        is_admin=True
-                                    )
-
-                                    # Update the request
-                                    request.status = OrganizationRequest.RequestStatus.APPROVED
-                                    request.reviewed_by = self.user
-                                    request.review_notes = notes_input.value if notes_input.value else None
-                                    request.reviewed_at = datetime.now(timezone.utc)
-                                    await request.save()
-
-                                    ui.notify(f'Organization "{request.name}" created successfully', type='positive')
-                                    approve_dialog.close()
-                                    await self._refresh()
-
-                                except Exception as e:
-                                    logger.error("Failed to approve organization request %s: %s", request.id, e, exc_info=True)
-                                    ui.notify(f'Failed to approve request: {str(e)}', type='negative')
-
-                            ui.button('Approve & Create Organization', on_click=confirm_approve).classes('btn').props('color=positive')
-
-        approve_dialog.open()
+        dialog = ApproveOrgRequestDialog(request=request, user=self.user, on_save=self._refresh)
+        await dialog.show()
 
     async def _show_reject_dialog(self, request: OrganizationRequest) -> None:
         """Show dialog to reject an organization request."""
-        with ui.dialog() as reject_dialog:
-            with ui.element('div').classes('card dialog-card'):
-                # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('cancel').classes('icon-medium')
-                            ui.label('Reject Organization Request').classes('text-xl text-bold')
-                        ui.button(icon='close', on_click=reject_dialog.close).props('flat round dense')
-
-                # Body
-                with ui.element('div').classes('card-body'):
-                    with ui.column().classes('gap-4 w-full'):
-                        ui.label(f'Organization: {request.name}').classes('font-bold')
-                        if request.description:
-                            ui.label(request.description).classes('text-sm text-secondary')
-                        ui.label(f'Requested by: {request.requested_by.discord_username}').classes('text-sm')
-
-                        ui.separator()
-
-                        notes_input = ui.textarea(
-                            label='Rejection Reason',
-                            placeholder='Explain why this request is being rejected'
-                        ).classes('w-full').props('outlined rows=4')
-
-                        # Action buttons
-                        with ui.row().classes('justify-end gap-2 mt-4'):
-                            ui.button('Cancel', on_click=reject_dialog.close).classes('btn')
-
-                            async def confirm_reject():
-                                try:
-                                    # Update the request
-                                    request.status = OrganizationRequest.RequestStatus.REJECTED
-                                    request.reviewed_by = self.user
-                                    request.review_notes = notes_input.value if notes_input.value else None
-                                    request.reviewed_at = datetime.now(timezone.utc)
-                                    await request.save()
-
-                                    ui.notify('Organization request rejected', type='positive')
-                                    reject_dialog.close()
-                                    await self._refresh()
-
-                                except Exception as e:
-                                    logger.error("Failed to reject organization request %s: %s", request.id, e, exc_info=True)
-                                    ui.notify(f'Failed to reject request: {str(e)}', type='negative')
-
-                            ui.button('Reject Request', on_click=confirm_reject).classes('btn').props('color=negative')
-
-        reject_dialog.open()
+        dialog = RejectOrgRequestDialog(request=request, user=self.user, on_save=self._refresh)
+        await dialog.show()

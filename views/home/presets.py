@@ -7,13 +7,13 @@ across all organizations.
 
 from __future__ import annotations
 import logging
-import yaml
 from nicegui import ui
 from models import User
 from models.user import Permission
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
+from components.dialogs.common import ViewYamlDialog
 from application.services.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
@@ -190,7 +190,7 @@ class PresetsView:
                             with ui.row().classes('gap-1'):
                                 # View button
                                 async def view_yaml():
-                                    await self._view_preset_yaml(preset)
+                                    await self._show_yaml(preset)
 
                                 ui.button(
                                     icon='visibility',
@@ -254,86 +254,10 @@ class PresetsView:
                                 ui.label(f'Failed to load presets: {str(e)}').classes('font-bold text-negative')
                                 ui.label('Please check the server logs for details.').classes('text-sm text-secondary')
 
-    async def _view_preset_yaml(self, preset) -> None:
-        """
-        Display preset YAML content in a dialog.
-
-        Args:
-            preset: Preset to view
-        """
-        # Convert settings dict to YAML string
-        try:
-            yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
-        except Exception as e:
-            yaml_content = f'Error formatting YAML: {e}'
-
-        # Create a dialog to show the YAML
-        with ui.dialog() as yaml_dialog:
-            with ui.element('div').classes('card dialog-card'):
-                # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('visibility').classes('icon-medium')
-                            ui.label(f'Preset: {preset.name}').classes('text-xl text-bold')
-                        ui.button(icon='close', on_click=yaml_dialog.close).props('flat round dense')
-
-                # Body
-                with ui.element('div').classes('card-body'):
-                    # Metadata section
-                    with ui.column().classes('gap-2 mb-4'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('category', size='sm')
-                            randomizer_label = self.RANDOMIZER_LABELS.get(preset.randomizer, preset.randomizer)
-                            ui.label(f'Randomizer: {randomizer_label}').classes('text-sm')
-
-                        if preset.description:
-                            with ui.row().classes('items-center gap-2'):
-                                ui.icon('description', size='sm')
-                                ui.label(f'Description: {preset.description}').classes('text-sm')
-
-                        # Scope
-                        with ui.row().classes('items-center gap-2'):
-                            if preset.namespace:
-                                ui.icon('folder', size='sm')
-                                ui.label(f'Namespace: {preset.namespace.display_name}').classes('text-sm')
-                            else:
-                                ui.icon('public', size='sm')
-                                ui.label('Scope: Global').classes('text-sm font-bold')
-
-                        # Creator
-                        if preset.user:
-                            with ui.row().classes('items-center gap-2'):
-                                ui.icon('person', size='sm')
-                                ui.label(f'Created by: {preset.user.get_display_name()}').classes('text-sm')
-
-                        # Visibility
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('visibility', size='sm')
-                            visibility = 'Public' if preset.is_public else 'Private'
-                            ui.label(f'Visibility: {visibility}').classes('text-sm')
-
-                    ui.separator()
-
-                    # YAML content
-                    ui.label('YAML Content:').classes('font-bold mt-4 mb-2')
-                    ui.code(yaml_content, language='yaml').classes('w-full').style('max-height: 400px; overflow-y: auto;')
-
-                    # Action buttons
-                    with ui.row().classes('justify-end gap-2 mt-4'):
-                        async def copy_yaml():
-                            success = await ui.run_javascript(
-                                f'return window.ClipboardUtils.copy({yaml_content!r});'
-                            )
-                            if success:
-                                ui.notify('YAML copied to clipboard!', type='positive')
-                            else:
-                                ui.notify('Failed to copy YAML', type='negative')
-
-                        ui.button('Copy YAML', icon='content_copy', on_click=copy_yaml).classes('btn').props('color=primary')
-                        ui.button('Close', on_click=yaml_dialog.close).classes('btn')
-
-        yaml_dialog.open()
+    async def _show_yaml(self, preset) -> None:
+        """Show YAML content in a dialog."""
+        dialog = ViewYamlDialog(preset=preset)
+        await dialog.show()
 
     async def _delete_preset(self, preset_id: int) -> None:
         """

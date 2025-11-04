@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User
 from models.organizations import Organization
 from components.card import Card
+from components.dialogs.common import ConfirmDialog
 from application.services.discord_guild_service import DiscordGuildService
 from application.services.organization_service import OrganizationService
 import logging
@@ -128,31 +129,21 @@ class DiscordServersView:
 
     async def _confirm_unlink(self, guild):
         """Confirm and unlink a Discord server."""
-        with ui.dialog() as dialog, ui.card():
-            ui.label(f'Unlink Discord Server: {guild.guild_name}?').classes('text-lg font-bold')
-            ui.label(
-                'The bot will no longer be able to operate in this server for your organization.'
-            ).classes('text-secondary')
+        async def do_unlink():
+            success = await self.service.unlink_guild(
+                self.user,
+                self.organization.id,
+                guild.id
+            )
+            if success:
+                ui.notify('Discord server unlinked successfully', type='positive')
+                await self._refresh_servers()
+            else:
+                ui.notify('Failed to unlink server', type='negative')
 
-            with ui.element('div').classes('flex justify-end gap-2 mt-4'):
-                ui.button('Cancel', on_click=dialog.close).classes('btn')
-                ui.button(
-                    'Unlink',
-                    on_click=lambda: self._unlink_server(guild, dialog)
-                ).classes('btn').props('color=negative')
-
-        dialog.open()
-
-    async def _unlink_server(self, guild, dialog):
-        """Unlink a Discord server after confirmation."""
-        success = await self.service.unlink_guild(
-            self.user,
-            self.organization.id,
-            guild.id
+        dialog = ConfirmDialog(
+            title=f'Unlink Discord Server: {guild.guild_name}?',
+            message='The bot will no longer be able to operate in this server for your organization.',
+            on_confirm=do_unlink
         )
-        if success:
-            ui.notify('Discord server unlinked successfully', type='positive')
-            await self._refresh_servers()
-        else:
-            ui.notify('Failed to unlink server', type='negative')
-        dialog.close()
+        await dialog.show()
