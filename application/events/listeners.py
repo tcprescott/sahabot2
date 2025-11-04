@@ -25,6 +25,12 @@ from application.events.types import (
     CrewAddedEvent,
     CrewApprovedEvent,
     CrewRemovedEvent,
+    # Async Live Race events
+    AsyncLiveRaceCreatedEvent,
+    AsyncLiveRaceRoomOpenedEvent,
+    AsyncLiveRaceStartedEvent,
+    AsyncLiveRaceFinishedEvent,
+    AsyncLiveRaceCancelledEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -582,6 +588,277 @@ async def notify_crew_removed(event: CrewRemovedEvent) -> None:
         organization_id=event.organization_id,
     )
     logger.debug("Queued crew removed notification for user %s", crew_user.id)
+
+
+# ============================================================================
+# Async Live Race Notification Listeners
+# ============================================================================
+# These listeners queue notifications for live race events
+# Priority: NORMAL - notifications happen after audit logging
+
+@EventBus.on(AsyncLiveRaceCreatedEvent, priority=EventPriority.NORMAL)
+async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
+    """Queue notifications when a live race is scheduled."""
+    from application.services.notification_service import NotificationService
+    from application.services.async_live_race_service import AsyncLiveRaceService
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    live_race_service = AsyncLiveRaceService()
+
+    # Get eligible participants for this race
+    try:
+        eligibility_list = await live_race_service.get_eligible_participants(
+            organization_id=event.organization_id,
+            live_race_id=event.entity_id
+        )
+    except ValueError as e:
+        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        return
+
+    # Filter to only eligible participants
+    eligible_users = [e.user for e in eligibility_list if e.is_eligible]
+    if not eligible_users:
+        logger.debug("No eligible participants for live race %s, skipping notifications", event.entity_id)
+        return
+
+    # Base event data
+    event_data = {
+        "live_race_id": event.entity_id,
+        "tournament_id": event.tournament_id,
+        "tournament_name": event.tournament_name,
+        "pool_name": event.pool_name,
+        "scheduled_time": event.scheduled_time.isoformat() if event.scheduled_time else None,
+    }
+
+    # Notify each eligible participant
+    for user in eligible_users:
+        await notification_service.queue_notification(
+            user=user,
+            event_type=NotificationEventType.LIVE_RACE_SCHEDULED,
+            event_data=event_data,
+            organization_id=event.organization_id,
+        )
+        logger.debug("Queued live race scheduled notification for user %s", user.id)
+
+
+@EventBus.on(AsyncLiveRaceRoomOpenedEvent, priority=EventPriority.NORMAL)
+async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> None:
+    """Queue notifications when a live race room opens."""
+    from application.services.notification_service import NotificationService
+    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    live_race_service = AsyncLiveRaceService()
+    live_race_repo = AsyncLiveRaceRepository()
+
+    # Get the live race
+    live_race = await live_race_repo.get_by_id_with_relations(event.entity_id)
+    if not live_race:
+        logger.warning("Could not find live race %s", event.entity_id)
+        return
+
+    # Get eligible participants
+    try:
+        eligibility_list = await live_race_service.get_eligible_participants(
+            organization_id=event.organization_id,
+            live_race_id=event.entity_id
+        )
+    except ValueError as e:
+        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        return
+
+    # Filter to only eligible participants
+    eligible_users = [e.user for e in eligibility_list if e.is_eligible]
+    if not eligible_users:
+        logger.debug("No eligible participants for live race %s", event.entity_id)
+        return
+
+    # Base event data
+    event_data = {
+        "live_race_id": event.entity_id,
+        "tournament_id": live_race.tournament_id,
+        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "pool_name": live_race.pool_name,
+        "racetime_url": event.racetime_url,
+        "scheduled_time": live_race.scheduled_time.isoformat() if live_race.scheduled_time else None,
+    }
+
+    # Notify each eligible participant
+    for user in eligible_users:
+        await notification_service.queue_notification(
+            user=user,
+            event_type=NotificationEventType.LIVE_RACE_ROOM_OPENED,
+            event_data=event_data,
+            organization_id=event.organization_id,
+        )
+        logger.debug("Queued live race room opened notification for user %s", user.id)
+
+
+@EventBus.on(AsyncLiveRaceStartedEvent, priority=EventPriority.NORMAL)
+async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
+    """Queue notifications when a live race starts."""
+    from application.services.notification_service import NotificationService
+    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    live_race_service = AsyncLiveRaceService()
+    live_race_repo = AsyncLiveRaceRepository()
+
+    # Get the live race
+    live_race = await live_race_repo.get_by_id_with_relations(event.entity_id)
+    if not live_race:
+        logger.warning("Could not find live race %s", event.entity_id)
+        return
+
+    # Get eligible participants
+    try:
+        eligibility_list = await live_race_service.get_eligible_participants(
+            organization_id=event.organization_id,
+            live_race_id=event.entity_id
+        )
+    except ValueError as e:
+        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        return
+
+    # Filter to only eligible participants
+    eligible_users = [e.user for e in eligibility_list if e.is_eligible]
+    if not eligible_users:
+        logger.debug("No eligible participants for live race %s", event.entity_id)
+        return
+
+    # Base event data
+    event_data = {
+        "live_race_id": event.entity_id,
+        "tournament_id": live_race.tournament_id,
+        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "pool_name": live_race.pool_name,
+        "participant_count": event.participant_count,
+        "racetime_url": live_race.racetime_url,
+    }
+
+    # Notify each eligible participant
+    for user in eligible_users:
+        await notification_service.queue_notification(
+            user=user,
+            event_type=NotificationEventType.LIVE_RACE_STARTED,
+            event_data=event_data,
+            organization_id=event.organization_id,
+        )
+        logger.debug("Queued live race started notification for user %s", user.id)
+
+
+@EventBus.on(AsyncLiveRaceFinishedEvent, priority=EventPriority.NORMAL)
+async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
+    """Queue notifications when a live race finishes."""
+    from application.services.notification_service import NotificationService
+    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    live_race_service = AsyncLiveRaceService()
+    live_race_repo = AsyncLiveRaceRepository()
+
+    # Get the live race
+    live_race = await live_race_repo.get_by_id_with_relations(event.entity_id)
+    if not live_race:
+        logger.warning("Could not find live race %s", event.entity_id)
+        return
+
+    # Get eligible participants
+    try:
+        eligibility_list = await live_race_service.get_eligible_participants(
+            organization_id=event.organization_id,
+            live_race_id=event.entity_id
+        )
+    except ValueError as e:
+        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        return
+
+    # Filter to only eligible participants
+    eligible_users = [e.user for e in eligibility_list if e.is_eligible]
+    if not eligible_users:
+        logger.debug("No eligible participants for live race %s", event.entity_id)
+        return
+
+    # Base event data
+    event_data = {
+        "live_race_id": event.entity_id,
+        "tournament_id": live_race.tournament_id,
+        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "pool_name": live_race.pool_name,
+        "finisher_count": event.finisher_count,
+        "racetime_url": live_race.racetime_url,
+    }
+
+    # Notify each eligible participant
+    for user in eligible_users:
+        await notification_service.queue_notification(
+            user=user,
+            event_type=NotificationEventType.LIVE_RACE_FINISHED,
+            event_data=event_data,
+            organization_id=event.organization_id,
+        )
+        logger.debug("Queued live race finished notification for user %s", user.id)
+
+
+@EventBus.on(AsyncLiveRaceCancelledEvent, priority=EventPriority.NORMAL)
+async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None:
+    """Queue notifications when a live race is cancelled."""
+    from application.services.notification_service import NotificationService
+    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    live_race_service = AsyncLiveRaceService()
+    live_race_repo = AsyncLiveRaceRepository()
+
+    # Get the live race
+    live_race = await live_race_repo.get_by_id_with_relations(event.entity_id)
+    if not live_race:
+        logger.warning("Could not find live race %s", event.entity_id)
+        return
+
+    # Get eligible participants
+    try:
+        eligibility_list = await live_race_service.get_eligible_participants(
+            organization_id=event.organization_id,
+            live_race_id=event.entity_id
+        )
+    except ValueError as e:
+        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        return
+
+    # Filter to only eligible participants
+    eligible_users = [e.user for e in eligibility_list if e.is_eligible]
+    if not eligible_users:
+        logger.debug("No eligible participants for live race %s", event.entity_id)
+        return
+
+    # Base event data
+    event_data = {
+        "live_race_id": event.entity_id,
+        "tournament_id": live_race.tournament_id,
+        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "pool_name": live_race.pool_name,
+        "reason": event.reason,
+    }
+
+    # Notify each eligible participant
+    for user in eligible_users:
+        await notification_service.queue_notification(
+            user=user,
+            event_type=NotificationEventType.LIVE_RACE_CANCELLED,
+            event_data=event_data,
+            organization_id=event.organization_id,
+        )
+        logger.debug("Queued live race cancelled notification for user %s", user.id)
 
 
 logger.info("Event listeners registered")

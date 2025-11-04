@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 from dataclasses import dataclass
 import logging
 
-from models import User
+from models import User, SYSTEM_USER_ID
 from models.async_tournament import (
     AsyncTournamentPool,
     AsyncTournamentPermalink,
@@ -509,7 +509,7 @@ class AsyncLiveRaceService:
         # Emit event
         await EventBus.emit(
             AsyncLiveRaceRoomOpenedEvent(
-                user_id=None,  # System action
+                user_id=SYSTEM_USER_ID,  # System action
                 organization_id=live_race.tournament.organization_id,
                 entity_id=live_race_id,
                 tournament_id=live_race.tournament_id,
@@ -569,7 +569,7 @@ class AsyncLiveRaceService:
         # Emit event
         await EventBus.emit(
             AsyncLiveRaceStartedEvent(
-                user_id=None,  # System action
+                user_id=SYSTEM_USER_ID,  # System action
                 organization_id=live_race.tournament.organization_id,
                 entity_id=live_race_id,
                 tournament_id=live_race.tournament_id,
@@ -653,7 +653,7 @@ class AsyncLiveRaceService:
         # Emit event
         await EventBus.emit(
             AsyncLiveRaceFinishedEvent(
-                user_id=None,  # System action
+                user_id=SYSTEM_USER_ID,  # System action
                 organization_id=live_race.tournament.organization_id,
                 entity_id=live_race_id,
                 tournament_id=live_race.tournament_id,

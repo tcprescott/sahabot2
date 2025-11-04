@@ -48,6 +48,13 @@ class NotificationEventType(IntEnum):
     RACE_APPROVED = 411
     RACE_REJECTED = 412
     
+    # Live Race events (async tournaments)
+    LIVE_RACE_SCHEDULED = 415
+    LIVE_RACE_ROOM_OPENED = 416
+    LIVE_RACE_STARTED = 417
+    LIVE_RACE_FINISHED = 418
+    LIVE_RACE_CANCELLED = 419
+    
     # Crew events (requires being crew member)
     CREW_APPROVED = 420
     CREW_REMOVED = 421

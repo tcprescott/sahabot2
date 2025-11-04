@@ -190,6 +190,27 @@ This application is multi-tenant. All user actions and data are scoped to Organi
       changed_fields=list(updates.keys()),
   ))
   ```
+- **System actions use SYSTEM_USER_ID**:
+  - For automated/background operations (task scheduler, bots, system triggers)
+  - Import from models: `from models import SYSTEM_USER_ID`
+  - **Never use `None` for user_id in events** - always use SYSTEM_USER_ID for system actions
+  ```python
+  # ✅ Correct - system action (task scheduler, bot, automation)
+  from models import SYSTEM_USER_ID
+  
+  await EventBus.emit(AsyncLiveRaceRoomOpenedEvent(
+      user_id=SYSTEM_USER_ID,  # System action
+      organization_id=org_id,
+      entity_id=race_id,
+      ...
+  ))
+  
+  # ❌ Wrong - never use None for user_id
+  await EventBus.emit(SomeEvent(
+      user_id=None,  # Don't do this!
+      ...
+  ))
+  ```
 - **Event categories available**:
   - User events: `UserCreatedEvent`, `UserUpdatedEvent`, `UserDeletedEvent`, `UserPermissionChangedEvent`
   - Organization events: `OrganizationCreatedEvent`, `OrganizationUpdatedEvent`, `OrganizationMemberAddedEvent`, `OrganizationMemberPermissionChangedEvent`, etc.
@@ -200,6 +221,8 @@ This application is multi-tenant. All user actions and data are scoped to Organi
 - **Event best practices**:
   - Emit events AFTER successful database operations (not before)
   - Include all relevant context in the event (user_id, organization_id, entity_id, domain-specific fields)
+  - Use `user_id=current_user.id` for user-initiated actions
+  - Use `user_id=SYSTEM_USER_ID` for system/automated actions
   - Fire-and-forget pattern - don't await event handler results
   - Event handlers run async and errors are isolated (won't affect main operation)
 - **See docs/EVENT_SYSTEM.md for full documentation**
@@ -1122,6 +1145,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't forget `await` when calling `super().show()` in dialog classes (causes RuntimeWarning)
 - ❌ Don't use `datetime.utcnow()` - it's deprecated and timezone-naive (use `datetime.now(timezone.utc)`)
 - ❌ Don't use raw HTML `<table>` elements for tabular data - use `ResponsiveTable` component instead
+- ❌ Don't use `None` for user_id in events - use `SYSTEM_USER_ID` for system/automated actions
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic

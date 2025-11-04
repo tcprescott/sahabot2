@@ -62,6 +62,11 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             NotificationEventType.RACE_SUBMITTED: self._send_race_submitted,
             NotificationEventType.RACE_APPROVED: self._send_race_approved,
             NotificationEventType.RACE_REJECTED: self._send_race_rejected,
+            NotificationEventType.LIVE_RACE_SCHEDULED: self._send_live_race_scheduled,
+            NotificationEventType.LIVE_RACE_ROOM_OPENED: self._send_live_race_room_opened,
+            NotificationEventType.LIVE_RACE_STARTED: self._send_live_race_started,
+            NotificationEventType.LIVE_RACE_FINISHED: self._send_live_race_finished,
+            NotificationEventType.LIVE_RACE_CANCELLED: self._send_live_race_cancelled,
             NotificationEventType.CREW_APPROVED: self._send_crew_approved,
             NotificationEventType.CREW_REMOVED: self._send_crew_removed,
             NotificationEventType.INVITE_RECEIVED: self._send_invite_received,
@@ -762,5 +767,178 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             footer_text="Contact an admin if you have questions"
         )
 
-        message = f"Hey {user.get_display_name()}, you've been removed from an organization."
-        return await self._send_discord_dm(user, message, embed)
+        return await self._send_discord_dm(user, "", embed=embed)
+
+    # =========================================================================
+    # Live Race Event Handlers
+    # =========================================================================
+
+    async def _send_live_race_scheduled(
+        self,
+        user: User,
+        event_data: dict
+    ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
+        """
+        Send notification for a newly scheduled live race.
+
+        Args:
+            user: User to notify
+            event_data: Event data with race details
+
+        Returns:
+            Tuple of (delivery_status, error_message)
+        """
+        tournament_name = event_data.get('tournament_name', 'Tournament')
+        pool_name = event_data.get('pool_name', 'Pool')
+        match_title = event_data.get('match_title', 'Live Race')
+        scheduled_at = event_data.get('scheduled_at', '')
+
+        embed = self._create_embed(
+            title="🏁 Live Race Scheduled",
+            description=f"A new live race has been scheduled in **{tournament_name}**.",
+            color=discord.Color.blue(),
+            fields=[
+                ("Tournament", tournament_name, False),
+                ("Pool", pool_name, True),
+                ("Title", match_title, True),
+                ("Scheduled Time", scheduled_at, False),
+            ],
+            footer_text="The race room will open 30 minutes before the scheduled time"
+        )
+
+        return await self._send_discord_dm(user, "", embed=embed)
+
+    async def _send_live_race_room_opened(
+        self,
+        user: User,
+        event_data: dict
+    ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
+        """
+        Send notification when a live race room opens on RaceTime.gg.
+
+        Args:
+            user: User to notify
+            event_data: Event data with race details
+
+        Returns:
+            Tuple of (delivery_status, error_message)
+        """
+        tournament_name = event_data.get('tournament_name', 'Tournament')
+        match_title = event_data.get('match_title', 'Live Race')
+        racetime_url = event_data.get('racetime_url', '')
+        scheduled_at = event_data.get('scheduled_at', '')
+
+        embed = self._create_embed(
+            title="🚪 Live Race Room Opened!",
+            description=f"The race room for **{match_title}** is now open!",
+            color=discord.Color.green(),
+            fields=[
+                ("Tournament", tournament_name, False),
+                ("Race", match_title, False),
+                ("Scheduled Time", scheduled_at, True),
+                ("Room Link", f"[Join on RaceTime.gg]({racetime_url})", False),
+            ],
+            footer_text="Join the room and get ready to race!"
+        )
+
+        return await self._send_discord_dm(user, "", embed=embed)
+
+    async def _send_live_race_started(
+        self,
+        user: User,
+        event_data: dict
+    ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
+        """
+        Send notification when a live race starts.
+
+        Args:
+            user: User to notify
+            event_data: Event data with race details
+
+        Returns:
+            Tuple of (delivery_status, error_message)
+        """
+        tournament_name = event_data.get('tournament_name', 'Tournament')
+        match_title = event_data.get('match_title', 'Live Race')
+        racetime_url = event_data.get('racetime_url', '')
+        participant_count = event_data.get('participant_count', 0)
+
+        embed = self._create_embed(
+            title="🏃 Live Race Started!",
+            description=f"**{match_title}** has started!",
+            color=discord.Color.orange(),
+            fields=[
+                ("Tournament", tournament_name, False),
+                ("Participants", str(participant_count), True),
+                ("Watch Live", f"[View on RaceTime.gg]({racetime_url})", False),
+            ],
+            footer_text="Good luck to all racers!"
+        )
+
+        return await self._send_discord_dm(user, "", embed=embed)
+
+    async def _send_live_race_finished(
+        self,
+        user: User,
+        event_data: dict
+    ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
+        """
+        Send notification when a live race finishes.
+
+        Args:
+            user: User to notify
+            event_data: Event data with race details
+
+        Returns:
+            Tuple of (delivery_status, error_message)
+        """
+        tournament_name = event_data.get('tournament_name', 'Tournament')
+        match_title = event_data.get('match_title', 'Live Race')
+        racetime_url = event_data.get('racetime_url', '')
+        finisher_count = event_data.get('finisher_count', 0)
+
+        embed = self._create_embed(
+            title="🏁 Live Race Finished!",
+            description=f"**{match_title}** has completed!",
+            color=discord.Color.green(),
+            fields=[
+                ("Tournament", tournament_name, False),
+                ("Finishers", str(finisher_count), True),
+                ("Results", f"[View Results]({racetime_url})", False),
+            ],
+            footer_text="Results have been automatically recorded"
+        )
+
+        return await self._send_discord_dm(user, "", embed=embed)
+
+    async def _send_live_race_cancelled(
+        self,
+        user: User,
+        event_data: dict
+    ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
+        """
+        Send notification when a live race is cancelled.
+
+        Args:
+            user: User to notify
+            event_data: Event data with race details
+
+        Returns:
+            Tuple of (delivery_status, error_message)
+        """
+        tournament_name = event_data.get('tournament_name', 'Tournament')
+        match_title = event_data.get('match_title', 'Live Race')
+        reason = event_data.get('reason', 'No reason provided')
+
+        embed = self._create_embed(
+            title="❌ Live Race Cancelled",
+            description=f"**{match_title}** has been cancelled.",
+            color=discord.Color.red(),
+            fields=[
+                ("Tournament", tournament_name, False),
+                ("Reason", reason, False),
+            ],
+            footer_text="Contact tournament organizers for more information"
+        )
+
+        return await self._send_discord_dm(user, "", embed=embed)
