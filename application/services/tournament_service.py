@@ -18,6 +18,8 @@ from application.events import (
     CrewApprovedEvent,
     CrewUnapprovedEvent,
     CrewRemovedEvent,
+    MatchChannelAssignedEvent,
+    MatchChannelUnassignedEvent,
 )
 
 if TYPE_CHECKING:
@@ -223,7 +225,19 @@ class TournamentService:
                 logger.warning("Unauthorized update_match by user %s for org %s", getattr(user, 'id', None), organization_id)
                 return None
         
-        return await self.repo.update_match(
+        # Get the match before update to check channel changes
+        match_before = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('stream_channel').first()
+        
+        if not match_before:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+        
+        previous_channel_id = match_before.stream_channel_id
+        
+        updated_match = await self.repo.update_match(
             organization_id=organization_id,
             match_id=match_id,
             title=title,
@@ -231,6 +245,38 @@ class TournamentService:
             stream_channel_id=stream_channel_id,
             comment=comment,
         )
+        
+        # Emit events for channel assignment changes
+        if updated_match and stream_channel_id is not None:
+            if stream_channel_id != previous_channel_id:
+                if stream_channel_id:
+                    # Channel assigned or changed
+                    channel_name = None
+                    if updated_match.stream_channel_id:
+                        # Fetch channel name if available
+                        await updated_match.fetch_related('stream_channel')
+                        if updated_match.stream_channel:
+                            channel_name = updated_match.stream_channel.name
+                    
+                    await EventBus.emit(MatchChannelAssignedEvent(
+                        user_id=user.id if user else None,
+                        organization_id=organization_id,
+                        entity_id=match_id,
+                        match_id=match_id,
+                        stream_channel_id=stream_channel_id,
+                        stream_channel_name=channel_name,
+                    ))
+                else:
+                    # Channel unassigned (set to None)
+                    await EventBus.emit(MatchChannelUnassignedEvent(
+                        user_id=user.id if user else None,
+                        organization_id=organization_id,
+                        entity_id=match_id,
+                        match_id=match_id,
+                        previous_stream_channel_id=previous_channel_id,
+                    ))
+        
+        return updated_match
 
     async def signup_crew(self, user: User, organization_id: int, match_id: int, role: str) -> Optional['Crew']:
         """Sign up as crew for a match.

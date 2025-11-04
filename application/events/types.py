@@ -238,6 +238,27 @@ class CrewRemovedEvent(EntityEvent):
 
 
 # ============================================================================
+# Stream Channel Events
+# ============================================================================
+
+@dataclass(frozen=True)
+class MatchChannelAssignedEvent(EntityEvent):
+    """Emitted when a stream channel is assigned to a match."""
+    entity_type: str = field(default="Match", init=False)
+    match_id: Optional[int] = None
+    stream_channel_id: Optional[int] = None
+    stream_channel_name: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class MatchChannelUnassignedEvent(EntityEvent):
+    """Emitted when a stream channel is removed from a match."""
+    entity_type: str = field(default="Match", init=False)
+    match_id: Optional[int] = None
+    previous_stream_channel_id: Optional[int] = None
+
+
+# ============================================================================
 # Invite Events
 # ============================================================================
 

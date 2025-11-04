@@ -56,6 +56,9 @@ from application.events.types import (
     CrewApprovedEvent,
     CrewUnapprovedEvent,
     CrewRemovedEvent,
+    # Stream Channel events
+    MatchChannelAssignedEvent,
+    MatchChannelUnassignedEvent,
     # Invite events
     InviteCreatedEvent,
     InviteAcceptedEvent,
@@ -103,6 +106,9 @@ __all__ = [
     "CrewApprovedEvent",
     "CrewUnapprovedEvent",
     "CrewRemovedEvent",
+    # Stream Channel events
+    "MatchChannelAssignedEvent",
+    "MatchChannelUnassignedEvent",
     # Invite events
     "InviteCreatedEvent",
     "InviteAcceptedEvent",
