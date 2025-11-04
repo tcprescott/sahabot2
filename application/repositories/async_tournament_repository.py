@@ -23,6 +23,10 @@ class AsyncTournamentRepository:
         """List all async tournaments for an organization."""
         return await AsyncTournament.filter(organization_id=organization_id).all()
 
+    async def list_active_by_org(self, organization_id: int) -> List[AsyncTournament]:
+        """List active async tournaments for an organization."""
+        return await AsyncTournament.filter(organization_id=organization_id, is_active=True).all()
+
     async def get_by_id(self, tournament_id: int, organization_id: int) -> Optional[AsyncTournament]:
         """Get an async tournament by ID, scoped to organization."""
         return await AsyncTournament.get_or_none(id=tournament_id, organization_id=organization_id)

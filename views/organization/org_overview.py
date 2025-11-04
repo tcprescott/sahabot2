@@ -7,9 +7,7 @@ Displays summary information and stats for an organization.
 from __future__ import annotations
 from typing import Any
 from nicegui import ui
-from models import Organization, OrganizationMember
-from models.async_tournament import AsyncTournament
-from models.match_schedule import Tournament
+from models import Organization
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 
@@ -23,27 +21,28 @@ class OrganizationOverviewView:
 
     async def render(self) -> None:
         """Render the organization overview."""
-        # Check if user can admin this org
+        # Import services
         from application.services.organization_service import OrganizationService
+        from application.services.tournament_service import TournamentService
+        from application.services.async_tournament_service import AsyncTournamentService
+
         org_service = OrganizationService()
+        tournament_service = TournamentService()
+        async_tournament_service = AsyncTournamentService()
+
+        # Check if user can admin this org
         can_admin = await org_service.user_can_admin_org(self.user, self.organization.id)
         can_manage_tournaments = await org_service.user_can_manage_tournaments(self.user, self.organization.id)
         can_access_admin = can_admin or can_manage_tournaments
-        
-        # Get member count
-        member_count = await OrganizationMember.filter(organization_id=self.organization.id).count()
-        
-        # Get active tournaments
-        active_tournaments = await Tournament.filter(
-            organization_id=self.organization.id,
-            is_active=True
-        ).all()
-        
-        # Get active async tournaments
-        active_async_tournaments = await AsyncTournament.filter(
-            organization_id=self.organization.id,
-            is_active=True
-        ).all()
+
+        # Get member count (using service layer)
+        member_count = await org_service.count_members(self.organization.id)
+
+        # Get active tournaments (using service layer)
+        active_tournaments = await tournament_service.list_active_org_tournaments(self.user, self.organization.id)
+
+        # Get active async tournaments (using service layer)
+        active_async_tournaments = await async_tournament_service.list_active_org_tournaments(self.user, self.organization.id)
         
         # Welcome card
         with Card.create(title='Organization Overview'):

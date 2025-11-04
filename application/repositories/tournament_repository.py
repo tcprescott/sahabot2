@@ -23,6 +23,10 @@ class TournamentRepository:
         """List tournaments for a specific organization ordered by created date desc."""
         return await Tournament.filter(organization_id=organization_id).order_by('-created_at')
 
+    async def list_active_by_org(self, organization_id: int) -> List[Tournament]:
+        """List active tournaments for a specific organization."""
+        return await Tournament.filter(organization_id=organization_id, is_active=True).all()
+
     async def get_for_org(self, organization_id: int, tournament_id: int) -> Optional[Tournament]:
         """Get a tournament by id ensuring it belongs to the organization."""
         return await Tournament.get_or_none(id=tournament_id, organization_id=organization_id)

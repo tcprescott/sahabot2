@@ -44,6 +44,53 @@ class TournamentService:
             return []
         return await self.repo.list_by_org(organization_id)
 
+    async def list_active_org_tournaments(self, user: Optional[User], organization_id: int) -> List[Tournament]:
+        """
+        List active tournaments for an organization.
+
+        This method is accessible to all organization members (no special permission check).
+        Used for displaying active tournaments in the UI.
+
+        Args:
+            user: Current user (must be a member of the organization)
+            organization_id: Organization ID
+
+        Returns:
+            List of active tournaments, or empty list if user is not a member
+        """
+        # Check if user is a member of the organization
+        is_member = await self.org_service.is_member(user, organization_id)
+        if not is_member:
+            logger.warning("Non-member user %s attempted to list active tournaments for org %s", getattr(user, 'id', None), organization_id)
+            return []
+        return await self.repo.list_active_by_org(organization_id)
+
+    async def get_tournament(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        tournament_id: int
+    ) -> Optional[Tournament]:
+        """
+        Get a tournament by ID for an organization.
+
+        Accessible to all organization members.
+
+        Args:
+            user: Current user (must be a member of the organization)
+            organization_id: Organization ID
+            tournament_id: Tournament ID
+
+        Returns:
+            Tournament if found and user is a member, None otherwise
+        """
+        # Check if user is a member of the organization
+        is_member = await self.org_service.is_member(user, organization_id)
+        if not is_member:
+            logger.warning("Non-member user %s attempted to get tournament %s for org %s", getattr(user, 'id', None), tournament_id, organization_id)
+            return None
+        return await self.repo.get_for_org(organization_id, tournament_id)
+
     async def create_tournament(
         self,
         user: Optional[User],

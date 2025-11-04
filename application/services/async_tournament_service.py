@@ -127,6 +127,32 @@ class AsyncTournamentService:
 
         return await self.repo.list_by_org(organization_id)
 
+    async def list_active_org_tournaments(
+        self,
+        user: Optional[User],
+        organization_id: int
+    ) -> List[AsyncTournament]:
+        """
+        List active async tournaments for an organization.
+
+        This method is accessible to all organization members.
+        Used for displaying active tournaments in the UI.
+
+        Args:
+            user: Current user (must be a member of the organization)
+            organization_id: Organization ID
+
+        Returns:
+            List of active tournaments, or empty list if user is not a member
+        """
+        # Anyone in the org can view active tournaments
+        is_member = await self.org_service.is_member(user, organization_id)
+        if not is_member:
+            logger.warning("Non-member user %s attempted to list active async tournaments for org %s", getattr(user, 'id', None), organization_id)
+            return []
+
+        return await self.repo.list_active_by_org(organization_id)
+
     async def get_tournament(
         self,
         user: Optional[User],

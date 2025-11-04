@@ -409,6 +409,18 @@ class OrganizationService:
         """List all members of an organization with their permissions loaded."""
         return await self.repo.list_members(organization_id)
 
+    async def count_members(self, organization_id: int) -> int:
+        """
+        Count the number of members in an organization.
+
+        Args:
+            organization_id: Organization ID
+
+        Returns:
+            Number of members
+        """
+        return await self.repo.count_members(organization_id)
+
     async def get_member(self, organization_id: int, user_id: int):
         """Get a specific member with permissions loaded."""
         return await self.repo.get_member(organization_id, user_id)
