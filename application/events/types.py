@@ -357,3 +357,31 @@ class RacetimeBotDeletedEvent(EntityEvent):
     entity_type: str = field(default="RacetimeBot", init=False)
     category: Optional[str] = None
 
+
+# ============================================================================
+# RaceTime Room Events
+# ============================================================================
+
+@dataclass(frozen=True)
+class RacetimeRoomCreatedEvent(EntityEvent):
+    """Emitted when a RaceTime.gg race room is created for a match."""
+    entity_type: str = field(default="Match", init=False)
+    match_id: Optional[int] = None
+    tournament_id: Optional[int] = None
+    room_slug: Optional[str] = None  # e.g., "alttpr/cool-doge-1234"
+    goal: Optional[str] = None
+    player_count: int = 0
+    invited_count: int = 0
+    priority: EventPriority = EventPriority.HIGH
+
+
+@dataclass(frozen=True)
+class RacetimeRoomOpenedEvent(EntityEvent):
+    """Emitted when a RaceTime.gg race room is manually opened."""
+    entity_type: str = field(default="Match", init=False)
+    match_id: Optional[int] = None
+    tournament_id: Optional[int] = None
+    room_slug: Optional[str] = None
+    opened_by_user_id: Optional[int] = None
+
+

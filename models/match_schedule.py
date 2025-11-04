@@ -17,6 +17,14 @@ class Tournament(Model):
     description = fields.TextField(null=True)
     is_active = fields.BooleanField(default=True)
     tracker_enabled = fields.BooleanField(default=True)
+
+    # RaceTime.gg integration settings
+    racetime_bot = fields.ForeignKeyField('models.RacetimeBot', related_name='tournaments', null=True)
+    racetime_auto_create_rooms = fields.BooleanField(default=False)
+    room_open_minutes_before = fields.IntField(default=60)  # How long before match to open room
+    require_racetime_link = fields.BooleanField(default=False)  # Require players to have RaceTime linked
+    racetime_default_goal = fields.CharField(max_length=255, null=True)  # Default goal for race rooms
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -35,6 +43,13 @@ class Match(Model):
     confirmed_at = fields.DatetimeField(null=True)
     comment = fields.TextField(null=True)
     title = fields.CharField(max_length=255, null=True)
+
+    # RaceTime.gg integration
+    racetime_room_slug = fields.CharField(max_length=255, null=True)  # e.g., "alttpr/cool-doge-1234"
+    racetime_goal = fields.CharField(max_length=255, null=True)  # Override default tournament goal
+    racetime_invitational = fields.BooleanField(default=True)  # Whether room is invite-only
+    racetime_auto_create = fields.BooleanField(default=True)  # Whether to auto-create room (or manual)
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

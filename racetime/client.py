@@ -2,11 +2,28 @@
 Racetime.gg bot client implementation.
 
 This module provides a bot client for racetime.gg integration.
+
+IMPORTANT: This implementation follows patterns from the original SahasrahBot, which used
+a forked version of racetime-bot (https://github.com/tcprescott/racetime-bot) that adds
+custom methods not present in the upstream library:
+
+- Bot.startrace(**kwargs) - Creates a race room and returns a handler
+- Bot.join_race_room(race_name, force=False) - Joins a race room and returns a handler
+- Handler.invite_user(user) - Invites a user via websocket
+- Handler.send_message(message, ...) - Sends messages via websocket
+
+SahaBot2 uses the upstream racetime-bot library (v2.3.0), so we implement our own
+simplified versions of the fork-specific methods (startrace, join_race_room) to maintain
+compatibility with the original workflow.
+
+We also create our own aiohttp.ClientSession (self.http) for efficient connection pooling,
+rather than using aiohttp.request() directly like the base Bot class does.
 """
 
 import asyncio
 import logging
 from typing import Optional
+import aiohttp
 from racetime_bot import Bot, RaceHandler, monitor_cmd
 from models import BotStatus
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
@@ -111,6 +128,11 @@ class RacetimeBot(Bot):
             raise
         self.category_slug = category_slug
         self.bot_id = bot_id
+        
+        # Create our own aiohttp session for efficient connection pooling
+        # (The base Bot class uses aiohttp.request() directly without a session)
+        self.http: Optional[aiohttp.ClientSession] = None
+        
         logger.info(
             "Racetime bot initialized successfully for category: %s",
             category_slug
@@ -129,18 +151,219 @@ class RacetimeBot(Bot):
     # Handle all races in the configured category
         return True
     
-    async def make_handler(self, race_data: dict) -> SahaRaceHandler:
+    def get_handler_class(self):
         """
-        Create a race handler for a specific race.
+        Return the handler class to use for race rooms.
+        
+        Override of Bot.get_handler_class() to use our custom handler.
+        
+        Returns:
+            SahaRaceHandler class
+        """
+        return SahaRaceHandler
+    
+    async def join_race_room(self, race_name: str, force: bool = False) -> Optional[SahaRaceHandler]:
+        """
+        Join a race room and create a handler for it.
+        
+        This is a simplified implementation of the fork's join_race_room() method.
+        It fetches race data, creates a handler, and starts the handler task.
+        
+        Reference (fork implementation):
+        https://github.com/tcprescott/racetime-bot/blob/main/racetime_bot/bot.py#L228-L283
         
         Args:
-            race_data: Race data from racetime.gg
+            race_name: Race slug (e.g., "alttpr/cool-doge-1234")
+            force: If True, join even if should_handle() returns False
             
         Returns:
-            SahaRaceHandler instance for this race
+            SahaRaceHandler for the race, or None on failure
         """
-        return SahaRaceHandler(race_data, self, state=self.state)
+        logger.info("Attempting to join race room: %s", race_name)
+        
+        # Validate race belongs to our category
+        if not race_name.startswith(f"{self.category_slug}/"):
+            logger.error("Race %s is not for category %s", race_name, self.category_slug)
+            return None
+        
+        # Ensure HTTP session is created
+        if not self.http:
+            logger.error("Bot not initialized - no HTTP session")
+            return None
+        
+        # Fetch race data with retry logic
+        race_data = None
+        max_attempts = 5
+        backoff_delay = 1.0
+        
+        for attempt in range(max_attempts):
+            try:
+                url = self.http_uri(f'/{race_name}/data')
+                async with self.http.get(url, ssl=self.ssl_context) as resp:
+                    resp.raise_for_status()
+                    race_data = await resp.json()
+                    break  # Success!
+                    
+            except Exception as e:
+                logger.warning(
+                    "Failed to fetch race data for %s (attempt %d/%d): %s",
+                    race_name,
+                    attempt + 1,
+                    max_attempts,
+                    e
+                )
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(backoff_delay)
+                    backoff_delay = min(backoff_delay * 2, 10.0)  # Exponential backoff, max 10s
+                else:
+                    logger.error("Failed to fetch race data after %d attempts", max_attempts)
+                    return None
+        
+        if not race_data:
+            return None
+        
+        # Check if we should handle this race
+        if not force and not self.should_handle(race_data):
+            logger.info("Not handling race %s by configuration", race_name)
+            return None
+        
+        # Check if we already have a handler for this race
+        if hasattr(self, 'handlers') and race_name in self.handlers:
+            logger.info("Already have handler for race %s", race_name)
+            existing_handler = self.handlers[race_name]
+            # Return the handler object (fork stores in TaskHandler.handler)
+            if hasattr(existing_handler, 'handler'):
+                return existing_handler.handler
+            return existing_handler
+        
+        # Create handler for the race
+        try:
+            handler = await self.create_handler(race_data)
+            logger.info("Created handler for race %s", race_name)
+            return handler
+            
+        except Exception as e:
+            logger.error("Failed to create handler for race %s: %s", race_name, e, exc_info=True)
+            return None
+    
+    async def startrace(
+        self,
+        goal: Optional[str] = None,
+        custom_goal: Optional[str] = None,
+        invitational: bool = True,
+        unlisted: bool = False,
+        info_user: str = "",
+        start_delay: int = 15,
+        time_limit: int = 24,
+        streaming_required: bool = True,
+        auto_start: bool = True,
+        allow_comments: bool = True,
+        hide_comments: bool = True,
+        allow_prerace_chat: bool = True,
+        allow_midrace_chat: bool = True,
+        allow_non_entrant_chat: bool = False,
+        chat_message_delay: int = 0,
+        team_race: bool = False,
+    ) -> Optional[SahaRaceHandler]:
+        """
+        Create a race room on racetime.gg.
 
+        This method mirrors the startrace() implementation from the tcprescott/racetime-bot
+        fork used by the original SahasrahBot. The fork's implementation:
+        1. Validates goal vs custom_goal (only one allowed)
+        2. POSTs to /o/{category}/startrace with race configuration
+        3. Extracts race slug from Location header
+        4. Calls join_race_room() to create a handler for the new room
+        5. Returns the handler object
+
+        Reference: https://github.com/tcprescott/racetime-bot/blob/main/racetime_bot/bot.py#L285-L324
+
+        Either goal OR custom_goal must be provided, but not both.
+
+        Args:
+            goal: Standard race goal from category goals list
+            custom_goal: Custom race goal string (if not using a standard goal)
+            invitational: Whether room is invite-only
+            unlisted: Whether room is hidden from public lists
+            info_user: Custom race information text
+            start_delay: Countdown timer length in seconds
+            time_limit: Maximum race duration in hours
+            streaming_required: Whether streaming is required to join
+            auto_start: Whether race starts automatically when ready
+            allow_comments: Whether entrants can post comments
+            hide_comments: Whether comments are hidden until race ends
+            allow_prerace_chat: Whether chat is allowed before race starts
+            allow_midrace_chat: Whether chat is allowed during race
+            allow_non_entrant_chat: Whether non-entrants can chat
+            chat_message_delay: Delay in seconds for chat messages
+            team_race: Whether this is a team race
+
+        Returns:
+            SahaRaceHandler for the created race room, or None if creation failed
+        """
+        if not self.http or not self.access_token:
+            logger.error("Bot not initialized - no HTTP session or access token")
+            return None
+
+        if not goal and not custom_goal:
+            logger.error("Either goal or custom_goal must be provided")
+            return None
+
+        if goal and custom_goal:
+            logger.error("Cannot specify both goal and custom_goal")
+            return None
+
+        try:
+            # Build race creation payload
+            payload = {
+                'invitational': invitational,
+                'unlisted': unlisted,
+                'info_user': info_user,
+                'start_delay': start_delay,
+                'time_limit': time_limit,
+                'streaming_required': streaming_required,
+                'auto_start': auto_start,
+                'allow_comments': allow_comments,
+                'hide_comments': hide_comments,
+                'allow_prerace_chat': allow_prerace_chat,
+                'allow_midrace_chat': allow_midrace_chat,
+                'allow_non_entrant_chat': allow_non_entrant_chat,
+                'chat_message_delay': chat_message_delay,
+                'team_race': team_race,
+            }
+
+            if goal:
+                payload['goal'] = goal
+            else:
+                payload['custom_goal'] = custom_goal
+
+            # Create race via HTTP API (following fork pattern)
+            url = self.http_uri(f'/o/{self.category_slug}/startrace')
+            headers = {'Authorization': f'Bearer {self.access_token}'}
+
+            async with self.http.post(url, data=payload, headers=headers, ssl=self.ssl_context) as resp:
+                if resp.status != 200:
+                    logger.error("Failed to create race room: HTTP %s", resp.status)
+                    return None
+                
+                # Get the race location from response headers
+                race_location = resp.headers.get('Location')
+                if not race_location:
+                    logger.error("No Location header in race creation response")
+                    return None
+
+            # Join the newly created race room and return handler
+            race_name = race_location.lstrip('/')
+            logger.info("Created race room: %s", race_name)
+            
+            # Use our join_race_room implementation to get a handler
+            # This mirrors the fork's behavior: fetch race data, create handler, return it
+            handler = await self.join_race_room(race_name, force=True)
+            return handler
+
+        except Exception as e:
+            logger.error("Failed to create race room: %s", e, exc_info=True)
+            return None
 
 # Map of category -> bot instance
 _racetime_bots: dict[str, RacetimeBot] = {}
@@ -200,95 +423,105 @@ async def start_racetime_bot(
             retry_count = 0
             backoff_delay = initial_backoff
             
-            while True:
-                try:
-                    logger.info("Starting bot.run() for category: %s (attempt %d/%d)", 
-                               category, retry_count + 1, max_retries + 1)
-                    logger.debug("Bot configuration - host: %s, secure: %s", 
-                                bot.racetime_host, bot.racetime_secure)
-                    
-                    # Update status to connected when starting
-                    if bot_id:
-                        await repository.record_connection_success(bot_id)
-                    
-                    # Reset retry count on successful connection
-                    retry_count = 0
-                    backoff_delay = initial_backoff
-                    
-                    # Instead of calling bot.run() which tries to take over the event loop,
-                    # we manually create the tasks that run() would create
-                    # This allows the bot to work within our existing async context
-                    reauth_task = asyncio.create_task(bot.reauthorize())
-                    refresh_task = asyncio.create_task(bot.refresh_races())
-                    
-                    # Wait for both tasks (they run forever until cancelled)
-                    await asyncio.gather(reauth_task, refresh_task)
-                    
-                    logger.info("bot tasks completed normally for category: %s", category)
-                    break  # Exit retry loop on normal completion
-                    
-                except asyncio.CancelledError:
-                    # Bot was cancelled (stopped manually) - don't retry
-                    logger.info("Racetime bot %s was cancelled (CancelledError caught)", category)
-                    if bot_id:
-                        await repository.update_bot_status(
-                            bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped"
-                        )
-                    raise  # Re-raise to properly handle cancellation
-                    
-                except Exception as e:
-                    # Always log the full exception with traceback
-                    logger.error(
-                        "Racetime bot error for %s (attempt %d/%d): %s",
-                        category,
-                        retry_count + 1,
-                        max_retries + 1,
-                        e,
-                        exc_info=True
-                    )
-                    
-                    # Check if this is an auth error (don't retry auth failures)
-                    error_msg = str(e)
-                    is_auth_error = "auth" in error_msg.lower() or "unauthorized" in error_msg.lower() or "401" in error_msg
-                    
-                    # Update status based on error type
-                    if bot_id:
-                        if is_auth_error:
-                            await repository.record_connection_failure(
-                                bot_id, error_msg, BotStatus.AUTH_FAILED
+            # Create HTTP session for the bot
+            bot.http = aiohttp.ClientSession()
+            
+            try:
+                while True:
+                    try:
+                        logger.info("Starting bot.run() for category: %s (attempt %d/%d)", 
+                                   category, retry_count + 1, max_retries + 1)
+                        logger.debug("Bot configuration - host: %s, secure: %s", 
+                                    bot.racetime_host, bot.racetime_secure)
+                        
+                        # Update status to connected when starting
+                        if bot_id:
+                            await repository.record_connection_success(bot_id)
+                        
+                        # Reset retry count on successful connection
+                        retry_count = 0
+                        backoff_delay = initial_backoff
+                        
+                        # Instead of calling bot.run() which tries to take over the event loop,
+                        # we manually create the tasks that run() would create
+                        # This allows the bot to work within our existing async context
+                        reauth_task = asyncio.create_task(bot.reauthorize())
+                        refresh_task = asyncio.create_task(bot.refresh_races())
+                        
+                        # Wait for both tasks (they run forever until cancelled)
+                        await asyncio.gather(reauth_task, refresh_task)
+                        
+                        logger.info("bot tasks completed normally for category: %s", category)
+                        break  # Exit retry loop on normal completion
+                        
+                    except asyncio.CancelledError:
+                        # Bot was cancelled (stopped manually) - don't retry
+                        logger.info("Racetime bot %s was cancelled (CancelledError caught)", category)
+                        if bot_id:
+                            await repository.update_bot_status(
+                                bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped"
                             )
-                        else:
-                            await repository.record_connection_failure(
-                                bot_id, error_msg, BotStatus.CONNECTION_ERROR
-                            )
-                    
-                    # Don't retry on auth errors
-                    if is_auth_error:
-                        logger.error("Authentication failed for bot %s - not retrying", category)
-                        break
-                    
-                    # Check if we should retry
-                    retry_count += 1
-                    if retry_count > max_retries:
+                        raise  # Re-raise to properly handle cancellation
+                        
+                    except Exception as e:
+                        # Always log the full exception with traceback
                         logger.error(
-                            "Max retries (%d) reached for bot %s - giving up",
-                            max_retries,
-                            category
+                            "Racetime bot error for %s (attempt %d/%d): %s",
+                            category,
+                            retry_count + 1,
+                            max_retries + 1,
+                            e,
+                            exc_info=True
                         )
-                        break
-                    
-                    # Wait with exponential backoff before retrying
-                    logger.info(
-                        "Retrying bot %s in %.1f seconds (attempt %d/%d)...",
-                        category,
-                        backoff_delay,
-                        retry_count + 1,
-                        max_retries + 1
-                    )
-                    await asyncio.sleep(backoff_delay)
-                    
-                    # Exponential backoff (double the delay each time, max 5 minutes)
-                    backoff_delay = min(backoff_delay * 2, 300.0)
+                        
+                        # Check if this is an auth error (don't retry auth failures)
+                        error_msg = str(e)
+                        is_auth_error = "auth" in error_msg.lower() or "unauthorized" in error_msg.lower() or "401" in error_msg
+                        
+                        # Update status based on error type
+                        if bot_id:
+                            if is_auth_error:
+                                await repository.record_connection_failure(
+                                    bot_id, error_msg, BotStatus.AUTH_FAILED
+                                )
+                            else:
+                                await repository.record_connection_failure(
+                                    bot_id, error_msg, BotStatus.CONNECTION_ERROR
+                                )
+                        
+                        # Don't retry on auth errors
+                        if is_auth_error:
+                            logger.error("Authentication failed for bot %s - not retrying", category)
+                            break
+                        
+                        # Check if we should retry
+                        retry_count += 1
+                        if retry_count > max_retries:
+                            logger.error(
+                                "Max retries (%d) reached for bot %s - giving up",
+                                max_retries,
+                                category
+                            )
+                            break
+                        
+                        # Wait with exponential backoff before retrying
+                        logger.info(
+                            "Retrying bot %s in %.1f seconds (attempt %d/%d)...",
+                            category,
+                            backoff_delay,
+                            retry_count + 1,
+                            max_retries + 1
+                        )
+                        await asyncio.sleep(backoff_delay)
+                        
+                        # Exponential backoff (double the delay each time, max 5 minutes)
+                        backoff_delay = min(backoff_delay * 2, 300.0)
+                
+            finally:
+                # Clean up HTTP session
+                if bot.http and not bot.http.closed:
+                    await bot.http.close()
+                    logger.info("Closed HTTP session for bot category: %s", category)
             
             # Cleanup happens in finally block below
             
