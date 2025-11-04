@@ -9,10 +9,8 @@ from nicegui import ui
 from components.base_page import BasePage
 from application.services.organization_service import OrganizationService
 from application.services.tournament_service import TournamentService
+from application.services.async_tournament_service import AsyncTournamentService
 from application.services.tournament_usage_service import TournamentUsageService
-from models import OrganizationMember
-from models.async_tournament import AsyncTournament
-from models.match_schedule import Tournament
 from views.tournaments import (
     EventScheduleView,
     MyMatchesView,
@@ -38,31 +36,25 @@ def register():
         """Organization page - show organization features and members."""
         base = BasePage.authenticated_page(title="Organization")
         org_service = OrganizationService()
+        tournament_service = TournamentService()
+        async_tournament_service = AsyncTournamentService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
         user = await DiscordAuthService.get_current_user()
-        
+
         # Check if user is a member of this organization
-        member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
-        is_member = member is not None
-        
+        is_member = await org_service.is_member(user, organization_id)
+
         # Check if user can access admin panel
         can_admin = await org_service.user_can_admin_org(user, organization_id)
         can_manage_tournaments = await org_service.user_can_manage_tournaments(user, organization_id)
         can_access_admin = can_admin or can_manage_tournaments
-        
-        # Get active tournaments for sidebar
-        active_async_tournaments = await AsyncTournament.filter(
-            organization_id=organization_id,
-            is_active=True
-        ).all()
-        
-        active_tournaments = await Tournament.filter(
-            organization_id=organization_id,
-            is_active=True
-        ).all()
-        
+
+        # Get active tournaments for sidebar (using service layer)
+        active_async_tournaments = await async_tournament_service.list_active_org_tournaments(user, organization_id)
+        active_tournaments = await tournament_service.list_active_org_tournaments(user, organization_id)
+
         async def content(page: BasePage):
             # Re-check membership inside content
             if not is_member:
@@ -104,18 +96,18 @@ def register():
             base.create_nav_link('Tournaments', 'emoji_events', f'/org/{organization_id}/tournament'),
             base.create_nav_link('Async Tournaments', 'schedule', f'/org/{organization_id}/async'),
         ]
-        
+
         # Add admin link if user has permissions
         if can_access_admin:
             sidebar_items.append(base.create_separator())
             sidebar_items.append(
                 base.create_nav_link('Administration', 'admin_panel_settings', f'/orgs/{organization_id}/admin')
             )
-        
+
         # Add active tournament links if there are any
         if active_tournaments or active_async_tournaments:
             sidebar_items.append(base.create_separator())
-            
+
             # Add regular tournaments
             for tournament in active_tournaments:
                 sidebar_items.append(
@@ -125,7 +117,7 @@ def register():
                         f'/org/{organization_id}/tournament?tournament_id={tournament.id}'
                     )
                 )
-            
+
             # Add async tournaments
             for tournament in active_async_tournaments:
                 sidebar_items.append(
@@ -144,26 +136,20 @@ def register():
         """Async tournaments overview page for an organization."""
         base = BasePage.authenticated_page(title="Async Tournaments")
         org_service = OrganizationService()
+        tournament_service = TournamentService()
+        async_tournament_service = AsyncTournamentService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
         user = await DiscordAuthService.get_current_user()
-        
+
         # Check if user is a member of this organization
-        member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
-        is_member = member is not None
-        
-        # Get active tournaments for sidebar
-        active_async_tournaments = await AsyncTournament.filter(
-            organization_id=organization_id,
-            is_active=True
-        ).all()
-        
-        active_tournaments = await Tournament.filter(
-            organization_id=organization_id,
-            is_active=True
-        ).all()
-        
+        is_member = await org_service.is_member(user, organization_id)
+
+        # Get active tournaments for sidebar (using service layer)
+        active_async_tournaments = await async_tournament_service.list_active_org_tournaments(user, organization_id)
+        active_tournaments = await tournament_service.list_active_org_tournaments(user, organization_id)
+
         async def content(_page: BasePage):
             # Re-check membership inside content
             if not is_member:
@@ -180,19 +166,19 @@ def register():
                         ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/?view=organizations')).classes('btn')
                 return
 
-            # Get all async tournaments for this organization
-            all_tournaments = await AsyncTournament.filter(organization_id=organization_id).order_by('-created_at').all()
+            # Get all async tournaments for this organization (using service layer)
+            all_tournaments = await async_tournament_service.list_org_tournaments(user, organization_id)
             active = [t for t in all_tournaments if t.is_active]
             inactive = [t for t in all_tournaments if not t.is_active]
-            
+
             from components.card import Card
             from components.datetime_label import DateTimeLabel
-            
+
             # Header
             with Card.create(title='Async Tournaments'):
                 with ui.column().classes('gap-md'):
                     ui.label(f'View and participate in async tournaments for {org.name}').classes('text-secondary')
-                    
+
                     if active:
                         ui.separator()
                         ui.label('Active Tournaments').classes('text-lg font-semibold')
@@ -218,7 +204,7 @@ def register():
                                                     icon='arrow_forward',
                                                     on_click=lambda t=tournament: ui.navigate.to(f'/org/{organization_id}/async/{t.id}')
                                                 ).classes('btn btn-primary')
-                    
+
                     if inactive:
                         ui.separator()
                         ui.label('Past Tournaments').classes('text-lg font-semibold')
@@ -244,7 +230,7 @@ def register():
                                                     icon='arrow_forward',
                                                     on_click=lambda t=tournament: ui.navigate.to(f'/org/{organization_id}/async/{t.id}')
                                                 ).classes('btn')
-                    
+
                     if not all_tournaments:
                         with ui.element('div').classes('text-center mt-4'):
                             ui.icon('schedule').classes('text-secondary icon-large')
@@ -256,7 +242,7 @@ def register():
             base.create_nav_link('Back to Organization', 'arrow_back', f'/org/{organization_id}'),
             base.create_separator(),
         ]
-        
+
         # Add active tournament links if there are any
         if active_tournaments or active_async_tournaments:
             # Add regular tournaments
@@ -268,7 +254,7 @@ def register():
                         f'/org/{organization_id}/tournament?tournament_id={tournament.id}'
                     )
                 )
-            
+
             # Add async tournaments
             for tournament in active_async_tournaments:
                 sidebar_items.append(
@@ -292,14 +278,13 @@ def register():
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
         user = await DiscordAuthService.get_current_user()
-        
+
         # Check if user is a member of this organization
-        member = await OrganizationMember.filter(user_id=user.id, organization_id=organization_id).first()
-        is_member = member is not None
-        
+        is_member = await org_service.is_member(user, organization_id)
+
         # Track tournament usage if tournament_id is provided
         if is_member and tournament_id:
-            tournament = await Tournament.filter(id=tournament_id, organization_id=organization_id).first()
+            tournament = await tournament_service.get_tournament(user, organization_id, tournament_id)
             if tournament:
                 org = await org_service.get_organization(organization_id)
                 if org:
@@ -309,7 +294,7 @@ def register():
                         organization_id=organization_id,
                         organization_name=org.name,
                     )
-        
+
         async def content(page: BasePage):
             # Re-check membership inside content
             if not is_member:
@@ -398,7 +383,7 @@ def register():
     async def async_tournament_dashboard(organization_id: int, tournament_id: int):
         """Async tournament dashboard - player's own races."""
         base = BasePage.authenticated_page(title="Async Tournament")
-        
+
         from application.services.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
@@ -422,7 +407,7 @@ def register():
     async def async_tournament_leaderboard(organization_id: int, tournament_id: int):
         """Async tournament leaderboard."""
         base = BasePage.authenticated_page(title="Async Tournament Leaderboard")
-        
+
         from application.services.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
@@ -448,7 +433,7 @@ def register():
     async def async_tournament_pools(organization_id: int, tournament_id: int):
         """Async tournament pools."""
         base = BasePage.authenticated_page(title="Async Tournament Pools")
-        
+
         from application.services.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
@@ -474,7 +459,7 @@ def register():
     async def async_tournament_player(organization_id: int, tournament_id: int, player_id: int):
         """Async tournament player history."""
         base = BasePage.authenticated_page(title="Player History")
-        
+
         from application.services.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
@@ -499,7 +484,7 @@ def register():
     async def async_tournament_permalink(organization_id: int, tournament_id: int, permalink_id: int):
         """Async tournament permalink view."""
         base = BasePage.authenticated_page(title="Permalink Races")
-        
+
         from application.services.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 

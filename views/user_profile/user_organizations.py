@@ -54,15 +54,16 @@ class UserOrganizationsView:
 
     async def _render_content(self) -> None:
         """Render the organizations list."""
-        # Get all organization memberships for this user
-        from models.organizations import OrganizationMember
-        memberships = await OrganizationMember.filter(user_id=self.user.id).prefetch_related('organization', 'permissions')
+        # Import the organization request service
+        from application.services.organization_request_service import OrganizationRequestService
 
-        # Organization requests section
-        pending_requests = await OrganizationRequest.filter(
-            requested_by_id=self.user.id,
-            status=OrganizationRequest.RequestStatus.PENDING
-        ).all()
+        request_service = OrganizationRequestService()
+
+        # Get all organization memberships for this user (using service layer)
+        memberships = await self.service.list_user_memberships(self.user.id)
+
+        # Get pending organization requests (using service layer)
+        pending_requests = await request_service.list_user_pending_requests(self.user)
 
         if pending_requests:
             with Card.create(title='Pending Organization Requests'):

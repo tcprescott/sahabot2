@@ -67,6 +67,10 @@ class OrganizationRepository:
             .order_by('joined_at')
         )
 
+    async def count_members(self, organization_id: int) -> int:
+        """Count the number of members in an organization."""
+        return await OrganizationMember.filter(organization_id=organization_id).count()
+
     async def get_member(self, organization_id: int, user_id: int) -> Optional[OrganizationMember]:
         """Get a specific member with permissions prefetched."""
         return await (

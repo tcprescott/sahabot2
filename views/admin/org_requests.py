@@ -43,15 +43,16 @@ class OrgRequestsView:
 
     async def _render_content(self) -> None:
         """Render the main content."""
-        # Fetch pending requests
-        pending_requests = await OrganizationRequest.filter(
-            status=OrganizationRequest.RequestStatus.PENDING
-        ).prefetch_related('requested_by').order_by('-requested_at').all()
+        # Import organization request service
+        from application.services.organization_request_service import OrganizationRequestService
 
-        # Fetch recently reviewed requests
-        reviewed_requests = await OrganizationRequest.filter(
-            status__in=[OrganizationRequest.RequestStatus.APPROVED, OrganizationRequest.RequestStatus.REJECTED]
-        ).prefetch_related('requested_by', 'reviewed_by').order_by('-reviewed_at').limit(10).all()
+        request_service = OrganizationRequestService()
+
+        # Fetch pending requests (using service layer)
+        pending_requests = await request_service.list_pending_requests(self.user)
+
+        # Fetch recently reviewed requests (using service layer)
+        reviewed_requests = await request_service.list_reviewed_requests(self.user)
 
         # Pending requests section
         with ui.element('div').classes('card'):
