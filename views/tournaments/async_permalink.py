@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncTournament
 from components.card import Card
+from components.data_table import ResponsiveTable, TableColumn
 from application.services.async_tournament_service import AsyncTournamentService
 
 
@@ -83,72 +84,59 @@ class AsyncPermalinkView:
 
     async def _render_races_table(self, races):
         """Render table of races."""
-        with ui.element('div').classes('w-full overflow-x-auto'):
-            with ui.element('table').classes('data-table'):
-                # Header
-                with ui.element('thead'):
-                    with ui.element('tr'):
-                        ui.element('th').classes('').add_slot('default', 'ID')
-                        ui.element('th').classes('').add_slot('default', 'Player')
-                        ui.element('th').classes('').add_slot('default', 'VOD')
-                        ui.element('th').classes('').add_slot('default', 'Thread')
-                        ui.element('th').classes('').add_slot('default', 'Finish Time')
-                        ui.element('th').classes('').add_slot('default', 'Score')
-                        ui.element('th').classes('').add_slot('default', 'Status')
+        # Sort by score descending
+        sorted_races = sorted(
+            [r for r in races if r.status == 'finished' and r.score is not None],
+            key=lambda r: r.score,
+            reverse=True
+        )
 
-                # Body
-                with ui.element('tbody'):
-                    # Sort by score descending
-                    sorted_races = sorted(
-                        [r for r in races if r.status == 'finished' and r.score is not None],
-                        key=lambda r: r.score,
-                        reverse=True
-                    )
-                    for race in sorted_races:
-                        await self._render_race_row(race)
+        # Fetch related data for all races
+        for race in sorted_races:
+            await race.fetch_related('user')
 
-    async def _render_race_row(self, race):
-        """Render a single race row."""
-        # Fetch related data
-        await race.fetch_related('user')
+        # Define columns
+        columns = [
+            TableColumn(label='ID', key='id'),
+            TableColumn(label='Player', cell_render=self._render_player),
+            TableColumn(label='VOD', cell_render=self._render_vod),
+            TableColumn(label='Thread', cell_render=self._render_thread),
+            TableColumn(label='Finish Time', key='elapsed_time_formatted'),
+            TableColumn(label='Score', key='score_formatted', cell_classes='font-weight-bold'),
+            TableColumn(label='Status', cell_render=self._render_status),
+        ]
 
-        with ui.element('tr'):
-            # ID
-            ui.element('td').classes('').add_slot('default', str(race.id))
+        # Render table
+        table = ResponsiveTable(columns=columns, rows=sorted_races)
+        await table.render()
 
-            # Player
-            with ui.element('td'):
-                player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{race.user.id}'
-                ui.link(race.user.get_display_name(), player_link)
+    def _render_player(self, race):
+        """Render player cell."""
+        player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{race.user.id}'
+        ui.link(race.user.get_display_name(), player_link)
 
-            # VOD
-            with ui.element('td'):
-                if race.runner_vod_url:
-                    ui.link('VOD', race.runner_vod_url, new_tab=True)
-                else:
-                    ui.label('—')
+    def _render_vod(self, race):
+        """Render VOD cell."""
+        if race.runner_vod_url:
+            ui.link('VOD', race.runner_vod_url, new_tab=True)
+        else:
+            ui.label('—')
 
-            # Thread
-            with ui.element('td'):
-                if race.discord_thread_id:
-                    thread_url = f'https://discord.com/channels/@me/{race.discord_thread_id}'
-                    ui.link('Thread', thread_url, new_tab=True)
-                else:
-                    ui.label('—')
+    def _render_thread(self, race):
+        """Render thread cell."""
+        if race.discord_thread_id:
+            thread_url = f'https://discord.com/channels/@me/{race.discord_thread_id}'
+            ui.link('Thread', thread_url, new_tab=True)
+        else:
+            ui.label('—')
 
-            # Finish Time
-            ui.element('td').classes('').add_slot('default', race.elapsed_time_formatted)
-
-            # Score
-            ui.element('td').classes('font-weight-bold').add_slot('default', race.score_formatted)
-
-            # Status
-            with ui.element('td'):
-                status_badge_class = {
-                    'finished': 'badge-success',
-                    'in_progress': 'badge-info',
-                    'pending': 'badge-warning',
-                    'forfeit': 'badge-danger',
-                    'disqualified': 'badge-danger',
-                }.get(race.status, 'badge')
-                ui.label(race.status_formatted).classes(f'badge {status_badge_class}')
+    def _render_status(self, race):
+        """Render status cell."""
+        status_badge_class = {
+            'finished': 'badge-success',
+            'in_progress': 'badge-info',
+            'pending': 'badge-warning',
+            'forfeit': 'badge-danger',
+            'disqualified': 'badge-danger',
+        }.get(race.status, 'badge')
+        ui.label(race.status_formatted).classes(f'badge {status_badge_class}')

@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from components.card import Card
+from components.data_table import ResponsiveTable, TableColumn
 from application.services.async_tournament_service import AsyncTournamentService
 
 
@@ -261,87 +262,79 @@ class AsyncDashboardView:
                 ui.label('No races match the selected filters').classes('text-secondary')
             return
 
+        # Fetch related data for all races
+        for race in filtered_races:
+            await race.fetch_related('permalink', 'permalink__pool')
+
+        # Define columns for desktop table
+        columns = [
+            TableColumn(label='Date', cell_render=self._render_date),
+            TableColumn(label='Pool', cell_render=lambda r: ui.label(r.permalink.pool.name)),
+            TableColumn(label='Status', cell_render=self._render_status),
+            TableColumn(label='Time', key='elapsed_time_formatted'),
+            TableColumn(label='Score', cell_render=self._render_score),
+            TableColumn(label='VOD', cell_render=self._render_vod),
+            TableColumn(label='Actions', cell_render=self._render_actions),
+        ]
+
         # Desktop: Table view
         with ui.element('div').classes('hidden md:block'):
-            with ui.element('table').classes('data-table'):
-                # Header
-                with ui.element('thead'):
-                    with ui.element('tr'):
-                        ui.element('th').add_slot('default', 'Date')
-                        ui.element('th').add_slot('default', 'Pool')
-                        ui.element('th').add_slot('default', 'Status')
-                        ui.element('th').add_slot('default', 'Time')
-                        ui.element('th').add_slot('default', 'Score')
-                        ui.element('th').add_slot('default', 'VOD')
-                        ui.element('th').add_slot('default', 'Actions')
-
-                # Body
-                with ui.element('tbody'):
-                    for race in filtered_races:
-                        await self._render_race_row_desktop(race)
+            table = ResponsiveTable(columns=columns, rows=filtered_races)
+            await table.render()
 
         # Mobile: Card view
         with ui.element('div').classes('block md:hidden'):
             for race in filtered_races:
                 await self._render_race_card_mobile(race)
 
-    async def _render_race_row_desktop(self, race: AsyncTournamentRace):
-        """Render a single race row for desktop view."""
-        await race.fetch_related('permalink', 'permalink__pool')
+    def _render_date(self, race: AsyncTournamentRace):
+        """Render date cell."""
+        if race.thread_open_time:
+            date_str = race.thread_open_time.strftime('%Y-%m-%d %H:%M')
+        else:
+            date_str = race.created_at.strftime('%Y-%m-%d %H:%M')
+        ui.label(date_str)
 
-        with ui.element('tr'):
-            # Date
-            if race.thread_open_time:
-                date_str = race.thread_open_time.strftime('%Y-%m-%d %H:%M')
-            else:
-                date_str = race.created_at.strftime('%Y-%m-%d %H:%M')
-            ui.element('td').add_slot('default', date_str)
+    def _render_status(self, race: AsyncTournamentRace):
+        """Render status cell."""
+        status_badge_class = {
+            'finished': 'badge-success',
+            'in_progress': 'badge-info',
+            'pending': 'badge-warning',
+            'forfeit': 'badge-danger',
+            'disqualified': 'badge-danger',
+        }.get(race.status, 'badge')
+        status_label = race.status.replace('_', ' ').title()
+        if race.reattempted:
+            status_label += ' (Reattempt)'
+        ui.label(status_label).classes(f'badge {status_badge_class}')
 
-            # Pool
-            ui.element('td').add_slot('default', race.permalink.pool.name)
+    def _render_score(self, race: AsyncTournamentRace):
+        """Render score cell."""
+        score_text = f'{race.score:.1f}' if race.score is not None else '—'
+        ui.label(score_text)
 
-            # Status
-            with ui.element('td'):
-                status_badge_class = {
-                    'finished': 'badge-success',
-                    'in_progress': 'badge-info',
-                    'pending': 'badge-warning',
-                    'forfeit': 'badge-danger',
-                    'disqualified': 'badge-danger',
-                }.get(race.status, 'badge')
-                status_label = race.status.replace('_', ' ').title()
-                if race.reattempted:
-                    status_label += ' (Reattempt)'
-                ui.label(status_label).classes(f'badge {status_badge_class}')
+    def _render_vod(self, race: AsyncTournamentRace):
+        """Render VOD cell."""
+        if race.runner_vod_url:
+            ui.link('Watch', race.runner_vod_url, new_tab=True).classes('btn-link')
+        else:
+            ui.label('—')
 
-            # Time
-            ui.element('td').add_slot('default', race.elapsed_time_formatted)
+    def _render_actions(self, race: AsyncTournamentRace):
+        """Render actions cell."""
+        with ui.row().classes('gap-sm'):
+            # View permalink
+            ui.link(
+                'Seed',
+                race.permalink.url,
+                new_tab=True
+            ).classes('btn-link')
 
-            # Score
-            score_text = f'{race.score:.1f}' if race.score is not None else '—'
-            ui.element('td').add_slot('default', score_text)
-
-            # VOD
-            with ui.element('td'):
-                if race.runner_vod_url:
-                    ui.link('Watch', race.runner_vod_url, new_tab=True).classes('btn-link')
-                else:
-                    ui.label('—')
-
-            # Actions
-            with ui.element('td'):
-                with ui.element('div').classes('flex gap-sm'):
-                    # View permalink
-                    ui.link(
-                        'Seed',
-                        race.permalink.url,
-                        new_tab=True
-                    ).classes('btn-link')
-
-                    # Discord thread
-                    if race.discord_thread_id:
-                        thread_url = f'https://discord.com/channels/@me/{race.discord_thread_id}'
-                        ui.link('Thread', thread_url, new_tab=True).classes('btn-link')
+            # Discord thread
+            if race.discord_thread_id:
+                thread_url = f'https://discord.com/channels/@me/{race.discord_thread_id}'
+                ui.link('Thread', thread_url, new_tab=True).classes('btn-link')
 
     async def _render_race_card_mobile(self, race: AsyncTournamentRace):
         """Render a single race card for mobile view."""

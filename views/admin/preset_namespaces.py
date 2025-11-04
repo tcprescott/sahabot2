@@ -10,6 +10,7 @@ from nicegui import ui
 from models import User, PresetNamespace
 from components.card import Card
 from components.datetime_label import DateTimeLabel
+from components.data_table import ResponsiveTable, TableColumn
 from application.services.preset_namespace_service import PresetNamespaceService
 
 logger = logging.getLogger(__name__)
@@ -81,53 +82,70 @@ class PresetNamespacesView:
         Args:
             namespaces: List of namespaces to display
         """
-        # Table header
-        with ui.element('div').classes('grid grid-cols-5 gap-4 p-3 bg-gray-100 dark:bg-gray-800 font-bold border-b'):
-            ui.label('Name')
-            ui.label('Display Name')
-            ui.label('Owner')
-            ui.label('Visibility')
-            ui.label('Actions')
+        # Define table columns
+        columns = [
+            TableColumn(
+                label='Name',
+                cell_render=lambda ns: self._render_name_cell(ns)
+            ),
+            TableColumn(
+                label='Display Name',
+                key='display_name'
+            ),
+            TableColumn(
+                label='Owner',
+                cell_render=lambda ns: self._render_owner_cell(ns)
+            ),
+            TableColumn(
+                label='Visibility',
+                cell_render=lambda ns: self._render_visibility_cell(ns)
+            ),
+            TableColumn(
+                label='Actions',
+                cell_render=lambda ns: self._render_actions_cell(ns)
+            ),
+        ]
 
-        # Table rows
-        for namespace in namespaces:
-            with ui.element('div').classes('grid grid-cols-5 gap-4 p-3 border-b hover:bg-gray-50 dark:hover:bg-gray-800'):
-                # Name
-                with ui.element('div'):
-                    ui.label(namespace.name).classes('font-mono')
-                    if namespace.description:
-                        ui.label(namespace.description).classes('text-xs text-secondary')
+        # Render table
+        table = ResponsiveTable(columns=columns, rows=namespaces)
+        await table.render()
 
-                # Display name
-                ui.label(namespace.display_name)
+    def _render_name_cell(self, namespace: PresetNamespace) -> None:
+        """Render the name cell."""
+        with ui.column().classes('gap-1'):
+            ui.label(namespace.name).classes('font-mono')
+            if namespace.description:
+                ui.label(namespace.description).classes('text-xs text-secondary')
 
-                # Owner
-                with ui.element('div'):
-                    if namespace.user:
-                        ui.badge(f'User: {namespace.user.get_display_name()}').props('color=primary')
-                    elif namespace.organization:
-                        ui.badge(f'Org: {namespace.organization.name}').props('color=secondary')
-                    else:
-                        ui.badge('System').props('color=warning')
+    def _render_owner_cell(self, namespace: PresetNamespace) -> None:
+        """Render the owner cell."""
+        if namespace.user:
+            ui.badge(f'User: {namespace.user.get_display_name()}').props('color=primary')
+        elif namespace.organization:
+            ui.badge(f'Org: {namespace.organization.name}').props('color=secondary')
+        else:
+            ui.badge('System').props('color=warning')
 
-                # Visibility
-                visibility_color = 'positive' if namespace.is_public else 'warning'
-                visibility_text = 'Public' if namespace.is_public else 'Private'
-                ui.badge(visibility_text).props(f'color={visibility_color}')
+    def _render_visibility_cell(self, namespace: PresetNamespace) -> None:
+        """Render the visibility cell."""
+        visibility_color = 'positive' if namespace.is_public else 'warning'
+        visibility_text = 'Public' if namespace.is_public else 'Private'
+        ui.badge(visibility_text).props(f'color={visibility_color}')
 
-                # Actions
-                with ui.element('div').classes('flex gap-2'):
-                    # View button
-                    async def view_namespace(ns=namespace):
-                        await self._view_namespace(ns)
+    def _render_actions_cell(self, namespace: PresetNamespace) -> None:
+        """Render the actions cell."""
+        with ui.row().classes('gap-2'):
+            # View button
+            async def view_namespace(ns=namespace):
+                await self._view_namespace(ns)
 
-                    ui.button('View', icon='visibility', on_click=view_namespace).classes('btn').props('flat dense')
+            ui.button('View', icon='visibility', on_click=view_namespace).classes('btn').props('flat dense')
 
-                    # Delete button (only for non-user namespaces or if no presets)
-                    async def delete_namespace(ns=namespace):
-                        await self._delete_namespace(ns)
+            # Delete button
+            async def delete_namespace(ns=namespace):
+                await self._delete_namespace(ns)
 
-                    ui.button('Delete', icon='delete', on_click=delete_namespace).classes('btn').props('flat dense color=negative')
+            ui.button('Delete', icon='delete', on_click=delete_namespace).classes('btn').props('flat dense color=negative')
 
     async def _view_namespace(self, namespace: PresetNamespace) -> None:
         """

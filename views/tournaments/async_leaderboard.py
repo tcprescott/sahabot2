@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncTournament
 from components.card import Card
+from components.data_table import ResponsiveTable, TableColumn
 from application.services.async_tournament_service import AsyncTournamentService, LeaderboardEntry
 
 
@@ -166,64 +167,58 @@ class AsyncLeaderboardView:
 
     async def _render_desktop_leaderboard(self, leaderboard: list[LeaderboardEntry], pools):  # noqa: ARG002
         """Render desktop leaderboard table."""
-        with ui.element('div').classes('w-full overflow-x-auto'):
-            with ui.element('table').classes('data-table'):
-                # Header
-                with ui.element('thead'):
-                    with ui.element('tr'):
-                        ui.element('th').add_slot('default', 'Rank')
-                        ui.element('th').add_slot('default', 'Player')
-                        ui.element('th').add_slot('default', 'Total Score')
-                        ui.element('th').add_slot('default', 'Completed')
-                        ui.element('th').add_slot('default', 'Forfeit')
-                        ui.element('th').add_slot('default', 'Remaining')
-                        ui.element('th').add_slot('default', 'Actions')
+        # Create leaderboard with rank data
+        ranked_leaderboard = [
+            {'rank': i + 1, 'entry': entry}
+            for i, entry in enumerate(leaderboard)
+        ]
 
-                # Body
-                with ui.element('tbody'):
-                    for rank, entry in enumerate(leaderboard, 1):
-                        await self._render_desktop_row(rank, entry)
+        # Define columns
+        columns = [
+            TableColumn(label='Rank', cell_render=lambda item: self._render_rank(item['rank'])),
+            TableColumn(label='Player', cell_render=lambda item: self._render_player(item['entry'])),
+            TableColumn(label='Total Score', cell_render=lambda item: self._render_score(item['entry']), cell_classes='font-bold text-success'),
+            TableColumn(label='Completed', cell_render=lambda item: ui.label(str(item['entry'].finished_race_count))),
+            TableColumn(label='Forfeit', cell_render=lambda item: self._render_forfeit(item['entry'])),
+            TableColumn(label='Remaining', cell_render=lambda item: ui.label(str(item['entry'].unattempted_race_count))),
+            TableColumn(label='Actions', cell_render=lambda item: self._render_actions(item['entry'])),
+        ]
 
-    async def _render_desktop_row(self, rank: int, entry: LeaderboardEntry):
-        """Render desktop leaderboard row."""
-        # Highlight current user
-        row_class = 'bg-primary-subtle' if entry.user.id == self.user.id else ''
+        # Render table
+        table = ResponsiveTable(columns=columns, rows=ranked_leaderboard)
+        await table.render()
 
-        with ui.element('tr').classes(row_class):
-            # Rank with medal emoji for top 3
-            rank_display = str(rank)
-            if rank == 1:
-                rank_display = '🥇 1st'
-            elif rank == 2:
-                rank_display = '🥈 2nd'
-            elif rank == 3:
-                rank_display = '🥉 3rd'
-            ui.element('td').add_slot('default', rank_display)
+    def _render_rank(self, rank: int):
+        """Render rank cell."""
+        rank_display = str(rank)
+        if rank == 1:
+            rank_display = '🥇 1st'
+        elif rank == 2:
+            rank_display = '🥈 2nd'
+        elif rank == 3:
+            rank_display = '🥉 3rd'
+        ui.label(rank_display)
 
-            # Player
-            with ui.element('td'):
-                player_name = entry.user.get_display_name()
-                if entry.user.id == self.user.id:
-                    player_name += ' (You)'
-                ui.label(player_name).classes('font-bold')
+    def _render_player(self, entry: LeaderboardEntry):
+        """Render player cell."""
+        player_name = entry.user.get_display_name()
+        if entry.user.id == self.user.id:
+            player_name += ' (You)'
+        ui.label(player_name).classes('font-bold')
 
-            # Total Score
-            ui.element('td').classes('font-bold text-success').add_slot('default', f'{entry.score:.1f}')
+    def _render_score(self, entry: LeaderboardEntry):
+        """Render score cell."""
+        ui.label(f'{entry.score:.1f}')
 
-            # Completed
-            ui.element('td').add_slot('default', str(entry.finished_race_count))
+    def _render_forfeit(self, entry: LeaderboardEntry):
+        """Render forfeit cell."""
+        forfeit_class = 'text-danger' if entry.forfeited_race_count > 0 else ''
+        ui.label(str(entry.forfeited_race_count)).classes(forfeit_class)
 
-            # Forfeit
-            forfeit_class = 'text-danger' if entry.forfeited_race_count > 0 else ''
-            ui.element('td').classes(forfeit_class).add_slot('default', str(entry.forfeited_race_count))
-
-            # Remaining
-            ui.element('td').add_slot('default', str(entry.unattempted_race_count))
-
-            # Actions
-            with ui.element('td'):
-                player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
-                ui.link('View History', player_link).classes('btn-link')
+    def _render_actions(self, entry: LeaderboardEntry):
+        """Render actions cell."""
+        player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
+        ui.link('View History', player_link).classes('btn-link')
 
     async def _render_mobile_leaderboard(self, leaderboard: list[LeaderboardEntry]):
         """Render mobile leaderboard cards."""

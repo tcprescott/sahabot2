@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncTournament
 from components.card import Card
+from components.data_table import ResponsiveTable, TableColumn
 from application.services.async_tournament_service import AsyncTournamentService
 
 
@@ -61,86 +62,70 @@ class AsyncPlayerHistoryView:
 
     async def _render_races_table(self, races):
         """Render table of races."""
-        with ui.element('div').classes('w-full overflow-x-auto'):
-            with ui.element('table').classes('data-table'):
-                # Header
-                with ui.element('thead'):
-                    with ui.element('tr'):
-                        ui.element('th').classes('').add_slot('default', 'ID')
-                        ui.element('th').classes('').add_slot('default', 'Date/Time')
-                        ui.element('th').classes('').add_slot('default', 'Pool')
-                        ui.element('th').classes('').add_slot('default', 'Permalink')
-                        ui.element('th').classes('').add_slot('default', 'VOD')
-                        ui.element('th').classes('').add_slot('default', 'Thread')
-                        ui.element('th').classes('').add_slot('default', 'Finish Time')
-                        ui.element('th').classes('').add_slot('default', 'Score')
-                        ui.element('th').classes('').add_slot('default', 'Status')
-                        ui.element('th').classes('').add_slot('default', 'Reattempted')
+        # Define columns
+        columns = [
+            TableColumn(label='ID', key='id'),
+            TableColumn(label='Date/Time', cell_render=lambda r: self._render_datetime(r)),
+            TableColumn(label='Pool', cell_render=lambda r: ui.label(r.permalink.pool.name)),
+            TableColumn(label='Permalink', cell_render=lambda r: self._render_permalink(r)),
+            TableColumn(label='VOD', cell_render=lambda r: self._render_vod(r)),
+            TableColumn(label='Thread', cell_render=lambda r: self._render_thread(r)),
+            TableColumn(label='Finish Time', key='elapsed_time_formatted'),
+            TableColumn(label='Score', key='score_formatted'),
+            TableColumn(label='Status', cell_render=lambda r: self._render_status(r)),
+            TableColumn(label='Reattempted', cell_render=lambda r: self._render_reattempted(r)),
+        ]
 
-                # Body
-                with ui.element('tbody'):
-                    for race in races:
-                        await self._render_race_row(race)
+        # Fetch related data for all races
+        for race in races:
+            await race.fetch_related('permalink', 'permalink__pool')
 
-    async def _render_race_row(self, race):
-        """Render a single race row."""
-        # Fetch related data
-        await race.fetch_related('permalink', 'permalink__pool')
+        # Render table
+        table = ResponsiveTable(columns=columns, rows=races)
+        await table.render()
 
-        with ui.element('tr'):
-            # ID
-            ui.element('td').classes('').add_slot('default', str(race.id))
+    def _render_datetime(self, race):
+        """Render date/time cell."""
+        if race.thread_open_time:
+            time_str = race.thread_open_time.strftime('%Y-%m-%d %H:%M')
+        else:
+            time_str = 'N/A'
+        ui.label(time_str)
 
-            # Date/Time
-            if race.thread_open_time:
-                time_str = race.thread_open_time.strftime('%Y-%m-%d %H:%M')
-            else:
-                time_str = 'N/A'
-            ui.element('td').classes('').add_slot('default', time_str)
+    def _render_permalink(self, race):
+        """Render permalink cell."""
+        permalink_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{race.permalink_id}'
+        ui.link(race.permalink.url, permalink_link, new_tab=True)
 
-            # Pool
-            ui.element('td').classes('').add_slot('default', race.permalink.pool.name)
+    def _render_vod(self, race):
+        """Render VOD cell."""
+        if race.runner_vod_url:
+            ui.link('VOD', race.runner_vod_url, new_tab=True)
+        else:
+            ui.label('—')
 
-            # Permalink
-            with ui.element('td'):
-                permalink_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{race.permalink_id}'
-                ui.link(race.permalink.url, permalink_link, new_tab=True)
+    def _render_thread(self, race):
+        """Render thread cell."""
+        if race.discord_thread_id:
+            thread_url = f'https://discord.com/channels/@me/{race.discord_thread_id}'
+            ui.link('Thread', thread_url, new_tab=True)
+        else:
+            ui.label('—')
 
-            # VOD
-            with ui.element('td'):
-                if race.runner_vod_url:
-                    ui.link('VOD', race.runner_vod_url, new_tab=True)
-                else:
-                    ui.label('—')
+    def _render_status(self, race):
+        """Render status cell."""
+        status_badge_class = {
+            'finished': 'badge-success',
+            'in_progress': 'badge-info',
+            'pending': 'badge-warning',
+            'forfeit': 'badge-danger',
+            'disqualified': 'badge-danger',
+        }.get(race.status, 'badge')
+        ui.label(race.status_formatted).classes(f'badge {status_badge_class}')
 
-            # Thread
-            with ui.element('td'):
-                if race.discord_thread_id:
-                    thread_url = f'https://discord.com/channels/@me/{race.discord_thread_id}'
-                    ui.link('Thread', thread_url, new_tab=True)
-                else:
-                    ui.label('—')
-
-            # Finish Time
-            ui.element('td').classes('').add_slot('default', race.elapsed_time_formatted)
-
-            # Score
-            ui.element('td').classes('').add_slot('default', race.score_formatted)
-
-            # Status
-            with ui.element('td'):
-                status_badge_class = {
-                    'finished': 'badge-success',
-                    'in_progress': 'badge-info',
-                    'pending': 'badge-warning',
-                    'forfeit': 'badge-danger',
-                    'disqualified': 'badge-danger',
-                }.get(race.status, 'badge')
-                ui.label(race.status_formatted).classes(f'badge {status_badge_class}')
-
-            # Reattempted
-            with ui.element('td'):
-                if race.reattempted:
-                    ui.label('Yes').classes('badge badge-warning')
-                else:
-                    ui.label('—')
+    def _render_reattempted(self, race):
+        """Render reattempted cell."""
+        if race.reattempted:
+            ui.label('Yes').classes('badge badge-warning')
+        else:
+            ui.label('—')
