@@ -44,21 +44,82 @@ class TournamentService:
             return []
         return await self.repo.list_by_org(organization_id)
 
-    async def create_tournament(self, user: Optional[User], organization_id: int, name: str, description: Optional[str], is_active: bool, tracker_enabled: bool = True) -> Optional[Tournament]:
+    async def create_tournament(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        name: str,
+        description: Optional[str],
+        is_active: bool,
+        tracker_enabled: bool = True,
+        racetime_bot_id: Optional[int] = None,
+        racetime_auto_create: bool = False,
+        room_open_minutes: int = 60,
+        require_racetime_link: bool = False,
+        racetime_default_goal: Optional[str] = None,
+    ) -> Optional[Tournament]:
         """Create a tournament in an org if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized create_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
-        return await self.repo.create(organization_id, name, description, is_active, tracker_enabled)
+        return await self.repo.create(
+            organization_id,
+            name,
+            description,
+            is_active,
+            tracker_enabled,
+            racetime_bot_id=racetime_bot_id,
+            racetime_auto_create_rooms=racetime_auto_create,
+            room_open_minutes_before=room_open_minutes,
+            require_racetime_link=require_racetime_link,
+            racetime_default_goal=racetime_default_goal,
+        )
 
-    async def update_tournament(self, user: Optional[User], organization_id: int, tournament_id: int, *, name: Optional[str], description: Optional[str], is_active: Optional[bool], tracker_enabled: Optional[bool] = None) -> Optional[Tournament]:
+    async def update_tournament(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        tournament_id: int,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        tracker_enabled: Optional[bool] = None,
+        racetime_bot_id: Optional[int] = None,
+        racetime_auto_create: Optional[bool] = None,
+        room_open_minutes: Optional[int] = None,
+        require_racetime_link: Optional[bool] = None,
+        racetime_default_goal: Optional[str] = None,
+    ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized update_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
-        return await self.repo.update(organization_id, tournament_id, name=name, description=description, is_active=is_active, tracker_enabled=tracker_enabled)
+
+        # Build update kwargs
+        updates = {}
+        if name is not None:
+            updates['name'] = name
+        if description is not None:
+            updates['description'] = description
+        if is_active is not None:
+            updates['is_active'] = is_active
+        if tracker_enabled is not None:
+            updates['tracker_enabled'] = tracker_enabled
+        if racetime_bot_id is not None:
+            updates['racetime_bot_id'] = racetime_bot_id
+        if racetime_auto_create is not None:
+            updates['racetime_auto_create_rooms'] = racetime_auto_create
+        if room_open_minutes is not None:
+            updates['room_open_minutes_before'] = room_open_minutes
+        if require_racetime_link is not None:
+            updates['require_racetime_link'] = require_racetime_link
+        if racetime_default_goal is not None:
+            updates['racetime_default_goal'] = racetime_default_goal
+
+        return await self.repo.update(organization_id, tournament_id, **updates)
 
     async def delete_tournament(self, user: Optional[User], organization_id: int, tournament_id: int) -> bool:
         """Delete a tournament if user can admin the org."""
@@ -180,6 +241,9 @@ class TournamentService:
         
         Open access - any member can submit a match request.
         In the future, this might require approval from tournament organizers.
+        
+        Raises:
+            ValueError: If tournament requires RaceTime link and players don't have it
         """
         # Verify user is a member of the organization
         if not user:
@@ -190,6 +254,27 @@ class TournamentService:
         if not member:
             logger.warning("User %s is not a member of org %s, cannot create match", user.id, organization_id)
             return None
+
+        # Validate RaceTime requirements if tournament has them enabled
+        tournament = await self.repo.get_for_org(organization_id, tournament_id)
+        if tournament and tournament.require_racetime_link:
+            # Check that all players have RaceTime accounts linked
+            from models.user import User as UserModel
+            players = await UserModel.filter(id__in=player_ids).all()
+            
+            players_without_racetime = [
+                p.discord_username for p in players if not p.racetime_id
+            ]
+            
+            if players_without_racetime:
+                player_list = ", ".join(players_without_racetime)
+                error_msg = f"This tournament requires RaceTime accounts. The following players must link their accounts first: {player_list}"
+                logger.warning(
+                    "Match creation blocked - players without RaceTime: %s (tournament %s)",
+                    player_list,
+                    tournament_id
+                )
+                raise ValueError(error_msg)
 
         return await self.repo.create_match(
             organization_id=organization_id,
@@ -298,6 +383,135 @@ class TournamentService:
                     ))
         
         return updated_match
+
+    async def create_racetime_room(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+    ) -> Optional[Match]:
+        """Create a RaceTime.gg room for a match.
+
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+
+        Args:
+            user: User performing the action
+            organization_id: Organization ID
+            match_id: Match ID
+
+        Returns:
+            Updated match with room slug, or None if unauthorized/failed
+        """
+        # Check if user can manage tournaments (tournament admin) or is a moderator
+        can_manage = await self.org_service.user_can_manage_tournaments(user, organization_id)
+
+        if not can_manage:
+            # Check if user is at least a moderator
+            from application.services.authorization_service import AuthorizationService
+            auth_z = AuthorizationService()
+            if not auth_z.can_moderate(user):
+                logger.warning("Unauthorized create_racetime_room by user %s for org %s", getattr(user, 'id', None), organization_id)
+                return None
+
+        # Get match and tournament details
+        match = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('tournament__racetime_bot').prefetch_related('players__user').first()
+
+        if not match:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+
+        # Verify tournament has RaceTime integration
+        if not match.tournament.racetime_bot_id:
+            logger.warning("Tournament %s has no RaceTime bot configured", match.tournament_id)
+            raise ValueError("Tournament does not have RaceTime integration configured")
+
+        # Check if room already exists
+        if match.racetime_room_slug:
+            logger.warning("Match %s already has a RaceTime room: %s", match_id, match.racetime_room_slug)
+            raise ValueError(f"Match already has a room: {match.racetime_room_slug}")
+
+        # Determine goal (use match-specific or tournament default)
+        goal = match.racetime_goal or match.tournament.racetime_default_goal or "Beat the game"
+
+        # Create room via RaceTime bot
+        try:
+            from racetime.client import RacetimeBot
+            import aiohttp
+            
+            # Get bot credentials
+            bot_config = match.tournament.racetime_bot
+            
+            logger.info("Creating RaceTime room for match %s using bot %s (%s)", 
+                       match_id, bot_config.category, bot_config.client_id)
+            
+            # Create bot instance
+            racetime_bot = RacetimeBot(
+                category_slug=bot_config.category,
+                client_id=bot_config.client_id,
+                client_secret=bot_config.client_secret,
+                bot_id=bot_config.id
+            )
+            
+            # Initialize the bot's HTTP session and get access token
+            racetime_bot.http = aiohttp.ClientSession()
+            try:
+                logger.info("Authorizing bot with RaceTime API...")
+                # Call authorize() directly (not reauthorize which runs in a loop)
+                racetime_bot.access_token, racetime_bot.reauthorize_every = racetime_bot.authorize()
+                logger.info("Bot authorized successfully, access_token: %s", 
+                           racetime_bot.access_token[:20] + "..." if racetime_bot.access_token else "None")
+                
+                # Create the race room
+                logger.info("Creating race room with goal: %s, invitational: %s", 
+                           goal, match.racetime_invitational)
+                handler = await racetime_bot.startrace(
+                    custom_goal=goal,
+                    invitational=match.racetime_invitational,
+                    unlisted=False,
+                    info_user=match.title or f"Match #{match_id}",
+                    start_delay=15,
+                    time_limit=24,
+                    streaming_required=False,
+                    auto_start=True,
+                    allow_comments=True,
+                    hide_comments=False,
+                    allow_prerace_chat=True,
+                    allow_midrace_chat=True,
+                    allow_non_entrant_chat=True,
+                )
+                
+                logger.info("startrace() returned: %s", handler)
+                
+                if not handler:
+                    raise ValueError("Failed to create race room - bot returned None")
+                
+                # Get room slug from handler
+                room_slug = handler.data.get('name')
+                logger.info("Room slug from handler: %s", room_slug)
+                
+                if not room_slug:
+                    raise ValueError("Race room created but no slug returned")
+                
+                # Update match with room details
+                match.racetime_room_slug = room_slug
+                match.racetime_goal = goal
+                await match.save()
+                
+                logger.info("Created RaceTime room %s for match %s", room_slug, match_id)
+                return match
+                
+            finally:
+                # Always close the HTTP session
+                if racetime_bot.http and not racetime_bot.http.closed:
+                    await racetime_bot.http.close()
+                    logger.info("Closed RaceTime bot HTTP session")
+
+        except Exception as e:
+            logger.error("Failed to create RaceTime room for match %s: %s", match_id, e, exc_info=True)
+            raise
 
     async def signup_crew(self, user: User, organization_id: int, match_id: int, role: str) -> Optional['Crew']:
         """Sign up as crew for a match.

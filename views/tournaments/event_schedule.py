@@ -17,6 +17,9 @@ from components.dialogs import MatchSeedDialog, EditMatchDialog
 from application.services.tournament_service import TournamentService
 from application.services.organization_service import OrganizationService
 from application.services.authorization_service import AuthorizationService
+from config import Settings
+
+settings = Settings()
 
 logger = logging.getLogger(__name__)
 
@@ -469,6 +472,83 @@ class EventScheduleView:
                                 on_click=lambda m=match: open_seed_dialog(m.id, m.title)
                             ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip(tooltip)
 
+                def render_racetime(match: Match):
+                    """Render RaceTime.gg room information and controls."""
+                    with ui.column().classes('gap-2'):
+                        # Check if tournament has RaceTime integration
+                        has_racetime_bot = getattr(match.tournament, 'racetime_bot_id', None) is not None
+
+                        if not has_racetime_bot:
+                            ui.label('—').classes('text-secondary')
+                            return
+
+                        # Show room link if room exists
+                        if match.racetime_room_slug:
+                            room_url = f'{settings.RACETIME_URL}/{match.racetime_room_slug}'
+                            with ui.link(target=room_url).classes('text-primary'):
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('sports_esports').classes('text-sm')
+                                    ui.label('Join Room')
+
+                            # Show room status
+                            if match.racetime_invitational:
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('lock', size='sm').classes('text-warning')
+                                    ui.label('Invite Only').classes('text-xs text-secondary')
+                        else:
+                            # No room created yet
+                            ui.label('No room').classes('text-secondary text-xs')
+
+                            # Show "Create Room" button for moderators
+                            if self.can_edit_matches:
+                                ui.button(
+                                    'Create Room',
+                                    icon='add',
+                                    on_click=lambda m=match: create_racetime_room(m.id)
+                                ).classes('btn btn-sm').props('flat color=positive size=sm')
+
+                        # Show countdown timer if room should open soon
+                        if match.scheduled_at and not match.racetime_room_slug:
+                            from datetime import datetime, timezone, timedelta
+                            room_open_minutes = getattr(match.tournament, 'room_open_minutes_before', 60)
+                            open_time = match.scheduled_at - timedelta(minutes=room_open_minutes)
+                            now = datetime.now(timezone.utc)
+
+                            if now < open_time:
+                                # Room not open yet - show countdown
+                                time_until = open_time - now
+                                hours = int(time_until.total_seconds() // 3600)
+                                minutes = int((time_until.total_seconds() % 3600) // 60)
+
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('schedule', size='sm').classes('text-info')
+                                    if hours > 0:
+                                        ui.label(f'Opens in {hours}h {minutes}m').classes('text-xs text-secondary')
+                                    else:
+                                        ui.label(f'Opens in {minutes}m').classes('text-xs text-secondary')
+                            elif now >= match.scheduled_at:
+                                # Past scheduled time
+                                pass
+                            else:
+                                # Between open time and match time - should be open
+                                with ui.row().classes('items-center gap-1'):
+                                    ui.icon('schedule', size='sm').classes('text-positive')
+                                    ui.label('Should be open').classes('text-xs text-secondary')
+
+                async def create_racetime_room(match_id: int):
+                    """Create a RaceTime room for a match (moderator action)."""
+                    try:
+                        await self.service.create_racetime_room(
+                            user=self.user,
+                            organization_id=self.organization.id,
+                            match_id=match_id
+                        )
+                        ui.notify('RaceTime room created', type='positive')
+                        await self._refresh()
+                    except Exception as e:
+                        logger.error("Failed to create RaceTime room: %s", e)
+                        ui.notify(f'Failed to create room: {str(e)}', type='negative')
+
                 async def open_edit_match_dialog(match_id: int):
                     """Open dialog to edit a match."""
                     # Get current match
@@ -517,6 +597,7 @@ class EventScheduleView:
                     TableColumn('Scheduled', cell_render=render_scheduled_time),
                     TableColumn('Stream', cell_render=render_stream),
                     TableColumn('Seed', cell_render=render_seed),
+                    TableColumn('RaceTime', cell_render=render_racetime),
                     TableColumn('Commentator', cell_render=render_commentator),
                     TableColumn('Tracker', cell_render=render_tracker),
                     TableColumn('Status', cell_render=render_status),

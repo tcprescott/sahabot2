@@ -5,26 +5,28 @@ List, create, edit, and delete tournaments within an organization.
 """
 
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any
 from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import TournamentDialog, ConfirmDialog
 from application.services.tournament_service import TournamentService
+from application.repositories.racetime_bot_repository import RacetimeBotRepository
 
 
 class OrganizationTournamentsView:
     """Manage tournaments for an organization."""
 
-    def __init__(self, organization: Organization, user: Any) -> None:
-        self.organization = organization
+    def __init__(self, user: Any, organization: Organization, service: TournamentService) -> None:
         self.user = user
-        self.service = TournamentService()
+        self.organization = organization
+        self.service = service
+        self.racetime_bot_repo = RacetimeBotRepository()
         self.container = None
 
     async def _refresh(self) -> None:
-        """Re-render the tournaments list."""
+        """Refresh view by clearing and re-rendering."""
         if self.container:
             self.container.clear()
             with self.container:
@@ -32,8 +34,16 @@ class OrganizationTournamentsView:
 
     async def _open_create_dialog(self) -> None:
         """Open dialog to create a new tournament."""
-        async def on_submit(name: str, description: Optional[str], is_active: bool, tracker_enabled: bool) -> None:
-            await self.service.create_tournament(self.user, self.organization.id, name, description, is_active, tracker_enabled)
+        # Get available RaceTime bots for this organization
+        racetime_bots = await self.racetime_bot_repo.get_bots_for_organization(self.organization.id)
+        bot_options = {bot.id: f"{bot.category} ({bot.client_id})" for bot in racetime_bots if bot.is_active}
+        
+        async def on_submit(**kwargs) -> None:
+            await self.service.create_tournament(
+                user=self.user,
+                organization_id=self.organization.id,
+                **kwargs
+            )
             await self._refresh()
 
         dialog = TournamentDialog(
@@ -41,13 +51,23 @@ class OrganizationTournamentsView:
             on_submit=on_submit,
             initial_is_active=True,
             initial_tracker_enabled=True,
+            available_racetime_bots=bot_options,
         )
         await dialog.show()
 
     async def _open_edit_dialog(self, t) -> None:
         """Open dialog to edit an existing tournament."""
-        async def on_submit(name: str, description: Optional[str], is_active: bool, tracker_enabled: bool) -> None:
-            await self.service.update_tournament(self.user, self.organization.id, t.id, name=name, description=description, is_active=is_active, tracker_enabled=tracker_enabled)
+        # Get available RaceTime bots for this organization
+        racetime_bots = await self.racetime_bot_repo.get_bots_for_organization(self.organization.id)
+        bot_options = {bot.id: f"{bot.category} ({bot.client_id})" for bot in racetime_bots if bot.is_active}
+        
+        async def on_submit(**kwargs) -> None:
+            await self.service.update_tournament(
+                user=self.user,
+                organization_id=self.organization.id,
+                tournament_id=t.id,
+                **kwargs
+            )
             await self._refresh()
 
         dialog = TournamentDialog(
@@ -56,6 +76,12 @@ class OrganizationTournamentsView:
             initial_description=getattr(t, 'description', None),
             initial_is_active=bool(getattr(t, 'is_active', True)),
             initial_tracker_enabled=bool(getattr(t, 'tracker_enabled', True)),
+            available_racetime_bots=bot_options,
+            initial_racetime_bot_id=getattr(t, 'racetime_bot_id', None),
+            initial_racetime_auto_create=bool(getattr(t, 'racetime_auto_create_rooms', False)),
+            initial_room_open_minutes=int(getattr(t, 'room_open_minutes_before', 60)),
+            initial_require_racetime_link=bool(getattr(t, 'require_racetime_link', False)),
+            initial_racetime_default_goal=getattr(t, 'racetime_default_goal', None),
             on_submit=on_submit,
         )
         await dialog.show()

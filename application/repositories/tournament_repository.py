@@ -27,7 +27,19 @@ class TournamentRepository:
         """Get a tournament by id ensuring it belongs to the organization."""
         return await Tournament.get_or_none(id=tournament_id, organization_id=organization_id)
 
-    async def create(self, organization_id: int, name: str, description: Optional[str] = None, is_active: bool = True, tracker_enabled: bool = True) -> Tournament:
+    async def create(
+        self,
+        organization_id: int,
+        name: str,
+        description: Optional[str] = None,
+        is_active: bool = True,
+        tracker_enabled: bool = True,
+        racetime_bot_id: Optional[int] = None,
+        racetime_auto_create_rooms: bool = False,
+        room_open_minutes_before: int = 60,
+        require_racetime_link: bool = False,
+        racetime_default_goal: Optional[str] = None,
+    ) -> Tournament:
         """Create a tournament in the given organization."""
         tournament = await Tournament.create(
             organization_id=organization_id,
@@ -35,23 +47,37 @@ class TournamentRepository:
             description=description,
             is_active=is_active,
             tracker_enabled=tracker_enabled,
+            racetime_bot_id=racetime_bot_id,
+            racetime_auto_create_rooms=racetime_auto_create_rooms,
+            room_open_minutes_before=room_open_minutes_before,
+            require_racetime_link=require_racetime_link,
+            racetime_default_goal=racetime_default_goal,
         )
         logger.info("Created tournament %s in org %s", tournament.id, organization_id)
         return tournament
 
-    async def update(self, organization_id: int, tournament_id: int, *, name: Optional[str] = None, description: Optional[str] = None, is_active: Optional[bool] = None, tracker_enabled: Optional[bool] = None) -> Optional[Tournament]:
-        """Update a tournament, enforcing org ownership."""
+    async def update(self, organization_id: int, tournament_id: int, **updates) -> Optional[Tournament]:
+        """Update a tournament, enforcing org ownership.
+
+        Args:
+            organization_id: Organization ID
+            tournament_id: Tournament ID
+            **updates: Field updates (name, description, is_active, tracker_enabled,
+                      racetime_bot_id, racetime_auto_create_rooms, room_open_minutes_before,
+                      require_racetime_link, racetime_default_goal)
+
+        Returns:
+            Updated tournament or None if not found
+        """
         tournament = await self.get_for_org(organization_id, tournament_id)
         if not tournament:
             return None
-        if name is not None:
-            tournament.name = name
-        if description is not None:
-            tournament.description = description
-        if is_active is not None:
-            tournament.is_active = is_active
-        if tracker_enabled is not None:
-            tournament.tracker_enabled = tracker_enabled
+
+        # Apply all provided updates
+        for field, value in updates.items():
+            if hasattr(tournament, field):
+                setattr(tournament, field, value)
+
         await tournament.save()
         logger.info("Updated tournament %s in org %s", tournament.id, organization_id)
         return tournament

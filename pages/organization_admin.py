@@ -8,6 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organization_service import OrganizationService
+from application.services.tournament_service import TournamentService
 from views.organization import (
     OrganizationOverviewView,
     OrganizationMembersView,
@@ -98,7 +99,7 @@ def register():
                 if container:
                     container.clear()
                     with container:
-                        view = OrganizationTournamentsView(org, page.user)
+                        view = OrganizationTournamentsView(page.user, org, TournamentService())
                         await view.render()
 
             async def load_async_tournaments():

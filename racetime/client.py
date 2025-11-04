@@ -238,7 +238,7 @@ class RacetimeBot(Bot):
         
         # Create handler for the race
         try:
-            handler = await self.create_handler(race_data)
+            handler = self.create_handler(race_data)
             logger.info("Created handler for race %s", race_name)
             return handler
             
@@ -342,7 +342,7 @@ class RacetimeBot(Bot):
             headers = {'Authorization': f'Bearer {self.access_token}'}
 
             async with self.http.post(url, data=payload, headers=headers, ssl=self.ssl_context) as resp:
-                if resp.status != 200:
+                if resp.status not in (200, 201):
                     logger.error("Failed to create race room: HTTP %s", resp.status)
                     return None
                 
