@@ -41,6 +41,32 @@ def get_css_version() -> str:
         return '1'
 
 
+def get_js_version(filename: str) -> str:
+    """
+    Get JavaScript cache-busting version based on file content hash.
+    
+    Args:
+        filename: Relative path to JS file from static/js/ directory
+        
+    Returns:
+        Version string (MD5 hash of file content, first 8 chars)
+    """
+    try:
+        js_file = Path(__file__).parent.parent / 'static' / 'js' / filename
+        if not js_file.exists():
+            return '1'
+        
+        # Calculate MD5 hash of file content
+        content = js_file.read_bytes()
+        hash_digest = hashlib.md5(content).hexdigest()
+        
+        # Return first 8 characters of hash (sufficient for cache busting)
+        return hash_digest[:8]
+    except Exception:
+        # Fallback to static version if anything goes wrong
+        return '1'
+
+
 class BasePage:
     """
     Base page component providing consistent header and layout.
@@ -74,15 +100,8 @@ class BasePage:
 
     async def _show_query_param_notifications(self) -> None:
         """Display notifications based on query parameters (success, error, message)."""
-        # Get query parameters from URL
-        params = await ui.run_javascript('''
-            const params = new URLSearchParams(window.location.search);
-            return {
-                success: params.get('success'),
-                error: params.get('error'),
-                message: params.get('message')
-            };
-        ''')
+        # Get query parameters from URL using URLManager
+        params = await ui.run_javascript('return window.URLManager.getParams();')
         
         if not params:
             return
@@ -104,10 +123,8 @@ class BasePage:
 
     async def _restore_view_from_query(self) -> None:
         """Check URL query parameter and load corresponding view if it exists."""
-        # Get 'view' query parameter from URL
-        view_value = await ui.run_javascript('''
-            new URLSearchParams(window.location.search).get('view')
-        ''')
+        # Get 'view' query parameter from URL using URLManager
+        view_value = await ui.run_javascript("return window.URLManager.getParam('view');")
         
         # If there's a view parameter and a matching loader, trigger it
         if view_value and view_value in self._content_loaders:
@@ -230,12 +247,8 @@ class BasePage:
         async def wrapped_loader():
             """Wrapped loader that updates the URL query parameter when loading content."""
             self._current_view_key = key
-            # Update URL query parameter to reflect current view
-            ui.run_javascript(f'''
-                const url = new URL(window.location);
-                url.searchParams.set('view', '{key}');
-                window.history.pushState({{}}, '', url);
-            ''')
+            # Update URL query parameter to reflect current view using URLManager
+            ui.run_javascript(f"window.URLManager.setParam('view', '{key}');")
             await loader()
         
         self._content_loaders[key] = wrapped_loader
@@ -357,6 +370,19 @@ class BasePage:
         # Load CSS with automatic cache busting
         css_version = get_css_version()
         ui.add_head_html(f'<link rel="stylesheet" href="/static/css/main.css?v={css_version}">')
+
+        # Load JavaScript modules with cache busting
+        # Core modules must load in <head> and run immediately to prevent flash
+        js_modules = [
+            'core/dark-mode.js',      # Dark mode (must be first to prevent flash)
+            'core/url-manager.js',    # URL/query parameter management
+            'utils/clipboard.js',     # Clipboard operations
+            'utils/window-utils.js',  # Window operations
+        ]
+        
+        for module in js_modules:
+            js_version = get_js_version(module)
+            ui.add_head_html(f'<script src="/static/js/{module}?v={js_version}"></script>')
 
         # Set page title
         ui.page_title(self.title)

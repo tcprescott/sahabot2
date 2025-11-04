@@ -60,11 +60,15 @@ class UserMenu:
         Returns:
             List of menu item dictionaries
         """
+        def toggle_dark_mode():
+            """Toggle dark mode using the external DarkMode API."""
+            ui.run_javascript('window.DarkMode.toggle()')
+        
         items = [
             {
                 'name': 'Toggle Dark Mode',
                 'icon': 'dark_mode',
-                'on_click': lambda: ui.run_javascript('document.body.classList.toggle("body--dark")')
+                'on_click': toggle_dark_mode
             }
         ]
 

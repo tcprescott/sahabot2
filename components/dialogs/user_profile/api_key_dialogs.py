@@ -70,13 +70,17 @@ class CreateApiKeyDialog(BaseDialog):
         # Token display with copy button
         with ui.row().classes('w-full items-center gap-2'):
             ui.input(value=self.generated_token).props('readonly').classes('flex-1 font-mono text-sm')
-            ui.button(
-                icon='content_copy',
-                on_click=lambda: (
-                    ui.run_javascript(f'navigator.clipboard.writeText("{self.generated_token}")'),
-                    ui.notify('Token copied to clipboard', type='positive')
+            
+            async def copy_token():
+                success = await ui.run_javascript(
+                    f'return window.ClipboardUtils.copy("{self.generated_token}");'
                 )
-            ).props('flat').classes('btn')
+                if success:
+                    ui.notify('Token copied to clipboard', type='positive')
+                else:
+                    ui.notify('Failed to copy token', type='negative')
+            
+            ui.button(icon='content_copy', on_click=copy_token).props('flat').classes('btn')
 
         # Close button
         with ui.row().classes('w-full justify-end mt-4'):
@@ -136,13 +140,17 @@ class DisplayTokenDialog(BaseDialog):
         # Token display with copy button
         with ui.row().classes('w-full items-center gap-2'):
             ui.input(value=self.token).props('readonly').classes('flex-1 font-mono text-sm')
-            ui.button(
-                icon='content_copy',
-                on_click=lambda: (
-                    ui.run_javascript(f'navigator.clipboard.writeText("{self.token}")'),
-                    ui.notify('Token copied to clipboard', type='positive')
+            
+            async def copy_token():
+                success = await ui.run_javascript(
+                    f'return window.ClipboardUtils.copy("{self.token}");'
                 )
-            ).props('flat').classes('btn')
+                if success:
+                    ui.notify('Token copied to clipboard', type='positive')
+                else:
+                    ui.notify('Failed to copy token', type='negative')
+            
+            ui.button(icon='content_copy', on_click=copy_token).props('flat').classes('btn')
 
         # Close button
         with ui.row().classes('w-full justify-end mt-4'):

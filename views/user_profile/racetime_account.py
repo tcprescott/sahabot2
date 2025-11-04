@@ -52,7 +52,7 @@ class RacetimeAccountView:
                     async def handle_unlink():
                         """Handle unlinking RaceTime account."""
                         result = await ui.run_javascript(
-                            'return confirm("Are you sure you want to unlink your RaceTime.gg account?")'
+                            'return window.WindowUtils.confirm("Are you sure you want to unlink your RaceTime.gg account?");'
                         )
                         if result:
                             await self._unlink_account()

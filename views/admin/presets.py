@@ -258,8 +258,13 @@ class PresetsView:
                     # Action buttons
                     with ui.row().classes('justify-end gap-2 mt-4'):
                         async def copy_yaml():
-                            await ui.run_javascript(f'navigator.clipboard.writeText({yaml_content!r})')
-                            ui.notify('YAML copied to clipboard!', type='positive')
+                            success = await ui.run_javascript(
+                                f'return window.ClipboardUtils.copy({yaml_content!r});'
+                            )
+                            if success:
+                                ui.notify('YAML copied to clipboard!', type='positive')
+                            else:
+                                ui.notify('Failed to copy YAML', type='negative')
 
                         ui.button('Copy YAML', icon='content_copy', on_click=copy_yaml).classes('btn').props('color=primary')
                         ui.button('Close', on_click=dialog.close).classes('btn')

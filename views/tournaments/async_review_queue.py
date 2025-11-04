@@ -177,7 +177,7 @@ class AsyncReviewQueueView:
         self.selected_status = self.status_select.value
         self.selected_review_status = self.review_status_select.value
         self.selected_reviewer = self.reviewer_select.value
-        ui.run_javascript('setTimeout(() => { window.dispatchEvent(new Event("resize")); }, 100);')
+        ui.run_javascript('window.WindowUtils.dispatchResize(100);')
 
     def _open_review_dialog(self, race_id: int):
         """Open the review dialog for a specific race."""

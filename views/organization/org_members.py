@@ -92,15 +92,14 @@ class OrganizationMembersView:
                     with ui.row().classes('items-center gap-2'):
                         ui.label(full_url).classes('font-mono text-sm')
                         async def copy_to_clipboard():
-                            # Use JavaScript to copy to clipboard
-                            await ui.run_javascript(f'''
-                                navigator.clipboard.writeText("{full_url}").then(() => {{
-                                    console.log("Copied to clipboard: {full_url}");
-                                }}).catch(err => {{
-                                    console.error("Failed to copy: ", err);
-                                }});
-                            ''')
-                            ui.notify('Link copied to clipboard!', type='positive')
+                            # Use ClipboardUtils to copy to clipboard
+                            success = await ui.run_javascript(
+                                f'return window.ClipboardUtils.copy("{full_url}");'
+                            )
+                            if success:
+                                ui.notify('Link copied to clipboard!', type='positive')
+                            else:
+                                ui.notify('Failed to copy link', type='negative')
                         ui.button(icon='content_copy', on_click=copy_to_clipboard).props('flat dense')
 
                 def render_status(inv):

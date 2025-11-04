@@ -256,10 +256,13 @@ class OrgPresetsView:
                 # Copy YAML button
                 async def copy_yaml():
                     yaml_content = yaml.dump(preset.settings, default_flow_style=False, sort_keys=False)
-                    await ui.run_javascript(f'''
-                        navigator.clipboard.writeText(`{yaml_content.replace('`', '\\`')}`);
-                    ''')
-                    ui.notify('YAML copied to clipboard', type='positive')
+                    success = await ui.run_javascript(
+                        f'return window.ClipboardUtils.copy(`{yaml_content.replace("`", "\\`")}`);'
+                    )
+                    if success:
+                        ui.notify('YAML copied to clipboard', type='positive')
+                    else:
+                        ui.notify('Failed to copy YAML', type='negative')
 
                 ui.button('Copy YAML', icon='content_copy', on_click=copy_yaml).classes('btn').props('color=primary')
 

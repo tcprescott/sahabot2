@@ -227,11 +227,13 @@ This application is multi-tenant. All user actions and data are scoped to Organi
   - In repositories, always include the organization filter (`.filter(organization_id=...)`).
   - Do not infer organization from arbitrary resource IDs without validating ownership.
 
-### 4. External CSS Only & Color Scheme
-- **No** inline styles via `.style()` method
-- All CSS in `static/css/main.css`
+### 4. External CSS & JavaScript Only
+- **No** inline styles via `.style()` method - all CSS in `static/css/main.css`
+- **No** inline JavaScript via `ui.add_head_html('<script>...')` - all JS in `static/js/`
 - Use semantic, human-friendly class names (e.g., `card`, `btn-primary`, `navbar`)
-- Include CSS in pages: `ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')`
+- Load CSS: `ui.add_head_html('<link rel="stylesheet" href="/static/css/main.css">')`
+- Load JS: `ui.add_head_html('<script src="/static/js/core/module.js"></script>')`
+- **See `docs/JAVASCRIPT_GUIDELINES.md` for JavaScript organization patterns**
 
 #### Official Color Palette
 The application uses a five-color palette with automatic dark mode support. Light-to-dark order is preserved across modes.

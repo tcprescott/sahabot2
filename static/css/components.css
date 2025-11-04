@@ -79,15 +79,15 @@
     margin-bottom: 0.5em;
 }
 
-body:not(.body--dark) .card {
+body:not(.body--dark):not(.q-dark) .card {
     background-color: var(--surface-color);
 }
 
-body:not(.body--dark) .card-header {
+body:not(.body--dark):not(.q-dark) .card-header {
     color: var(--text-primary);
 }
 
-body:not(.body--dark) .card-body {
+body:not(.body--dark):not(.q-dark) .card-body {
     color: var(--text-secondary);
 }
 

@@ -118,8 +118,8 @@ class DiscordServersView:
             redirect_uri
         )
 
-        # Open Discord invite in new tab
-        ui.run_javascript(f'window.open("{invite_url}", "_blank");')
+        # Open Discord invite in new tab using WindowUtils
+        ui.run_javascript(f'window.WindowUtils.open("{invite_url}");')
         ui.notify(
             'Opening Discord... Select a server and grant permissions. You will be redirected back after installation.',
             type='info',

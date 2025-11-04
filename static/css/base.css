@@ -15,14 +15,14 @@ body {
 }
 
 /* Global light mode overrides */
-body:not(.body--dark) {
+body:not(.body--dark):not(.q-dark) {
     background-color: var(--background-color);
     color: var(--text-primary);
 }
 
 /* Dynamic text color helpers */
-body:not(.body--dark) .text-dynamic-primary { color: var(--text-primary); }
-body:not(.body--dark) .text-dynamic-secondary { color: var(--text-secondary); }
+body:not(.body--dark):not(.q-dark) .text-dynamic-primary { color: var(--text-primary); }
+body:not(.body--dark):not(.q-dark) .text-dynamic-secondary { color: var(--text-secondary); }
 
 .body--dark .text-dynamic-primary,
 .q-dark .text-dynamic-primary { color: var(--text-primary); }
