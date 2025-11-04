@@ -43,7 +43,7 @@ You can expect:
 #### API Token Authentication
 - **Token Generation**: Cryptographically secure random tokens using `secrets.token_urlsafe(32)`
 - **Token Storage**: Only SHA256 hashes stored in database, plaintext shown once on creation
-- **Constant-Time Comparison**: Protected against timing attacks using `hmac.compare_digest()`
+- **Database Lookup**: Indexed database query for token verification (no timing attack vulnerability)
 - **Token Expiration**: Optional expiration dates supported
 - **Rate Limiting**: Per-user rate limits enforced (default 60 requests/minute)
 
