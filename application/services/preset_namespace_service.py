@@ -74,6 +74,9 @@ class PresetNamespaceService:
         If the user doesn't have a namespace and auto_create is True,
         one will be created automatically using their Discord username.
 
+        Authorization: Users can only access/create their own namespace
+        (enforced by user parameter scoping).
+
         Args:
             user: User to get/create namespace for
             auto_create: Whether to auto-create if not found
@@ -292,6 +295,9 @@ class PresetNamespaceService:
         """
         List all namespaces owned by a user.
 
+        Authorization: Users can only list their own namespaces
+        (enforced by user parameter scoping).
+
         Args:
             user: User whose namespaces to list
 
@@ -312,6 +318,9 @@ class PresetNamespaceService:
     ) -> Optional[PresetNamespace]:
         """
         Create a new namespace for a user.
+
+        Authorization: Users can create namespaces owned by themselves
+        (enforced by user parameter scoping in repository).
 
         Args:
             user: User creating the namespace
