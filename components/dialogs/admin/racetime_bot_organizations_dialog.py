@@ -72,7 +72,6 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
 
         # Organization list
         self.org_list_container = ui.column().classes('full-width gap-2')
-        ui.run_javascript('async () => { await new Promise(resolve => setTimeout(resolve, 0)); }', respond=False)
         self._render_org_list()
 
         ui.separator()
@@ -87,14 +86,13 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
         # We'll load data asynchronously after dialog is shown
         with self.org_list_container:
             ui.label('Loading organizations...').classes('text-secondary')
-            ui.run_javascript('async () => { await new Promise(resolve => setTimeout(resolve, 100)); }', respond=False)
             # Schedule async load
             ui.timer(0.1, self._load_organizations, once=True)
 
     async def _load_organizations(self) -> None:
         """Load organizations and assigned bot data."""
         # Load all organizations
-        self.all_organizations = await self.org_service.get_all_organizations(self.current_user)
+        self.all_organizations = await self.org_service.list_organizations()
 
         # Load assigned organizations for this bot
         assigned_orgs = await self.bot_service.get_organizations_for_bot(
