@@ -70,26 +70,25 @@
      */
     function toggleDarkMode() {
         try {
-            // Check if Quasar is available
-            if (typeof window.Quasar === 'undefined') {
-                console.warn('Quasar not available, falling back to class toggle');
-                // Fallback: toggle class manually
-                const isDark = document.documentElement.classList.contains('q-dark');
-                if (isDark) {
-                    removeDarkMode();
-                    localStorage.setItem(STORAGE_KEY, 'false');
-                    return false;
-                } else {
-                    applyDarkMode();
-                    localStorage.setItem(STORAGE_KEY, 'true');
-                    return true;
-                }
+            // Get current state
+            const isDark = document.documentElement.classList.contains('q-dark');
+            const newValue = !isDark;
+            
+            // Toggle the classes
+            if (newValue) {
+                applyDarkMode();
+            } else {
+                removeDarkMode();
             }
             
-            // Use Quasar's dark mode API
-            const newValue = !window.Quasar.Dark.isActive;
-            window.Quasar.Dark.set(newValue);
+            // Save to localStorage
             localStorage.setItem(STORAGE_KEY, newValue.toString());
+            
+            // If Quasar is available, sync with Quasar's dark mode
+            if (typeof window.Quasar !== 'undefined' && window.Quasar.Dark) {
+                window.Quasar.Dark.set(newValue);
+            }
+            
             return newValue;
         } catch (error) {
             console.error('Failed to toggle dark mode:', error);
@@ -112,24 +111,26 @@
      * Enable dark mode
      */
     function enableDarkMode() {
-        if (typeof window.Quasar !== 'undefined') {
-            window.Quasar.Dark.set(true);
-        } else {
-            applyDarkMode();
-        }
+        applyDarkMode();
         localStorage.setItem(STORAGE_KEY, 'true');
+        
+        // Sync with Quasar if available
+        if (typeof window.Quasar !== 'undefined' && window.Quasar.Dark) {
+            window.Quasar.Dark.set(true);
+        }
     }
     
     /**
      * Disable dark mode
      */
     function disableDarkMode() {
-        if (typeof window.Quasar !== 'undefined') {
-            window.Quasar.Dark.set(false);
-        } else {
-            removeDarkMode();
-        }
+        removeDarkMode();
         localStorage.setItem(STORAGE_KEY, 'false');
+        
+        // Sync with Quasar if available
+        if (typeof window.Quasar !== 'undefined' && window.Quasar.Dark) {
+            window.Quasar.Dark.set(false);
+        }
     }
     
     // Public API for NiceGUI integration
