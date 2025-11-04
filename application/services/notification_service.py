@@ -167,6 +167,7 @@ class NotificationService:
         user: User,
         event_type: NotificationEventType,
         event_data: dict,
+        organization_id: Optional[int] = None,
     ) -> list[int]:
         """
         Queue notifications for a user based on their subscriptions.
@@ -178,21 +179,41 @@ class NotificationService:
             user: User to notify
             event_type: Type of event
             event_data: Event details
+            organization_id: Organization context (optional)
 
         Returns:
             List of created notification log IDs
         """
-        # Get active subscriptions for this event type
+        # Get ALL active subscriptions for this user
+        # We'll filter by event type and organization scope manually
         subscriptions = await self.repository.get_user_subscriptions(
             user_id=user.id,
             is_active=True,
         )
         
-        # Filter to matching event types
-        matching = [s for s in subscriptions if s.event_type == event_type]
+        # Filter to matching event types and organization scope
+        matching = []
+        for sub in subscriptions:
+            # Must match event type
+            if sub.event_type != event_type:
+                continue
+            
+            # Check organization scope:
+            # - If subscription has organization_id, it must match the event's organization_id
+            # - If subscription is global (organization_id=None), it matches all organizations
+            sub_org_id = getattr(sub, 'organization_id', None)
+            if sub_org_id is not None and sub_org_id != organization_id:
+                continue
+            
+            matching.append(sub)
         
         if not matching:
-            logger.debug("No active subscriptions for user %s, event %s", user.id, NotificationEventType(event_type).name)
+            logger.debug(
+                "No active subscriptions for user %s, event %s, org %s",
+                user.id,
+                NotificationEventType(event_type).name,
+                organization_id
+            )
             return []
         
         # Create notification logs for each subscription
@@ -207,7 +228,57 @@ class NotificationService:
             )
             log_ids.append(log.id)
         
-        logger.info("Queued %d notification(s) for user %s", len(log_ids), user.id)
+        logger.info(
+            "Queued %d notification(s) for user %s, event %s, org %s",
+            len(log_ids),
+            user.id,
+            NotificationEventType(event_type).name,
+            organization_id
+        )
+        return log_ids
+
+    async def queue_broadcast_notification(
+        self,
+        event_type: NotificationEventType,
+        event_data: dict,
+        organization_id: Optional[int] = None,
+    ) -> list[int]:
+        """
+        Queue notifications for all users subscribed to an event type.
+
+        This is used for broadcast events like tournament creation where
+        we want to notify all subscribed users, not just a specific user.
+
+        Args:
+            event_type: Type of notification event
+            event_data: Event-specific data to include
+            organization_id: Organization scope (None for global)
+
+        Returns:
+            List of notification log IDs created
+        """
+        # Get all active subscriptions for this event type
+        subscriptions = await self.repository.get_subscriptions_for_event(
+            event_type=event_type,
+            organization_id=organization_id,
+        )
+
+        log_ids = []
+        for sub in subscriptions:
+            log = await self.repository.create_notification_log(
+                user=sub.user,
+                event_type=event_type,
+                notification_method=sub.notification_method,
+                event_data=event_data,
+                delivery_status=NotificationDeliveryStatus.PENDING,
+            )
+            log_ids.append(log.id)
+
+        logger.info(
+            "Queued %d broadcast notification(s) for event type %s",
+            len(log_ids),
+            event_type.name
+        )
         return log_ids
 
     async def mark_notification_sent(

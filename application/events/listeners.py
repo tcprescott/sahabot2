@@ -20,6 +20,11 @@ from application.events.types import (
     TournamentCreatedEvent,
     RaceSubmittedEvent,
     RaceApprovedEvent,
+    MatchScheduledEvent,
+    InviteCreatedEvent,
+    CrewAddedEvent,
+    CrewApprovedEvent,
+    CrewRemovedEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -262,14 +267,14 @@ async def log_race_approved(event: RaceApprovedEvent) -> None:
 # @EventBus.on(TournamentStartedEvent, priority=EventPriority.NORMAL)
 # async def notify_tournament_started(event: TournamentStartedEvent) -> None:
 #     """Send Discord notification when tournament starts."""
-#     # TODO: Implement Discord notification
-#     logger.info("TODO: Send tournament started notification")
+#     # Placeholder: implement Discord notification logic here
+#     logger.info("Placeholder: Send tournament started notification")
 #
 # @EventBus.on(RaceApprovedEvent, priority=EventPriority.NORMAL)
 # async def notify_race_approved(event: RaceApprovedEvent) -> None:
 #     """Notify racer when their race is approved."""
-#     # TODO: Implement user notification
-#     logger.info("TODO: Send race approved notification")
+#     # Placeholder: implement user notification logic here
+#     logger.info("Placeholder: Send race approved notification")
 
 
 # ============================================================================
@@ -283,8 +288,300 @@ async def log_race_approved(event: RaceApprovedEvent) -> None:
 # @EventBus.on(RaceSubmittedEvent, priority=EventPriority.LOW)
 # async def update_race_statistics(event: RaceSubmittedEvent) -> None:
 #     """Update tournament statistics when race is submitted."""
-#     # TODO: Implement statistics tracking
-#     logger.info("TODO: Update race statistics")
+#     # Placeholder: implement statistics tracking logic here
+#     logger.info("Placeholder: Update race statistics")
+
+
+# ============================================================================
+# Notification Listeners
+# ============================================================================
+# These listeners queue notifications for subscribed users
+# Priority: NORMAL - notifications happen after audit logging
+
+@EventBus.on(MatchScheduledEvent, priority=EventPriority.NORMAL)
+async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
+    """Queue notifications for match scheduled event."""
+    from application.services.notification_service import NotificationService
+    from application.repositories.user_repository import UserRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    user_repo = UserRepository()
+
+    # Get all participants
+    participant_ids = event.participant_ids or []
+    if not participant_ids:
+        logger.debug("No participants for match %s, skipping notifications", event.entity_id)
+        return
+
+    # Fetch all participant users
+    participants = []
+    for participant_id in participant_ids:
+        user = await user_repo.get_by_id(participant_id)
+        if user:
+            participants.append(user)
+
+    if not participants:
+        logger.warning("Could not find any participant users for match %s", event.entity_id)
+        return
+
+    # Base event data (common to all notifications)
+    base_event_data = {
+        "scheduled_time": event.scheduled_time if event.scheduled_time else None,
+        "match_id": event.entity_id,
+        "tournament_id": event.tournament_id,
+        "participant_count": len(participants),
+    }
+
+    # Notify each participant
+    for participant in participants:
+        # Get opponent names (all other participants)
+        opponent_names = [
+            p.get_display_name() for p in participants if p.id != participant.id
+        ]
+
+        await notification_service.queue_notification(
+            user=participant,
+            event_type=NotificationEventType.MATCH_SCHEDULED,
+            event_data={
+                **base_event_data,
+                "opponents": opponent_names,
+            },
+            organization_id=event.organization_id,
+        )
+        logger.debug("Queued match scheduled notification for participant %s", participant.id)
+
+
+@EventBus.on(TournamentCreatedEvent, priority=EventPriority.NORMAL)
+async def notify_tournament_created(event: TournamentCreatedEvent) -> None:
+    """Queue notifications for tournament created event."""
+    from application.services.notification_service import NotificationService
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+
+    event_data = {
+        "tournament_name": event.tournament_name,
+        "tournament_id": event.entity_id,
+        "format": event.tournament_format,
+        "start_date": event.start_date.isoformat() if event.start_date else None,
+    }
+
+    # This will queue notifications for ALL users subscribed to tournament creation
+    # The notification service will find all subscribed users and create notification logs
+    # Note: We pass None for user since this is a broadcast notification
+    # The service handles finding all subscribed users
+    await notification_service.queue_broadcast_notification(
+        event_type=NotificationEventType.TOURNAMENT_CREATED,
+        event_data=event_data,
+        organization_id=event.organization_id,
+    )
+    logger.debug(
+        "Queued tournament created notifications for tournament %s",
+        event.entity_id
+    )
+
+
+@EventBus.on(InviteCreatedEvent, priority=EventPriority.NORMAL)
+async def notify_invite_created(event: InviteCreatedEvent) -> None:
+    """Queue notifications for organization invite event."""
+    from application.services.notification_service import NotificationService
+    from application.repositories.user_repository import UserRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    user_repo = UserRepository()
+
+    # Get the invited user
+    invited_user = await user_repo.get_by_id(event.invited_user_id) if event.invited_user_id else None
+    if not invited_user:
+        logger.warning("Could not find invited user %s", event.invited_user_id)
+        return
+
+    # Get the inviter
+    inviter = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    event_data = {
+        "organization_name": event.organization_name,
+        "organization_id": event.organization_id,
+        "invite_id": event.entity_id,
+        "invited_by": inviter.get_display_name() if inviter else "Unknown",
+    }
+
+    await notification_service.queue_notification(
+        user=invited_user,
+        event_type=NotificationEventType.INVITE_RECEIVED,
+        event_data=event_data,
+        organization_id=event.organization_id,
+    )
+    logger.debug("Queued invite notification for user %s", invited_user.id)
+
+
+@EventBus.on(CrewAddedEvent, priority=EventPriority.NORMAL)
+async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
+    """Queue notifications when crew is added in auto-approved state (admin added)."""
+    from application.services.notification_service import NotificationService
+    from application.repositories.user_repository import UserRepository
+    from models.notification_subscription import NotificationEventType
+    from models.match_schedule import Match
+
+    # Only notify if auto-approved (admin added them directly)
+    if not event.auto_approved:
+        return
+
+    notification_service = NotificationService()
+    user_repo = UserRepository()
+
+    # Get the crew member user
+    crew_user = await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    if not crew_user:
+        logger.warning("Could not find crew user %s", event.crew_user_id)
+        return
+
+    # Get the admin who added them
+    added_by = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    # Get match details
+    match = None
+    tournament_name = None
+    stream_channel = None
+    player_names = []
+    
+    if event.match_id:
+        match = await Match.filter(id=event.match_id).prefetch_related(
+            'tournament',
+            'stream_channel',
+            'players__user'
+        ).first()
+        
+        if match:
+            # Get tournament name
+            if match.tournament:
+                tournament_name = match.tournament.name
+            
+            # Get stream channel name
+            if match.stream_channel:
+                stream_channel = match.stream_channel.name
+            
+            # Get player names
+            if match.players:
+                player_names = [p.user.get_display_name() for p in match.players if p.user]
+
+    event_data = {
+        "match_id": event.match_id,
+        "crew_id": event.entity_id,
+        "role": event.role,
+        "added_by": added_by.get_display_name() if added_by else "Admin",
+        "auto_approved": True,
+        "tournament_name": tournament_name,
+        "stream_channel": stream_channel,
+        "players": player_names,
+    }
+
+    await notification_service.queue_notification(
+        user=crew_user,
+        event_type=NotificationEventType.CREW_APPROVED,
+        event_data=event_data,
+        organization_id=event.organization_id,
+    )
+    logger.debug("Queued crew auto-approved notification for user %s", crew_user.id)
+
+
+@EventBus.on(CrewApprovedEvent, priority=EventPriority.NORMAL)
+async def notify_crew_approved(event: CrewApprovedEvent) -> None:
+    """Queue notifications when crew signup is approved."""
+    from application.services.notification_service import NotificationService
+    from application.repositories.user_repository import UserRepository
+    from models.notification_subscription import NotificationEventType
+    from models.match_schedule import Match
+
+    notification_service = NotificationService()
+    user_repo = UserRepository()
+
+    # Get the crew member user
+    crew_user = await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    if not crew_user:
+        logger.warning("Could not find crew user %s", event.crew_user_id)
+        return
+
+    # Get the approver
+    approved_by = await user_repo.get_by_id(event.approved_by_user_id) if event.approved_by_user_id else None
+
+    # Get match details
+    match = None
+    tournament_name = None
+    stream_channel = None
+    player_names = []
+    
+    if event.match_id:
+        match = await Match.filter(id=event.match_id).prefetch_related(
+            'tournament',
+            'stream_channel',
+            'players__user'
+        ).first()
+        
+        if match:
+            # Get tournament name
+            if match.tournament:
+                tournament_name = match.tournament.name
+            
+            # Get stream channel name
+            if match.stream_channel:
+                stream_channel = match.stream_channel.name
+            
+            # Get player names
+            if match.players:
+                player_names = [p.user.get_display_name() for p in match.players if p.user]
+
+    event_data = {
+        "match_id": event.match_id,
+        "crew_id": event.entity_id,
+        "role": event.role,
+        "approved_by": approved_by.get_display_name() if approved_by else "Admin",
+        "auto_approved": False,
+        "tournament_name": tournament_name,
+        "stream_channel": stream_channel,
+        "players": player_names,
+    }
+
+    await notification_service.queue_notification(
+        user=crew_user,
+        event_type=NotificationEventType.CREW_APPROVED,
+        event_data=event_data,
+        organization_id=event.organization_id,
+    )
+    logger.debug("Queued crew approved notification for user %s", crew_user.id)
+
+
+@EventBus.on(CrewRemovedEvent, priority=EventPriority.NORMAL)
+async def notify_crew_removed(event: CrewRemovedEvent) -> None:
+    """Queue notifications when crew is removed from a match."""
+    from application.services.notification_service import NotificationService
+    from application.repositories.user_repository import UserRepository
+    from models.notification_subscription import NotificationEventType
+
+    notification_service = NotificationService()
+    user_repo = UserRepository()
+
+    # Get the crew member user
+    crew_user = await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    if not crew_user:
+        logger.warning("Could not find crew user %s", event.crew_user_id)
+        return
+
+    event_data = {
+        "match_id": event.match_id,
+        "crew_id": event.entity_id,
+        "role": event.role,
+    }
+
+    await notification_service.queue_notification(
+        user=crew_user,
+        event_type=NotificationEventType.CREW_REMOVED,
+        event_data=event_data,
+        organization_id=event.organization_id,
+    )
+    logger.debug("Queued crew removed notification for user %s", crew_user.id)
 
 
 logger.info("Event listeners registered")

@@ -16,6 +16,7 @@ from application.services.discord_service import DiscordService
 from application.services.racetime_service import RacetimeService
 from application.services.task_scheduler_service import TaskSchedulerService
 from application.services.task_handlers import register_task_handlers
+from application.services.notification_processor import start_notification_processor, stop_notification_processor
 from api import register_api
 import frontend
 
@@ -80,10 +81,18 @@ async def lifespan(app: FastAPI):
     await TaskSchedulerService.start_scheduler()
     logger.info("Task scheduler started")
 
+    # Start notification processor
+    await start_notification_processor()
+    logger.info("Notification processor started")
+
     yield
 
     # Shutdown
     logger.info("Shutting down SahaBot2...")
+
+    # Stop notification processor
+    await stop_notification_processor()
+    logger.info("Notification processor stopped")
 
     # Stop task scheduler
     await TaskSchedulerService.stop_scheduler()

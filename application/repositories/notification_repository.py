@@ -83,14 +83,14 @@ class NotificationRepository:
         Returns:
             List of subscriptions
         """
-        query = NotificationSubscription.filter(user_id=user_id)
-        
+        query = NotificationSubscription.filter(user_id=user_id).prefetch_related('organization')
+
         if is_active is not None:
             query = query.filter(is_active=is_active)
-        
+
         if organization_id is not None:
             query = query.filter(organization_id=organization_id)
-        
+
         return await query.all()
 
     async def get_subscriptions_for_event(

@@ -48,6 +48,10 @@ class NotificationEventType(IntEnum):
     RACE_APPROVED = 411
     RACE_REJECTED = 412
     
+    # Crew events (requires being crew member)
+    CREW_APPROVED = 420
+    CREW_REMOVED = 421
+    
     # Invite events (requires being the invitee)
     INVITE_RECEIVED = 500
     INVITE_ACCEPTED = 501

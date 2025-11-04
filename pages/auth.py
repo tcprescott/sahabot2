@@ -56,6 +56,21 @@ def register():
             state: CSRF state token
             error: Error message if authorization failed
         """
+        # CRITICAL: Prevent multiple executions of the same callback
+        # Discord OAuth codes can only be used once, and NiceGUI may render pages multiple times
+        callback_key = f"oauth_callback_{code}_{state}" if code and state else None
+        
+        # Check if we've already processed this exact callback
+        if callback_key and app.storage.user.get(callback_key):
+            logger.info("OAuth callback already processed, skipping duplicate execution")
+            # Redirect to home since we already processed this
+            ui.navigate.to('/')
+            return
+        
+        # Mark this callback as being processed
+        if callback_key:
+            app.storage.user[callback_key] = True
+        
         base = BasePage.simple_page(title="SahaBot2 - Authentication")
 
         async def content(page: BasePage):  # noqa: ARG001 - required by BasePage pattern
@@ -73,6 +88,10 @@ def register():
             # Verify CSRF state
             stored_states = app.storage.browser.get('oauth_states', {})
             
+            logger.info("OAuth callback - state: %s, stored states count: %d", 
+                       state[:10] + "..." if state else "None", 
+                       len(stored_states))
+            
             # Check if state exists and is valid
             if not state:
                 logger.warning("OAuth callback received without state parameter")
@@ -86,7 +105,7 @@ def register():
             
             if state not in stored_states:
                 logger.warning("OAuth state mismatch - state not found in stored states. Received: %s", state[:10] + "...")
-                logger.debug("Stored states: %s", list(stored_states.keys())[:5])
+                logger.debug("Stored states: %s", [k[:10] + "..." for k in stored_states.keys()])
                 with ui.element('div').classes('card text-center'):
                     with ui.element('div').classes('card-header'):
                         ui.label('Authentication Failed')
@@ -115,6 +134,7 @@ def register():
                     ip_address = None
 
                     # Authenticate user
+                    logger.info("Starting OAuth authentication for code: %s...", code[:10] if code else "None")
                     user = await auth_service.authenticate_user(code, ip_address)
 
                     # Set user in session
@@ -127,12 +147,23 @@ def register():
                     
                     # Also clear legacy oauth_state if present
                     app.storage.browser.pop('oauth_state', None)
+                    
+                    # Clean up callback tracking (no longer needed after successful auth)
+                    if callback_key:
+                        app.storage.user.pop(callback_key, None)
 
                     # Redirect to requested page or home
                     redirect_url = app.storage.user.pop('redirect_after_login', '/')
+                    logger.info("OAuth authentication successful, redirecting to: %s", redirect_url)
                     ui.navigate.to(redirect_url)
 
                 except Exception as e:
+                    logger.error("OAuth authentication failed: %s", str(e), exc_info=True)
+                    
+                    # Clean up callback tracking on error
+                    if callback_key:
+                        app.storage.user.pop(callback_key, None)
+                    
                     with ui.element('div').classes('card text-center'):
                         with ui.element('div').classes('card-header'):
                             ui.label('Authentication Failed')

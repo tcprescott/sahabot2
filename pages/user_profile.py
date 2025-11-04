@@ -6,7 +6,15 @@ Allow users to view and manage their profile information, API keys, and organiza
 
 from nicegui import ui
 from components.base_page import BasePage
-from views.user_profile import ProfileInfoView, ProfileSettingsView, ApiKeysView, UserOrganizationsView, RacetimeAccountView, PresetNamespacesView
+from views.user_profile import (
+    ProfileInfoView,
+    ProfileSettingsView,
+    ApiKeysView,
+    UserOrganizationsView,
+    RacetimeAccountView,
+    PresetNamespacesView,
+    NotificationPreferencesView,
+)
 
 
 def register():
@@ -31,6 +39,7 @@ def register():
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: UserOrganizationsView(page.user)))
             page.register_content_loader('racetime', page.create_instance_view_loader(lambda: RacetimeAccountView(page.user)))
             page.register_content_loader('preset-namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
+            page.register_content_loader('notifications', page.create_instance_view_loader(lambda: NotificationPreferencesView(page.user)))
 
             # Load initial content (profile info)
             await page.create_instance_view_loader(lambda: ProfileInfoView(page.user))()
@@ -41,6 +50,7 @@ def register():
             base.create_separator(),
             base.create_sidebar_item_with_loader('Profile Info', 'person', 'profile'),
             base.create_sidebar_item_with_loader('Profile Settings', 'settings', 'settings'),
+            base.create_sidebar_item_with_loader('Notifications', 'notifications', 'notifications'),
             base.create_sidebar_item_with_loader('API Keys', 'vpn_key', 'api-keys'),
             base.create_sidebar_item_with_loader('Organizations', 'business', 'organizations'),
             base.create_sidebar_item_with_loader('Preset Namespaces', 'folder', 'preset-namespaces'),

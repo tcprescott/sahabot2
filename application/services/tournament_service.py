@@ -20,6 +20,7 @@ from application.events import (
     CrewRemovedEvent,
     MatchChannelAssignedEvent,
     MatchChannelUnassignedEvent,
+    MatchScheduledEvent,
 )
 
 if TYPE_CHECKING:
@@ -225,18 +226,19 @@ class TournamentService:
                 logger.warning("Unauthorized update_match by user %s for org %s", getattr(user, 'id', None), organization_id)
                 return None
         
-        # Get the match before update to check channel changes
+        # Get the match before update to check channel changes and schedule changes
         match_before = await Match.filter(
             id=match_id,
             tournament__organization_id=organization_id
-        ).select_related('stream_channel').first()
-        
+        ).select_related('stream_channel', 'tournament').prefetch_related('players__user').first()
+
         if not match_before:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
             return None
-        
+
         previous_channel_id = match_before.stream_channel_id
-        
+        previous_scheduled_at = match_before.scheduled_at
+
         updated_match = await self.repo.update_match(
             organization_id=organization_id,
             match_id=match_id,
@@ -245,9 +247,28 @@ class TournamentService:
             stream_channel_id=stream_channel_id,
             comment=comment,
         )
-        
+
+        if not updated_match:
+            return None
+
+        # Emit MatchScheduledEvent if scheduled_at was changed
+        if scheduled_at is not None and scheduled_at != previous_scheduled_at:
+            # Fetch participants
+            await updated_match.fetch_related('players__user', 'tournament')
+            participant_ids = [p.user_id for p in updated_match.players]
+
+            await EventBus.emit(MatchScheduledEvent(
+                user_id=user.id if user else None,
+                organization_id=organization_id,
+                entity_id=match_id,
+                tournament_id=updated_match.tournament_id,
+                scheduled_time=scheduled_at.isoformat() if scheduled_at else None,
+                participant_ids=participant_ids,
+            ))
+            logger.info("Emitted MatchScheduledEvent for match %s in org %s", match_id, organization_id)
+
         # Emit events for channel assignment changes
-        if updated_match and stream_channel_id is not None:
+        if stream_channel_id is not None:
             if stream_channel_id != previous_channel_id:
                 if stream_channel_id:
                     # Channel assigned or changed
