@@ -25,7 +25,7 @@ import logging
 from typing import Optional
 import aiohttp
 from racetime_bot import Bot, RaceHandler, monitor_cmd
-from models import BotStatus
+from models import BotStatus, SYSTEM_USER_ID
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
 from application.events import (
@@ -112,7 +112,7 @@ class SahaRaceHandler(RaceHandler):
         if self._bot_created_room:
             logger.info("Bot created race room: %s", room_slug)
             await EventBus.emit(RacetimeBotCreatedRaceEvent(
-                user_id=None,  # System event
+                user_id=SYSTEM_USER_ID,  # System automation action
                 entity_id=room_slug,
                 category=category,
                 room_slug=room_slug,
@@ -124,7 +124,7 @@ class SahaRaceHandler(RaceHandler):
         else:
             logger.info("Bot joined existing race room: %s", room_slug)
             await EventBus.emit(RacetimeBotJoinedRaceEvent(
-                user_id=None,  # System event
+                user_id=SYSTEM_USER_ID,  # System automation action
                 entity_id=room_slug,
                 category=category,
                 room_slug=room_slug,
@@ -176,7 +176,7 @@ class SahaRaceHandler(RaceHandler):
             
             # Emit race status changed event
             await EventBus.emit(RacetimeRaceStatusChangedEvent(
-                user_id=None,  # System event, no specific user
+                user_id=SYSTEM_USER_ID,  # System automation (race status changes are automated)
                 entity_id=room_slug,
                 category=category,
                 room_slug=room_slug,

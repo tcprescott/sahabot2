@@ -8,6 +8,7 @@ Verifies that SahaRaceHandler emits events when:
 - Bot creates or joins race rooms
 - Bot invites players to races
 - Application user IDs are resolved from racetime IDs
+- System actions are distinguished from unauthenticated users
 """
 
 import pytest
@@ -24,7 +25,7 @@ from application.events import (
     RacetimeBotJoinedRaceEvent,
     RacetimeBotCreatedRaceEvent,
 )
-from models import User, Permission
+from models import User, Permission, SYSTEM_USER_ID
 
 
 @pytest.mark.asyncio
@@ -76,6 +77,7 @@ async def test_race_status_change_emits_event():
         assert event.old_status == 'pending'
         assert event.new_status == 'in_progress'
         assert event.started_at == '2025-11-04T12:00:00Z'
+        assert event.user_id == SYSTEM_USER_ID  # Race status changes are system automation
     finally:
         # Cleanup
         EventBus.clear_all()
@@ -401,6 +403,7 @@ async def test_bot_joined_race_emits_event():
         assert event.race_status == 'open'
         assert event.entrant_count == 2
         assert event.bot_action == 'join'
+        assert event.user_id == SYSTEM_USER_ID  # System automation action
     finally:
         EventBus.clear_all()
 
@@ -443,6 +446,7 @@ async def test_bot_created_race_emits_event():
         assert event.goal == 'Beat the game'
         assert event.invitational is True  # unlisted=False means invitational=True
         assert event.bot_action == 'create'
+        assert event.user_id == SYSTEM_USER_ID  # System automation action
     finally:
         EventBus.clear_all()
 

@@ -301,36 +301,76 @@ All entrant-related events (`RacetimeEntrantStatusChangedEvent`, `RacetimeEntran
 - `racetime_user_id` - The racetime.gg user hash ID (always present)
 - `user_id` - The application User ID (present only if racetime account is linked)
 
-The `user_id` field enables **service layer authorization** when handling racetime-triggered actions. For example:
+The `user_id` field enables **service layer authorization** when handling racetime-triggered actions.
+
+**Three User ID States:**
+
+1. **Positive ID (e.g., 42)** - Authenticated user with linked racetime account
+2. **SYSTEM_USER_ID (-1)** - System/automation action (bot actions, race status changes)
+3. **None** - Unknown/unauthenticated user (racetime account not linked to application)
 
 ```python
+from models import SYSTEM_USER_ID, is_system_user_id, is_authenticated_user_id
+
 @EventBus.on(RacetimeEntrantStatusChangedEvent)
 async def on_race_finish(event: RacetimeEntrantStatusChangedEvent):
-    if event.new_status == 'done' and event.user_id:
-        # User has linked racetime account - we can authorize service layer actions
-        tournament_service = TournamentService()
-        await tournament_service.record_race_result(
-            user_id=event.user_id,  # For authorization
-            match_id=event.match_id,
-            finish_time=event.finish_time,
-            place=event.place
-        )
-    elif event.new_status == 'done':
-        # Unlinked racetime account - can't update tournament data
-        logger.warning("Race finish by unlinked user %s", event.racetime_user_id)
+    if event.new_status == 'done':
+        if is_authenticated_user_id(event.user_id):
+            # Real user with linked account - can authorize service actions
+            await tournament_service.record_race_result(
+                user_id=event.user_id,
+                match_id=event.match_id,
+                finish_time=event.finish_time,
+            )
+        elif event.user_id is None:
+            # Unlinked racetime account - log but don't update
+            logger.warning("Race finish by unlinked user %s", event.racetime_user_id)
+        elif is_system_user_id(event.user_id):
+            # System action (shouldn't happen for entrant status changes)
+            logger.warning("Unexpected system action for entrant event")
+```
+
+**System vs. Unknown Users:**
+
+The distinction is important for security and auditing:
+- **SYSTEM_USER_ID** explicitly indicates automated actions (bot creating races, race status changes)
+- **None** indicates we don't know who the user is (unlinked racetime account)
+
+This prevents security issues where an unauthenticated request might be confused with a legitimate system action.
+
+**Helper Functions:**
+
+```python
+from models import is_system_user_id, is_authenticated_user_id, get_user_id_description
+
+# Check if user_id is a system action
+if is_system_user_id(event.user_id):
+    logger.info("System automation triggered event")
+
+# Check if user_id is a real authenticated user
+if is_authenticated_user_id(event.user_id):
+    # Safe to use for authorization
+    user = await user_repository.get_by_id(event.user_id)
+
+# Get human-readable description for logging/auditing
+description = get_user_id_description(event.user_id)
+# Returns: "User 42", "System/Automation", or "Unknown/Unauthenticated"
+logger.info("Action by: %s", description)
 ```
 
 **Lookup Process:**
-1. When an event is emitted, the handler calls `UserRepository.get_by_racetime_id(racetime_user_id)`
+1. When an entrant event is emitted, the handler calls `UserRepository.get_by_racetime_id(racetime_user_id)`
 2. If a User with matching `racetime_id` is found, `user_id` is set to that User's ID
 3. If no matching User is found, `user_id` is set to `None`
-4. Any errors during lookup are logged but don't prevent event emission
+4. For system events (bot actions, race status changes), `user_id` is set to `SYSTEM_USER_ID`
+5. Any errors during lookup are logged but don't prevent event emission
 
 **Use Cases:**
 - **Bot Chat Commands**: When a user triggers a bot command in racetime chat, you can identify them via `user_id` to check permissions
 - **Tournament Integration**: Automatically record race results for users who have linked their racetime accounts
 - **Notifications**: Send Discord DMs to users about their race status (join/finish/forfeit)
 - **Authorization**: Enforce organization-scoped permissions when processing racetime events
+- **Auditing**: Distinguish between user actions, system automation, and unknown/unauthenticated actions
 
 ### Event Detection
 

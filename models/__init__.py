@@ -4,7 +4,14 @@ Database models package for SahaBot2.
 This package contains all Tortoise ORM models for the application.
 """
 
-from models.user import User, Permission
+from models.user import (
+    User,
+    Permission,
+    SYSTEM_USER_ID,
+    is_system_user_id,
+    is_authenticated_user_id,
+    get_user_id_description,
+)
 from models.audit_log import AuditLog
 from models.api_token import ApiToken
 from models.match_schedule import Tournament, Match, MatchPlayers, MatchSeed, StreamChannel, TournamentPlayers, Crew, CrewRole

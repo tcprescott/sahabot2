@@ -5,7 +5,7 @@ This module contains the User model and Permission enum for authentication and a
 """
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from tortoise import fields
 from tortoise.models import Model
 from enum import IntEnum
@@ -16,6 +16,11 @@ if TYPE_CHECKING:
     from .match_schedule import MatchPlayers, TournamentPlayers, Crew
     from .organizations import OrganizationMember
     from .tournament_usage import TournamentUsage
+
+
+# Sentinel value for system/automation actions
+# Use -1 to indicate automated system actions (distinct from None which means unknown/unauthenticated)
+SYSTEM_USER_ID = -1
 
 
 class Permission(IntEnum):
@@ -149,3 +154,51 @@ class User(Model):
         if self.show_pronouns and self.pronouns:
             return f"{name} ({self.pronouns})"
         return name
+
+
+def is_system_user_id(user_id: Optional[int]) -> bool:
+    """
+    Check if a user_id represents a system/automation action.
+    
+    Args:
+        user_id: User ID to check
+        
+    Returns:
+        bool: True if this is a system action (SYSTEM_USER_ID), False otherwise
+    """
+    return user_id == SYSTEM_USER_ID
+
+
+def is_authenticated_user_id(user_id: Optional[int]) -> bool:
+    """
+    Check if a user_id represents an authenticated user.
+    
+    This returns True for any positive user ID (actual users).
+    
+    Args:
+        user_id: User ID to check
+        
+    Returns:
+        bool: True if this is a real user ID (> 0), False for None or SYSTEM_USER_ID
+    """
+    return user_id is not None and user_id > 0
+
+
+def get_user_id_description(user_id: Optional[int]) -> str:
+    """
+    Get a human-readable description of what a user_id represents.
+    
+    Useful for logging and auditing.
+    
+    Args:
+        user_id: User ID to describe
+        
+    Returns:
+        str: Description of the user_id
+    """
+    if user_id is None:
+        return "Unknown/Unauthenticated"
+    elif user_id == SYSTEM_USER_ID:
+        return "System/Automation"
+    else:
+        return f"User {user_id}"
