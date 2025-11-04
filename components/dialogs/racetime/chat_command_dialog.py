@@ -225,21 +225,18 @@ class RacetimeChatCommandDialog(BaseDialog):
             response_text = None
 
         # Prepare command data
-            # Prepare data for creation
-            command_data = {
-                'command': self.command_input.value.strip().lstrip('!'),
-                'scope': self.scope,
-                'response_type': CommandResponseType[self.response_type_select.value],
-                'response_text': self.response_text.value.strip() if self.response_text.value else None,
-                'handler_name': self.handler_select.value if self.response_type_select.value == 'DYNAMIC' else None,
-                'description': self.description.value.strip() if self.description.value else None,
-                'racetime_bot_id': self.racetime_bot_id,
-                'tournament_id': self.tournament_id,
-                'async_tournament_id': self.async_tournament_id,
-                'require_linked_account': self.require_linked.value,
-                'cooldown_seconds': int(self.cooldown.value or 0),
-                'is_active': self.is_enabled.value,
-            }        # Set scope-specific ID
+        command_data = {
+            'command': command_name,
+            'scope': self.scope,
+            'response_type': response_type,
+            'response_text': response_text,
+            'handler_name': handler_name,
+            'require_linked_account': self.require_linked_account_checkbox.value if self.require_linked_account_checkbox else False,
+            'cooldown_seconds': int(self.cooldown_seconds_input.value or 0) if self.cooldown_seconds_input else 0,
+            'is_active': self.is_enabled_checkbox.value if self.is_enabled_checkbox else True,
+        }
+
+        # Set scope-specific ID
         if self.scope == CommandScope.BOT:
             command_data['bot_id'] = self.bot_id
         elif self.scope == CommandScope.TOURNAMENT:
