@@ -53,6 +53,7 @@ from application.events.types import (
     MatchUpdatedEvent,
     MatchDeletedEvent,
     MatchCompletedEvent,
+    MatchFinishedEvent,
     # Async Live Race events
     AsyncLiveRaceCreatedEvent,
     AsyncLiveRaceUpdatedEvent,
@@ -127,6 +128,7 @@ __all__ = [
     "MatchUpdatedEvent",
     "MatchDeletedEvent",
     "MatchCompletedEvent",
+    "MatchFinishedEvent",
     # Async Live Race events
     "AsyncLiveRaceCreatedEvent",
     "AsyncLiveRaceUpdatedEvent",

@@ -5,10 +5,10 @@ Contains org-scoped business logic and authorization checks.
 
 from __future__ import annotations
 from typing import Optional, List, TYPE_CHECKING
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
-from models import User
+from models import User, SYSTEM_USER_ID
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organization_service import OrganizationService
@@ -21,6 +21,7 @@ from application.events import (
     MatchChannelAssignedEvent,
     MatchChannelUnassignedEvent,
     MatchScheduledEvent,
+    MatchFinishedEvent,
 )
 
 if TYPE_CHECKING:
@@ -871,3 +872,130 @@ class TournamentService:
             return False
         
         return await self.repo.delete_match_seed(match_id)
+
+    async def process_match_race_finish(
+        self,
+        match_id: int,
+        results: List[dict],
+    ) -> bool:
+        """
+        Process race finish event from RaceTime.gg for a match.
+
+        Updates match player finish ranks based on race results.
+        This is called automatically by MatchRaceHandler when a race finishes.
+
+        Args:
+            match_id: Match that finished
+            results: List of dicts with keys:
+                - racetime_id: RaceTime.gg user ID
+                - status: Entrant status ('finished', 'forfeit', 'disqualified')
+                - finish_time: Finish time (if finished)
+                - place: Finishing place (1, 2, 3, etc.)
+
+        Returns:
+            True if results were processed successfully, False otherwise
+        """
+        try:
+            # Get the match
+            match = await Match.get_or_none(id=match_id).prefetch_related(
+                'tournament',
+                'players__user'
+            )
+            if not match:
+                logger.warning("Match %s not found when processing race finish", match_id)
+                return False
+
+            # Map RaceTime.gg IDs to User IDs
+            racetime_ids = [r['racetime_id'] for r in results if r.get('racetime_id')]
+            users_map = {
+                u.racetime_id: u
+                for u in await User.filter(racetime_id__in=racetime_ids).all()
+            }
+
+            # Update match player records with finish ranks
+            updated_count = 0
+            for result in results:
+                racetime_id = result.get('racetime_id')
+                status = result.get('status')
+                place = result.get('place')
+
+                if not racetime_id:
+                    continue
+
+                user = users_map.get(racetime_id)
+                if not user:
+                    logger.warning(
+                        "User with RaceTime ID %s not found in match %s results",
+                        racetime_id,
+                        match_id
+                    )
+                    continue
+
+                # Only record finish rank for players who finished
+                # Note: Players who forfeit or are disqualified do not receive a finish rank
+                # since they did not complete the race. Their status is tracked in the
+                # race results but not reflected in finish_rank field.
+                if status != 'finished' or place is None:
+                    logger.debug(
+                        "Skipping result for user %s (status: %s, place: %s)",
+                        user.id,
+                        status,
+                        place
+                    )
+                    continue
+
+                # Find and update the match player record
+                match_player = await MatchPlayers.get_or_none(
+                    match_id=match_id,
+                    user_id=user.id
+                )
+                if not match_player:
+                    logger.warning(
+                        "Match player record not found for user %s in match %s",
+                        user.id,
+                        match_id
+                    )
+                    continue
+
+                # Update finish rank
+                match_player.finish_rank = place
+                await match_player.save(update_fields=['finish_rank'])
+                updated_count += 1
+
+                logger.info(
+                    "Updated match %s player %s with finish rank %s",
+                    match_id,
+                    user.id,
+                    place
+                )
+
+            # Mark match as finished
+            match.finished_at = datetime.now(timezone.utc)
+            await match.save(update_fields=['finished_at'])
+
+            logger.info(
+                "Match %s race finished - updated %s player finish ranks",
+                match_id,
+                updated_count
+            )
+
+            # Emit match finished event
+            await EventBus.emit(MatchFinishedEvent(
+                user_id=SYSTEM_USER_ID,  # System action (automated)
+                organization_id=match.tournament.organization_id,
+                entity_id=match_id,
+                match_id=match_id,
+                tournament_id=match.tournament_id,
+                finisher_count=updated_count,
+            ))
+
+            return True
+
+        except Exception as e:
+            logger.error(
+                "Failed to process match race finish for match %s: %s",
+                match_id,
+                e,
+                exc_info=True
+            )
+            return False
