@@ -932,6 +932,9 @@ class TournamentService:
                     continue
 
                 # Only record finish rank for players who finished
+                # Note: Players who forfeit or are disqualified do not receive a finish rank
+                # since they did not complete the race. Their status is tracked in the
+                # race results but not reflected in finish_rank field.
                 if status != 'finished' or place is None:
                     logger.debug(
                         "Skipping result for user %s (status: %s, place: %s)",

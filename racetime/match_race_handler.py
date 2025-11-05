@@ -50,7 +50,8 @@ class MatchRaceHandler(SahaRaceHandler):
         # Call parent to handle standard events
         await super().race_data(data)
 
-        # Import here to avoid circular dependency
+        # Import here to avoid circular dependency:
+        # TournamentService imports Match model which could import handlers
         from application.services.tournament_service import TournamentService
 
         # After parent processes, self.data contains the unwrapped race data
