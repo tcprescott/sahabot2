@@ -107,6 +107,8 @@ class TournamentService:
         racetime_default_goal: Optional[str] = None,
         create_scheduled_events: bool = False,
         scheduled_events_enabled: bool = True,
+        speedgaming_enabled: bool = False,
+        speedgaming_event_slug: Optional[str] = None,
         discord_guild_ids: Optional[list[int]] = None,
     ) -> Optional[Tournament]:
         """Create a tournament in an org if user can admin the org."""
@@ -128,6 +130,8 @@ class TournamentService:
             racetime_default_goal=racetime_default_goal,
             create_scheduled_events=create_scheduled_events,
             scheduled_events_enabled=scheduled_events_enabled,
+            speedgaming_enabled=speedgaming_enabled,
+            speedgaming_event_slug=speedgaming_event_slug,
         )
         
         # Set discord guilds if provided
@@ -156,6 +160,8 @@ class TournamentService:
         race_room_profile_id: Optional[int] = None,
         create_scheduled_events: Optional[bool] = None,
         scheduled_events_enabled: Optional[bool] = None,
+        speedgaming_enabled: Optional[bool] = None,
+        speedgaming_event_slug: Optional[str] = None,
         discord_guild_ids: Optional[list[int]] = None,
         discord_event_filter: Optional[str] = None,
         event_duration_minutes: Optional[int] = None,
@@ -192,6 +198,10 @@ class TournamentService:
             updates['create_scheduled_events'] = create_scheduled_events
         if scheduled_events_enabled is not None:
             updates['scheduled_events_enabled'] = scheduled_events_enabled
+        if speedgaming_enabled is not None:
+            updates['speedgaming_enabled'] = speedgaming_enabled
+        if speedgaming_event_slug is not None:
+            updates['speedgaming_event_slug'] = speedgaming_event_slug
         if discord_event_filter is not None:
             updates['discord_event_filter'] = discord_event_filter
         if event_duration_minutes is not None:
