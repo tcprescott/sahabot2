@@ -156,6 +156,7 @@ class TournamentService:
         create_scheduled_events: Optional[bool] = None,
         scheduled_events_enabled: Optional[bool] = None,
         discord_guild_ids: Optional[list[int]] = None,
+        discord_event_filter: Optional[str] = None,
     ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
@@ -189,6 +190,8 @@ class TournamentService:
             updates['create_scheduled_events'] = create_scheduled_events
         if scheduled_events_enabled is not None:
             updates['scheduled_events_enabled'] = scheduled_events_enabled
+        if discord_event_filter is not None:
+            updates['discord_event_filter'] = discord_event_filter
 
         tournament = await self.repo.update(organization_id, tournament_id, **updates)
         

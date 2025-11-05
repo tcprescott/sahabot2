@@ -6,9 +6,9 @@ to all tests in the test suite.
 """
 
 import pytest
-import asyncio
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 from tortoise import Tortoise
+from migrations.tortoise_config import get_model_modules
 
 
 # Configure pytest-asyncio
@@ -42,26 +42,18 @@ async def db() -> AsyncGenerator:
     Yields:
         Database connection
     """
-    # Initialize test database directly with explicit default connection and app mapping
+        # Initialize test database directly with explicit default connection and app mapping
     await Tortoise.init(
         config={
             "connections": {"default": "sqlite://:memory:"},
             "apps": {
                 "models": {
-                    "models": [
-                        "models.user",
-                        "models.audit_log",
-                        "models.api_token",
-                        "models.scheduled_task",
-                        "models.organizations",
-                        "models.match_schedule",
-                        "models.discord_scheduled_event",
-                    ],
+                    "models": get_model_modules(),
                     "default_connection": "default",
                 }
             },
             "use_tz": True,
-            "timezone": "UTC",
+            "timezone": "UTC"
         }
     )
     await Tortoise.generate_schemas()

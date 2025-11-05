@@ -103,6 +103,7 @@ class OrganizationTournamentsView:
             initial_scheduled_events_enabled=bool(getattr(t, 'scheduled_events_enabled', True)),
             available_discord_guilds=guild_options,
             initial_discord_guild_ids=current_guild_ids,
+            initial_discord_event_filter=str(getattr(t, 'discord_event_filter', 'all')),
             on_submit=on_submit,
         )
         await dialog.show()

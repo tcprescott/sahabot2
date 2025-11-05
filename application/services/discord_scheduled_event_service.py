@@ -10,7 +10,7 @@ from typing import Optional
 
 import discord
 
-from models import Match, Tournament, DiscordScheduledEvent, SYSTEM_USER_ID
+from models import Match, Tournament, DiscordScheduledEvent, SYSTEM_USER_ID, DiscordEventFilter
 from application.repositories.discord_scheduled_event_repository import DiscordScheduledEventRepository
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.discord_guild_service import DiscordGuildService
@@ -67,6 +67,15 @@ class DiscordScheduledEventService:
                 tournament.id,
                 tournament.create_scheduled_events,
                 tournament.scheduled_events_enabled,
+            )
+            return None
+
+        # Check if match passes the event creation filter
+        if not self._should_create_event_for_match(match, tournament):
+            logger.debug(
+                "Match %s does not pass filter %s, skipping event creation",
+                match_id,
+                tournament.discord_event_filter,
             )
             return None
 
@@ -195,6 +204,18 @@ class DiscordScheduledEventService:
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return False
+
+        # Check if match still passes the event creation filter
+        tournament = match.tournament
+        if not self._should_create_event_for_match(match, tournament):
+            logger.debug(
+                "Match %s no longer passes filter %s, deleting existing events",
+                match_id,
+                tournament.discord_event_filter,
+            )
+            # Delete existing events since match no longer passes filter
+            await self.delete_event_for_match(user_id, organization_id, match_id)
             return False
 
         # Get Discord bot instance
@@ -469,6 +490,11 @@ class DiscordScheduledEventService:
                 stats['skipped'] += 1
                 continue
 
+            # Check if match passes the event creation filter
+            if not self._should_create_event_for_match(match, tournament):
+                stats['skipped'] += 1
+                continue
+
             # Check if events exist for this match
             existing_events = await self.repo.list_for_match(organization_id, match.id)
 
@@ -485,7 +511,9 @@ class DiscordScheduledEventService:
                 if result:
                     stats['created'] += 1
                 else:
-                    stats['errors'] += 1
+                    # If result is None, it might be skipped due to missing data (e.g., no guilds configured)
+                    # This is not necessarily an error, so we'll count it as skipped
+                    stats['skipped'] += 1
 
         # Clean up orphaned events (for finished matches)
         orphaned_events = await self.repo.list_orphaned_events(organization_id)
@@ -565,8 +593,8 @@ class DiscordScheduledEventService:
         3. "TBD"
         """
         # Stream channel takes priority
-        if match.stream_channel and match.stream_channel.twitch_channel:
-            return f"https://twitch.tv/{match.stream_channel.twitch_channel}"
+        if match.stream_channel and match.stream_channel.stream_url:
+            return match.stream_channel.stream_url
 
         # Try to build multistream from player streams
         # (Would need User.twitch_username field - not implemented yet)
@@ -590,3 +618,32 @@ class DiscordScheduledEventService:
 
         # Check for MANAGE_EVENTS permission (bit 33)
         return bot_member.guild_permissions.manage_events
+
+    def _should_create_event_for_match(self, match: Match, tournament: Tournament) -> bool:
+        """
+        Check if a match should create a Discord event based on tournament filter.
+
+        Args:
+            match: Match to check
+            tournament: Tournament the match belongs to
+
+        Returns:
+            True if event should be created, False otherwise
+        """
+        event_filter = tournament.discord_event_filter
+
+        # ALL filter - create event for all scheduled matches
+        if event_filter == DiscordEventFilter.ALL:
+            return True
+
+        # STREAM_ONLY filter - only create event if match has a stream assigned
+        if event_filter == DiscordEventFilter.STREAM_ONLY:
+            return match.stream_channel is not None
+
+        # NONE filter - don't create events (same as disabled)
+        if event_filter == DiscordEventFilter.NONE:
+            return False
+
+        # Default to ALL if unknown filter (shouldn't happen)
+        logger.warning("Unknown discord_event_filter: %s, defaulting to ALL", event_filter)
+        return True

@@ -32,6 +32,7 @@ class TournamentDialog(BaseDialog):
         initial_scheduled_events_enabled: bool = True,
         available_discord_guilds: Optional[dict[int, str]] = None,
         initial_discord_guild_ids: Optional[list[int]] = None,
+        initial_discord_event_filter: str = "all",
         on_submit: Optional[Callable] = None,
     ) -> None:
         super().__init__()
@@ -55,6 +56,7 @@ class TournamentDialog(BaseDialog):
         self._initial_scheduled_events_enabled = initial_scheduled_events_enabled
         self._available_discord_guilds = available_discord_guilds or {}
         self._initial_discord_guild_ids = initial_discord_guild_ids or []
+        self._initial_discord_event_filter = initial_discord_event_filter
 
         # UI refs
         self._name_input: Optional[ui.input] = None
@@ -73,6 +75,7 @@ class TournamentDialog(BaseDialog):
         self._create_scheduled_events_toggle: Optional[ui.switch] = None
         self._scheduled_events_enabled_toggle: Optional[ui.switch] = None
         self._discord_guilds_select: Optional[ui.select] = None
+        self._discord_event_filter_select: Optional[ui.select] = None
 
     async def show(self) -> None:
         """Display the dialog."""
@@ -153,7 +156,7 @@ class TournamentDialog(BaseDialog):
 
         # Discord Scheduled Events Section
         self.create_section_title('Discord Scheduled Events')
-        
+
         with ui.column().classes('gap-md w-full'):
             # Create scheduled events toggle
             with ui.element('div'):
@@ -162,7 +165,21 @@ class TournamentDialog(BaseDialog):
                     value=self._initial_create_scheduled_events
                 )
                 ui.label('When enabled, Discord scheduled events will be created automatically for tournament matches').classes('text-xs text-secondary mt-1')
-            
+
+            # Event filter selection
+            with ui.element('div'):
+                filter_options = {
+                    'all': 'All scheduled matches',
+                    'stream_only': 'Only matches with assigned stream',
+                    'none': 'None (same as disabled)',
+                }
+                self._discord_event_filter_select = ui.select(
+                    label='Which matches should create events',
+                    options=filter_options,
+                    value=self._initial_discord_event_filter,
+                ).classes('w-full')
+                ui.label('Filter which matches create Discord events to reduce noise and highlight important matches').classes('text-xs text-secondary mt-1')
+
             # Guild selection
             if self._available_discord_guilds:
                 with ui.element('div'):
@@ -209,7 +226,8 @@ class TournamentDialog(BaseDialog):
         create_scheduled_events = bool(self._create_scheduled_events_toggle.value) if self._create_scheduled_events_toggle else False
         scheduled_events_enabled = bool(self._scheduled_events_enabled_toggle.value) if self._scheduled_events_enabled_toggle else True
         discord_guild_ids = self._discord_guilds_select.value if self._discord_guilds_select else []
-        
+        discord_event_filter = self._discord_event_filter_select.value if self._discord_event_filter_select else 'all'
+
         if self._on_submit:
             await self._on_submit(
                 name=name,
@@ -224,6 +242,7 @@ class TournamentDialog(BaseDialog):
                 create_scheduled_events=create_scheduled_events,
                 scheduled_events_enabled=scheduled_events_enabled,
                 discord_guild_ids=discord_guild_ids,
+                discord_event_filter=discord_event_filter,
             )
         await self.close()
 

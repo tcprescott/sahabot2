@@ -10,6 +10,14 @@ class CrewRole(str, Enum):
     TRACKER = "tracker"
     RESTREAMER = "restreamer"
 
+
+class DiscordEventFilter(str, Enum):
+    """Enum for filtering which matches create Discord events."""
+    ALL = "all"  # All scheduled matches
+    STREAM_ONLY = "stream_only"  # Only matches with stream_channel assigned
+    NONE = "none"  # No matches (same as disabled)
+
+
 class Tournament(Model):
     id = fields.IntField(pk=True)
     organization = fields.ForeignKeyField('models.Organization', related_name='tournaments')
@@ -32,6 +40,7 @@ class Tournament(Model):
     create_scheduled_events = fields.BooleanField(default=False)  # Enable Discord event creation for matches
     scheduled_events_enabled = fields.BooleanField(default=True)  # Master toggle (can disable temporarily)
     discord_event_guilds = fields.ManyToManyField('models.DiscordGuild', related_name='event_tournaments', through='tournament_discord_guilds')  # Guilds to publish events to
+    discord_event_filter = fields.CharEnumField(enum_type=DiscordEventFilter, default=DiscordEventFilter.ALL, max_length=20)  # Filter which matches create events
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
