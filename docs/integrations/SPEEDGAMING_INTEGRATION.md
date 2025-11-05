@@ -174,7 +174,7 @@ SpeedGaming Episode Player (No Discord ID):
 
 → Check for placeholder user with speedgaming_id=11111
 → If not found, create User:
-   - discord_id=0
+   - discord_id=None  (no Discord account linked)
    - discord_username="sg_11111"
    - display_name="the_synack"  (from streamingFrom)
    - is_placeholder=True

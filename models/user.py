@@ -41,7 +41,7 @@ class User(Model):
 
     Attributes:
         id: Primary key
-        discord_id: Discord user ID (unique)
+        discord_id: Discord user ID (unique, nullable for placeholder users)
         discord_username: Discord username
         discord_discriminator: Discord discriminator (deprecated by Discord but kept for compatibility)
         discord_avatar: Discord avatar hash
@@ -64,7 +64,7 @@ class User(Model):
     """
 
     id = fields.IntField(pk=True)
-    discord_id = fields.BigIntField(unique=True, index=True)
+    discord_id = fields.BigIntField(unique=True, index=True, null=True)
     discord_username = fields.CharField(max_length=255)
     discord_discriminator = fields.CharField(max_length=4, null=True)
     discord_avatar = fields.CharField(max_length=255, null=True)
