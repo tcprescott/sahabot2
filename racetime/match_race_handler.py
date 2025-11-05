@@ -22,17 +22,21 @@ class MatchRaceHandler(SahaRaceHandler):
 
     def __init__(
         self,
+        bot_instance,
         match_id: int,
+        *args,
         **kwargs,
     ):
         """
         Initialize match race handler.
 
         Args:
+            bot_instance: The RacetimeBot instance
             match_id: ID of the Match
-            **kwargs: Arguments for parent RaceHandler
+            *args: Arguments for parent RaceHandler
+            **kwargs: Keyword arguments for parent RaceHandler
         """
-        super().__init__(**kwargs)
+        super().__init__(bot_instance, *args, **kwargs)
         self.match_id = match_id
         self._race_finished = False
 

@@ -133,26 +133,30 @@ class RacetimeRoomService:
             
             # If not already a MatchRaceHandler, replace it
             if not isinstance(handler, MatchRaceHandler):
-                # Stop the generic handler
-                handler.should_stop = True
-                
                 # Extract race data from the handler
                 race_data = handler.data
                 
-                # Create new match race handler using bot's handler creation pattern
-                # The bot.create_handler() would normally be called, but we need our custom class
-                # So we instantiate it directly with the same arguments
+                # The base Bot class manages handler lifecycle via create_handler()
+                # We can't use create_handler() directly since it returns SahaRaceHandler
+                # Instead, we create our custom handler with the same arguments
+                # that the base RaceHandler expects (passed via bot_instance, race_data, ...)
+                
+                # Create new match race handler
+                # Note: RaceHandler base class expects race_data as first arg after bot_instance
                 match_handler = MatchRaceHandler(
-                    match_id=match.id,
                     bot_instance=bot,
+                    match_id=match.id,
                     race_data=race_data,
-                    race_logger=logger,
                 )
-                # Mark that bot created this room
+                
+                # Mark that bot created this room (for event emission in begin())
                 match_handler._bot_created_room = True
                 
                 # Initialize the new handler
                 await match_handler.begin()
+                
+                # The old handler will be garbage collected since we're not keeping a reference
+                # The bot's internal handler management should handle the WebSocket connection
                 
                 # Use the new handler
                 handler = match_handler
