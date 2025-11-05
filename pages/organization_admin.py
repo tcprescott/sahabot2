@@ -145,7 +145,7 @@ def register():
                 if container:
                     container.clear()
                     with container:
-                        view = RaceRoomProfileManagementView(org, page.user)
+                        view = RaceRoomProfileManagementView(page.user, org)
                         await view.render()
 
             # Register loaders (restrict for non-admin tournament managers)

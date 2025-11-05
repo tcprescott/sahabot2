@@ -14,25 +14,29 @@ from components.dialogs.tournaments.race_room_profile_dialog import RaceRoomProf
 class RaceRoomProfileManagementView:
     """View for managing race room profiles."""
 
-    def __init__(self, user: User, organization: Organization):
+    def __init__(self, user: User, organization: Organization, show_bots: bool = True, on_change=None):
         """
         Initialize the profile management view.
 
         Args:
             user: Current user
             organization: Organization context
+            show_bots: Whether to show the RaceTime bots card (default: True)
+            on_change: Optional callback to invoke when profiles change (create/edit/delete/set default)
         """
         self.user = user
         self.organization = organization
+        self.show_bots = show_bots
+        self.on_change = on_change
         self.profiles = []
         self.table_container = None
 
     async def render(self):
         """Render the profile management view."""
-        # RaceTime Bots Card
-        await self._render_bots_card()
-
-        ui.separator().classes('my-4')
+        # RaceTime Bots Card (optional)
+        if self.show_bots:
+            await self._render_bots_card()
+            ui.separator().classes('my-4')
 
         # Race Room Profiles Card
         with ui.element('div').classes('card'):
@@ -168,6 +172,10 @@ class RaceRoomProfileManagementView:
             # Render table
             table = ResponsiveTable(columns=columns, rows=self.profiles)
             await table.render()
+
+        # Invoke callback if provided
+        if self.on_change:
+            await self.on_change()
 
     def _render_name_cell(self, profile):
         """Render the name cell with description."""

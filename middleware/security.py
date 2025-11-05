@@ -76,11 +76,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # See: application/utils/input_validation.py for sanitization utilities
             "Content-Security-Policy": (
                 "default-src 'self'; "
-                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; "
-                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net blob:; "
+                "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net blob:; "
                 "font-src 'self' https://fonts.gstatic.com; "
                 "img-src 'self' data: https:; "
-                "connect-src 'self' wss: https://discord.com https://racetime.gg; "
+                "connect-src 'self' wss: https://discord.com https://racetime.gg blob:; "
                 "frame-ancestors 'none';"
             ),
         }

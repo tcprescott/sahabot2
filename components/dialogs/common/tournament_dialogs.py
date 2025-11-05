@@ -20,19 +20,6 @@ class TournamentDialog(BaseDialog):
         initial_description: Optional[str] = None,
         initial_is_active: bool = True,
         initial_tracker_enabled: bool = True,
-        # RaceTime settings
-        available_racetime_bots: Optional[dict[int, str]] = None,
-        initial_racetime_bot_id: Optional[int] = None,
-        initial_racetime_auto_create: bool = False,
-        initial_room_open_minutes: int = 60,
-        initial_require_racetime_link: bool = False,
-        initial_racetime_default_goal: Optional[str] = None,
-        # Discord scheduled events settings
-        initial_create_scheduled_events: bool = False,
-        initial_scheduled_events_enabled: bool = True,
-        available_discord_guilds: Optional[dict[int, str]] = None,
-        initial_discord_guild_ids: Optional[list[int]] = None,
-        initial_discord_event_filter: str = "all",
         on_submit: Optional[Callable] = None,
     ) -> None:
         super().__init__()
@@ -42,163 +29,45 @@ class TournamentDialog(BaseDialog):
         self._initial_is_active = initial_is_active
         self._initial_tracker_enabled = initial_tracker_enabled
         self._on_submit = on_submit
-        
-        # RaceTime settings
-        self._available_racetime_bots = available_racetime_bots or {}
-        self._initial_racetime_bot_id = initial_racetime_bot_id
-        self._initial_racetime_auto_create = initial_racetime_auto_create
-        self._initial_room_open_minutes = initial_room_open_minutes
-        self._initial_require_racetime_link = initial_require_racetime_link
-        self._initial_racetime_default_goal = initial_racetime_default_goal
-        
-        # Discord scheduled events settings
-        self._initial_create_scheduled_events = initial_create_scheduled_events
-        self._initial_scheduled_events_enabled = initial_scheduled_events_enabled
-        self._available_discord_guilds = available_discord_guilds or {}
-        self._initial_discord_guild_ids = initial_discord_guild_ids or []
-        self._initial_discord_event_filter = initial_discord_event_filter
 
         # UI refs
         self._name_input: Optional[ui.input] = None
         self._desc_input: Optional[ui.textarea] = None
         self._active_toggle: Optional[ui.switch] = None
         self._tracker_toggle: Optional[ui.switch] = None
-        
-        # RaceTime UI refs
-        self._racetime_bot_select: Optional[ui.select] = None
-        self._racetime_auto_create_toggle: Optional[ui.switch] = None
-        self._room_open_minutes_input: Optional[ui.number] = None
-        self._require_racetime_link_toggle: Optional[ui.switch] = None
-        self._racetime_default_goal_input: Optional[ui.input] = None
-        
-        # Discord scheduled events UI refs
-        self._create_scheduled_events_toggle: Optional[ui.switch] = None
-        self._scheduled_events_enabled_toggle: Optional[ui.switch] = None
-        self._discord_guilds_select: Optional[ui.select] = None
-        self._discord_event_filter_select: Optional[ui.select] = None
 
     async def show(self) -> None:
         """Display the dialog."""
-        self.create_dialog(title=self._title, icon='emoji_events', max_width='800px')
+        self.create_dialog(title=self._title, icon='emoji_events', max_width='600px')
         await super().show()
 
     def _render_body(self) -> None:
         """Render dialog body with form fields."""
-        # Basic Settings Section
-        self.create_section_title('Basic Settings')
-        
+        # Basic Settings
         with self.create_form_grid(columns=1):
             with ui.element('div'):
                 self._name_input = ui.input(label='Name', value=self._initial_name).classes('w-full')
+                ui.label('Tournament name (e.g., "Summer 2025 Championship")').classes('text-xs text-secondary mt-1')
+            
             with ui.element('div'):
                 self._desc_input = ui.textarea(label='Description', value=self._initial_description or "").classes('w-full')
+                ui.label('Optional description visible to players').classes('text-xs text-secondary mt-1')
+            
             with ui.element('div'):
                 self._active_toggle = ui.switch(text='Active', value=self._initial_is_active)
+                ui.label('Inactive tournaments are hidden from players').classes('text-xs text-secondary mt-1')
+            
             with ui.element('div'):
                 self._tracker_toggle = ui.switch(text='Enable Tracker Role', value=self._initial_tracker_enabled)
+                ui.label('Allows players to request tracker role for notifications').classes('text-xs text-secondary mt-1')
 
+        # Info about additional settings
         ui.separator().classes('my-4')
-
-        # RaceTime.gg Integration Section
-        self.create_section_title('RaceTime.gg Integration')
-        
-        with ui.column().classes('gap-md w-full'):
-            # Bot selection
-            with ui.element('div'):
-                bot_options = {None: '(No RaceTime integration)'}
-                bot_options.update(self._available_racetime_bots)
-                
-                self._racetime_bot_select = ui.select(
-                    label='RaceTime Bot',
-                    options=bot_options,
-                    value=self._initial_racetime_bot_id,
-                    with_input=True,
-                ).classes('w-full')
-                ui.label('Select a RaceTime bot to enable automatic race room creation').classes('text-xs text-secondary mt-1')
-            
-            # Auto-create rooms toggle
-            with ui.element('div'):
-                self._racetime_auto_create_toggle = ui.switch(
-                    text='Automatically create race rooms',
-                    value=self._initial_racetime_auto_create
-                )
-                ui.label('When enabled, race rooms will be created automatically before scheduled matches').classes('text-xs text-secondary mt-1')
-            
-            # Room open time
-            with ui.element('div'):
-                self._room_open_minutes_input = ui.number(
-                    label='Minutes before match to open room',
-                    value=self._initial_room_open_minutes,
-                    min=15,
-                    max=240,
-                    step=15,
-                ).classes('w-full')
-                ui.label('How long before the scheduled match time should the room be opened (15-240 minutes)').classes('text-xs text-secondary mt-1')
-            
-            # Require RaceTime link
-            with ui.element('div'):
-                self._require_racetime_link_toggle = ui.switch(
-                    text='Require players to have RaceTime account linked',
-                    value=self._initial_require_racetime_link
-                )
-                ui.label('When enabled, players must link their RaceTime account before scheduling matches').classes('text-xs text-secondary mt-1')
-            
-            # Default goal
-            with ui.element('div'):
-                self._racetime_default_goal_input = ui.input(
-                    label='Default race goal (optional)',
-                    value=self._initial_racetime_default_goal or '',
-                    placeholder='e.g., Beat the game - Tournament'
-                ).classes('w-full')
-                ui.label('Default goal text for race rooms (can be overridden per-match)').classes('text-xs text-secondary mt-1')
-
-        ui.separator().classes('my-4')
-
-        # Discord Scheduled Events Section
-        self.create_section_title('Discord Scheduled Events')
-
-        with ui.column().classes('gap-md w-full'):
-            # Create scheduled events toggle
-            with ui.element('div'):
-                self._create_scheduled_events_toggle = ui.switch(
-                    text='Create Discord scheduled events for matches',
-                    value=self._initial_create_scheduled_events
-                )
-                ui.label('When enabled, Discord scheduled events will be created automatically for tournament matches').classes('text-xs text-secondary mt-1')
-
-            # Event filter selection
-            with ui.element('div'):
-                filter_options = {
-                    'all': 'All scheduled matches',
-                    'stream_only': 'Only matches with assigned stream',
-                    'none': 'None (same as disabled)',
-                }
-                self._discord_event_filter_select = ui.select(
-                    label='Which matches should create events',
-                    options=filter_options,
-                    value=self._initial_discord_event_filter,
-                ).classes('w-full')
-                ui.label('Filter which matches create Discord events to reduce noise and highlight important matches').classes('text-xs text-secondary mt-1')
-
-            # Guild selection
-            if self._available_discord_guilds:
-                with ui.element('div'):
-                    self._discord_guilds_select = ui.select(
-                        label='Discord Servers to publish events to',
-                        options=self._available_discord_guilds,
-                        value=self._initial_discord_guild_ids,
-                        multiple=True,
-                        with_input=True,
-                    ).classes('w-full')
-                    ui.label('Select which Discord servers should receive scheduled events (leave empty to use all linked servers)').classes('text-xs text-secondary mt-1')
-            
-            # Events enabled toggle
-            with ui.element('div'):
-                self._scheduled_events_enabled_toggle = ui.switch(
-                    text='Events currently enabled',
-                    value=self._initial_scheduled_events_enabled
-                )
-                ui.label('Disable this to temporarily stop creating new events without changing the tournament setting').classes('text-xs text-secondary mt-1')
+        with ui.row().classes('items-start gap-2 p-3 rounded bg-info text-white'):
+            ui.icon('info')
+            with ui.column().classes('gap-1'):
+                ui.label('Additional Settings').classes('font-bold')
+                ui.label('Configure RaceTime integration, Discord events, and other settings after creating the tournament').classes('text-sm')
 
         with self.create_actions_row():
             ui.button('Cancel', on_click=self.close).classes('btn')
@@ -214,19 +83,6 @@ class TournamentDialog(BaseDialog):
         description = self._desc_input.value if self._desc_input else None
         is_active = bool(self._active_toggle.value) if self._active_toggle else True
         tracker_enabled = bool(self._tracker_toggle.value) if self._tracker_toggle else True
-        
-        # RaceTime settings
-        racetime_bot_id = self._racetime_bot_select.value if self._racetime_bot_select else None
-        racetime_auto_create = bool(self._racetime_auto_create_toggle.value) if self._racetime_auto_create_toggle else False
-        room_open_minutes = int(self._room_open_minutes_input.value) if self._room_open_minutes_input else 60
-        require_racetime_link = bool(self._require_racetime_link_toggle.value) if self._require_racetime_link_toggle else False
-        racetime_default_goal = self._racetime_default_goal_input.value.strip() if self._racetime_default_goal_input and self._racetime_default_goal_input.value else None
-        
-        # Discord scheduled events settings
-        create_scheduled_events = bool(self._create_scheduled_events_toggle.value) if self._create_scheduled_events_toggle else False
-        scheduled_events_enabled = bool(self._scheduled_events_enabled_toggle.value) if self._scheduled_events_enabled_toggle else True
-        discord_guild_ids = self._discord_guilds_select.value if self._discord_guilds_select else []
-        discord_event_filter = self._discord_event_filter_select.value if self._discord_event_filter_select else 'all'
 
         if self._on_submit:
             await self._on_submit(
@@ -234,15 +90,6 @@ class TournamentDialog(BaseDialog):
                 description=description,
                 is_active=is_active,
                 tracker_enabled=tracker_enabled,
-                racetime_bot_id=racetime_bot_id,
-                racetime_auto_create=racetime_auto_create,
-                room_open_minutes=room_open_minutes,
-                require_racetime_link=require_racetime_link,
-                racetime_default_goal=racetime_default_goal,
-                create_scheduled_events=create_scheduled_events,
-                scheduled_events_enabled=scheduled_events_enabled,
-                discord_guild_ids=discord_guild_ids,
-                discord_event_filter=discord_event_filter,
             )
         await self.close()
 

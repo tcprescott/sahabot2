@@ -36,14 +36,75 @@ class TournamentRacetimeSettingsView:
         # Load available profiles
         await self._load_profiles()
 
+        # RaceTime Bots Card
+        await self._render_bots_card()
+
+        ui.separator().classes('my-4')
+
+        # RaceTime Room Settings Card
+        await self._render_room_settings_card()
+
+        ui.separator().classes('my-4')
+
+        # Race Room Profiles Management Card
+        await self._render_profiles_card()
+
+    async def _render_bots_card(self):
+        """Render card showing RaceTime bots assigned to this organization."""
+        from application.services.racetime_bot_service import RacetimeBotService
+        from components.data_table import ResponsiveTable, TableColumn
+
+        bot_service = RacetimeBotService()
+        bots = await bot_service.get_bots_for_organization(self.organization.id, self.user)
+
         with ui.element('div').classes('card'):
             with ui.element('div').classes('card-header'):
-                with ui.row().classes('items-center justify-between w-full'):
-                    ui.label('RaceTime Room Settings').classes('text-xl font-bold')
-                    ui.button('Manage Profiles', icon='tune', on_click=self._manage_profiles).classes('btn')
+                with ui.row().classes('items-center gap-2'):
+                    ui.icon('smart_toy').classes('icon-medium')
+                    ui.label('RaceTime Bots').classes('text-xl font-bold')
 
             with ui.element('div').classes('card-body'):
-                ui.label('Configure how RaceTime rooms are created for this tournament').classes('text-sm text-grey mb-4')
+                if not bots:
+                    with ui.element('div').classes('text-center p-4 text-secondary'):
+                        ui.icon('info', size='2rem')
+                        ui.label('No RaceTime bots assigned').classes('text-sm mt-2')
+                        ui.label('Contact an administrator to assign bots to this organization').classes('text-xs')
+                else:
+                    ui.label(f'{len(bots)} bot{"s" if len(bots) != 1 else ""} assigned to this organization').classes('text-sm text-secondary mb-4')
+                    
+                    # Define table columns
+                    columns = [
+                        TableColumn(
+                            label='Bot Name',
+                            cell_render=lambda b: self._render_bot_name_cell(b)
+                        ),
+                        TableColumn(
+                            label='Category',
+                            cell_render=lambda b: self._render_bot_category_cell(b)
+                        ),
+                        TableColumn(
+                            label='Status',
+                            cell_render=lambda b: self._render_bot_status_cell(b)
+                        ),
+                    ]
+
+                    # Render table
+                    table = ResponsiveTable(columns=columns, rows=bots)
+                    await table.render()
+
+                    # Note about bot assignment
+                    with ui.row().classes('items-center gap-2 mt-4 p-3 rounded bg-info-light'):
+                        ui.icon('info', size='sm').classes('text-info')
+                        ui.label('To assign additional bots to this organization, contact a global administrator.').classes('text-sm text-info')
+
+    async def _render_room_settings_card(self):
+        """Render the RaceTime room settings card."""
+        with ui.element('div').classes('card'):
+            with ui.element('div').classes('card-header'):
+                ui.label('RaceTime Room Settings').classes('text-xl font-bold')
+
+            with ui.element('div').classes('card-body'):
+                ui.label('Configure how RaceTime rooms are created for this tournament').classes('text-sm text-secondary mb-4')
 
                 # Basic Settings Section
                 ui.label('Basic Settings').classes('text-lg font-bold mb-3')
@@ -52,7 +113,7 @@ class TournamentRacetimeSettingsView:
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Auto-create rooms:').classes('w-64')
                     auto_create_toggle = ui.switch(value=self.tournament.racetime_auto_create_rooms or False)
-                    ui.label('Automatically create RaceTime rooms when matches are scheduled').classes('text-sm text-grey')
+                    ui.label('Automatically create RaceTime rooms when matches are scheduled').classes('text-sm text-secondary')
 
                 # Room opening time
                 with ui.row().classes('items-center gap-4 mb-4'):
@@ -63,13 +124,13 @@ class TournamentRacetimeSettingsView:
                         max=120,
                         step=5
                     ).classes('w-32')
-                    ui.label('How long before scheduled time to open the room').classes('text-sm text-grey')
+                    ui.label('How long before scheduled time to open the room').classes('text-sm text-secondary')
 
                 # Require RaceTime link
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Require RaceTime account:').classes('w-64')
                     require_link_toggle = ui.switch(value=self.tournament.require_racetime_link or False)
-                    ui.label('Players must have RaceTime accounts linked').classes('text-sm text-grey')
+                    ui.label('Players must have RaceTime accounts linked').classes('text-sm text-secondary')
 
                 # Default goal
                 ui.label('Default race goal:').classes('font-bold mb-2')
@@ -82,7 +143,7 @@ class TournamentRacetimeSettingsView:
 
                 # Race Room Profile Section
                 ui.label('Race Room Configuration Profile').classes('text-lg font-bold mt-4 mb-3')
-                ui.label('Select a profile to configure room settings (start delay, time limit, chat permissions, etc.)').classes('text-sm text-grey mb-4')
+                ui.label('Select a profile to configure room settings (start delay, time limit, chat permissions, etc.)').classes('text-sm text-secondary mb-4')
 
                 # Profile selection
                 with ui.row().classes('items-center gap-4 mb-4'):
@@ -112,6 +173,57 @@ class TournamentRacetimeSettingsView:
                         default_goal.value,
                     )).classes('btn').props('color=positive')
 
+    async def _render_profiles_card(self):
+        """Render the race room profiles management card."""
+        from views.organization.race_room_profile_management import RaceRoomProfileManagementView
+
+        async def on_profiles_changed():
+            """Callback when profiles are created/edited/deleted."""
+            # Reload profiles
+            await self._load_profiles()
+
+            # Update dropdown options if it exists
+            if self.profile_select:
+                profile_options = {
+                    None: 'Use defaults (no profile)',
+                    **{p.id: f"{p.name}{' (Default)' if p.is_default else ''}" for p in self.profiles}
+                }
+                self.profile_select.set_options(profile_options)
+                self.profile_select.update()
+
+            # Refresh preview
+            await self._render_profile_preview()
+
+        view = RaceRoomProfileManagementView(
+            self.user,
+            self.organization,
+            show_bots=False,
+            on_change=on_profiles_changed
+        )
+        await view.render()
+
+    def _render_bot_name_cell(self, bot):
+        """Render the bot name cell."""
+        with ui.row().classes('items-center gap-2'):
+            ui.icon('smart_toy', size='sm')
+            ui.label(bot.name).classes('font-bold')
+
+    def _render_bot_category_cell(self, bot):
+        """Render the bot category cell."""
+        with ui.row().classes('items-center gap-2'):
+            ui.icon('category', size='sm')
+            ui.label(bot.category)
+
+    def _render_bot_status_cell(self, bot):
+        """Render the bot status cell."""
+        with ui.row().classes('items-center gap-2'):
+            ui.icon('circle', size='sm').classes(
+                'text-positive' if bot.is_healthy() else 'text-warning'
+            )
+            ui.label(bot.get_status_display()).classes(
+                'badge badge-success' if bot.is_healthy() else 'badge badge-warning'
+            )
+
     async def _load_profiles(self):
         """Load available race room profiles for the organization."""
         from application.services.race_room_profile_service import RaceRoomProfileService
@@ -136,7 +248,7 @@ class TournamentRacetimeSettingsView:
         with self.profile_preview_container:
             if self.selected_profile_id is None:
                 # Show defaults
-                with ui.element('div').classes('p-4 rounded bg-grey-2'):
+                with ui.element('div').classes('p-4 rounded border'):
                     ui.label('Default Settings (No Profile)').classes('font-bold mb-2')
                     ui.label('Start delay: 15 seconds').classes('text-sm')
                     ui.label('Time limit: 24 hours').classes('text-sm')
@@ -147,10 +259,10 @@ class TournamentRacetimeSettingsView:
                 # Find and show selected profile
                 profile = next((p for p in self.profiles if p.id == self.selected_profile_id), None)
                 if profile:
-                    with ui.element('div').classes('p-4 rounded bg-grey-2'):
+                    with ui.element('div').classes('p-4 rounded border'):
                         ui.label(f'Profile: {profile.name}').classes('font-bold mb-2')
                         if profile.description:
-                            ui.label(profile.description).classes('text-sm text-grey mb-2')
+                            ui.label(profile.description).classes('text-sm text-secondary mb-2')
 
                         # Display settings in a grid
                         with ui.element('div').classes('grid grid-cols-2 gap-2 mt-3'):
@@ -163,37 +275,6 @@ class TournamentRacetimeSettingsView:
                             ui.label(f'Pre-race chat: {"Yes" if profile.allow_prerace_chat else "No"}').classes('text-sm')
                             ui.label(f'Mid-race chat: {"Yes" if profile.allow_midrace_chat else "No"}').classes('text-sm')
                             ui.label(f'Non-entrant chat: {"Yes" if profile.allow_non_entrant_chat else "No"}').classes('text-sm')
-
-    async def _manage_profiles(self):
-        """Open dialog to manage race room profiles."""
-        from views.organization.race_room_profile_management import RaceRoomProfileManagementView
-
-        # Create a dialog to show the profile management view
-        with ui.dialog() as dialog:
-            with ui.element('div').classes('card dialog-card-xl'):
-                # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center justify-between w-full'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.icon('tune').classes('icon-medium')
-                            ui.label('Manage Race Room Profiles').classes('text-xl font-bold')
-                        ui.button(icon='close', on_click=dialog.close).props('flat round dense')
-
-                # Body with profile management view
-                with ui.element('div').classes('card-body'):
-                    view = RaceRoomProfileManagementView(self.user, self.organization)
-                    await view.render()
-
-        dialog.open()
-
-        # Reload profiles when dialog closes
-        async def on_close():
-            await self._load_profiles()
-            if self.profile_select:
-                self.profile_select.update()
-            await self._render_profile_preview()
-
-        dialog.on('close', on_close)
 
     async def _save_settings(
         self,
