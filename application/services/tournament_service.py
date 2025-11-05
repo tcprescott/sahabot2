@@ -646,7 +646,13 @@ class TournamentService:
                         invited_count += 1
                         logger.info("Invited user %s to race room %s", user.racetime_id, room_slug)
                     except Exception as e:
-                        logger.error("Failed to invite user %s to room %s: %s", user.racetime_id, room_slug, e)
+                        logger.error(
+                            "Failed to invite user %s to room %s: %s",
+                            user.racetime_id,
+                            room_slug,
+                            e,
+                            exc_info=True
+                        )
 
                 logger.info(
                     "Invited %d/%d players to race room %s (%d skipped due to no RaceTime account)",

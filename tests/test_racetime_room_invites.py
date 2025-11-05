@@ -306,8 +306,3 @@ async def test_create_room_handles_invite_failure():
 
         # Both invites should have been attempted
         assert mock_handler.invite_user.call_count == 2
-
-
-if __name__ == '__main__':
-    # Run with: pytest tests/test_racetime_room_invites.py -v
-    pytest.main([__file__, '-v'])
