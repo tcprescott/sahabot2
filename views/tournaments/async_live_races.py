@@ -156,7 +156,7 @@ class AsyncLiveRacesView:
         """Render RaceTime.gg link if available."""
         with ui.element('div'):
             if race.racetime_url:
-                ui.link('View Race', race.racetime_url).props('target=_blank')
+                ui.link('View Race', race.racetime_url, new_tab=True)
             else:
                 ui.label('Not opened yet').classes('text-secondary')
 

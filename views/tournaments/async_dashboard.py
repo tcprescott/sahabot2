@@ -326,10 +326,10 @@ class AsyncDashboardView:
         with ui.row().classes('gap-sm'):
             # View permalink
             ui.link(
-                'Seed',
+                'View Seed',
                 race.permalink.url,
                 new_tab=True
-            ).classes('btn-link')
+            ).classes('btn-link')  # External link
 
             # Discord thread
             if race.discord_thread_id:

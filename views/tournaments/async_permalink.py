@@ -113,7 +113,7 @@ class AsyncPermalinkView:
     def _render_player(self, race):
         """Render player cell."""
         player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{race.user.id}'
-        ui.link(race.user.get_display_name(), player_link)
+        ui.link(race.user.get_display_name(), player_link)  # Internal link
 
     def _render_vod(self, race):
         """Render VOD cell."""

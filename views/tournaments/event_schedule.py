@@ -467,7 +467,7 @@ class EventScheduleView:
                     with ui.column().classes('gap-2'):
                         if seed:
                             # Show link to seed URL
-                            with ui.link(target=seed.url).classes('text-primary'):
+                            with ui.link(target=seed.url, new_tab=True).classes('text-primary'):
                                 with ui.row().classes('items-center gap-1'):
                                     ui.icon('file_download').classes('text-sm')
                                     ui.label('Seed')
@@ -499,7 +499,7 @@ class EventScheduleView:
                         # Show room link if room exists
                         if match.racetime_room_slug:
                             room_url = f'{settings.RACETIME_URL}/{match.racetime_room_slug}'
-                            with ui.link(target=room_url).classes('text-primary'):
+                            with ui.link(target=room_url, new_tab=True).classes('text-primary'):
                                 with ui.row().classes('items-center gap-1'):
                                     ui.icon('sports_esports').classes('text-sm')
                                     ui.label('Join Room')

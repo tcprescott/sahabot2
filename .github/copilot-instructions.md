@@ -348,6 +348,13 @@ The application uses a five-color palette with automatic dark mode support. Ligh
 - **NiceGUI Elements**: Elements don't have a `.text()` method
   - ✅ `with ui.element('div').classes('header'): ui.label('Text')`
   - ❌ `ui.element('div').classes('header').text('Text')`  # AttributeError!
+- **External Links**: Links to external websites must open in new tabs
+  - ✅ `ui.link('GitHub', 'https://github.com/repo', new_tab=True)`
+  - ✅ `with ui.link(target='https://example.com', new_tab=True):`
+  - ❌ `ui.link('External', 'https://example.com')`  # Should have new_tab=True
+  - **External** = any URL outside the application (other domains, external services)
+  - **Internal** = application routes (e.g., `/org/1/async/2`, `/admin`)
+  - Common external links: RaceTime.gg rooms, seed/permalink URLs, Discord channels, VOD links, GitHub
 
 ### 8. Discord Bot Architecture
 - **Bot as Presentation Layer**: Discord bot is part of the presentation layer (like UI pages)
@@ -1146,6 +1153,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ❌ Don't use `datetime.utcnow()` - it's deprecated and timezone-naive (use `datetime.now(timezone.utc)`)
 - ❌ Don't use raw HTML `<table>` elements for tabular data - use `ResponsiveTable` component instead
 - ❌ Don't use `None` for user_id in events - use `SYSTEM_USER_ID` for system/automated actions
+- ❌ Don't open external links in the same tab - always use `new_tab=True`
 - ✅ Do use external CSS classes
 - ✅ Do use `with ui.element('div').classes('header'):` and then `ui.label('Text')`
 - ✅ Do use services for all business logic
@@ -1163,6 +1171,7 @@ async def ban_user(interaction: discord.Interaction, user: discord.User, reason:
 - ✅ Do organize views into subdirectories by page (views/home/, views/admin/, views/organization/)
 - ✅ Do organize dialogs into subdirectories by view usage (dialogs/admin/, dialogs/organization/, dialogs/tournaments/, dialogs/user_profile/, dialogs/common/)
 - ✅ Do use timezone-aware datetimes: `datetime.now(timezone.utc)` for current UTC time
+- ✅ Do use `new_tab=True` for all external links (RaceTime.gg rooms, seed URLs, VODs, Discord channels, etc.)
 
 ## References
 - NiceGUI: https://nicegui.io

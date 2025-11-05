@@ -218,7 +218,7 @@ class AsyncLeaderboardView:
     def _render_actions(self, entry: LeaderboardEntry):
         """Render actions cell."""
         player_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/player/{entry.user.id}'
-        ui.link('View History', player_link).classes('btn-link')
+        ui.link('View History', player_link).classes('btn-link')  # Internal link
 
     async def _render_mobile_leaderboard(self, leaderboard: list[LeaderboardEntry]):
         """Render mobile leaderboard cards."""

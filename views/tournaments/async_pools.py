@@ -112,7 +112,7 @@ class AsyncPoolsView:
             with ui.element('div').classes('flex-grow'):
                 # Link to permalink details page
                 permalink_link = f'/org/{self.tournament.organization_id}/async/{self.tournament.id}/permalink/{permalink.id}'
-                ui.link(permalink.url, permalink_link)
+                ui.link(permalink.url, permalink_link, new_tab=True)
 
                 # Show par time and notes (hide par time if results are hidden and tournament is active)
                 with ui.element('div').classes('text-sm text-secondary'):
