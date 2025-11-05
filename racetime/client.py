@@ -126,29 +126,22 @@ class SahaRaceHandler(RaceHandler):
             room_slug: Race room slug (e.g., "alttpr/cool-doge-1234")
         """
         try:
-            # Look up match by room slug
-            from models.match_schedule import Match
+            # Use service to check if user is a match player (follows architectural layers)
+            from application.services.racetime_room_service import RacetimeRoomService
 
-            match = await Match.filter(
-                racetime_room_slug=room_slug
-            ).prefetch_related('players__user').first()
+            service = RacetimeRoomService()
+            is_match_player, match_id = await service.is_player_on_match(
+                room_slug=room_slug,
+                racetime_user_id=racetime_user_id
+            )
 
-            if not match:
+            if match_id is None:
                 logger.debug(
                     "No match found for room %s, not auto-accepting join request from %s",
                     room_slug,
                     racetime_user_name
                 )
                 return
-
-            # Check if the requesting user is a player on the match
-            match_players = await match.players.all().prefetch_related('user')
-            is_match_player = False
-
-            for match_player in match_players:
-                if match_player.user.racetime_id == racetime_user_id:
-                    is_match_player = True
-                    break
 
             if is_match_player:
                 # Accept the join request
@@ -157,7 +150,7 @@ class SahaRaceHandler(RaceHandler):
                     "Auto-accepted join request from %s (%s) for match %s in room %s",
                     racetime_user_name,
                     racetime_user_id,
-                    match.id,
+                    match_id,
                     room_slug
                 )
             else:
@@ -165,7 +158,7 @@ class SahaRaceHandler(RaceHandler):
                     "User %s (%s) is not a player on match %s, not auto-accepting join request",
                     racetime_user_name,
                     racetime_user_id,
-                    match.id
+                    match_id
                 )
 
         except Exception as e:

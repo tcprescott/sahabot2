@@ -15,31 +15,6 @@ from racetime.client import SahaRaceHandler
 @pytest.mark.asyncio
 async def test_auto_accept_join_request_for_match_player():
     """Test that join requests are auto-accepted for players on the match."""
-    # Create mock user with linked racetime account
-    user1 = User(
-        id=1,
-        discord_id=111111,
-        discord_username='Player1',
-        racetime_id='abc123',
-        racetime_name='Player1RT',
-        permission=Permission.USER,
-    )
-
-    # Create mock match player
-    match_player1 = MagicMock(spec=MatchPlayers)
-    match_player1.user = user1
-
-    # Create mock match
-    mock_match = AsyncMock(spec=Match)
-    mock_match.id = 1
-    mock_match.racetime_room_slug = 'alttpr/test-room-1234'
-
-    # Mock players relation
-    mock_players = AsyncMock()
-    mock_players.all = AsyncMock(return_value=AsyncMock())
-    mock_players.all.return_value.prefetch_related = AsyncMock(return_value=[match_player1])
-    mock_match.players = mock_players
-
     # Track accept_request calls
     accepted_users = []
 
@@ -65,12 +40,11 @@ async def test_auto_accept_join_request_for_match_player():
         'status': {'value': 'open'},
     }
 
-    # Mock Match.filter to return our match
-    with patch('racetime.client.Match') as MockMatch:
-        mock_filter = AsyncMock()
-        mock_filter.prefetch_related = MagicMock(return_value=mock_filter)
-        mock_filter.first = AsyncMock(return_value=mock_match)
-        MockMatch.filter = MagicMock(return_value=mock_filter)
+    # Mock RacetimeRoomService to return that user is a match player
+    with patch('racetime.client.RacetimeRoomService') as MockService:
+        mock_service_instance = AsyncMock()
+        mock_service_instance.is_player_on_match = AsyncMock(return_value=(True, 1))
+        MockService.return_value = mock_service_instance
 
         # Test the join request handler
         await handler._handle_join_request(
@@ -88,31 +62,6 @@ async def test_auto_accept_join_request_for_match_player():
 @pytest.mark.asyncio
 async def test_no_auto_accept_for_non_match_player():
     """Test that join requests are NOT auto-accepted for non-match players."""
-    # Create mock user (match player)
-    user1 = User(
-        id=1,
-        discord_id=111111,
-        discord_username='Player1',
-        racetime_id='abc123',
-        racetime_name='Player1RT',
-        permission=Permission.USER,
-    )
-
-    # Create mock match player
-    match_player1 = MagicMock(spec=MatchPlayers)
-    match_player1.user = user1
-
-    # Create mock match
-    mock_match = AsyncMock(spec=Match)
-    mock_match.id = 1
-    mock_match.racetime_room_slug = 'alttpr/test-room-1234'
-
-    # Mock players relation
-    mock_players = AsyncMock()
-    mock_players.all = AsyncMock(return_value=AsyncMock())
-    mock_players.all.return_value.prefetch_related = AsyncMock(return_value=[match_player1])
-    mock_match.players = mock_players
-
     # Create mock handler
     handler = SahaRaceHandler(
         bot_instance=MagicMock(),
@@ -131,12 +80,11 @@ async def test_no_auto_accept_for_non_match_player():
         'status': {'value': 'open'},
     }
 
-    # Mock Match.filter to return our match
-    with patch('racetime.client.Match') as MockMatch:
-        mock_filter = AsyncMock()
-        mock_filter.prefetch_related = MagicMock(return_value=mock_filter)
-        mock_filter.first = AsyncMock(return_value=mock_match)
-        MockMatch.filter = MagicMock(return_value=mock_filter)
+    # Mock RacetimeRoomService to return that user is NOT a match player
+    with patch('racetime.client.RacetimeRoomService') as MockService:
+        mock_service_instance = AsyncMock()
+        mock_service_instance.is_player_on_match = AsyncMock(return_value=(False, 1))
+        MockService.return_value = mock_service_instance
 
         # Test with a different user (not on the match)
         await handler._handle_join_request(
@@ -170,12 +118,11 @@ async def test_no_auto_accept_when_no_match_found():
         'status': {'value': 'open'},
     }
 
-    # Mock Match.filter to return None (no match found)
-    with patch('racetime.client.Match') as MockMatch:
-        mock_filter = AsyncMock()
-        mock_filter.prefetch_related = MagicMock(return_value=mock_filter)
-        mock_filter.first = AsyncMock(return_value=None)
-        MockMatch.filter = MagicMock(return_value=mock_filter)
+    # Mock RacetimeRoomService to return no match found
+    with patch('racetime.client.RacetimeRoomService') as MockService:
+        mock_service_instance = AsyncMock()
+        mock_service_instance.is_player_on_match = AsyncMock(return_value=(False, None))
+        MockService.return_value = mock_service_instance
 
         # Test with no match found
         await handler._handle_join_request(
@@ -192,31 +139,6 @@ async def test_no_auto_accept_when_no_match_found():
 async def test_auto_accept_triggered_on_requested_status():
     """Test that auto-accept is triggered when entrant status changes to 'requested'."""
     from application.events import EventBus, RacetimeEntrantStatusChangedEvent
-
-    # Create mock user
-    user1 = User(
-        id=1,
-        discord_id=111111,
-        discord_username='Player1',
-        racetime_id='abc123',
-        racetime_name='Player1RT',
-        permission=Permission.USER,
-    )
-
-    # Create mock match player
-    match_player1 = MagicMock(spec=MatchPlayers)
-    match_player1.user = user1
-
-    # Create mock match
-    mock_match = AsyncMock(spec=Match)
-    mock_match.id = 1
-    mock_match.racetime_room_slug = 'alttpr/test-room-1234'
-
-    # Mock players relation
-    mock_players = AsyncMock()
-    mock_players.all = AsyncMock(return_value=AsyncMock())
-    mock_players.all.return_value.prefetch_related = AsyncMock(return_value=[match_player1])
-    mock_match.players = mock_players
 
     # Track emitted events
     emitted_events = []
@@ -243,12 +165,11 @@ async def test_auto_accept_triggered_on_requested_status():
 
         handler.accept_request = AsyncMock(side_effect=track_accept)
 
-        # Mock Match.filter
-        with patch('racetime.client.Match') as MockMatch:
-            mock_filter = AsyncMock()
-            mock_filter.prefetch_related = MagicMock(return_value=mock_filter)
-            mock_filter.first = AsyncMock(return_value=mock_match)
-            MockMatch.filter = MagicMock(return_value=mock_filter)
+        # Mock RacetimeRoomService
+        with patch('racetime.client.RacetimeRoomService') as MockService:
+            mock_service_instance = AsyncMock()
+            mock_service_instance.is_player_on_match = AsyncMock(return_value=(True, 1))
+            MockService.return_value = mock_service_instance
 
             # First call: establish baseline (user ready)
             baseline_data = {
