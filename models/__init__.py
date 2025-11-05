@@ -36,6 +36,7 @@ from models.preset_namespace_permission import PresetNamespacePermission
 from models.racetime_bot import RacetimeBot, RacetimeBotOrganization, BotStatus
 from models.racetime_chat_command import RacetimeChatCommand, CommandScope, CommandResponseType
 from models.race_room_profile import RaceRoomProfile
+from models.racer_verification import RacerVerification, UserRacerVerification
 from models.notification_subscription import NotificationSubscription, NotificationMethod, NotificationEventType
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
 from models.discord_scheduled_event import DiscordScheduledEvent
@@ -82,6 +83,8 @@ __all__ = [
     'CommandScope',
     'CommandResponseType',
     'RaceRoomProfile',
+    'RacerVerification',
+    'UserRacerVerification',
     'NotificationSubscription',
     'NotificationMethod',
     'NotificationEventType',

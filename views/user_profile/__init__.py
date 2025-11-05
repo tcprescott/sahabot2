@@ -11,6 +11,7 @@ from views.user_profile.user_organizations import UserOrganizationsView
 from views.user_profile.racetime_account import RacetimeAccountView
 from views.user_profile.preset_namespaces import PresetNamespacesView
 from views.user_profile.notification_preferences import NotificationPreferencesView
+from views.user_profile.racer_verification import RacerVerificationView
 
 __all__ = [
     'ProfileInfoView',
@@ -20,4 +21,5 @@ __all__ = [
     'RacetimeAccountView',
     'PresetNamespacesView',
     'NotificationPreferencesView',
+    'RacerVerificationView',
 ]

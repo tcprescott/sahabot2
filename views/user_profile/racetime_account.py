@@ -51,11 +51,14 @@ class RacetimeAccountView:
                     # Unlink button
                     async def handle_unlink():
                         """Handle unlinking RaceTime account."""
-                        result = await ui.run_javascript(
-                            'return window.WindowUtils.confirm("Are you sure you want to unlink your RaceTime.gg account?");'
+                        from components.dialogs.common.tournament_dialogs import ConfirmDialog
+                        
+                        dialog = ConfirmDialog(
+                            title='Unlink RaceTime Account',
+                            message='Are you sure you want to unlink your RaceTime.gg account? This will remove your race data sync and tournament participation capabilities.',
+                            on_confirm=self._unlink_account
                         )
-                        if result:
-                            await self._unlink_account()
+                        await dialog.show()
 
                     ui.button('Unlink Account', on_click=handle_unlink).classes('btn').props('color=negative')
 
