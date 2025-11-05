@@ -49,12 +49,13 @@ class MatchRaceHandler(SahaRaceHandler):
         # Import here to avoid circular dependency
         from application.services.tournament_service import TournamentService
 
-        race_status = data.get('status', {}).get('value')
+        # After parent processes, self.data contains the unwrapped race data
+        race_status = self.data.get('status', {}).get('value') if self.data else None
 
         # Process race finish (transitions to 'finished')
         if race_status == 'finished' and not self._race_finished:
             self._race_finished = True
-            race_slug = data.get('name', 'unknown')
+            race_slug = self.data.get('name', 'unknown')
             logger.info(
                 "Match race %s finished on RaceTime.gg (slug: %s)",
                 self.match_id,
@@ -63,7 +64,7 @@ class MatchRaceHandler(SahaRaceHandler):
 
             try:
                 # Extract results from entrants
-                entrants = data.get('entrants', [])
+                entrants = self.data.get('entrants', [])
                 results = []
 
                 for entrant in entrants:
