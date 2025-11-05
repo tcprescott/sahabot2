@@ -94,10 +94,10 @@ class SahaRaceHandler(RaceHandler):
     async def _get_user_id_from_racetime_id(self, racetime_user_id: str) -> Optional[int]:
         """
         Look up application user ID from racetime user ID.
-        
+
         Args:
             racetime_user_id: Racetime.gg user hash ID
-            
+
         Returns:
             Optional[int]: Application user ID if found, None if racetime account not linked
         """
@@ -107,7 +107,69 @@ class SahaRaceHandler(RaceHandler):
         except Exception as e:
             logger.warning("Error looking up user by racetime_id %s: %s", racetime_user_id, e)
             return None
-    
+
+    async def _handle_join_request(
+        self,
+        racetime_user_id: str,
+        racetime_user_name: str,
+        room_slug: str,
+    ) -> None:
+        """
+        Handle a join request for an invitational race.
+
+        If the requesting player is listed as a player on the match associated with
+        this race room, automatically accept their join request.
+
+        Args:
+            racetime_user_id: RaceTime.gg user ID making the request
+            racetime_user_name: RaceTime.gg user name
+            room_slug: Race room slug (e.g., "alttpr/cool-doge-1234")
+        """
+        try:
+            # Use service to check if user is a match player (follows architectural layers)
+            from application.services.racetime_room_service import RacetimeRoomService
+
+            service = RacetimeRoomService()
+            is_match_player, match_id = await service.is_player_on_match(
+                room_slug=room_slug,
+                racetime_user_id=racetime_user_id
+            )
+
+            if match_id is None:
+                logger.debug(
+                    "No match found for room %s, not auto-accepting join request from %s",
+                    room_slug,
+                    racetime_user_name
+                )
+                return
+
+            if is_match_player:
+                # Accept the join request
+                await self.accept_request(racetime_user_id)
+                logger.info(
+                    "Auto-accepted join request from %s (%s) for match %s in room %s",
+                    racetime_user_name,
+                    racetime_user_id,
+                    match_id,
+                    room_slug
+                )
+            else:
+                logger.debug(
+                    "User %s (%s) is not a player on match %s, not auto-accepting join request",
+                    racetime_user_name,
+                    racetime_user_id,
+                    match_id
+                )
+
+        except Exception as e:
+            logger.error(
+                "Error handling join request from %s in room %s: %s",
+                racetime_user_name,
+                room_slug,
+                e,
+                exc_info=True
+            )
+
     @monitor_cmd
     async def ex_test(self, _args, _message):
         """
@@ -344,7 +406,11 @@ class SahaRaceHandler(RaceHandler):
                     place=place,
                     race_status=new_status,
                 ))
-        
+
+                # Auto-accept join requests for match players
+                if entrant_status == 'requested':
+                    await self._handle_join_request(user_id, user_name, room_slug)
+
         # Update tracked state
         self._previous_entrant_statuses = current_entrant_statuses
         self._previous_entrant_ids = current_entrant_ids

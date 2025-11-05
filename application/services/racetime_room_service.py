@@ -300,3 +300,38 @@ class RacetimeRoomService:
             return True
         
         return False
+
+    async def is_player_on_match(
+        self,
+        room_slug: str,
+        racetime_user_id: str,
+    ) -> tuple[bool, Optional[int]]:
+        """
+        Check if a RaceTime user is a player on the match for a given room.
+
+        Args:
+            room_slug: The RaceTime room slug (e.g., "alttpr/cool-doge-1234")
+            racetime_user_id: The RaceTime.gg user ID to check
+
+        Returns:
+            Tuple of (is_player, match_id):
+            - is_player: True if the user is a player on the match, False otherwise
+            - match_id: The match ID if found, None if no match found
+        """
+        # Look up match by room slug
+        match = await Match.filter(
+            racetime_room_slug=room_slug
+        ).prefetch_related('players__user').first()
+
+        if not match:
+            logger.debug("No match found for room %s", room_slug)
+            return False, None
+
+        # Check if the requesting user is a player on the match
+        match_players = await match.players.all().prefetch_related('user')
+
+        for match_player in match_players:
+            if match_player.user.racetime_id == racetime_user_id:
+                return True, match.id
+
+        return False, match.id
