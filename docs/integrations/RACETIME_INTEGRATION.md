@@ -152,33 +152,10 @@ Features:
 
 **File**: `pages/user_profile.py`
 
-Updated to include RaceTime tabs in profile sidebar:
+Updated to include RaceTime account linking in profile sidebar:
 - "RaceTime Account" tab with link icon - Account linking/unlinking
-- "Race History" tab with sports_score icon - Race history from RaceTime API
 
-Dynamic content loading for both RaceTime views.
-
-**File**: `views/user_profile/racetime_races.py`
-
-New view component for displaying race history:
-- Fetches race data from RaceTime.gg API using RacetimeApiService
-- Category filtering (all, alttpr, ootr, smz3, sm, alttp)
-- Displays race cards with:
-  - Race name, category, and goal
-  - User's placement and finish time
-  - Entrant status (done, dnf, dq, etc.)
-  - Relative timestamps ("2 hours ago")
-  - Direct link to race on RaceTime.gg
-- Loading states and error handling
-- Automatically loads races on initial render
-- Responsive card-based layout
-
-Features:
-- Mobile-responsive design
-- Auto-refresh capability
-- Smart finish time formatting (ISO duration to readable format)
-- Status-based badge colors
-- Pagination support (displays first 20 races)
+Dynamic content loading for RaceTime account view.
 
 ### Tests
 **File**: `tests/unit/test_racetime_oauth.py`
@@ -313,17 +290,17 @@ Potential improvements for future iterations:
    - Sync race results to database
    - Real-time race monitoring
 
-2. **Enhanced Race Display**
-   - More detailed race statistics
+2. **Race History Display**
+   - Display user's race history from RaceTime.gg API
+   - Category filtering and search
+   - Detailed race statistics
    - Leaderboard comparisons
    - Personal best tracking
-   - Achievement/milestone notifications
 
 3. **Performance Optimizations**
    - Cache race data locally
-   - Background sync for race history
-   - Pagination improvements
    - More category filters
+   - Advanced filtering options
 
 ## Admin Features
 
