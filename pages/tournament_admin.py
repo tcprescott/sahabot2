@@ -12,7 +12,6 @@ from application.services.organization_service import OrganizationService
 from application.repositories.tournament_repository import TournamentRepository
 from views.tournament_admin import (
     TournamentOverviewView,
-    TournamentMatchesView,
     TournamentPlayersView,
     TournamentRacetimeSettingsView,
     TournamentRacetimeChatCommandsView,
@@ -72,15 +71,6 @@ def register():
                         view = TournamentOverviewView(page.user, org, tournament)
                         await view.render()
 
-            async def load_matches():
-                """Load tournament matches."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentMatchesView(page.user, org, tournament)
-                        await view.render()
-
             async def load_players():
                 """Load tournament players."""
                 container = page.get_dynamic_content_container()
@@ -128,7 +118,6 @@ def register():
 
             # Register loaders
             page.register_content_loader('overview', load_overview)
-            page.register_content_loader('matches', load_matches)
             page.register_content_loader('players', load_players)
             page.register_content_loader('racetime', load_racetime)
             page.register_content_loader('discord-events', load_discord_events)
@@ -144,7 +133,6 @@ def register():
             base.create_nav_link('Back to Organization', 'arrow_back', f'/orgs/{organization_id}/admin?view=tournaments'),
             base.create_separator(),
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
-            base.create_sidebar_item_with_loader('Matches', 'event', 'matches'),
             base.create_sidebar_item_with_loader('Players', 'people', 'players'),
             base.create_sidebar_item_with_loader('RaceTime Settings', 'settings', 'racetime'),
             base.create_sidebar_item_with_loader('Discord Events', 'event_available', 'discord-events'),

@@ -28,7 +28,6 @@ from views.organization import (
 
 from views.tournament_admin import (
     TournamentOverviewView,
-    TournamentMatchesView,
     TournamentPlayersView,
     TournamentRacetimeSettingsView,
     TournamentSettingsView,
@@ -61,7 +60,6 @@ __all__ = [
     'OrganizationStreamChannelsView',
     # Tournament Admin views
     'TournamentOverviewView',
-    'TournamentMatchesView',
     'TournamentPlayersView',
     'TournamentRacetimeSettingsView',
     'TournamentSettingsView',
