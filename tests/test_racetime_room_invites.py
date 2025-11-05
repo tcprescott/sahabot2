@@ -127,8 +127,7 @@ async def test_create_room_invites_linked_players():
         mock_session_instance.closed = False
         MockSession.return_value = mock_session_instance
 
-        # Import and call the service method
-
+        service = TournamentService()
 
         # Mock authorization checks
         service.org_service.user_can_manage_tournaments = AsyncMock(return_value=True)
