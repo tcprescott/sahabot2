@@ -10,6 +10,8 @@ from models import User
 from application.services.user_service import UserService
 from application.services.authorization_service import AuthorizationService
 from components.dialogs import UserEditDialog, UserAddDialog
+from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
+from components.datetime_label import DateTimeLabel
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,15 +86,16 @@ class AdminUsersView:
         """Render user statistics cards."""
         # Load all users for statistics
         all_users = await self.user_service.get_all_users(self.current_user, include_inactive=True)
-        
+
         stats = {
             'total': len(all_users),
             'active': len([u for u in all_users if u.is_active]),
             'admins': len([u for u in all_users if u.is_admin()]),
             'moderators': len([u for u in all_users if u.is_moderator() and not u.is_admin()]),
-            'users': len([u for u in all_users if not u.is_moderator()])
+            'users': len([u for u in all_users if not u.is_moderator()]),
+            'racetime_linked': len([u for u in all_users if u.racetime_id])
         }
-        
+
         with ui.element('div').classes('card'):
             with ui.element('div').classes('card-header'):
                 ui.label('Statistics').classes('font-bold')
@@ -102,26 +105,31 @@ class AdminUsersView:
                     with ui.column().classes('items-center'):
                         ui.label(str(stats['total'])).classes('text-3xl font-bold text-primary')
                         ui.label('Total Users').classes('text-sm text-secondary')
-                    
+
                     # Active users
                     with ui.column().classes('items-center'):
                         ui.label(str(stats['active'])).classes('text-3xl font-bold text-success')
                         ui.label('Active').classes('text-sm text-secondary')
-                    
+
                     # Admins
                     with ui.column().classes('items-center'):
                         ui.label(str(stats['admins'])).classes('text-3xl font-bold text-danger')
                         ui.label('Admins').classes('text-sm text-secondary')
-                    
+
                     # Moderators
                     with ui.column().classes('items-center'):
                         ui.label(str(stats['moderators'])).classes('text-3xl font-bold text-warning')
                         ui.label('Moderators').classes('text-sm text-secondary')
-                    
+
                     # Regular users
                     with ui.column().classes('items-center'):
                         ui.label(str(stats['users'])).classes('text-3xl font-bold text-info')
                         ui.label('Regular Users').classes('text-sm text-secondary')
+
+                    # RaceTime linked
+                    with ui.column().classes('items-center'):
+                        ui.label(str(stats['racetime_linked'])).classes('text-3xl font-bold')
+                        ui.label('RaceTime Linked').classes('text-sm text-secondary')
     
     async def _refresh_users(self):
         """Refresh the user list."""
@@ -184,6 +192,27 @@ class AdminUsersView:
                     with ui.element('span').classes(f'badge {status_class}'):
                         ui.label('Active' if u.is_active else 'Inactive')
 
+                async def render_racetime_cell(u: User):
+                    if u.racetime_id:
+                        with ui.column().classes('gap-1'):
+                            with ui.row().classes('items-center gap-2'):
+                                ui.icon('link').classes('text-sm text-success')
+                                ui.link(
+                                    u.racetime_name,
+                                    f'https://racetime.gg/user/{u.racetime_id}',
+                                    new_tab=True
+                                ).classes('text-sm')
+                            if self.auth_service.can_edit_user(self.current_user, u):
+                                ui.button(
+                                    'Unlink',
+                                    icon='link_off',
+                                    on_click=lambda x=u: self._unlink_racetime(x)
+                                ).classes('btn btn-sm').props('flat size=sm color=negative')
+                    else:
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('link_off').classes('text-sm text-secondary')
+                            ui.label('Not linked').classes('text-sm text-secondary')
+
                 async def render_actions_cell(u: User):
                     with ui.row().classes('gap-1'):
                         if self.auth_service.can_edit_user(self.current_user, u):
@@ -202,6 +231,7 @@ class AdminUsersView:
                     TableColumn(label='Email', cell_render=render_email_cell),
                     TableColumn(label='Permission', cell_render=render_permission_cell),
                     TableColumn(label='Status', cell_render=render_status_cell),
+                    TableColumn(label='RaceTime', cell_render=render_racetime_cell),
                     TableColumn(label='Actions', cell_render=render_actions_cell),
                 ]
 
@@ -215,7 +245,7 @@ class AdminUsersView:
     async def _edit_user(self, user: User):
         """
         Open edit dialog for user.
-        
+
         Args:
             user: User to edit
         """
@@ -223,6 +253,20 @@ class AdminUsersView:
             target_user=user,
             current_user=self.current_user,
             on_save=self._refresh_users
+        )
+        await dialog.show()
+
+    async def _unlink_racetime(self, user: User):
+        """
+        Open unlink RaceTime dialog for user.
+
+        Args:
+            user: User to unlink RaceTime account from
+        """
+        dialog = RacetimeUnlinkDialog(
+            user=user,
+            admin_user=self.current_user,
+            on_unlink=self._refresh_users
         )
         await dialog.show()
 
