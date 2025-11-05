@@ -46,7 +46,6 @@ class UserRepository:
         discord_username: str,
         discord_discriminator: Optional[str] = None,
         discord_avatar: Optional[str] = None,
-        discord_email: Optional[str] = None,
         permission: Permission = Permission.USER
     ) -> User:
         """
@@ -57,7 +56,6 @@ class UserRepository:
             discord_username: Discord username
             discord_discriminator: Discord discriminator
             discord_avatar: Discord avatar hash
-            discord_email: Discord email
             permission: Initial permission level
 
         Returns:
@@ -68,7 +66,6 @@ class UserRepository:
             discord_username=discord_username,
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
-            discord_email=discord_email,
             permission=permission,
             is_active=True
         )

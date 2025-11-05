@@ -98,6 +98,7 @@ Phase 1 documentation initiative completed with 8 comprehensive reference guides
 
 Current planning and reorganization documents:
 
+- **[Data Migration Plan](DATA_MIGRATION_PLAN.md)** - Strategy and implementation plan for migrating data from original SahasrahBot
 - **[Copilot Instructions Reorganization](COPILOT_INSTRUCTIONS_REORGANIZATION.md)** - Plan for streamlining copilot instructions
 - **[Documentation Cleanup Analysis](DOCS_CLEANUP_ANALYSIS.md)** - Analysis of documentation reorganization
 - **[Documentation Gap Analysis](DOCUMENTATION_GAP_ANALYSIS.md)** - Comprehensive analysis of all undocumented services, APIs, and models

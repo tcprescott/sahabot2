@@ -50,7 +50,7 @@ class DiscordAuthService:
             'client_id': settings.DISCORD_CLIENT_ID,
             'redirect_uri': settings.DISCORD_REDIRECT_URI,
             'response_type': 'code',
-            'scope': 'identify email',
+            'scope': 'identify',
             'state': state
         }
         
@@ -231,8 +231,7 @@ class DiscordAuthService:
                 discord_id=int(discord_user['id']),
                 discord_username=discord_user['username'],
                 discord_discriminator=discord_user.get('discriminator'),
-                discord_avatar=discord_user.get('avatar'),
-                discord_email=discord_user.get('email')
+                discord_avatar=discord_user.get('avatar')
             )
 
             # Store OAuth2 tokens for automatic refresh

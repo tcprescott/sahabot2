@@ -32,8 +32,7 @@ class UserService:
         discord_id: int,
         discord_username: str,
         discord_discriminator: Optional[str] = None,
-        discord_avatar: Optional[str] = None,
-        discord_email: Optional[str] = None
+        discord_avatar: Optional[str] = None
     ) -> User:
         """
         Get or create a user from Discord OAuth data.
@@ -43,7 +42,6 @@ class UserService:
             discord_username: Discord username
             discord_discriminator: Discord discriminator
             discord_avatar: Discord avatar hash
-            discord_email: Discord email
 
         Returns:
             User: The existing or newly created user
@@ -62,9 +60,6 @@ class UserService:
             if discord_avatar and user.discord_avatar != discord_avatar:
                 user.discord_avatar = discord_avatar
                 updated = True
-            if discord_email and user.discord_email != discord_email:
-                user.discord_email = discord_email
-                updated = True
 
             if updated:
                 await user.save()
@@ -77,7 +72,6 @@ class UserService:
             discord_username=discord_username,
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
-            discord_email=discord_email,
             permission=Permission.USER
         )
 
