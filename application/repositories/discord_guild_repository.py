@@ -103,3 +103,43 @@ class DiscordGuildRepository:
 
         logger.info("Deactivated Discord guild %s", guild_id)
         return guild
+
+    async def get_guilds_by_organization(
+        self,
+        organization_id: int,
+        active_only: bool = True
+    ) -> List[DiscordGuild]:
+        """
+        Get all Discord guilds for an organization.
+
+        Args:
+            organization_id: Organization ID
+            active_only: Only return active guilds
+
+        Returns:
+            List of DiscordGuild models
+        """
+        query = DiscordGuild.filter(organization_id=organization_id)
+        if active_only:
+            query = query.filter(is_active=True)
+        return await query.prefetch_related('linked_by').all()
+
+    async def get_guilds_by_ids(
+        self,
+        guild_ids: List[int],
+        organization_id: int
+    ) -> List[DiscordGuild]:
+        """
+        Get Discord guilds by their primary key IDs for a specific organization.
+
+        Args:
+            guild_ids: List of DiscordGuild primary key IDs
+            organization_id: Organization ID (for security)
+
+        Returns:
+            List of DiscordGuild models
+        """
+        return await DiscordGuild.filter(
+            id__in=guild_ids,
+            organization_id=organization_id
+        ).prefetch_related('linked_by').all()

@@ -98,11 +98,10 @@ class DiscordGuildService:
             Error codes: 'no_membership', 'oauth_failed', 'no_access_token',
                         'guild_not_found', 'no_admin_permissions', 'already_linked'
         """
-        # Verify user has permission to manage this organization
-        member = await self.org_service.get_member(organization_id, user.id)
-        if not member:
+        # Verify user is organization admin
+        if not await self.org_service.user_can_admin_org(user, organization_id):
             logger.warning(
-                "User %s attempted to link guild to org %s without membership",
+                "User %s attempted to link guild to org %s without admin permission",
                 user.id,
                 organization_id
             )
@@ -506,3 +505,123 @@ class DiscordGuildService:
                 warnings=warnings
             )
 
+    async def get_guilds_with_event_permissions(
+        self,
+        organization_id: int,
+        current_user: User
+    ) -> List[dict]:
+        """
+        Get all Discord guilds for an organization with MANAGE_EVENTS permission status.
+
+        Args:
+            organization_id: Organization ID
+            current_user: Current user (for authorization)
+
+        Returns:
+            List of dicts with keys: guild (DiscordGuild model), has_manage_events (bool)
+        """
+        # Check authorization - user must be member of organization
+        member = await self.org_service.get_member(organization_id, current_user.id)
+        if not member:
+            logger.warning(
+                "User %s attempted to get guilds for org %s without membership",
+                current_user.id,
+                organization_id
+            )
+            return []
+
+        # Get guilds for organization
+        guilds = await self.repo.get_guilds_by_organization(organization_id, active_only=True)
+
+        # Check permissions for each
+        from discordbot.client import get_bot_instance
+
+        bot = get_bot_instance()
+        if not bot:
+            # Bot not running - return all guilds with False permissions
+            return [
+                {
+                    'guild': guild,
+                    'has_manage_events': False
+                }
+                for guild in guilds
+            ]
+
+        results = []
+        for guild_model in guilds:
+            has_permission = False
+            try:
+                # Get Discord guild object
+                discord_guild = bot.get_guild(guild_model.discord_id)
+                if discord_guild:
+                    # Get bot member
+                    bot_member = discord_guild.get_member(bot.user.id)
+                    if bot_member:
+                        # Check MANAGE_EVENTS permission
+                        has_permission = bot_member.guild_permissions.manage_events
+            except Exception as e:
+                logger.debug(
+                    "Error checking MANAGE_EVENTS for guild %s: %s",
+                    guild_model.discord_id,
+                    e
+                )
+
+            results.append({
+                'guild': guild_model,
+                'has_manage_events': has_permission
+            })
+
+        return results
+
+    async def check_guilds_manage_events_permission(
+        self,
+        guild_ids: List[int],
+        organization_id: int,
+        current_user: User
+    ) -> List[str]:
+        """
+        Check MANAGE_EVENTS permission for specific guilds and return warnings.
+
+        Args:
+            guild_ids: List of DiscordGuild IDs to check
+            organization_id: Organization ID
+            current_user: Current user (for authorization)
+
+        Returns:
+            List of guild names that lack MANAGE_EVENTS permission
+        """
+        # Check authorization - user must be member of organization
+        member = await self.org_service.get_member(organization_id, current_user.id)
+        if not member:
+            return []
+
+        if not guild_ids:
+            return []
+
+        # Get selected guilds
+        guilds = await self.repo.get_guilds_by_ids(guild_ids, organization_id)
+
+        # Check permissions
+        from discordbot.client import get_bot_instance
+
+        bot = get_bot_instance()
+        if not bot:
+            # Bot not running - all guilds fail
+            return [guild.guild_name for guild in guilds]
+
+        guilds_without_perms = []
+        for guild_model in guilds:
+            has_permission = False
+            try:
+                discord_guild = bot.get_guild(guild_model.discord_id)
+                if discord_guild:
+                    bot_member = discord_guild.get_member(bot.user.id)
+                    if bot_member:
+                        has_permission = bot_member.guild_permissions.manage_events
+            except Exception:
+                pass
+
+            if not has_permission:
+                guilds_without_perms.append(guild_model.guild_name)
+
+        return guilds_without_perms

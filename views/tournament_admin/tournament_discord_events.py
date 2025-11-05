@@ -11,6 +11,7 @@ from models.organizations import Organization
 from models.async_tournament import AsyncTournament
 from application.services.tournament_service import TournamentService
 from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord_guild_service import DiscordGuildService
 
 
 class TournamentDiscordEventsView:
@@ -30,15 +31,15 @@ class TournamentDiscordEventsView:
         self.tournament = tournament
         self.service = TournamentService()
         self.discord_events_service = DiscordScheduledEventService()
+        self.discord_guild_service = DiscordGuildService()
 
     async def render(self):
         """Render the Discord events settings view."""
-        # Get available Discord guilds for this organization
-        from models import DiscordGuild
-        discord_guilds = await DiscordGuild.filter(organization_id=self.organization.id, is_active=True).all()
-        
-        # Check permissions for each guild
-        guild_permissions = await self._check_guild_permissions(discord_guilds)
+        # Get Discord guilds with permission status
+        guilds_with_perms = await self.discord_guild_service.get_guilds_with_event_permissions(
+            self.organization.id,
+            self.user
+        )
         
         # Get currently selected guilds for this tournament
         await self.tournament.fetch_related('discord_event_guilds')
@@ -120,13 +121,14 @@ class TournamentDiscordEventsView:
 
                 # Discord servers selection
                 guilds_select = None
-                if discord_guilds:
+                if guilds_with_perms:
                     ui.label('Discord Servers:').classes('font-bold mb-2')
                     
                     # Build guild options with permission warnings
                     guild_options = {}
-                    for guild in discord_guilds:
-                        has_permission = guild_permissions.get(guild.id, False)
+                    for item in guilds_with_perms:
+                        guild = item['guild']
+                        has_permission = item['has_manage_events']
                         if has_permission:
                             guild_options[guild.id] = guild.guild_name
                         else:
@@ -142,9 +144,9 @@ class TournamentDiscordEventsView:
                     
                     # Show warning if any selected guilds lack permissions
                     selected_without_perms = [
-                        discord_guilds[i].guild_name 
-                        for i, guild in enumerate(discord_guilds) 
-                        if guild.id in current_guild_ids and not guild_permissions.get(guild.id, False)
+                        item['guild'].guild_name
+                        for item in guilds_with_perms
+                        if item['guild'].id in current_guild_ids and not item['has_manage_events']
                     ]
                     if selected_without_perms:
                         with ui.row().classes('items-center gap-2 p-3 rounded bg-warning text-white mb-2'):
@@ -193,18 +195,11 @@ class TournamentDiscordEventsView:
         try:
             # Check permissions for selected guilds
             if discord_guild_ids:
-                from models import DiscordGuild
-                selected_guilds = await DiscordGuild.filter(
-                    id__in=discord_guild_ids,
-                    organization_id=self.organization.id
-                ).all()
-                
-                guild_permissions = await self._check_guild_permissions(selected_guilds)
-                guilds_without_perms = [
-                    guild.guild_name 
-                    for guild in selected_guilds 
-                    if not guild_permissions.get(guild.id, False)
-                ]
+                guilds_without_perms = await self.discord_guild_service.check_guilds_manage_events_permission(
+                    discord_guild_ids,
+                    self.organization.id,
+                    self.user
+                )
                 
                 if guilds_without_perms:
                     ui.notify(
@@ -249,46 +244,3 @@ class TournamentDiscordEventsView:
             
         except Exception as e:
             ui.notify(f'Failed to sync events: {str(e)}', type='negative')
-
-    async def _check_guild_permissions(self, guilds) -> dict[int, bool]:
-        """
-        Check MANAGE_EVENTS permission for each guild.
-
-        Args:
-            guilds: List of DiscordGuild models to check
-
-        Returns:
-            Dictionary mapping guild_id to boolean (True if bot has permission)
-        """
-        from discordbot.client import get_bot_instance
-        import discord
-        
-        bot = get_bot_instance()
-        if not bot:
-            # Bot not running - return False for all guilds
-            return {guild.id: False for guild in guilds}
-        
-        permissions = {}
-        for guild_model in guilds:
-            try:
-                # Get Discord guild object
-                discord_guild = bot.get_guild(guild_model.discord_id)
-                if not discord_guild:
-                    permissions[guild_model.id] = False
-                    continue
-                
-                # Get bot member
-                bot_member = discord_guild.get_member(bot.user.id)
-                if not bot_member:
-                    permissions[guild_model.id] = False
-                    continue
-                
-                # Check MANAGE_EVENTS permission
-                has_permission = bot_member.guild_permissions.manage_events
-                permissions[guild_model.id] = has_permission
-                
-            except Exception:
-                # On any error, assume no permission
-                permissions[guild_model.id] = False
-        
-        return permissions
