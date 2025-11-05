@@ -166,6 +166,30 @@ async def get_tournaments(self, organization_id: int, current_user: User):
     return await self.repository.list_by_organization(organization_id)
 ```
 
+### 13. Database Migrations with Aerich
+- **NEVER manually create migration files** - Aerich requires special `models_state` tracking
+- **Always use `poetry run aerich migrate --name "description"`** to generate migrations
+- **Edit the generated migration SQL if needed** - but keep the file structure intact
+- **Never delete or recreate migration files** - it breaks Aerich's tracking system
+- **Migration workflow**:
+  1. Update model in `models/`
+  2. Run `poetry run aerich migrate --name "description"`
+  3. Review/edit SQL in generated migration file (if needed)
+  4. Run `poetry run aerich upgrade`
+  5. Test the migration
+
+```bash
+# ✅ Correct - let Aerich generate the file
+poetry run aerich migrate --name "add_new_field"
+# Edit migrations/models/XX_*.py if SQL needs adjustment
+poetry run aerich upgrade
+
+# ❌ Wrong - manual file creation breaks tracking
+cat > migrations/models/44_*.py << 'EOF'
+# Manual migration content
+EOF
+```
+
 ## Essential Patterns
 
 ### Page Structure with BasePage
@@ -319,19 +343,27 @@ poetry install
 - Use `./start.sh dev` (port 8080, auto-reload) or `./start.sh prod` (port 80) only when requested
 
 ### Database Migrations
+
+**Critical**: NEVER manually create migration files. Always use `aerich migrate` to generate them.
+
 ```bash
-# Initialize (first time)
+# Initialize (first time only)
 poetry run aerich init-db
 
-# Create migration
+# Create migration (Aerich generates the file with tracking data)
 poetry run aerich migrate --name "description"
+
+# Review and edit SQL in generated file if needed (keep file structure intact)
+# migrations/models/XX_timestamp_description.py
 
 # Apply migrations
 poetry run aerich upgrade
 
-# Rollback
+# Rollback (if needed)
 poetry run aerich downgrade
 ```
+
+**Why this matters**: Aerich migration files contain a `models_state` constant that tracks schema state. Manually created files missing this data cause "Old format of migration file detected" errors and break migration tracking.
 
 ### Environment Variables
 Required in `.env`:
@@ -423,6 +455,7 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - Trust client-provided `organization_id` without validation
 - Return cross-tenant data
 - Display `discord_email` to non-superadmin users
+- Manually create Aerich migration files - always use `aerich migrate`
 
 **✅ Do:**
 - Use external CSS classes
@@ -447,6 +480,7 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - Validate organization membership server-side
 - Filter all queries by organization
 - Emit events after successful operations
+- Use `aerich migrate` to generate migrations, then edit the SQL if needed
 
 ## Adding Features
 
