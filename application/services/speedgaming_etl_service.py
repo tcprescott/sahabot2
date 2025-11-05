@@ -914,6 +914,46 @@ class SpeedGamingETLService:
             }
         )
 
+    async def _log_aggregated_sync_result(
+        self,
+        success: bool,
+        imported: int = 0,
+        updated: int = 0,
+        deleted: int = 0,
+        error: Optional[str] = None,
+        start_time: Optional[datetime] = None
+    ):
+        """
+        Log aggregated SpeedGaming sync result across all tournaments to audit log.
+
+        Args:
+            success: Whether sync was successful
+            imported: Total number of matches imported across all tournaments
+            updated: Total number of matches updated across all tournaments
+            deleted: Total number of matches deleted across all tournaments
+            error: Error message if sync failed
+            start_time: When sync started
+        """
+        end_time = datetime.now(timezone.utc)
+        duration_ms = None
+        if start_time:
+            duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+        await AuditLog.create(
+            user_id=SYSTEM_USER_ID,
+            organization_id=None,  # System-wide, not specific to an organization
+            action="speedgaming_sync_all",
+            details={
+                "tournament_id": None,  # Aggregated across all tournaments
+                "success": success,
+                "imported": imported,
+                "updated": updated,
+                "deleted": deleted,
+                "error": error,
+                "duration_ms": duration_ms,
+            }
+        )
+
     async def _detect_deleted_episodes(
         self,
         tournament: Tournament,
@@ -980,6 +1020,7 @@ class SpeedGamingETLService:
         Returns:
             Tuple of (total_imported, total_updated, total_deleted)
         """
+        start_time = datetime.now(timezone.utc)
         tournaments = await Tournament.filter(
             speedgaming_enabled=True,
             is_active=True
@@ -988,14 +1029,23 @@ class SpeedGamingETLService:
         total_imported = 0
         total_updated = 0
         total_deleted = 0
+        errors = []
 
         for tournament in tournaments:
-            imported, updated, deleted = await self.import_episodes_for_tournament(
-                tournament.id
-            )
-            total_imported += imported
-            total_updated += updated
-            total_deleted += deleted
+            try:
+                imported, updated, deleted = await self.import_episodes_for_tournament(
+                    tournament.id
+                )
+                total_imported += imported
+                total_updated += updated
+                total_deleted += deleted
+            except Exception as e:
+                logger.error(
+                    "Error importing episodes for tournament %s: %s",
+                    tournament.id,
+                    e
+                )
+                errors.append(f"Tournament {tournament.id}: {str(e)}")
 
         logger.info(
             "Completed import for all tournaments: %s imported, "
@@ -1003,6 +1053,16 @@ class SpeedGamingETLService:
             total_imported,
             total_updated,
             total_deleted
+        )
+
+        # Log aggregated sync result
+        await self._log_aggregated_sync_result(
+            success=len(errors) == 0,
+            imported=total_imported,
+            updated=total_updated,
+            deleted=total_deleted,
+            error="; ".join(errors) if errors else None,
+            start_time=start_time
         )
 
         return (total_imported, total_updated, total_deleted)
