@@ -139,9 +139,11 @@ class ProfileSettingsView:
                 ui.notify('Profile settings saved', type='positive')
                 await self._refresh()
             except ValueError as e:
+                # Handle validation errors (e.g., invalid email format)
                 logger.error("Validation error saving profile settings: %s", e)
                 ui.notify(f'Validation error: {str(e)}', type='warning')
             except Exception as e:
+                # Handle any other unexpected errors
                 logger.error("Failed to save profile settings: %s", e)
                 ui.notify(f'Failed to save settings: {str(e)}', type='negative')
 

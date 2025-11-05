@@ -77,9 +77,18 @@ class TestUserService:
         user.id = 1
         user.save = AsyncMock()
 
-        # Attempt to update with invalid email
-        with pytest.raises(ValueError, match="Invalid email format"):
-            await service.update_user_email(user, "not-an-email")
+        # Test various invalid formats
+        invalid_emails = [
+            "not-an-email",  # No @ symbol
+            "@example.com",  # No local part
+            "user@",  # No domain
+            "user@@example.com",  # Multiple @ symbols
+            "user@domain",  # No TLD
+        ]
+
+        for invalid_email in invalid_emails:
+            with pytest.raises(ValueError, match="Invalid email format"):
+                await service.update_user_email(user, invalid_email)
 
     async def test_update_user_email_clear(self):
         """Test clearing user email."""

@@ -25,9 +25,12 @@ class TestDiscordOAuth2Flow:
         auth_url = auth_service.get_authorization_url("test-state-token")
 
         # Verify URL contains 'identify' scope only
-        assert "scope=identify" in auth_url
-        # Verify URL does NOT contain email scope
-        assert "email" not in auth_url or "scope=identify" in auth_url.split("email")[0]
+        # Extract the scope parameter value
+        if "scope=" in auth_url:
+            scope_part = auth_url.split("scope=")[1].split("&")[0]
+            assert scope_part == "identify", f"Expected scope to be 'identify', got: {scope_part}"
+        else:
+            assert False, "No scope parameter found in authorization URL"
 
     async def test_oauth_callback_success(self):
         """Test successful OAuth callback handling."""

@@ -627,10 +627,32 @@ class UserService:
         # Normalize email
         normalized_email = email.strip().lower() if email else None
 
-        # Basic email validation
+        # Basic email validation (improved)
         if normalized_email:
-            if '@' not in normalized_email or '.' not in normalized_email.split('@')[-1]:
-                raise ValueError("Invalid email format")
+            # More comprehensive basic validation
+            # Check for @ symbol
+            if '@' not in normalized_email:
+                raise ValueError("Invalid email format: missing @ symbol")
+            
+            # Split on @ and validate parts
+            parts = normalized_email.split('@')
+            if len(parts) != 2:
+                raise ValueError("Invalid email format: multiple @ symbols")
+            
+            local_part, domain_part = parts
+            
+            # Validate local part (before @)
+            if not local_part or len(local_part) > 64:
+                raise ValueError("Invalid email format: invalid local part")
+            
+            # Validate domain part (after @)
+            if not domain_part or '.' not in domain_part:
+                raise ValueError("Invalid email format: invalid domain")
+            
+            # Check domain has valid structure
+            domain_parts = domain_part.split('.')
+            if any(not part for part in domain_parts):
+                raise ValueError("Invalid email format: invalid domain structure")
 
         # Clear email if None or empty
         if not normalized_email:
