@@ -43,6 +43,10 @@ class Tournament(Model):
     discord_event_filter = fields.CharEnumField(enum_type=DiscordEventFilter, default=DiscordEventFilter.ALL, max_length=20)  # Filter which matches create events
     event_duration_minutes = fields.IntField(default=120)  # Duration of Discord events in minutes (default 120 = 2 hours)
 
+    # SpeedGaming integration
+    speedgaming_enabled = fields.BooleanField(default=False)  # Enable SpeedGaming episode import
+    speedgaming_event_slug = fields.CharField(max_length=255, null=True)  # SpeedGaming event slug to import from
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -67,6 +71,9 @@ class Match(Model):
     racetime_goal = fields.CharField(max_length=255, null=True)  # Override default tournament goal
     racetime_invitational = fields.BooleanField(default=True)  # Whether room is invite-only
     racetime_auto_create = fields.BooleanField(default=True)  # Whether to auto-create room (or manual)
+
+    # SpeedGaming integration
+    speedgaming_episode_id = fields.IntField(null=True, unique=True)  # SpeedGaming episode ID for imported matches
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

@@ -41,7 +41,7 @@ class User(Model):
 
     Attributes:
         id: Primary key
-        discord_id: Discord user ID (unique)
+        discord_id: Discord user ID (unique, nullable for placeholder users)
         discord_username: Discord username
         discord_discriminator: Discord discriminator (deprecated by Discord but kept for compatibility)
         discord_avatar: Discord avatar hash
@@ -59,12 +59,18 @@ class User(Model):
         show_pronouns: Whether to display pronouns with the user's name
         permission: User permission level
         is_active: Whether the user account is active
+        is_placeholder: True if this is a placeholder user created from SpeedGaming import
+        speedgaming_id: SpeedGaming player/crew ID for placeholder users (nullable)
         created_at: Account creation timestamp
         updated_at: Last update timestamp
+    
+    Constraints:
+        - discord_id can only be NULL if is_placeholder is True
+        - This ensures all real users have a Discord ID, while placeholders may not
     """
 
     id = fields.IntField(pk=True)
-    discord_id = fields.BigIntField(unique=True, index=True)
+    discord_id = fields.BigIntField(unique=True, index=True, null=True)
     discord_username = fields.CharField(max_length=255)
     discord_discriminator = fields.CharField(max_length=4, null=True)
     discord_avatar = fields.CharField(max_length=255, null=True)
@@ -92,6 +98,10 @@ class User(Model):
     # Optional per-user API rate limit (requests per minute). If null, use default from settings.
     api_rate_limit_per_minute = fields.IntField(null=True)
 
+    # SpeedGaming integration - track placeholder users created from SG data
+    is_placeholder = fields.BooleanField(default=False)  # True if created as placeholder for SpeedGaming import
+    speedgaming_id = fields.IntField(null=True)  # SpeedGaming player/crew ID for placeholder users
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -107,6 +117,11 @@ class User(Model):
 
     class Meta:
         table = "users"
+        # Constraint: discord_id can only be NULL if is_placeholder is True
+        # In SQL: CHECK (discord_id IS NOT NULL OR is_placeholder = 1)
+        constraints = [
+            "CHECK (discord_id IS NOT NULL OR is_placeholder = 1)"
+        ]
 
     def __str__(self) -> str:
         """String representation of user."""

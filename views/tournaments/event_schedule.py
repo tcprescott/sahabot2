@@ -169,10 +169,15 @@ class EventScheduleView:
                         ui.label(match.tournament.name)
 
                     def render_title(match: Match):
-                        if match.title:
-                            ui.label(match.title)
-                        else:
-                            ui.label('—').classes('text-secondary')
+                        with ui.row().classes('items-center gap-2'):
+                            if match.title:
+                                ui.label(match.title)
+                            else:
+                                ui.label('—').classes('text-secondary')
+                            
+                            # Show SpeedGaming badge if imported from SpeedGaming
+                            if hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id:
+                                ui.badge('SpeedGaming').classes('badge-info')
 
                     def render_scheduled_time(match: Match):
                         if match.scheduled_at:
@@ -296,6 +301,9 @@ class EventScheduleView:
 
                 def render_commentator(match: Match):
                     """Render commentator(s) with approval status color, signup button, and approval controls."""
+                    # Check if match is from SpeedGaming (read-only)
+                    is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
+                    
                     # Get crew members with commentator role
                     commentators = [
                         crew for crew in getattr(match, 'crew_members', [])
@@ -314,8 +322,8 @@ class EventScheduleView:
                                         color_class = 'text-positive' if crew.approved else 'text-warning'
                                         ui.label(crew.user.get_display_name()).classes(color_class)
                                         
-                                        # Show approval controls if user has permission
-                                        if self.can_approve_crew:
+                                        # Show approval controls if user has permission and not SpeedGaming
+                                        if self.can_approve_crew and not is_speedgaming:
                                             if crew.approved:
                                                 # Show unapprove button
                                                 ui.button(
@@ -331,27 +339,36 @@ class EventScheduleView:
                         else:
                             ui.label('—').classes('text-secondary')
 
-                        # Admin add commentator button (for admins/tournament managers)
-                        if self.can_approve_crew:
-                            ui.button(
-                                icon='mic',
-                                on_click=lambda m=match: open_add_crew_dialog(m, CrewRole.COMMENTATOR)
-                            ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Add Commentator')
-
-                        # Sign up or remove button (for regular users)
-                        if user_signed_up:
-                            ui.button(
-                                icon='remove_circle',
-                                on_click=lambda m=match: remove_crew(m.id, CrewRole.COMMENTATOR)
-                            ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Remove your commentator signup')
+                        # Show info for SpeedGaming matches instead of buttons
+                        if is_speedgaming:
+                            with ui.row().classes('items-center gap-1'):
+                                ui.icon('info', size='sm').classes('text-info')
+                                ui.label('Managed by SpeedGaming').classes('text-xs text-secondary')
                         else:
-                            ui.button(
-                                icon='add_circle',
-                                on_click=lambda m=match: signup_crew(m.id, CrewRole.COMMENTATOR)
-                            ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as commentator')
+                            # Admin add commentator button (for admins/tournament managers)
+                            if self.can_approve_crew:
+                                ui.button(
+                                    icon='mic',
+                                    on_click=lambda m=match: open_add_crew_dialog(m, CrewRole.COMMENTATOR)
+                                ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Add Commentator')
+
+                            # Sign up or remove button (for regular users)
+                            if user_signed_up:
+                                ui.button(
+                                    icon='remove_circle',
+                                    on_click=lambda m=match: remove_crew(m.id, CrewRole.COMMENTATOR)
+                                ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Remove your commentator signup')
+                            else:
+                                ui.button(
+                                    icon='add_circle',
+                                    on_click=lambda m=match: signup_crew(m.id, CrewRole.COMMENTATOR)
+                                ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as commentator')
 
                 def render_tracker(match: Match):
                     """Render tracker(s) with approval status color, signup button, and approval controls."""
+                    # Check if match is from SpeedGaming (read-only)
+                    is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
+                    
                     # Get crew members with tracker role
                     trackers = [
                         crew for crew in getattr(match, 'crew_members', [])
@@ -373,8 +390,8 @@ class EventScheduleView:
                                         color_class = 'text-positive' if crew.approved else 'text-warning'
                                         ui.label(crew.user.get_display_name()).classes(color_class)
                                         
-                                        # Show approval controls if user has permission
-                                        if self.can_approve_crew:
+                                        # Show approval controls if user has permission and not SpeedGaming
+                                        if self.can_approve_crew and not is_speedgaming:
                                             if crew.approved:
                                                 # Show unapprove button
                                                 ui.button(
@@ -390,15 +407,20 @@ class EventScheduleView:
                         else:
                             ui.label('—').classes('text-secondary')
 
-                        # Admin add tracker button (for admins/tournament managers)
-                        if self.can_approve_crew and tracker_enabled:
-                            ui.button(
-                                icon='timeline',
-                                on_click=lambda m=match: open_add_crew_dialog(m, CrewRole.TRACKER)
-                            ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Add Tracker')
+                        # Show info for SpeedGaming matches instead of buttons
+                        if is_speedgaming:
+                            with ui.row().classes('items-center gap-1'):
+                                ui.icon('info', size='sm').classes('text-info')
+                                ui.label('Managed by SpeedGaming').classes('text-xs text-secondary')
+                        elif tracker_enabled:
+                            # Admin add tracker button (for admins/tournament managers)
+                            if self.can_approve_crew:
+                                ui.button(
+                                    icon='timeline',
+                                    on_click=lambda m=match: open_add_crew_dialog(m, CrewRole.TRACKER)
+                                ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip('Add Tracker')
 
-                        # Sign up or remove button (only if tracker enabled for this tournament)
-                        if tracker_enabled:
+                            # Sign up or remove button (only if tracker enabled for this tournament)
                             if user_signed_up:
                                 ui.button(
                                     icon='remove_circle',
@@ -595,7 +617,15 @@ class EventScheduleView:
 
                 def render_actions(match: Match):
                     """Render action buttons for moderators/tournament admins."""
-                    if self.can_edit_matches:
+                    # Check if match is from SpeedGaming (read-only)
+                    is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
+                    
+                    if is_speedgaming:
+                        # Show info message for SpeedGaming matches
+                        with ui.row().classes('items-center gap-1'):
+                            ui.icon('info', size='sm').classes('text-info')
+                            ui.label('SpeedGaming').classes('text-xs text-secondary').tooltip('Schedule managed by SpeedGaming (read-only)')
+                    elif self.can_edit_matches:
                         with ui.row().classes('gap-1'):
                             ui.button(
                                 icon='edit',
@@ -631,13 +661,27 @@ class EventScheduleView:
             ui.notify('No active tournaments available', type='warning')
             return
 
+        # Filter out tournaments with SpeedGaming enabled (read-only)
+        editable_tournaments = [
+            t for t in active_tournaments 
+            if not getattr(t, 'speedgaming_enabled', False)
+        ]
+
+        if not editable_tournaments:
+            ui.notify(
+                'All active tournaments have SpeedGaming integration enabled. '
+                'Matches must be managed through SpeedGaming.',
+                type='warning'
+            )
+            return
+
         # If only one tournament, use it directly; otherwise include tournament selector in the create dialog
-        if len(active_tournaments) == 1:
-            tournament = active_tournaments[0]
+        if len(editable_tournaments) == 1:
+            tournament = editable_tournaments[0]
             await self._show_create_match_dialog(tournament)
         else:
             # Show combined dialog with tournament selection
-            await self._show_create_match_dialog_with_tournament_select(active_tournaments)
+            await self._show_create_match_dialog_with_tournament_select(editable_tournaments)
 
     async def _show_create_match_dialog_with_tournament_select(self, tournaments: list) -> None:
         """Show create match dialog with tournament selection included."""

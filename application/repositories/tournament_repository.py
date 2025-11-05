@@ -45,6 +45,8 @@ class TournamentRepository:
         racetime_default_goal: Optional[str] = None,
         create_scheduled_events: bool = False,
         scheduled_events_enabled: bool = True,
+        speedgaming_enabled: bool = False,
+        speedgaming_event_slug: Optional[str] = None,
     ) -> Tournament:
         """Create a tournament in the given organization."""
         tournament = await Tournament.create(
@@ -60,6 +62,8 @@ class TournamentRepository:
             racetime_default_goal=racetime_default_goal,
             create_scheduled_events=create_scheduled_events,
             scheduled_events_enabled=scheduled_events_enabled,
+            speedgaming_enabled=speedgaming_enabled,
+            speedgaming_event_slug=speedgaming_event_slug,
         )
         logger.info("Created tournament %s in org %s", tournament.id, organization_id)
         return tournament
@@ -72,7 +76,8 @@ class TournamentRepository:
             tournament_id: Tournament ID
             **updates: Field updates (name, description, is_active, tracker_enabled,
                       racetime_bot_id, racetime_auto_create_rooms, room_open_minutes_before,
-                      require_racetime_link, racetime_default_goal)
+                      require_racetime_link, racetime_default_goal, speedgaming_enabled,
+                      speedgaming_event_slug)
 
         Returns:
             Updated tournament or None if not found

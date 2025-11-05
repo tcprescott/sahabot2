@@ -123,6 +123,32 @@ BUILTIN_TASKS: Dict[str, BuiltInTask] = {
         is_active=True,
     ),
 
+    'speedgaming_import': BuiltInTask(
+        task_id='speedgaming_import',
+        name='SpeedGaming Episode Import',
+        description='Imports upcoming SpeedGaming episodes as matches for tournaments with SpeedGaming integration enabled',
+        task_type=TaskType.SPEEDGAMING_IMPORT,
+        schedule_type=ScheduleType.INTERVAL,
+        is_global=True,
+        interval_seconds=300,  # Every 5 minutes
+        task_config={},
+        is_active=True,
+    ),
+
+    'cleanup_placeholder_users': BuiltInTask(
+        task_id='cleanup_placeholder_users',
+        name='Cleanup Placeholder Users',
+        description='Removes abandoned placeholder users that have no associated matches or crew assignments',
+        task_type=TaskType.CLEANUP_PLACEHOLDER_USERS,
+        schedule_type=ScheduleType.CRON,
+        is_global=True,
+        cron_expression='0 2 * * *',  # Daily at 2 AM UTC
+        task_config={
+            'days_inactive': 30,  # Remove placeholders unused for 30+ days
+        },
+        is_active=True,
+    ),
+
     # Example of a disabled built-in task
     'example_builtin_log': BuiltInTask(
         task_id='example_builtin_log',

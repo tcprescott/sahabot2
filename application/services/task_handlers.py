@@ -420,6 +420,115 @@ async def handle_async_live_race_open(task: ScheduledTask) -> None:
         raise
 
 
+async def handle_speedgaming_import(task: ScheduledTask) -> None:
+    """
+    Handler for importing SpeedGaming episodes into matches.
+
+    This task imports upcoming SpeedGaming episodes for all tournaments
+    with SpeedGaming integration enabled. Also handles update and deletion
+    detection.
+
+    Expected task_config:
+    {
+        # No configuration required - imports for all enabled tournaments
+    }
+
+    Args:
+        task: ScheduledTask to execute
+    """
+    from application.services.speedgaming_etl_service import SpeedGamingETLService
+
+    logger.info("Starting SpeedGaming episode import task: %s", task.name)
+
+    try:
+        etl_service = SpeedGamingETLService()
+        imported, updated, deleted = await etl_service.import_all_enabled_tournaments()
+
+        logger.info(
+            "Completed SpeedGaming import: %s episodes imported, "
+            "%s updated, %s deleted",
+            imported,
+            updated,
+            deleted
+        )
+
+    except Exception as e:
+        logger.error("Error during SpeedGaming import: %s", e, exc_info=True)
+        raise
+
+async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
+    """
+    Handler for cleaning up abandoned placeholder users.
+
+    This task removes placeholder users that:
+    - Have no associated matches (as players)
+    - Have no crew assignments (as commentators/trackers)
+    - Have not been updated in X days (configurable)
+
+    Expected task_config:
+    {
+        "days_inactive": 30,  # Remove placeholders unused for 30+ days
+    }
+
+    Args:
+        task: ScheduledTask to execute
+    """
+    logger.info("Starting placeholder user cleanup task: %s", task.name)
+
+    # Extract configuration
+    config = task.task_config or {}
+    days_inactive = config.get('days_inactive', 30)
+
+    try:
+        from datetime import datetime, timezone, timedelta
+        from models import User
+        from models.match_schedule import MatchPlayers, Crew
+
+        # Calculate cutoff date
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_inactive)
+
+        # Find placeholder users
+        placeholder_users = await User.filter(
+            is_placeholder=True,
+            updated_at__lt=cutoff_date
+        ).all()
+
+        deleted_count = 0
+
+        for user in placeholder_users:
+            # Check if user has any associated match players
+            has_matches = await MatchPlayers.filter(user_id=user.id).exists()
+
+            # Check if user has any crew assignments
+            has_crew = await Crew.filter(user_id=user.id).exists()
+
+            # If no associations, delete the user
+            if not has_matches and not has_crew:
+                logger.info(
+                    "Deleting abandoned placeholder user %s (%s)",
+                    user.id,
+                    user.discord_username
+                )
+                await user.delete()
+                deleted_count += 1
+
+        logger.info(
+            "Completed placeholder user cleanup: %s users deleted "
+            "(out of %s placeholders older than %s days)",
+            deleted_count,
+            len(placeholder_users),
+            days_inactive
+        )
+
+    except Exception as e:
+        logger.error(
+            "Error during placeholder user cleanup: %s",
+            e,
+            exc_info=True
+        )
+        raise
+
+
 def register_task_handlers() -> None:
     """
     Register all task handlers with the TaskSchedulerService.
@@ -434,5 +543,7 @@ def register_task_handlers() -> None:
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS, handle_async_tournament_timeout_in_progress)
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_SCORE_CALCULATION, handle_async_tournament_score_calculation)
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_LIVE_RACE_OPEN, handle_async_live_race_open)
+    TaskSchedulerService.register_task_handler(TaskType.SPEEDGAMING_IMPORT, handle_speedgaming_import)
+    TaskSchedulerService.register_task_handler(TaskType.CLEANUP_PLACEHOLDER_USERS, handle_cleanup_placeholder_users)
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")
