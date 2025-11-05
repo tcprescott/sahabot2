@@ -37,6 +37,9 @@ class TournamentDiscordEventsView:
         from models import DiscordGuild
         discord_guilds = await DiscordGuild.filter(organization_id=self.organization.id, is_active=True).all()
         
+        # Check permissions for each guild
+        guild_permissions = await self._check_guild_permissions(discord_guilds)
+        
         # Get currently selected guilds for this tournament
         await self.tournament.fetch_related('discord_event_guilds')
         current_guild_ids = [guild.id for guild in self.tournament.discord_event_guilds]
@@ -119,7 +122,16 @@ class TournamentDiscordEventsView:
                 guilds_select = None
                 if discord_guilds:
                     ui.label('Discord Servers:').classes('font-bold mb-2')
-                    guild_options = {guild.id: guild.guild_name for guild in discord_guilds}
+                    
+                    # Build guild options with permission warnings
+                    guild_options = {}
+                    for guild in discord_guilds:
+                        has_permission = guild_permissions.get(guild.id, False)
+                        if has_permission:
+                            guild_options[guild.id] = guild.guild_name
+                        else:
+                            guild_options[guild.id] = f"{guild.guild_name} ⚠️ (Bot lacks MANAGE_EVENTS permission)"
+                    
                     guilds_select = ui.select(
                         options=guild_options,
                         value=current_guild_ids,
@@ -127,6 +139,21 @@ class TournamentDiscordEventsView:
                         multiple=True,
                         with_input=True,
                     ).classes('w-full mb-2')
+                    
+                    # Show warning if any selected guilds lack permissions
+                    selected_without_perms = [
+                        discord_guilds[i].guild_name 
+                        for i, guild in enumerate(discord_guilds) 
+                        if guild.id in current_guild_ids and not guild_permissions.get(guild.id, False)
+                    ]
+                    if selected_without_perms:
+                        with ui.row().classes('items-center gap-2 p-3 rounded bg-warning text-white mb-2'):
+                            ui.icon('warning')
+                            with ui.column().classes('gap-1'):
+                                ui.label('Permission Warning').classes('font-bold')
+                                ui.label(f"Bot lacks MANAGE_EVENTS permission in: {', '.join(selected_without_perms)}").classes('text-sm')
+                                ui.label('Events will not be created in these servers until permissions are granted').classes('text-xs')
+                    
                     ui.label('Select which Discord servers should receive scheduled events (leave empty to use all linked servers)').classes('text-xs text-secondary mb-4')
                 else:
                     with ui.row().classes('items-center gap-2 p-3 rounded bg-warning text-white mb-4'):
@@ -164,6 +191,29 @@ class TournamentDiscordEventsView:
             discord_guild_ids: List of Discord guild IDs to publish to
         """
         try:
+            # Check permissions for selected guilds
+            if discord_guild_ids:
+                from models import DiscordGuild
+                selected_guilds = await DiscordGuild.filter(
+                    id__in=discord_guild_ids,
+                    organization_id=self.organization.id
+                ).all()
+                
+                guild_permissions = await self._check_guild_permissions(selected_guilds)
+                guilds_without_perms = [
+                    guild.guild_name 
+                    for guild in selected_guilds 
+                    if not guild_permissions.get(guild.id, False)
+                ]
+                
+                if guilds_without_perms:
+                    ui.notify(
+                        f"Warning: Bot lacks MANAGE_EVENTS permission in: {', '.join(guilds_without_perms)}. "
+                        f"Events will not be created in these servers.",
+                        type='warning',
+                        timeout=10000
+                    )
+            
             await self.service.update_tournament(
                 user=self.user,
                 organization_id=self.organization.id,
@@ -199,3 +249,46 @@ class TournamentDiscordEventsView:
             
         except Exception as e:
             ui.notify(f'Failed to sync events: {str(e)}', type='negative')
+
+    async def _check_guild_permissions(self, guilds) -> dict[int, bool]:
+        """
+        Check MANAGE_EVENTS permission for each guild.
+
+        Args:
+            guilds: List of DiscordGuild models to check
+
+        Returns:
+            Dictionary mapping guild_id to boolean (True if bot has permission)
+        """
+        from discordbot.client import get_bot_instance
+        import discord
+        
+        bot = get_bot_instance()
+        if not bot:
+            # Bot not running - return False for all guilds
+            return {guild.id: False for guild in guilds}
+        
+        permissions = {}
+        for guild_model in guilds:
+            try:
+                # Get Discord guild object
+                discord_guild = bot.get_guild(guild_model.discord_id)
+                if not discord_guild:
+                    permissions[guild_model.id] = False
+                    continue
+                
+                # Get bot member
+                bot_member = discord_guild.get_member(bot.user.id)
+                if not bot_member:
+                    permissions[guild_model.id] = False
+                    continue
+                
+                # Check MANAGE_EVENTS permission
+                has_permission = bot_member.guild_permissions.manage_events
+                permissions[guild_model.id] = has_permission
+                
+            except Exception:
+                # On any error, assume no permission
+                permissions[guild_model.id] = False
+        
+        return permissions
