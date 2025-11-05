@@ -5,10 +5,10 @@ Contains org-scoped business logic and authorization checks.
 
 from __future__ import annotations
 from typing import Optional, List, TYPE_CHECKING
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 
-from models import User
+from models import User, SYSTEM_USER_ID
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organization_service import OrganizationService
@@ -21,6 +21,7 @@ from application.events import (
     MatchChannelAssignedEvent,
     MatchChannelUnassignedEvent,
     MatchScheduledEvent,
+    MatchFinishedEvent,
 )
 
 if TYPE_CHECKING:
@@ -894,9 +895,6 @@ class TournamentService:
         Returns:
             True if results were processed successfully, False otherwise
         """
-        from models import User, SYSTEM_USER_ID
-        from application.events import MatchFinishedEvent
-
         try:
             # Get the match
             match = await Match.get_or_none(id=match_id).prefetch_related(
@@ -969,7 +967,6 @@ class TournamentService:
                 )
 
             # Mark match as finished
-            from datetime import datetime, timezone
             match.finished_at = datetime.now(timezone.utc)
             await match.save(update_fields=['finished_at'])
 

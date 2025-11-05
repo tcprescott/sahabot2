@@ -136,17 +136,13 @@ class RacetimeRoomService:
                 # Extract race data from the handler
                 race_data = handler.data
                 
-                # The base Bot class manages handler lifecycle via create_handler()
-                # We can't use create_handler() directly since it returns SahaRaceHandler
-                # Instead, we create our custom handler with the same arguments
-                # that the base RaceHandler expects (passed via bot_instance, race_data, ...)
-                
                 # Create new match race handler
-                # Note: RaceHandler base class expects race_data as first arg after bot_instance
+                # Constructor signature: __init__(self, bot_instance, match_id, *args, **kwargs)
+                # The *args will include race_data which gets passed to parent RaceHandler
                 match_handler = MatchRaceHandler(
-                    bot_instance=bot,
-                    match_id=match.id,
-                    race_data=race_data,
+                    bot,  # bot_instance (positional)
+                    match.id,  # match_id (positional)
+                    race_data,  # Passed as *args to parent RaceHandler
                 )
                 
                 # Mark that bot created this room (for event emission in begin())
@@ -155,10 +151,8 @@ class RacetimeRoomService:
                 # Initialize the new handler
                 await match_handler.begin()
                 
-                # The old handler will be garbage collected since we're not keeping a reference
-                # The bot's internal handler management should handle the WebSocket connection
-                
-                # Use the new handler
+                # The old handler will be garbage collected
+                # Use the new handler for any subsequent operations
                 handler = match_handler
 
             # Extract room slug from handler data
