@@ -92,6 +92,9 @@ class User(Model):
     # Optional per-user API rate limit (requests per minute). If null, use default from settings.
     api_rate_limit_per_minute = fields.IntField(null=True)
 
+    # SpeedGaming integration - track placeholder users created from SG data
+    is_placeholder = fields.BooleanField(default=False)  # True if created as placeholder for SpeedGaming import
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

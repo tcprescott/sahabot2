@@ -420,6 +420,40 @@ async def handle_async_live_race_open(task: ScheduledTask) -> None:
         raise
 
 
+async def handle_speedgaming_import(task: ScheduledTask) -> None:
+    """
+    Handler for importing SpeedGaming episodes into matches.
+
+    This task imports upcoming SpeedGaming episodes for all tournaments
+    with SpeedGaming integration enabled.
+
+    Expected task_config:
+    {
+        # No configuration required - imports for all enabled tournaments
+    }
+
+    Args:
+        task: ScheduledTask to execute
+    """
+    from application.services.speedgaming_etl_service import SpeedGamingETLService
+
+    logger.info("Starting SpeedGaming episode import task: %s", task.name)
+
+    try:
+        etl_service = SpeedGamingETLService()
+        imported, skipped = await etl_service.import_all_enabled_tournaments()
+
+        logger.info(
+            "Completed SpeedGaming import: %s episodes imported, %s skipped",
+            imported,
+            skipped
+        )
+
+    except Exception as e:
+        logger.error("Error during SpeedGaming import: %s", e, exc_info=True)
+        raise
+
+
 def register_task_handlers() -> None:
     """
     Register all task handlers with the TaskSchedulerService.
@@ -434,5 +468,6 @@ def register_task_handlers() -> None:
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS, handle_async_tournament_timeout_in_progress)
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_SCORE_CALCULATION, handle_async_tournament_score_calculation)
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_LIVE_RACE_OPEN, handle_async_live_race_open)
+    TaskSchedulerService.register_task_handler(TaskType.SPEEDGAMING_IMPORT, handle_speedgaming_import)
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")

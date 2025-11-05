@@ -224,6 +224,7 @@ files = [
 
 [package.dependencies]
 frozenlist = ">=1.1.0"
+typing-extensions = {version = ">=4.2", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "aiosqlite"
@@ -283,6 +284,7 @@ files = [
 [package.dependencies]
 idna = ">=2.8"
 sniffio = ">=1.1"
+typing_extensions = {version = ">=4.5", markers = "python_version < \"3.13\""}
 
 [package.extras]
 trio = ["trio (>=0.31.0)"]
@@ -336,6 +338,7 @@ description = "LTS Port of Python audioop"
 optional = false
 python-versions = ">=3.13"
 groups = ["main"]
+markers = "python_version >= \"3.13\""
 files = [
     {file = "audioop_lts-0.2.2-cp313-abi3-macosx_10_13_universal2.whl", hash = "sha256:fd3d4602dc64914d462924a08c1a9816435a2155d74f325853c1f1ac3b2d9800"},
     {file = "audioop_lts-0.2.2-cp313-abi3-macosx_10_13_x86_64.whl", hash = "sha256:550c114a8df0aafe9a05442a1162dfc8fec37e9af1d625ae6060fed6e756f303"},
@@ -2593,6 +2596,7 @@ files = [
 
 [package.dependencies]
 anyio = ">=3.6.2,<5"
+typing-extensions = {version = ">=4.10.0", markers = "python_version < \"3.13\""}
 
 [package.extras]
 full = ["httpx (>=0.27.0,<0.29.0)", "itsdangerous", "jinja2", "python-multipart (>=0.0.18)", "pyyaml"]
@@ -3134,5 +3138,5 @@ propcache = ">=0.2.1"
 
 [metadata]
 lock-version = "2.1"
-python-versions = "^3.13"
-content-hash = "25c8a1c1f98eb9e3f9c1992fe6bf77b72d5c7419344b9dc9ea52713ab84a5149"
+python-versions = "^3.12"
+content-hash = "cee19c3724747eeee5a8111f64fd1ead026768b11b068487dcbc3fac630f5f28"
