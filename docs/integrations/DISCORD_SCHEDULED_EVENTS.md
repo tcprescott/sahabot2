@@ -6,22 +6,19 @@ This feature automatically creates, updates, and manages Discord's native schedu
 
 ## Status
 
-**Implementation Status:** In Progress (Foundation Complete)
+**Implementation Status:** Complete ✅
 
 ### Completed Components
-- ✅ **Database Model** (`models/discord_scheduled_event.py`): Tracks mapping between matches and Discord events
-- ✅ **Tournament Configuration** (`models/match_schedule.py`): Added `create_scheduled_events` and `scheduled_events_enabled` fields
+- ✅ **Database Model** (`models/discord_scheduled_event.py`): Tracks mapping between matches and Discord events with status tracking
+- ✅ **Tournament Configuration** (`models/match_schedule.py`): Added `create_scheduled_events`, `scheduled_events_enabled`, `discord_event_filter`, and `event_duration_hours` fields
 - ✅ **Repository Layer** (`application/repositories/discord_scheduled_event_repository.py`): Full CRUD operations
-
-### Pending Components
-- ⏳ **Service Layer**: Business logic for event creation/update/deletion
-- ⏳ **Event Formatting**: Helper methods to format event names, descriptions, locations
-- ⏳ **Event Listeners**: Integration with match lifecycle events (MatchScheduledEvent, etc.)
-- ⏳ **Background Sync Task**: Hourly synchronization for missed events
-- ⏳ **UI Controls**: Admin toggles and manual sync buttons
-- ⏳ **Permission Checking**: Discord bot permission validation
-- ⏳ **Database Migration**: Aerich migration for new model and fields
-- ⏳ **Documentation**: User guide and troubleshooting
+- ✅ **Service Layer** (`application/services/discord_scheduled_event_service.py`): Complete business logic for event lifecycle and status management
+- ✅ **Event Formatting**: Helper methods to format event names, descriptions, locations
+- ✅ **Background Sync Task** (`builtin_tasks/scheduled_events_sync.py`): Hourly synchronization with automatic status updates
+- ✅ **Permission Checking**: Discord bot permission validation
+- ✅ **Database Migrations**: Applied migrations for all features
+- ✅ **Configurable Duration**: Event duration configurable per tournament (default 2 hours)
+- ✅ **Automatic Status Updates**: Events automatically transition scheduled → active → completed/cancelled
 
 ## Architecture
 
@@ -55,6 +52,7 @@ Store mapping in DiscordScheduledEvent table
     "match_id": FK to Match,
     "organization_id": FK to Organization,
     "event_slug": str (optional, e.g., "alttpr2024"),
+    "discord_status": str (scheduled/active/completed/cancelled),
     "created_at": datetime,
     "updated_at": datetime
 }
@@ -65,6 +63,8 @@ Store mapping in DiscordScheduledEvent table
 {
     "create_scheduled_events": bool (default False),  # Enable feature
     "scheduled_events_enabled": bool (default True),  # Master toggle
+    "discord_event_filter": DiscordEventFilter enum,  # Filter events (ALL/STREAM_ONLY/NONE)
+    "event_duration_minutes": int (default 120),  # Configurable event duration in minutes
 }
 ```
 
@@ -146,9 +146,97 @@ Priority order:
 
 ### Event Times
 - **Start Time**: Match `scheduled_at` datetime
-- **End Time**: Start time + 2 hours (default duration)
+- **End Time**: Start time + `tournament.event_duration_minutes` (configurable in minutes, default 120 = 2 hours)
 - **Privacy**: Guild-only (not public)
 - **Entity Type**: External (not voice channel or stage)
+
+## Event Status Management
+
+### Status Lifecycle
+
+Discord events follow this status lifecycle:
+1. **scheduled** - Event is created and awaiting start time
+2. **active** - Event has started (automatically updated when match time arrives)
+3. **completed** - Event has finished (automatically updated when match is reported)
+4. **cancelled** - Event is cancelled (automatically updated when match is cancelled)
+
+### Automatic Status Updates
+
+The background sync task (`scheduled_events_sync.py`) runs hourly and automatically updates event statuses:
+
+**scheduled → active:**
+- Triggered when `match.scheduled_at <= current_time`
+- Discord event status set to `active`
+- Database record updated to `discord_status='active'`
+
+**active → completed:**
+- Triggered when match is reported/finished (`match.status in ['completed', 'reported']` or `match.winner is not None`)
+- Discord event status set to `completed`
+- Database record updated to `discord_status='completed'`
+
+**any → cancelled:**
+- Triggered when match is cancelled (`match.status == 'cancelled'`)
+- Discord event status set to `cancelled`
+- Database record updated to `discord_status='cancelled'`
+
+### Manual Status Updates
+
+```python
+service = DiscordScheduledEventService()
+db_event = await DiscordScheduledEvent.get(id=event_id)
+
+# Update status in database and Discord
+await service.update_event_status(
+    db_event=db_event,
+    new_status='completed'
+)
+```
+
+## Configurable Event Duration
+
+### Per-Tournament Configuration
+
+Event duration can be configured per tournament in minutes (default 120 minutes = 2 hours):
+
+```python
+# Set custom event duration (240 minutes = 4 hours)
+tournament.event_duration_minutes = 240
+await tournament.save()
+```
+
+### Usage Examples
+
+**Quick matches (60 minutes):**
+```python
+tournament.event_duration_minutes = 60  # 1 hour
+```
+
+**Standard short races (90 minutes):**
+```python
+tournament.event_duration_minutes = 90  # 1.5 hours - perfect for typical races
+```
+
+**Standard matches (120 minutes, default):**
+```python
+tournament.event_duration_minutes = 120  # 2 hours (default)
+```
+
+**Long matches (180 minutes):**
+```python
+tournament.event_duration_minutes = 180  # 3 hours
+```
+
+**Extended matches (240 minutes):**
+```python
+tournament.event_duration_minutes = 240  # 4 hours
+```
+
+**All-day events (480 minutes):**
+```python
+tournament.event_duration_minutes = 480  # 8 hours for marathon events
+```
+
+The configured duration is automatically used when creating or updating Discord events. This allows precise control over event timing, accommodating matches of any length from quick 30-minute sprints to all-day marathon races.
 
 ## API Operations
 
@@ -226,21 +314,30 @@ async def delete_discord_event_for_match(event: MatchDeletedEvent):
 
 ## Background Sync Task
 
-**Purpose**: Ensure all upcoming matches have corresponding Discord events, even if event emissions were missed.
+**Purpose**: Ensure all upcoming matches have corresponding Discord events and status is kept up-to-date.
 
 **Schedule**: Runs every hour
 
-**Scope**: Matches in the next 7 days
+**Scope**: All active tournaments with `create_scheduled_events=True`
 
 **Logic**:
-1. Query all matches with `scheduled_at` in next 168 hours
-2. Filter for tournaments with `create_scheduled_events=True`
-3. Check if DiscordScheduledEvent exists for each match
-4. Create missing events
-5. Update existing events if match details changed
-6. Delete orphaned events (for finished matches)
+1. Sync events for each tournament (create/update/delete)
+2. Auto-update event statuses based on match timing:
+   - Activate events for matches that have started
+   - Complete events for matches that are finished
+   - Cancel events for cancelled matches
+3. Log statistics about operations performed
 
 **Implementation Location**: `application/services/builtin_tasks/scheduled_events_sync.py`
+
+**Statistics Tracked:**
+- Events created
+- Events updated
+- Events deleted
+- Events activated (scheduled → active)
+- Events completed (active → completed)
+- Events cancelled (any → cancelled)
+- Errors encountered
 
 ## Error Handling
 
@@ -348,12 +445,10 @@ for event in orphaned:
 
 ## Future Enhancements
 
-- [ ] Configurable event duration (not hardcoded 2 hours)
 - [ ] Support for multi-day tournaments (event series)
 - [ ] Event description templates per tournament
 - [ ] Notification when event is about to start (Discord's built-in notifications)
 - [ ] Integration with Discord's event RSVP system
-- [ ] Automatic event status updates (in_progress, completed, cancelled)
 - [ ] Rich embed images for events (tournament logos)
 
 ## References

@@ -41,6 +41,7 @@ class Tournament(Model):
     scheduled_events_enabled = fields.BooleanField(default=True)  # Master toggle (can disable temporarily)
     discord_event_guilds = fields.ManyToManyField('models.DiscordGuild', related_name='event_tournaments', through='tournament_discord_guilds')  # Guilds to publish events to
     discord_event_filter = fields.CharEnumField(enum_type=DiscordEventFilter, default=DiscordEventFilter.ALL, max_length=20)  # Filter which matches create events
+    event_duration_minutes = fields.IntField(default=120)  # Duration of Discord events in minutes (default 120 = 2 hours)
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

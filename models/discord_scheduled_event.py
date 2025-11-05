@@ -28,6 +28,9 @@ class DiscordScheduledEvent(Model):
 
     # Optional event slug for categorization (e.g., tournament abbreviation)
     event_slug = fields.CharField(max_length=40, null=True)
+    
+    # Event status tracking (matches Discord's EventStatus: scheduled, active, completed, cancelled)
+    discord_status = fields.CharField(max_length=20, default='scheduled')
 
     # Timestamps
     created_at = fields.DatetimeField(auto_now_add=True)
@@ -37,7 +40,8 @@ class DiscordScheduledEvent(Model):
         table = "discord_scheduled_events"
         indexes = [
             ("match_id", "organization_id"),  # Composite index for common query
+            ("discord_status",),  # Index for status queries
         ]
 
     def __str__(self) -> str:
-        return f"DiscordScheduledEvent(event_id={self.scheduled_event_id})"
+        return f"DiscordScheduledEvent(event_id={self.scheduled_event_id}, status={self.discord_status})"

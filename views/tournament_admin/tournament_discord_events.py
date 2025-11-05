@@ -92,6 +92,29 @@ class TournamentDiscordEventsView:
 
                 ui.separator().classes('my-4')
 
+                # Event duration
+                ui.label('Event Duration:').classes('font-bold mb-2')
+                current_duration = self.tournament.event_duration_minutes if hasattr(self.tournament, 'event_duration_minutes') else 120
+                duration_input = ui.number(
+                    label='Duration (minutes)',
+                    value=current_duration,
+                    min=15,
+                    max=1440,  # 24 hours max
+                    step=15,
+                ).classes('w-full mb-2')
+                
+                # Helper text with common presets
+                with ui.row().classes('gap-2 mb-2 flex-wrap'):
+                    ui.button('60 min', on_click=lambda: setattr(duration_input, 'value', 60)).classes('btn btn-sm').props('outline')
+                    ui.button('90 min', on_click=lambda: setattr(duration_input, 'value', 90)).classes('btn btn-sm').props('outline')
+                    ui.button('120 min (default)', on_click=lambda: setattr(duration_input, 'value', 120)).classes('btn btn-sm').props('outline')
+                    ui.button('180 min', on_click=lambda: setattr(duration_input, 'value', 180)).classes('btn btn-sm').props('outline')
+                    ui.button('240 min', on_click=lambda: setattr(duration_input, 'value', 240)).classes('btn btn-sm').props('outline')
+                
+                ui.label('How long Discord events should be scheduled for (in minutes). Common: 60=1hr, 90=1.5hrs, 120=2hrs, 180=3hrs').classes('text-xs text-secondary mb-4')
+
+                ui.separator().classes('my-4')
+
                 # Discord servers selection
                 guilds_select = None
                 if discord_guilds:
@@ -118,6 +141,7 @@ class TournamentDiscordEventsView:
                         create_toggle.value,
                         enabled_toggle.value,
                         filter_select.value,
+                        duration_input.value,
                         guilds_select.value if guilds_select else []
                     )).classes('btn').props('color=positive')
 
@@ -126,6 +150,7 @@ class TournamentDiscordEventsView:
         create_scheduled_events: bool,
         scheduled_events_enabled: bool,
         discord_event_filter: str,
+        event_duration_minutes: int,
         discord_guild_ids: list[int]
     ):
         """
@@ -135,6 +160,7 @@ class TournamentDiscordEventsView:
             create_scheduled_events: Whether to create Discord events
             scheduled_events_enabled: Whether events are currently enabled
             discord_event_filter: Which matches should create events
+            event_duration_minutes: Duration of Discord events in minutes
             discord_guild_ids: List of Discord guild IDs to publish to
         """
         try:
@@ -145,6 +171,7 @@ class TournamentDiscordEventsView:
                 create_scheduled_events=create_scheduled_events,
                 scheduled_events_enabled=scheduled_events_enabled,
                 discord_event_filter=discord_event_filter,
+                event_duration_minutes=event_duration_minutes,
                 discord_guild_ids=discord_guild_ids,
             )
             ui.notify('Discord events settings saved successfully', type='positive')
