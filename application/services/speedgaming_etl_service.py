@@ -6,9 +6,10 @@ including player and crew member matching/creation.
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
-from models import User
+from models import User, SYSTEM_USER_ID
 from models.match_schedule import (
     Tournament,
     Match,
@@ -17,6 +18,7 @@ from models.match_schedule import (
     CrewRole,
 )
 from models.organizations import Organization
+from models.audit_log import AuditLog
 from application.services.speedgaming_service import (
     SpeedGamingService,
     SpeedGamingEpisode,
@@ -692,7 +694,7 @@ class SpeedGamingETLService:
         """
         Import all upcoming SpeedGaming episodes for a tournament.
 
-        Also detects and removes deleted episodes.
+        Also detects and removes deleted episodes. Logs sync results to audit log.
 
         Args:
             tournament_id: Tournament ID
@@ -700,9 +702,17 @@ class SpeedGamingETLService:
         Returns:
             Tuple of (imported_count, updated_count, deleted_count)
         """
+        start_time = datetime.now(timezone.utc)
         tournament = await Tournament.get_or_none(id=tournament_id)
         if not tournament:
             logger.error("Tournament %s not found", tournament_id)
+            await self._log_sync_result(
+                tournament_id,
+                None,
+                success=False,
+                error="Tournament not found",
+                start_time=start_time
+            )
             return (0, 0, 0)
 
         if not tournament.speedgaming_enabled:
@@ -717,6 +727,13 @@ class SpeedGamingETLService:
                 "Tournament %s has no SpeedGaming event slug configured",
                 tournament_id
             )
+            await self._log_sync_result(
+                tournament_id,
+                tournament.organization_id,
+                success=False,
+                error="No event slug configured",
+                start_time=start_time
+            )
             return (0, 0, 0)
 
         # Fetch episodes from SpeedGaming
@@ -730,6 +747,13 @@ class SpeedGamingETLService:
                 tournament_id,
                 e
             )
+            await self._log_sync_result(
+                tournament_id,
+                tournament.organization_id,
+                success=False,
+                error=f"API error: {str(e)}",
+                start_time=start_time
+            )
             return (0, 0, 0)
 
         # Track episode IDs from SpeedGaming
@@ -738,6 +762,7 @@ class SpeedGamingETLService:
         # Import/update episodes
         imported_count = 0
         updated_count = 0
+        errors = []
 
         for episode in episodes:
             try:
@@ -756,6 +781,7 @@ class SpeedGamingETLService:
 
             except Exception as e:
                 logger.error("Failed to import episode %s: %s", episode.id, e)
+                errors.append(f"Episode {episode.id}: {str(e)}")
 
         # Detect deleted episodes
         deleted_count = await self._detect_deleted_episodes(
@@ -772,7 +798,63 @@ class SpeedGamingETLService:
             deleted_count
         )
 
+        # Log sync result
+        await self._log_sync_result(
+            tournament_id,
+            tournament.organization_id,
+            success=len(errors) == 0,
+            imported=imported_count,
+            updated=updated_count,
+            deleted=deleted_count,
+            error="; ".join(errors) if errors else None,
+            start_time=start_time
+        )
+
         return (imported_count, updated_count, deleted_count)
+
+    async def _log_sync_result(
+        self,
+        tournament_id: int,
+        organization_id: Optional[int],
+        success: bool,
+        imported: int = 0,
+        updated: int = 0,
+        deleted: int = 0,
+        error: Optional[str] = None,
+        start_time: Optional[datetime] = None
+    ):
+        """
+        Log SpeedGaming sync result to audit log.
+
+        Args:
+            tournament_id: Tournament ID
+            organization_id: Organization ID
+            success: Whether sync was successful
+            imported: Number of matches imported
+            updated: Number of matches updated
+            deleted: Number of matches deleted
+            error: Error message if sync failed
+            start_time: When sync started
+        """
+        end_time = datetime.now(timezone.utc)
+        duration_ms = None
+        if start_time:
+            duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+        await AuditLog.create(
+            user_id=SYSTEM_USER_ID,
+            organization_id=organization_id,
+            action="speedgaming_sync",
+            details={
+                "tournament_id": tournament_id,
+                "success": success,
+                "imported": imported,
+                "updated": updated,
+                "deleted": deleted,
+                "error": error,
+                "duration_ms": duration_ms,
+            }
+        )
 
     async def _detect_deleted_episodes(
         self,
