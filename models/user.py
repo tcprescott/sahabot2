@@ -49,6 +49,8 @@ class User(Model):
         racetime_id: RaceTime.gg user ID (unique, nullable)
         racetime_name: RaceTime.gg username (nullable)
         racetime_access_token: OAuth2 access token for RaceTime.gg API (nullable)
+        racetime_refresh_token: OAuth2 refresh token for RaceTime.gg API (nullable)
+        racetime_token_expires_at: Access token expiration timestamp (nullable)
         display_name: User's chosen display name (falls back to discord_username if not set)
         pronouns: User's pronouns (optional)
         show_pronouns: Whether to display pronouns with the user's name
@@ -69,6 +71,8 @@ class User(Model):
     racetime_id = fields.CharField(max_length=255, null=True, unique=True, index=True)
     racetime_name = fields.CharField(max_length=255, null=True)
     racetime_access_token = fields.TextField(null=True)
+    racetime_refresh_token = fields.TextField(null=True)
+    racetime_token_expires_at = fields.DatetimeField(null=True)
 
     # User profile preferences
     display_name = fields.CharField(max_length=255, null=True)

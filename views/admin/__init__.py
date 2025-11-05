@@ -13,6 +13,7 @@ from views.admin.presets import PresetsView
 from views.admin.preset_namespaces import PresetNamespacesView
 from views.admin.org_requests import OrgRequestsView
 from views.admin.scheduled_tasks import ScheduledTasksView
+from views.admin.racetime_accounts import RacetimeAccountsView
 
 __all__ = [
     'AdminUsersView',
@@ -24,4 +25,5 @@ __all__ = [
     'PresetNamespacesView',
     'OrgRequestsView',
     'ScheduledTasksView',
+    'RacetimeAccountsView',
 ]

@@ -10,6 +10,7 @@ from components.dialogs.admin.racetime_bot_organizations_dialog import RacetimeB
 from components.dialogs.admin.approve_org_request_dialog import ApproveOrgRequestDialog
 from components.dialogs.admin.reject_org_request_dialog import RejectOrgRequestDialog
 from components.dialogs.admin.view_namespace_dialog import ViewNamespaceDialog
+from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
 
 __all__ = [
     'UserEditDialog',
@@ -22,4 +23,5 @@ __all__ = [
     'ApproveOrgRequestDialog',
     'RejectOrgRequestDialog',
     'ViewNamespaceDialog',
+    'RacetimeUnlinkDialog',
 ]

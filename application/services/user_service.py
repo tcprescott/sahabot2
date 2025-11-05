@@ -5,6 +5,7 @@ This module contains all business logic related to user management.
 """
 
 import logging
+from datetime import datetime
 from models import User, Permission, SYSTEM_USER_ID
 from typing import Optional
 from application.repositories.user_repository import UserRepository
@@ -301,16 +302,20 @@ class UserService:
         user: User,
         racetime_id: str,
         racetime_name: str,
-        access_token: str
+        access_token: str,
+        refresh_token: Optional[str] = None,
+        expires_at: Optional[datetime] = None
     ) -> User:
         """
-        Link a RaceTime.gg account to a user.
+        Link RaceTime.gg account to a user.
 
         Args:
             user: User to link the account to
             racetime_id: RaceTime.gg user ID
             racetime_name: RaceTime.gg username
             access_token: OAuth2 access token
+            refresh_token: OAuth2 refresh token (optional)
+            expires_at: Access token expiration timestamp (optional)
 
         Returns:
             User: Updated user with linked RaceTime account
@@ -333,9 +338,51 @@ class UserService:
         user.racetime_id = racetime_id
         user.racetime_name = racetime_name
         user.racetime_access_token = access_token
+        user.racetime_refresh_token = refresh_token
+        user.racetime_token_expires_at = expires_at
         await user.save()
 
         logger.info("Linked RaceTime account %s to user %s", racetime_id, user.id)
+        return user
+
+    async def refresh_racetime_token(self, user: User) -> User:
+        """
+        Refresh RaceTime.gg access token for a user.
+
+        Args:
+            user: User with linked RaceTime account
+
+        Returns:
+            User: Updated user with refreshed token
+
+        Raises:
+            ValueError: If user has no linked account or no refresh token
+            httpx.HTTPError: If token refresh fails
+        """
+        from middleware.racetime_oauth import RacetimeOAuthService
+
+        if not user.racetime_id or not user.racetime_refresh_token:
+            raise ValueError("User has no linked RaceTime account or refresh token")
+
+        oauth_service = RacetimeOAuthService()
+        token_response = await oauth_service.refresh_access_token(user.racetime_refresh_token)
+
+        # Update user with new token information
+        user.racetime_access_token = token_response.get('access_token')
+        
+        # Update refresh token if provided (some OAuth providers rotate refresh tokens)
+        if 'refresh_token' in token_response:
+            user.racetime_refresh_token = token_response['refresh_token']
+        
+        # Calculate expiration if provided
+        if 'expires_in' in token_response:
+            user.racetime_token_expires_at = oauth_service.calculate_token_expiry(
+                token_response['expires_in']
+            )
+        
+        await user.save()
+
+        logger.info("Refreshed RaceTime token for user %s", user.id)
         return user
 
     async def unlink_racetime_account(self, user: User) -> User:
@@ -351,10 +398,186 @@ class UserService:
         user.racetime_id = None
         user.racetime_name = None
         user.racetime_access_token = None
+        user.racetime_refresh_token = None
+        user.racetime_token_expires_at = None
         await user.save()
 
         logger.info("Unlinked RaceTime account from user %s", user.id)
         return user
+
+    async def admin_unlink_racetime_account(
+        self,
+        user_id: int,
+        admin_user: User
+    ) -> Optional[User]:
+        """
+        Administratively unlink RaceTime.gg account from a user.
+
+        Args:
+            user_id: ID of user to unlink
+            admin_user: Admin user performing the action
+
+        Returns:
+            Optional[User]: Updated user if successful, None if unauthorized or not found
+        """
+        # Check admin permissions
+        auth_service = AuthorizationService()
+        if not auth_service.can_access_admin_panel(admin_user):
+            logger.warning(
+                "User %s attempted to admin unlink RaceTime account without permission",
+                admin_user.id
+            )
+            return None
+
+        # Get target user
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            logger.warning("User %s not found for admin unlink", user_id)
+            return None
+
+        # Unlink account
+        await self.unlink_racetime_account(user)
+
+        # Audit log
+        from application.services.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_unlink_racetime_account",
+            details={
+                "target_user_id": user_id,
+                "racetime_id": user.racetime_id,
+                "racetime_name": user.racetime_name
+            }
+        )
+
+        logger.info(
+            "Admin %s unlinked RaceTime account for user %s",
+            admin_user.id,
+            user_id
+        )
+        return user
+
+    async def get_all_racetime_accounts(
+        self,
+        admin_user: User,
+        limit: Optional[int] = None,
+        offset: int = 0
+    ) -> list[User]:
+        """
+        Get all users with linked RaceTime accounts (admin only).
+
+        Args:
+            admin_user: Admin user requesting the data
+            limit: Maximum number of users to return
+            offset: Number of users to skip
+
+        Returns:
+            list[User]: List of users with RaceTime accounts (empty if unauthorized)
+        """
+        # Check admin permissions
+        auth_service = AuthorizationService()
+        if not auth_service.can_access_admin_panel(admin_user):
+            logger.warning(
+                "User %s attempted to view RaceTime accounts without permission",
+                admin_user.id
+            )
+            return []
+
+        # Audit log
+        from application.services.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_view_racetime_accounts",
+            details={"limit": limit, "offset": offset}
+        )
+
+        return await self.user_repository.get_users_with_racetime(
+            include_inactive=False,
+            limit=limit,
+            offset=offset
+        )
+
+    async def search_racetime_accounts(
+        self,
+        admin_user: User,
+        query: str
+    ) -> list[User]:
+        """
+        Search users by RaceTime username (admin only).
+
+        Args:
+            admin_user: Admin user performing the search
+            query: Search query
+
+        Returns:
+            list[User]: List of matching users (empty if unauthorized)
+        """
+        # Check admin permissions
+        auth_service = AuthorizationService()
+        if not auth_service.can_access_admin_panel(admin_user):
+            logger.warning(
+                "User %s attempted to search RaceTime accounts without permission",
+                admin_user.id
+            )
+            return []
+
+        # Audit log
+        from application.services.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_search_racetime_accounts",
+            details={"query": query}
+        )
+
+        return await self.user_repository.search_by_racetime_name(query)
+
+    async def get_racetime_link_statistics(self, admin_user: User) -> dict:
+        """
+        Get statistics about RaceTime account linking (admin only).
+
+        Args:
+            admin_user: Admin user requesting the stats
+
+        Returns:
+            dict: Statistics including total users, linked users, etc.
+        """
+        # Check admin permissions
+        auth_service = AuthorizationService()
+        if not auth_service.can_access_admin_panel(admin_user):
+            logger.warning(
+                "User %s attempted to view RaceTime stats without permission",
+                admin_user.id
+            )
+            return {}
+
+        # Get statistics
+        total_users = await self.user_repository.count_active_users()
+        linked_users = await self.user_repository.count_racetime_linked_users(
+            include_inactive=False
+        )
+        link_percentage = (linked_users / total_users * 100) if total_users > 0 else 0
+
+        stats = {
+            "total_users": total_users,
+            "linked_users": linked_users,
+            "unlinked_users": total_users - linked_users,
+            "link_percentage": round(link_percentage, 2)
+        }
+
+        # Audit log
+        from application.services.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_view_racetime_stats",
+            details=stats
+        )
+
+        logger.info("Admin %s viewed RaceTime link statistics", admin_user.id)
+        return stats
 
     async def update_user_profile(
         self,

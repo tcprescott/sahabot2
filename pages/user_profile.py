@@ -12,6 +12,7 @@ from views.user_profile import (
     ApiKeysView,
     UserOrganizationsView,
     RacetimeAccountView,
+    RacetimeRacesView,
     PresetNamespacesView,
     NotificationPreferencesView,
 )
@@ -38,6 +39,7 @@ def register():
             page.register_content_loader('api-keys', page.create_instance_view_loader(lambda: ApiKeysView(page.user)))
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: UserOrganizationsView(page.user)))
             page.register_content_loader('racetime', page.create_instance_view_loader(lambda: RacetimeAccountView(page.user)))
+            page.register_content_loader('racetime-races', page.create_instance_view_loader(lambda: RacetimeRacesView(page.user)))
             page.register_content_loader('preset-namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
             page.register_content_loader('notifications', page.create_instance_view_loader(lambda: NotificationPreferencesView(page.user)))
 
@@ -55,7 +57,9 @@ def register():
             base.create_sidebar_item_with_loader('API Keys', 'vpn_key', 'api-keys'),
             base.create_sidebar_item_with_loader('Organizations', 'business', 'organizations'),
             base.create_sidebar_item_with_loader('Preset Namespaces', 'folder', 'preset-namespaces'),
-            base.create_sidebar_item_with_loader('RaceTime.gg', 'timer', 'racetime'),
+            base.create_separator(),
+            base.create_sidebar_item_with_loader('RaceTime Account', 'link', 'racetime'),
+            base.create_sidebar_item_with_loader('Race History', 'sports_score', 'racetime-races'),
         ]
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

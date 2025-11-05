@@ -137,3 +137,65 @@ class UserRepository:
         """
         return await User.filter(racetime_id=racetime_id).first()
 
+    async def get_users_with_racetime(
+        self,
+        include_inactive: bool = False,
+        limit: Optional[int] = None,
+        offset: int = 0
+    ) -> list[User]:
+        """
+        Get all users with linked RaceTime accounts.
+
+        Args:
+            include_inactive: Whether to include inactive users
+            limit: Maximum number of users to return
+            offset: Number of users to skip
+
+        Returns:
+            list[User]: List of users with RaceTime accounts
+        """
+        query = User.filter(racetime_id__not_isnull=True)
+        if not include_inactive:
+            query = query.filter(is_active=True)
+
+        query = query.order_by('-created_at')
+
+        if offset > 0:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        return await query
+
+    async def count_racetime_linked_users(self, include_inactive: bool = False) -> int:
+        """
+        Count users with linked RaceTime accounts.
+
+        Args:
+            include_inactive: Whether to include inactive users
+
+        Returns:
+            int: Number of users with linked RaceTime accounts
+        """
+        query = User.filter(racetime_id__not_isnull=True)
+        if not include_inactive:
+            query = query.filter(is_active=True)
+        return await query.count()
+
+    async def search_by_racetime_name(self, query: str) -> list[User]:
+        """
+        Search users by RaceTime username.
+
+        Args:
+            query: Search query
+
+        Returns:
+            list[User]: List of matching users
+        """
+        return await User.filter(
+            racetime_name__icontains=query,
+            racetime_id__not_isnull=True,
+            is_active=True
+        ).order_by('racetime_name')
+
+

@@ -6,7 +6,8 @@ This module handles OAuth2 authentication flow with RaceTime.gg for linking user
 
 import httpx
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from config import settings
 
@@ -88,6 +89,55 @@ class RacetimeOAuthService:
                 )
 
             return response.json()
+
+    async def refresh_access_token(self, refresh_token: str) -> Dict[str, Any]:
+        """
+        Refresh access token using refresh token.
+
+        Args:
+            refresh_token: RaceTime.gg refresh token
+
+        Returns:
+            Dict[str, Any]: Token response with new access token
+
+        Raises:
+            httpx.HTTPError: If token refresh fails
+        """
+        data = {
+            'client_id': self.client_id,
+            'client_secret': self.client_secret,
+            'grant_type': 'refresh_token',
+            'refresh_token': refresh_token,
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{self.racetime_url}/o/token",
+                data=data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+
+            if response.status_code != 200:
+                logger.error("RaceTime.gg token refresh failed with status %s", response.status_code)
+                raise httpx.HTTPStatusError(
+                    "RaceTime.gg token refresh failed",
+                    request=response.request,
+                    response=response
+                )
+
+            return response.json()
+
+    def calculate_token_expiry(self, expires_in: int) -> datetime:
+        """
+        Calculate token expiration datetime.
+
+        Args:
+            expires_in: Seconds until token expires
+
+        Returns:
+            datetime: Token expiration timestamp (timezone-aware UTC)
+        """
+        return datetime.now(timezone.utc) + timedelta(seconds=expires_in)
 
     async def get_user_info(self, access_token: str) -> Dict[str, Any]:
         """

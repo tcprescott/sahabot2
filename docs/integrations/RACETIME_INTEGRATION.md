@@ -6,12 +6,16 @@ This implementation adds RaceTime.gg OAuth2 account linking functionality to Sah
 ## Implementation Details
 
 ### Database Schema
-Added three new fields to the `users` table:
+Added fields to the `users` table:
 - `racetime_id` (VARCHAR, unique, indexed) - RaceTime.gg user ID
 - `racetime_name` (VARCHAR) - RaceTime.gg username
 - `racetime_access_token` (LONGTEXT) - OAuth2 access token for API access
+- `racetime_refresh_token` (LONGTEXT) - OAuth2 refresh token for token renewal
+- `racetime_token_expires_at` (DATETIME) - Access token expiration timestamp
 
-Migration: `migrations/models/8_20251102185717_update.py`
+Migrations:
+- Initial fields: `migrations/models/8_20251102185717_update.py`
+- Token refresh: `migrations/models/38_20251104215452_add_racetime_token_refresh.py`
 
 ### Configuration
 Added new settings in `config.py`:
@@ -26,6 +30,8 @@ Added new settings in `config.py`:
 Implements `RacetimeOAuthService` class with:
 - `get_authorization_url(state)` - Generate OAuth authorization URL
 - `exchange_code_for_token(code)` - Exchange authorization code for access token
+- `refresh_access_token(refresh_token)` - Refresh expired access tokens
+- `calculate_token_expiry(expires_in)` - Calculate token expiration timestamp
 - `get_user_info(access_token)` - Retrieve user information from RaceTime.gg
 
 Security features:
@@ -43,13 +49,19 @@ Added method:
 **File**: `application/services/user_service.py`
 
 Added methods:
-- `link_racetime_account(user, racetime_id, racetime_name, access_token)` - Link account
+- `link_racetime_account(user, racetime_id, racetime_name, access_token, refresh_token, expires_at)` - Link account
   - Validates account is not already linked to another user
   - Updates user record with RaceTime information
+  - Stores access token, refresh token, and expiration
   - Returns updated user object
-  
+
+- `refresh_racetime_token(user)` - Refresh expired access token
+  - Uses refresh token to obtain new access token
+  - Updates token and expiration in database
+  - Returns updated user object
+
 - `unlink_racetime_account(user)` - Unlink account
-  - Clears RaceTime fields from user record
+  - Clears all RaceTime fields from user record
   - Returns updated user object
 
 ### OAuth Pages
@@ -90,6 +102,22 @@ Two API endpoints for account status:
 
 OAuth flow is handled via NiceGUI pages (see OAuth Pages section above).
 
+### RaceTime API Service
+**File**: `application/services/racetime_api_service.py`
+
+Service for making authenticated API calls to RaceTime.gg:
+- `get_user_data(user)` - Get RaceTime user profile data
+- `get_user_races(user, category, show_entrants)` - Get all races for a user
+- `get_user_stats(user, category)` - Get user statistics for a category
+- `get_race_data(user, race_name)` - Get detailed data for a specific race
+- `get_past_races(user, category, limit)` - Get paginated past races
+
+Features:
+- Automatic token refresh when tokens are expired or expiring soon (5 minute buffer)
+- Transparent error handling and logging
+- Efficient connection pooling with httpx.AsyncClient
+- Category filtering and pagination support
+
 ### UI Components
 **File**: `views/user_profile/racetime_account.py`
 
@@ -107,9 +135,33 @@ Features:
 
 **File**: `pages/user_profile.py`
 
-Updated to include RaceTime tab in profile sidebar:
-- New sidebar item: "RaceTime.gg" with timer icon
-- Dynamic content loading for the RaceTime view
+Updated to include RaceTime tabs in profile sidebar:
+- "RaceTime Account" tab with link icon - Account linking/unlinking
+- "Race History" tab with sports_score icon - Race history from RaceTime API
+
+Dynamic content loading for both RaceTime views.
+
+**File**: `views/user_profile/racetime_races.py`
+
+New view component for displaying race history:
+- Fetches race data from RaceTime.gg API using RacetimeApiService
+- Category filtering (all, alttpr, ootr, smz3, sm, alttp)
+- Displays race cards with:
+  - Race name, category, and goal
+  - User's placement and finish time
+  - Entrant status (done, dnf, dq, etc.)
+  - Relative timestamps ("2 hours ago")
+  - Direct link to race on RaceTime.gg
+- Loading states and error handling
+- Automatically loads races on initial render
+- Responsive card-based layout
+
+Features:
+- Mobile-responsive design
+- Auto-refresh capability
+- Smart finish time formatting (ISO duration to readable format)
+- Status-based badge colors
+- Pagination support (displays first 20 races)
 
 ### Tests
 **File**: `tests/unit/test_racetime_oauth.py`
@@ -238,25 +290,220 @@ For manual testing, verify:
 
 Potential improvements for future iterations:
 
-1. **Token Refresh**
-   - Implement OAuth2 token refresh flow
-   - Store refresh tokens securely
-   - Auto-refresh expired tokens
-
-2. **RaceTime API Integration**
-   - Use stored access tokens for RaceTime API calls
-   - Fetch user's race history
-   - Display race statistics in profile
-
-3. **Race Management**
+1. **Race Management**
    - Create races from SahaBot2
    - Track race participants
-   - Sync race results
+   - Sync race results to database
+   - Real-time race monitoring
 
-4. **Admin Features**
-   - View all linked accounts
-   - Unlink accounts administratively
-   - Link statistics/analytics
+2. **Enhanced Race Display**
+   - More detailed race statistics
+   - Leaderboard comparisons
+   - Personal best tracking
+   - Achievement/milestone notifications
+
+3. **Performance Optimizations**
+   - Cache race data locally
+   - Background sync for race history
+   - Pagination improvements
+   - More category filters
+
+## Admin Features
+
+### Overview
+Administrators can view and manage all RaceTime linked accounts through the admin panel. All admin operations are logged for audit purposes.
+
+### Admin View
+**File**: `views/admin/racetime_accounts.py`
+
+The `RacetimeAccountsView` provides:
+- Statistics dashboard showing:
+  - Total users
+  - Linked accounts count
+  - Unlinked accounts count
+  - Link percentage
+- Search functionality by RaceTime username
+- List of all linked accounts with:
+  - Discord username and ID
+  - RaceTime username and ID (with link to RaceTime.gg profile)
+  - Account link date
+  - Unlink action button
+
+### Admin Dialog
+**File**: `components/dialogs/admin/racetime_unlink_dialog.py`
+
+The `RacetimeUnlinkDialog` provides:
+- Confirmation dialog for administrative unlinking
+- Display of user and RaceTime account details
+- Warning about the action's consequences
+- Audit logging of unlink action
+
+### Service Layer Methods
+**File**: `application/services/user_service.py`
+
+Admin-specific methods:
+
+```python
+async def admin_unlink_racetime_account(user_id: int, admin_user: User) -> Optional[User]:
+    """
+    Administratively unlink RaceTime.gg account from a user.
+    
+    - Checks admin permissions
+    - Validates user exists
+    - Performs unlink
+    - Logs action to audit log
+    """
+
+async def get_all_racetime_accounts(admin_user: User, limit: Optional[int], offset: int) -> list[User]:
+    """
+    Get all users with linked RaceTime accounts.
+    
+    - Checks admin permissions
+    - Returns empty list if unauthorized
+    - Supports pagination
+    - Logs access to audit log
+    """
+
+async def search_racetime_accounts(admin_user: User, query: str) -> list[User]:
+    """
+    Search users by RaceTime username.
+    
+    - Checks admin permissions
+    - Returns empty list if unauthorized
+    - Case-insensitive search
+    - Logs search to audit log
+    """
+
+async def get_racetime_link_statistics(admin_user: User) -> dict:
+    """
+    Get statistics about RaceTime account linking.
+    
+    Returns:
+        dict with keys:
+        - total_users: Total active users
+        - linked_users: Users with linked accounts
+        - unlinked_users: Users without linked accounts
+        - link_percentage: Percentage of users with linked accounts
+    """
+```
+
+### Repository Methods
+**File**: `application/repositories/user_repository.py`
+
+Data access methods for admin features:
+
+```python
+async def get_users_with_racetime(include_inactive: bool, limit: Optional[int], offset: int) -> list[User]:
+    """Get all users with linked RaceTime accounts with pagination."""
+
+async def count_racetime_linked_users(include_inactive: bool) -> int:
+    """Count users with linked RaceTime accounts."""
+
+async def search_by_racetime_name(query: str) -> list[User]:
+    """Search users by RaceTime username (case-insensitive)."""
+```
+
+### API Endpoints
+**File**: `api/routes/racetime.py`
+
+Admin API endpoints:
+
+#### GET /api/racetime/admin/accounts
+Get all users with linked RaceTime accounts (admin only).
+
+**Query Parameters:**
+- `limit` (optional): Maximum number of accounts to return
+- `offset` (optional): Number of accounts to skip (default: 0)
+
+**Response:**
+```json
+{
+  "accounts": [
+    {
+      "user_id": 1,
+      "discord_username": "example_user",
+      "discord_id": 123456789,
+      "racetime_id": "abc123",
+      "racetime_name": "ExampleRacer",
+      "created_at": "2025-11-04T12:00:00Z",
+      "racetime_linked_since": "2025-11-04T13:00:00Z"
+    }
+  ],
+  "total": 42,
+  "limit": null,
+  "offset": 0
+}
+```
+
+#### GET /api/racetime/admin/stats
+Get statistics about RaceTime account linking (admin only).
+
+**Response:**
+```json
+{
+  "total_users": 100,
+  "linked_users": 42,
+  "unlinked_users": 58,
+  "link_percentage": 42.0
+}
+```
+
+#### POST /api/racetime/admin/unlink/{user_id}
+Administratively unlink RaceTime account from a user (admin only).
+
+**Path Parameters:**
+- `user_id`: ID of user to unlink
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "RaceTime account unlinked from user example_user"
+}
+```
+
+### Authorization
+All admin features require:
+- User must be authenticated
+- User must have admin permissions (`can_access_admin_panel()`)
+- Unauthorized requests return empty results or error responses
+
+### Audit Logging
+All admin RaceTime operations are logged via `AuditService`:
+- `admin_view_racetime_accounts` - Admin viewed linked accounts list
+- `admin_search_racetime_accounts` - Admin searched for accounts
+- `admin_view_racetime_stats` - Admin viewed statistics
+- `admin_unlink_racetime_account` - Admin unlinked an account
+
+Each log entry includes:
+- Admin user ID
+- Action performed
+- Relevant details (search query, target user, etc.)
+- Timestamp
+
+### Usage
+
+1. **View Linked Accounts:**
+   - Navigate to Admin → RaceTime Accounts
+   - View statistics dashboard
+   - Browse list of linked accounts
+
+2. **Search for Account:**
+   - Enter RaceTime username in search field
+   - Click "Search"
+   - Results update automatically
+
+3. **Unlink Account:**
+   - Click "Unlink" button on account card
+   - Review user details in confirmation dialog
+   - Click "Unlink Account" to confirm
+   - Action is logged to audit log
+
+### Security Considerations
+1. **Authorization:** All operations check admin permissions before execution
+2. **Audit Trail:** All admin actions are logged for accountability
+3. **Graceful Degradation:** Unauthorized requests return empty data rather than errors
+4. **Data Protection:** Admin view shows user information in controlled, secure context
 
 ## References
 

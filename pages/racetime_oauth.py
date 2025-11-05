@@ -149,12 +149,21 @@ def register():
                     racetime_id = userinfo['id']
                     racetime_name = userinfo['name']
 
+                    # Extract token information
+                    refresh_token = token_data.get('refresh_token')
+                    expires_in = token_data.get('expires_in')
+                    expires_at = None
+                    if expires_in:
+                        expires_at = racetime_service.calculate_token_expiry(expires_in)
+
                     # Link the account
                     await user_service.link_racetime_account(
                         user=current_user,
                         racetime_id=racetime_id,
                         racetime_name=racetime_name,
-                        access_token=access_token
+                        access_token=access_token,
+                        refresh_token=refresh_token,
+                        expires_at=expires_at
                     )
 
                     logger.info("Successfully linked RaceTime account %s to user %s", racetime_id, current_user.id)
