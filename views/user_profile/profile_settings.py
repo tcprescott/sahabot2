@@ -140,8 +140,12 @@ class ProfileSettingsView:
                 await self._refresh()
             except ValueError as e:
                 # Handle validation errors (e.g., invalid email format)
+                # Use user-friendly error messages
+                error_msg = str(e)
+                if "Invalid email format" in error_msg:
+                    error_msg = "Please enter a valid email address"
                 logger.error("Validation error saving profile settings: %s", e)
-                ui.notify(f'Validation error: {str(e)}', type='warning')
+                ui.notify(error_msg, type='warning')
             except Exception as e:
                 # Handle any other unexpected errors
                 logger.error("Failed to save profile settings: %s", e)

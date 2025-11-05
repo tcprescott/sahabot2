@@ -624,8 +624,12 @@ class UserService:
         Raises:
             ValueError: If email format is invalid
         """
-        # Normalize email
-        normalized_email = email.strip().lower() if email else None
+        # Normalize email - ensure it's a string
+        normalized_email = None
+        if email:
+            if not isinstance(email, str):
+                raise ValueError("Email must be a string")
+            normalized_email = email.strip().lower()
 
         # Basic email validation (improved)
         if normalized_email:

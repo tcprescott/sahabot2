@@ -90,6 +90,22 @@ class TestUserService:
             with pytest.raises(ValueError, match="Invalid email format"):
                 await service.update_user_email(user, invalid_email)
 
+    async def test_update_user_email_invalid_type(self):
+        """Test updating user email with non-string type raises ValueError."""
+        service = UserService()
+
+        # Create mock user
+        user = MagicMock(spec=User)
+        user.id = 1
+        user.save = AsyncMock()
+
+        # Test invalid types
+        with pytest.raises(ValueError, match="Email must be a string"):
+            await service.update_user_email(user, 123)
+
+        with pytest.raises(ValueError, match="Email must be a string"):
+            await service.update_user_email(user, ["email@example.com"])
+
     async def test_update_user_email_clear(self):
         """Test clearing user email."""
         service = UserService()
