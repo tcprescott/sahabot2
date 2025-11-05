@@ -6,6 +6,9 @@ tournament match schedules. It:
 - Creates missing events for tournaments with create_scheduled_events=True
 - Updates events that have changed details
 - Deletes orphaned events for completed/deleted matches
+
+Note: A separate cleanup task (orphaned_events_cleanup.py) runs every 6 hours
+to perform more comprehensive cleanup across all organizations.
 """
 
 import logging

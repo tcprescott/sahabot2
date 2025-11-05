@@ -353,6 +353,69 @@ class DiscordScheduledEventService:
 
         return True
 
+    async def cleanup_orphaned_events(
+        self,
+        user_id: Optional[int],
+        organization_id: int,
+    ) -> dict:
+        """
+        Clean up all orphaned Discord scheduled events for an organization.
+
+        This includes:
+        - Events for finished matches
+        - Events for tournaments with scheduled events disabled
+        - Events for deleted matches
+
+        Args:
+            user_id: User ID triggering cleanup (or SYSTEM_USER_ID)
+            organization_id: Organization ID for tenant scoping
+
+        Returns:
+            Dictionary with cleanup statistics
+        """
+        stats = {
+            'deleted': 0,
+            'errors': 0,
+        }
+
+        # Get all orphaned events
+        orphaned_events = await self.repo.cleanup_all_orphaned_events(organization_id)
+
+        logger.info(
+            "Cleaning up %d orphaned Discord events in org %s (user %s)",
+            len(orphaned_events),
+            organization_id,
+            user_id or SYSTEM_USER_ID,
+        )
+
+        for event in orphaned_events:
+            try:
+                success = await self.delete_event_for_match(
+                    user_id=user_id,
+                    organization_id=organization_id,
+                    match_id=event.match_id,
+                )
+                if success:
+                    stats['deleted'] += 1
+                else:
+                    stats['errors'] += 1
+            except Exception as e:
+                logger.exception(
+                    "Error cleaning up orphaned event %s (match %s): %s",
+                    event.id,
+                    event.match_id,
+                    e,
+                )
+                stats['errors'] += 1
+
+        logger.info(
+            "Orphaned event cleanup complete for org %s: %d deleted, %d errors",
+            organization_id,
+            stats['deleted'],
+            stats['errors'],
+        )
+        return stats
+
     async def sync_tournament_events(
         self,
         user_id: Optional[int],

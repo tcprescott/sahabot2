@@ -314,3 +314,84 @@ class DiscordScheduledEventRepository:
             organization_id,
         )
         return events
+
+    async def list_events_for_disabled_tournaments(
+        self,
+        organization_id: int,
+    ) -> List[DiscordScheduledEvent]:
+        """
+        List Discord scheduled events for tournaments with events disabled.
+
+        These events should be cleaned up when tournaments disable the feature.
+
+        Args:
+            organization_id: Organization ID for tenant scoping
+
+        Returns:
+            List of DiscordScheduledEvent instances to clean up
+        """
+        # Get events for tournaments with events disabled
+        events = await DiscordScheduledEvent.filter(
+            organization_id=organization_id,
+            match__tournament__scheduled_events_enabled=False,
+        ).prefetch_related('match', 'match__tournament')
+
+        # Also check for tournaments with create_scheduled_events=False
+        more_events = await DiscordScheduledEvent.filter(
+            organization_id=organization_id,
+            match__tournament__create_scheduled_events=False,
+        ).prefetch_related('match', 'match__tournament')
+
+        # Combine and deduplicate
+        all_event_ids = set()
+        combined = []
+        for event in events + more_events:
+            if event.id not in all_event_ids:
+                all_event_ids.add(event.id)
+                combined.append(event)
+
+        logger.debug(
+            "Found %d Discord events for disabled tournaments in org %s",
+            len(combined),
+            organization_id,
+        )
+        return combined
+
+    async def cleanup_all_orphaned_events(
+        self,
+        organization_id: int,
+    ) -> List[DiscordScheduledEvent]:
+        """
+        Get all orphaned events that should be cleaned up.
+
+        This includes:
+        - Events for finished matches
+        - Events for disabled tournaments
+        - Events for deleted matches (will fail FK check)
+
+        Args:
+            organization_id: Organization ID for tenant scoping
+
+        Returns:
+            List of all DiscordScheduledEvent instances to clean up
+        """
+        # Get finished match events
+        finished_events = await self.list_orphaned_events(organization_id)
+
+        # Get events for disabled tournaments
+        disabled_events = await self.list_events_for_disabled_tournaments(organization_id)
+
+        # Combine and deduplicate
+        all_event_ids = set()
+        combined = []
+        for event in finished_events + disabled_events:
+            if event.id not in all_event_ids:
+                all_event_ids.add(event.id)
+                combined.append(event)
+
+        logger.info(
+            "Found %d total orphaned Discord events to clean up in org %s",
+            len(combined),
+            organization_id,
+        )
+        return combined
