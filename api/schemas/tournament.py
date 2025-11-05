@@ -14,6 +14,8 @@ class TournamentOut(BaseModel):
     description: Optional[str] = Field(None, description="Tournament description")
     is_active: bool = Field(..., description="Whether the tournament is active")
     tracker_enabled: bool = Field(..., description="Whether tracker is enabled")
+    speedgaming_enabled: bool = Field(..., description="Whether SpeedGaming integration is enabled")
+    speedgaming_event_slug: Optional[str] = Field(None, description="SpeedGaming event slug")
     created_at: datetime = Field(..., description="Tournament creation timestamp")
     updated_at: datetime = Field(..., description="Tournament last update timestamp")
 
@@ -35,6 +37,15 @@ class TournamentCreateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Tournament description")
     is_active: bool = Field(True, description="Whether the tournament is active")
     tracker_enabled: bool = Field(True, description="Whether tracker is enabled")
+    speedgaming_enabled: bool = Field(
+        False,
+        description="Enable SpeedGaming integration (makes schedule read-only)"
+    )
+    speedgaming_event_slug: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="SpeedGaming event slug (required if speedgaming_enabled=True)"
+    )
 
 
 class TournamentUpdateRequest(BaseModel):
@@ -44,6 +55,15 @@ class TournamentUpdateRequest(BaseModel):
     description: Optional[str] = Field(None, description="Tournament description")
     is_active: Optional[bool] = Field(None, description="Whether the tournament is active")
     tracker_enabled: Optional[bool] = Field(None, description="Whether tracker is enabled")
+    speedgaming_enabled: Optional[bool] = Field(
+        None,
+        description="Enable SpeedGaming integration (makes schedule read-only)"
+    )
+    speedgaming_event_slug: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="SpeedGaming event slug (required if speedgaming_enabled=True)"
+    )
 
 
 class MatchOut(BaseModel):
@@ -59,6 +79,10 @@ class MatchOut(BaseModel):
     confirmed_at: Optional[datetime] = Field(None, description="Match confirmation time")
     comment: Optional[str] = Field(None, description="Match comment")
     title: Optional[str] = Field(None, description="Match title")
+    speedgaming_episode_id: Optional[int] = Field(
+        None,
+        description="SpeedGaming episode ID (if imported from SpeedGaming)"
+    )
     created_at: datetime = Field(..., description="Match creation timestamp")
     updated_at: datetime = Field(..., description="Match last update timestamp")
 

@@ -232,7 +232,7 @@ class SpeedGamingETLService:
         episode: SpeedGamingEpisode,
     ) -> Optional[Match]:
         """
-        Import a SpeedGaming episode as a Match record.
+        Import or update a SpeedGaming episode as a Match record.
 
         Creates or updates:
         - Match record
@@ -247,11 +247,9 @@ class SpeedGamingETLService:
             Match object if successful, None if episode should be skipped
         """
         # Check if match already exists
-        existing_match = await Match.get_or_none(speedgaming_episode_id=episode.id)
-        
-        if existing_match:
-            logger.info("Episode %s already imported as match %s, skipping", episode.id, existing_match.id)
-            return existing_match
+        existing_match = await Match.get_or_none(
+            speedgaming_episode_id=episode.id
+        )
 
         # Get organization ID from tournament
         await tournament.fetch_related('organization')
@@ -268,9 +266,50 @@ class SpeedGamingETLService:
             logger.warning("Episode %s has no players, skipping import", episode.id)
             return None
 
-        # Create match
-        match_title = episode.title or (episode.match1.title if episode.match1 else "Untitled Match")
-        
+        # Determine match title
+        match_title = episode.title or (
+            episode.match1.title if episode.match1 else "Untitled Match"
+        )
+
+        if existing_match:
+            # Update existing match
+            logger.info(
+                "Episode %s already exists as match %s, checking for updates",
+                episode.id,
+                existing_match.id
+            )
+
+            # Check if anything changed
+            needs_update = False
+            if existing_match.scheduled_at != episode.when:
+                existing_match.scheduled_at = episode.when
+                needs_update = True
+                logger.info(
+                    "Episode %s schedule changed: %s -> %s",
+                    episode.id,
+                    existing_match.scheduled_at,
+                    episode.when
+                )
+
+            if existing_match.title != match_title:
+                existing_match.title = match_title
+                needs_update = True
+                logger.info(
+                    "Episode %s title changed: %s -> %s",
+                    episode.id,
+                    existing_match.title,
+                    match_title
+                )
+
+            if needs_update:
+                await existing_match.save()
+                logger.info("Updated match %s for episode %s", existing_match.id, episode.id)
+
+            # For updates, we don't modify players or crew
+            # (to avoid conflicts with manual changes)
+            return existing_match
+
+        # Create new match
         match = await Match.create(
             tournament=tournament,
             speedgaming_episode_id=episode.id,
@@ -353,28 +392,39 @@ class SpeedGamingETLService:
 
         return match
 
-    async def import_episodes_for_tournament(self, tournament_id: int) -> Tuple[int, int]:
+    async def import_episodes_for_tournament(
+        self,
+        tournament_id: int
+    ) -> Tuple[int, int, int]:
         """
         Import all upcoming SpeedGaming episodes for a tournament.
+
+        Also detects and removes deleted episodes.
 
         Args:
             tournament_id: Tournament ID
 
         Returns:
-            Tuple of (imported_count, skipped_count)
+            Tuple of (imported_count, updated_count, deleted_count)
         """
         tournament = await Tournament.get_or_none(id=tournament_id)
         if not tournament:
             logger.error("Tournament %s not found", tournament_id)
-            return (0, 0)
+            return (0, 0, 0)
 
         if not tournament.speedgaming_enabled:
-            logger.info("SpeedGaming integration disabled for tournament %s", tournament_id)
-            return (0, 0)
+            logger.info(
+                "SpeedGaming integration disabled for tournament %s",
+                tournament_id
+            )
+            return (0, 0, 0)
 
         if not tournament.speedgaming_event_slug:
-            logger.warning("Tournament %s has no SpeedGaming event slug configured", tournament_id)
-            return (0, 0)
+            logger.warning(
+                "Tournament %s has no SpeedGaming event slug configured",
+                tournament_id
+            )
+            return (0, 0, 0)
 
         # Fetch episodes from SpeedGaming
         try:
@@ -382,38 +432,120 @@ class SpeedGamingETLService:
                 tournament.speedgaming_event_slug
             )
         except Exception as e:
-            logger.error("Failed to fetch episodes for tournament %s: %s", tournament_id, e)
-            return (0, 0)
+            logger.error(
+                "Failed to fetch episodes for tournament %s: %s",
+                tournament_id,
+                e
+            )
+            return (0, 0, 0)
 
+        # Track episode IDs from SpeedGaming
+        sg_episode_ids = {episode.id for episode in episodes}
+
+        # Import/update episodes
         imported_count = 0
-        skipped_count = 0
+        updated_count = 0
 
         for episode in episodes:
             try:
+                # Check if episode already exists
+                existing = await Match.get_or_none(
+                    speedgaming_episode_id=episode.id
+                )
+
                 match = await self.import_episode(tournament, episode)
+
                 if match:
-                    imported_count += 1
-                else:
-                    skipped_count += 1
+                    if existing:
+                        updated_count += 1
+                    else:
+                        imported_count += 1
+
             except Exception as e:
                 logger.error("Failed to import episode %s: %s", episode.id, e)
-                skipped_count += 1
 
-        logger.info(
-            "Completed import for tournament %s: %s imported, %s skipped",
-            tournament_id,
-            imported_count,
-            skipped_count
+        # Detect deleted episodes
+        deleted_count = await self._detect_deleted_episodes(
+            tournament,
+            sg_episode_ids
         )
 
-        return (imported_count, skipped_count)
+        logger.info(
+            "Completed import for tournament %s: %s imported, "
+            "%s updated, %s deleted",
+            tournament_id,
+            imported_count,
+            updated_count,
+            deleted_count
+        )
 
-    async def import_all_enabled_tournaments(self) -> Tuple[int, int]:
+        return (imported_count, updated_count, deleted_count)
+
+    async def _detect_deleted_episodes(
+        self,
+        tournament: Tournament,
+        current_episode_ids: set[int]
+    ) -> int:
+        """
+        Detect and delete matches for episodes no longer in SpeedGaming.
+
+        Args:
+            tournament: Tournament to check
+            current_episode_ids: Set of episode IDs currently in SpeedGaming
+
+        Returns:
+            Number of matches deleted
+        """
+        # Find all matches for this tournament that came from SpeedGaming
+        existing_matches = await Match.filter(
+            tournament=tournament,
+            speedgaming_episode_id__isnull=False
+        ).all()
+
+        deleted_count = 0
+
+        for match in existing_matches:
+            # If episode ID is not in current list, verify it's deleted
+            if match.speedgaming_episode_id not in current_episode_ids:
+                # Double-check by querying SpeedGaming API directly
+                try:
+                    episode = await self.sg_service.get_episode(
+                        match.speedgaming_episode_id
+                    )
+
+                    if episode is None:
+                        # Episode is truly deleted, remove the match
+                        logger.info(
+                            "Episode %s no longer exists in SpeedGaming, "
+                            "deleting match %s",
+                            match.speedgaming_episode_id,
+                            match.id
+                        )
+                        await match.delete()
+                        deleted_count += 1
+                    else:
+                        logger.info(
+                            "Episode %s still exists but not in event schedule, "
+                            "keeping match %s",
+                            match.speedgaming_episode_id,
+                            match.id
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        "Error checking episode %s: %s",
+                        match.speedgaming_episode_id,
+                        e
+                    )
+
+        return deleted_count
+
+    async def import_all_enabled_tournaments(self) -> Tuple[int, int, int]:
         """
         Import episodes for all tournaments with SpeedGaming enabled.
 
         Returns:
-            Tuple of (total_imported, total_skipped)
+            Tuple of (total_imported, total_updated, total_deleted)
         """
         tournaments = await Tournament.filter(
             speedgaming_enabled=True,
@@ -421,17 +553,23 @@ class SpeedGamingETLService:
         ).all()
 
         total_imported = 0
-        total_skipped = 0
+        total_updated = 0
+        total_deleted = 0
 
         for tournament in tournaments:
-            imported, skipped = await self.import_episodes_for_tournament(tournament.id)
+            imported, updated, deleted = await self.import_episodes_for_tournament(
+                tournament.id
+            )
             total_imported += imported
-            total_skipped += skipped
+            total_updated += updated
+            total_deleted += deleted
 
         logger.info(
-            "Completed import for all tournaments: %s imported, %s skipped",
+            "Completed import for all tournaments: %s imported, "
+            "%s updated, %s deleted",
             total_imported,
-            total_skipped
+            total_updated,
+            total_deleted
         )
 
-        return (total_imported, total_skipped)
+        return (total_imported, total_updated, total_deleted)

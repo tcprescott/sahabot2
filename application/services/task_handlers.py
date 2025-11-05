@@ -425,7 +425,8 @@ async def handle_speedgaming_import(task: ScheduledTask) -> None:
     Handler for importing SpeedGaming episodes into matches.
 
     This task imports upcoming SpeedGaming episodes for all tournaments
-    with SpeedGaming integration enabled.
+    with SpeedGaming integration enabled. Also handles update and deletion
+    detection.
 
     Expected task_config:
     {
@@ -441,18 +442,19 @@ async def handle_speedgaming_import(task: ScheduledTask) -> None:
 
     try:
         etl_service = SpeedGamingETLService()
-        imported, skipped = await etl_service.import_all_enabled_tournaments()
+        imported, updated, deleted = await etl_service.import_all_enabled_tournaments()
 
         logger.info(
-            "Completed SpeedGaming import: %s episodes imported, %s skipped",
+            "Completed SpeedGaming import: %s episodes imported, "
+            "%s updated, %s deleted",
             imported,
-            skipped
+            updated,
+            deleted
         )
 
     except Exception as e:
         logger.error("Error during SpeedGaming import: %s", e, exc_info=True)
         raise
-
 
 async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
     """

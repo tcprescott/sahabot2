@@ -62,13 +62,30 @@ tournament = await tournament_service.create_tournament(
 )
 ```
 
-### Automatic Import
+### Automatic Import, Update, and Deletion
 
 The built-in task `speedgaming_import` runs **every 5 minutes** to:
 1. Find all tournaments with `speedgaming_enabled=True`
 2. Fetch upcoming episodes from SpeedGaming API
 3. Import new episodes as matches
-4. Skip episodes that have already been imported
+4. **Update existing matches** if episode details changed (schedule, title)
+5. **Detect and delete matches** for episodes removed from SpeedGaming
+
+#### Update Detection
+
+If an episode is modified in SpeedGaming, the corresponding match is automatically updated:
+- **Schedule changes**: `scheduled_at` is updated
+- **Title changes**: `title` is updated
+- **Player/crew changes**: Not modified to avoid conflicts with manual assignments
+
+#### Deletion Detection
+
+If an episode no longer appears in the SpeedGaming schedule:
+1. System detects missing episode IDs
+2. Queries SpeedGaming API directly to confirm deletion
+3. If confirmed deleted, removes the corresponding match from the database
+
+This ensures the schedule stays in sync with SpeedGaming as the source of truth.
 
 ## Player & Crew Matching
 
@@ -328,13 +345,21 @@ tournament = await tournament_service.update_tournament(
 2. ETL service finds tournaments with speedgaming_enabled=True
 3. For each tournament:
    a. Fetch episodes from SpeedGaming API
-   b. For each episode:
+   b. Track current episode IDs from API response
+   c. For each episode:
       - Check if already imported (by speedgaming_episode_id)
+      - If exists, check for updates:
+        * Update scheduled_at if changed
+        * Update title if changed
       - If new, import:
         * Create Match record
         * Match/create players → Create MatchPlayers
-        * Match/create crew → Create Crew
-4. Log results
+        * Match/create crew → Create Crew (approved only)
+   d. Detect deleted episodes:
+      - Find matches with episode IDs not in current list
+      - Query SpeedGaming API to confirm deletion
+      - Delete confirmed matches
+4. Log results (imported, updated, deleted counts)
 ```
 
 ### 3. Match Created
@@ -424,12 +449,16 @@ All operations are logged with appropriate levels:
 Example log output:
 ```
 INFO: Fetched 5 upcoming episodes for event 'alttprleague'
+INFO: Episode 12345 already exists as match 789, checking for updates
+INFO: Episode 12345 schedule changed: 2022-11-06 18:00:00+00:00 -> 2022-11-06 19:00:00+00:00
+INFO: Updated match 789 for episode 12345
 INFO: Matched player 'synack' to existing user 123
 INFO: Created placeholder user 456 for SpeedGaming player 'John' (ID: 11111)
-INFO: Created match 789 for episode 12345
-INFO: Added player 123 to match 789
-INFO: Added commentator 234 to match 789
-INFO: Completed import for tournament 5: 1 imported, 0 skipped
+INFO: Created match 790 for episode 12346
+INFO: Added player 123 to match 790
+INFO: Added commentator 234 to match 790
+INFO: Episode 12344 no longer exists in SpeedGaming, deleting match 788
+INFO: Completed import for tournament 5: 1 imported, 1 updated, 1 deleted
 ```
 
 ## Testing
