@@ -53,6 +53,9 @@ async def db() -> AsyncGenerator:
                         "models.audit_log",
                         "models.api_token",
                         "models.scheduled_task",
+                        "models.organizations",
+                        "models.match_schedule",
+                        "models.discord_scheduled_event",
                     ],
                     "default_connection": "default",
                 }

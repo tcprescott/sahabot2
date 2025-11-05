@@ -187,6 +187,21 @@ class MatchScheduledEvent(EntityEvent):
 
 
 @dataclass(frozen=True)
+class MatchUpdatedEvent(EntityEvent):
+    """Emitted when a match is updated."""
+    entity_type: str = field(default="MatchSchedule", init=False)
+    tournament_id: Optional[int] = None
+    changed_fields: List[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class MatchDeletedEvent(EntityEvent):
+    """Emitted when a match is deleted."""
+    entity_type: str = field(default="MatchSchedule", init=False)
+    tournament_id: Optional[int] = None
+
+
+@dataclass(frozen=True)
 class MatchCompletedEvent(EntityEvent):
     """Emitted when a match is completed."""
     entity_type: str = field(default="MatchSchedule", init=False)

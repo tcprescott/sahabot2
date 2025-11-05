@@ -38,6 +38,7 @@ from models.racetime_chat_command import RacetimeChatCommand, CommandScope, Comm
 from models.race_room_profile import RaceRoomProfile
 from models.notification_subscription import NotificationSubscription, NotificationMethod, NotificationEventType
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
+from models.discord_scheduled_event import DiscordScheduledEvent
 
 __all__ = [
     'User',
@@ -85,4 +86,10 @@ __all__ = [
     'NotificationEventType',
     'NotificationLog',
     'NotificationDeliveryStatus',
+    'DiscordScheduledEvent',
+    # Helper functions/constants
+    'SYSTEM_USER_ID',
+    'is_system_user_id',
+    'is_authenticated_user_id',
+    'get_user_id_description',
 ]

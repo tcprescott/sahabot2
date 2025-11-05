@@ -104,13 +104,17 @@ class TournamentService:
         room_open_minutes: int = 60,
         require_racetime_link: bool = False,
         racetime_default_goal: Optional[str] = None,
+        create_scheduled_events: bool = False,
+        scheduled_events_enabled: bool = True,
+        discord_guild_ids: Optional[list[int]] = None,
     ) -> Optional[Tournament]:
         """Create a tournament in an org if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized create_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
-        return await self.repo.create(
+        
+        tournament = await self.repo.create(
             organization_id,
             name,
             description,
@@ -121,7 +125,17 @@ class TournamentService:
             room_open_minutes_before=room_open_minutes,
             require_racetime_link=require_racetime_link,
             racetime_default_goal=racetime_default_goal,
+            create_scheduled_events=create_scheduled_events,
+            scheduled_events_enabled=scheduled_events_enabled,
         )
+        
+        # Set discord guilds if provided
+        if tournament and discord_guild_ids:
+            from models import DiscordGuild
+            guilds = await DiscordGuild.filter(id__in=discord_guild_ids, organization_id=organization_id).all()
+            await tournament.discord_event_guilds.add(*guilds)
+        
+        return tournament
 
     async def update_tournament(
         self,
@@ -139,6 +153,9 @@ class TournamentService:
         require_racetime_link: Optional[bool] = None,
         racetime_default_goal: Optional[str] = None,
         race_room_profile_id: Optional[int] = None,
+        create_scheduled_events: Optional[bool] = None,
+        scheduled_events_enabled: Optional[bool] = None,
+        discord_guild_ids: Optional[list[int]] = None,
     ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
@@ -168,8 +185,24 @@ class TournamentService:
             updates['racetime_default_goal'] = racetime_default_goal
         if race_room_profile_id is not None:
             updates['race_room_profile_id'] = race_room_profile_id
+        if create_scheduled_events is not None:
+            updates['create_scheduled_events'] = create_scheduled_events
+        if scheduled_events_enabled is not None:
+            updates['scheduled_events_enabled'] = scheduled_events_enabled
 
-        return await self.repo.update(organization_id, tournament_id, **updates)
+        tournament = await self.repo.update(organization_id, tournament_id, **updates)
+        
+        # Update discord guilds if provided
+        if tournament and discord_guild_ids is not None:
+            from models import DiscordGuild
+            # Clear existing guilds
+            await tournament.discord_event_guilds.clear()
+            # Add new guilds
+            if discord_guild_ids:
+                guilds = await DiscordGuild.filter(id__in=discord_guild_ids, organization_id=organization_id).all()
+                await tournament.discord_event_guilds.add(*guilds)
+        
+        return tournament
 
     async def delete_tournament(self, user: Optional[User], organization_id: int, tournament_id: int) -> bool:
         """Delete a tournament if user can admin the org."""

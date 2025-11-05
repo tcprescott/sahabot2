@@ -43,6 +43,8 @@ class TournamentRepository:
         room_open_minutes_before: int = 60,
         require_racetime_link: bool = False,
         racetime_default_goal: Optional[str] = None,
+        create_scheduled_events: bool = False,
+        scheduled_events_enabled: bool = True,
     ) -> Tournament:
         """Create a tournament in the given organization."""
         tournament = await Tournament.create(
@@ -56,6 +58,8 @@ class TournamentRepository:
             room_open_minutes_before=room_open_minutes_before,
             require_racetime_link=require_racetime_link,
             racetime_default_goal=racetime_default_goal,
+            create_scheduled_events=create_scheduled_events,
+            scheduled_events_enabled=scheduled_events_enabled,
         )
         logger.info("Created tournament %s in org %s", tournament.id, organization_id)
         return tournament

@@ -12,6 +12,7 @@ from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import TournamentDialog, ConfirmDialog
 from application.services.tournament_service import TournamentService
+from application.services.discord_scheduled_event_service import DiscordScheduledEventService
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 
 
@@ -23,6 +24,7 @@ class OrganizationTournamentsView:
         self.organization = organization
         self.service = service
         self.racetime_bot_repo = RacetimeBotRepository()
+        self.discord_events_service = DiscordScheduledEventService()
         self.container = None
 
     async def _refresh(self) -> None:
@@ -38,6 +40,11 @@ class OrganizationTournamentsView:
         racetime_bots = await self.racetime_bot_repo.get_bots_for_organization(self.organization.id)
         bot_options = {bot.id: f"{bot.category} ({bot.client_id})" for bot in racetime_bots if bot.is_active}
         
+        # Get available Discord guilds for this organization
+        from models import DiscordGuild
+        discord_guilds = await DiscordGuild.filter(organization_id=self.organization.id, is_active=True).all()
+        guild_options = {guild.id: guild.guild_name for guild in discord_guilds}
+        
         async def on_submit(**kwargs) -> None:
             await self.service.create_tournament(
                 user=self.user,
@@ -52,6 +59,7 @@ class OrganizationTournamentsView:
             initial_is_active=True,
             initial_tracker_enabled=True,
             available_racetime_bots=bot_options,
+            available_discord_guilds=guild_options,
         )
         await dialog.show()
 
@@ -60,6 +68,15 @@ class OrganizationTournamentsView:
         # Get available RaceTime bots for this organization
         racetime_bots = await self.racetime_bot_repo.get_bots_for_organization(self.organization.id)
         bot_options = {bot.id: f"{bot.category} ({bot.client_id})" for bot in racetime_bots if bot.is_active}
+        
+        # Get available Discord guilds for this organization
+        from models import DiscordGuild
+        discord_guilds = await DiscordGuild.filter(organization_id=self.organization.id, is_active=True).all()
+        guild_options = {guild.id: guild.guild_name for guild in discord_guilds}
+        
+        # Get currently selected guilds for this tournament
+        await t.fetch_related('discord_event_guilds')
+        current_guild_ids = [guild.id for guild in t.discord_event_guilds]
         
         async def on_submit(**kwargs) -> None:
             await self.service.update_tournament(
@@ -82,6 +99,10 @@ class OrganizationTournamentsView:
             initial_room_open_minutes=int(getattr(t, 'room_open_minutes_before', 60)),
             initial_require_racetime_link=bool(getattr(t, 'require_racetime_link', False)),
             initial_racetime_default_goal=getattr(t, 'racetime_default_goal', None),
+            initial_create_scheduled_events=bool(getattr(t, 'create_scheduled_events', False)),
+            initial_scheduled_events_enabled=bool(getattr(t, 'scheduled_events_enabled', True)),
+            available_discord_guilds=guild_options,
+            initial_discord_guild_ids=current_guild_ids,
             on_submit=on_submit,
         )
         await dialog.show()
@@ -98,6 +119,27 @@ class OrganizationTournamentsView:
             on_confirm=do_delete,
         )
         await dialog.show()
+
+    async def _sync_discord_events(self, t) -> None:
+        """Manually sync Discord scheduled events for a tournament."""
+        try:
+            ui.notify('Syncing Discord events...', type='info')
+            stats = await self.discord_events_service.sync_tournament_events(
+                user_id=self.user.id,
+                organization_id=self.organization.id,
+                tournament_id=t.id,
+            )
+            
+            # Show results
+            created = stats.get('created', 0)
+            updated = stats.get('updated', 0)
+            deleted = stats.get('deleted', 0)
+            
+            message = f"Sync complete: {created} created, {updated} updated, {deleted} deleted"
+            ui.notify(message, type='positive')
+            
+        except Exception as e:
+            ui.notify(f'Failed to sync events: {str(e)}', type='negative')
 
     async def _render_content(self) -> None:
         """Render tournaments list and actions."""
@@ -128,6 +170,9 @@ class OrganizationTournamentsView:
                     with ui.element('div').classes('flex gap-2'):
                         ui.button('Manage', icon='settings', on_click=lambda t=t: ui.navigate.to(f'/org/{self.organization.id}/tournament/{t.id}/admin')).classes('btn').props('color=primary')
                         ui.button('Edit', icon='edit', on_click=lambda t=t: self._open_edit_dialog(t)).classes('btn')
+                        # Show sync button if Discord scheduled events are enabled
+                        if getattr(t, 'create_scheduled_events', False) and getattr(t, 'scheduled_events_enabled', True):
+                            ui.button('Sync Events', icon='sync', on_click=lambda t=t: self._sync_discord_events(t)).classes('btn').props('color=secondary')
                         ui.button('Delete', icon='delete', on_click=lambda t=t: self._confirm_delete(t)).classes('btn')
 
                 columns = [

@@ -150,3 +150,39 @@ class AuthorizationService:
         permission_names = [p.permission_name for p in member.permissions]
 
         return 'ADMIN' in permission_names or 'MEMBER_MANAGER' in permission_names
+
+    @staticmethod
+    async def can_manage_discord_events(user: Optional[User], organization_id: int) -> bool:
+        """
+        Check if user can manage Discord scheduled events in an organization.
+
+        This requires the MANAGE_EVENTS permission in Discord, which we check
+        by verifying the user has sufficient organization permissions.
+
+        Args:
+            user: User to check permissions for
+            organization_id: Organization to check permissions in
+
+        Returns:
+            bool: True if user can manage Discord scheduled events
+        """
+        if user is None:
+            return False
+
+        # SUPERADMINs can manage Discord events in any organization
+        if user.has_permission(Permission.SUPERADMIN):
+            return True
+
+        # Check if user has ADMIN permission in the org
+        from application.repositories.organization_repository import OrganizationRepository
+        repo = OrganizationRepository()
+        member = await repo.get_member(organization_id, user.id)
+
+        if not member:
+            return False
+
+        # Check if member has admin permissions
+        await member.fetch_related('permissions')
+        permission_names = [p.permission_name for p in member.permissions]
+
+        return 'ADMIN' in permission_names

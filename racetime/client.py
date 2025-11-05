@@ -50,7 +50,7 @@ _command_service: Optional[RacetimeChatCommandService] = None
 
 def _get_command_service() -> RacetimeChatCommandService:
     """Get or create the global command service instance."""
-    global _command_service
+    global _command_service # pylint: disable=global-statement
     if _command_service is None:
         _command_service = RacetimeChatCommandService()
         # Register all built-in handlers

@@ -28,6 +28,11 @@ class Tournament(Model):
     # Race room profile (reusable configuration)
     race_room_profile = fields.ForeignKeyField('models.RaceRoomProfile', related_name='tournaments', null=True)
 
+    # Discord scheduled events integration
+    create_scheduled_events = fields.BooleanField(default=False)  # Enable Discord event creation for matches
+    scheduled_events_enabled = fields.BooleanField(default=True)  # Master toggle (can disable temporarily)
+    discord_event_guilds = fields.ManyToManyField('models.DiscordGuild', related_name='event_tournaments', through='tournament_discord_guilds')  # Guilds to publish events to
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

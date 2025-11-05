@@ -27,6 +27,11 @@ class TournamentDialog(BaseDialog):
         initial_room_open_minutes: int = 60,
         initial_require_racetime_link: bool = False,
         initial_racetime_default_goal: Optional[str] = None,
+        # Discord scheduled events settings
+        initial_create_scheduled_events: bool = False,
+        initial_scheduled_events_enabled: bool = True,
+        available_discord_guilds: Optional[dict[int, str]] = None,
+        initial_discord_guild_ids: Optional[list[int]] = None,
         on_submit: Optional[Callable] = None,
     ) -> None:
         super().__init__()
@@ -44,6 +49,12 @@ class TournamentDialog(BaseDialog):
         self._initial_room_open_minutes = initial_room_open_minutes
         self._initial_require_racetime_link = initial_require_racetime_link
         self._initial_racetime_default_goal = initial_racetime_default_goal
+        
+        # Discord scheduled events settings
+        self._initial_create_scheduled_events = initial_create_scheduled_events
+        self._initial_scheduled_events_enabled = initial_scheduled_events_enabled
+        self._available_discord_guilds = available_discord_guilds or {}
+        self._initial_discord_guild_ids = initial_discord_guild_ids or []
 
         # UI refs
         self._name_input: Optional[ui.input] = None
@@ -57,6 +68,11 @@ class TournamentDialog(BaseDialog):
         self._room_open_minutes_input: Optional[ui.number] = None
         self._require_racetime_link_toggle: Optional[ui.switch] = None
         self._racetime_default_goal_input: Optional[ui.input] = None
+        
+        # Discord scheduled events UI refs
+        self._create_scheduled_events_toggle: Optional[ui.switch] = None
+        self._scheduled_events_enabled_toggle: Optional[ui.switch] = None
+        self._discord_guilds_select: Optional[ui.select] = None
 
     async def show(self) -> None:
         """Display the dialog."""
@@ -133,6 +149,40 @@ class TournamentDialog(BaseDialog):
                 ).classes('w-full')
                 ui.label('Default goal text for race rooms (can be overridden per-match)').classes('text-xs text-secondary mt-1')
 
+        ui.separator().classes('my-4')
+
+        # Discord Scheduled Events Section
+        self.create_section_title('Discord Scheduled Events')
+        
+        with ui.column().classes('gap-md w-full'):
+            # Create scheduled events toggle
+            with ui.element('div'):
+                self._create_scheduled_events_toggle = ui.switch(
+                    text='Create Discord scheduled events for matches',
+                    value=self._initial_create_scheduled_events
+                )
+                ui.label('When enabled, Discord scheduled events will be created automatically for tournament matches').classes('text-xs text-secondary mt-1')
+            
+            # Guild selection
+            if self._available_discord_guilds:
+                with ui.element('div'):
+                    self._discord_guilds_select = ui.select(
+                        label='Discord Servers to publish events to',
+                        options=self._available_discord_guilds,
+                        value=self._initial_discord_guild_ids,
+                        multiple=True,
+                        with_input=True,
+                    ).classes('w-full')
+                    ui.label('Select which Discord servers should receive scheduled events (leave empty to use all linked servers)').classes('text-xs text-secondary mt-1')
+            
+            # Events enabled toggle
+            with ui.element('div'):
+                self._scheduled_events_enabled_toggle = ui.switch(
+                    text='Events currently enabled',
+                    value=self._initial_scheduled_events_enabled
+                )
+                ui.label('Disable this to temporarily stop creating new events without changing the tournament setting').classes('text-xs text-secondary mt-1')
+
         with self.create_actions_row():
             ui.button('Cancel', on_click=self.close).classes('btn')
             ui.button('Save', on_click=self._handle_submit).classes('btn').props('color=positive')
@@ -155,6 +205,11 @@ class TournamentDialog(BaseDialog):
         require_racetime_link = bool(self._require_racetime_link_toggle.value) if self._require_racetime_link_toggle else False
         racetime_default_goal = self._racetime_default_goal_input.value.strip() if self._racetime_default_goal_input and self._racetime_default_goal_input.value else None
         
+        # Discord scheduled events settings
+        create_scheduled_events = bool(self._create_scheduled_events_toggle.value) if self._create_scheduled_events_toggle else False
+        scheduled_events_enabled = bool(self._scheduled_events_enabled_toggle.value) if self._scheduled_events_enabled_toggle else True
+        discord_guild_ids = self._discord_guilds_select.value if self._discord_guilds_select else []
+        
         if self._on_submit:
             await self._on_submit(
                 name=name,
@@ -166,6 +221,9 @@ class TournamentDialog(BaseDialog):
                 room_open_minutes=room_open_minutes,
                 require_racetime_link=require_racetime_link,
                 racetime_default_goal=racetime_default_goal,
+                create_scheduled_events=create_scheduled_events,
+                scheduled_events_enabled=scheduled_events_enabled,
+                discord_guild_ids=discord_guild_ids,
             )
         await self.close()
 
