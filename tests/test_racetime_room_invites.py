@@ -7,13 +7,14 @@ all players with linked RaceTime accounts are automatically invited.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
+from models import User, Permission
+from models.match_schedule import Match, Tournament, MatchPlayers
+from application.services.tournament_service import TournamentService
 
 
 @pytest.mark.asyncio
 async def test_create_room_invites_linked_players():
     """Test that room creation invites all players with linked RaceTime accounts."""
-    from models import User, Permission
-    from models.match_schedule import Match, Tournament, MatchPlayers
 
     # Create mock users
     user1 = User(
@@ -127,9 +128,7 @@ async def test_create_room_invites_linked_players():
         MockSession.return_value = mock_session_instance
 
         # Import and call the service method
-        from application.services.tournament_service import TournamentService
 
-        service = TournamentService()
 
         # Mock authorization checks
         service.org_service.user_can_manage_tournaments = AsyncMock(return_value=True)
@@ -165,9 +164,6 @@ async def test_create_room_invites_linked_players():
 @pytest.mark.asyncio
 async def test_create_room_handles_invite_failure():
     """Test that individual invite failures don't stop other invites."""
-    from models import User, Permission
-    from models.match_schedule import Match, Tournament, MatchPlayers
-
     # Create mock users
     user1 = User(
         id=1,
@@ -273,8 +269,6 @@ async def test_create_room_handles_invite_failure():
         MockSession.return_value = mock_session_instance
 
         # Import and call the service method
-        from application.services.tournament_service import TournamentService
-
         service = TournamentService()
 
         # Mock authorization checks
