@@ -18,6 +18,16 @@ compatibility with the original workflow.
 
 We also create our own aiohttp.ClientSession (self.http) for efficient connection pooling,
 rather than using aiohttp.request() directly like the base Bot class does.
+
+RACE ROOM JOINING BEHAVIOR:
+- The upstream racetime-bot library has automatic race room polling/joining via refresh_races()
+- SahaBot2 DISABLES this automatic polling behavior (refresh_races() task is not started)
+- Instead, race rooms are joined EXPLICITLY via:
+  * Task scheduler system (scheduled race room creation/joining)
+  * Manual commands (!startrace, etc.)
+  * API calls (startrace, join_race_room methods)
+- The should_handle() method always returns False to prevent automatic joining
+- This gives us full control over when and how race rooms are joined
 """
 
 import asyncio
@@ -582,14 +592,21 @@ class RacetimeBot(Bot):
         """
         Determine if this bot should handle a specific race.
         
+        NOTE: This method is not used in SahaBot2. We do NOT use automatic race
+        room polling/joining. Instead, race rooms are joined explicitly via the
+        task scheduler system or manual commands.
+        
+        This method is kept for compatibility with the base Bot class, but always
+        returns False to prevent automatic joining.
+        
         Args:
             race_data: Race data from racetime.gg
             
         Returns:
-            bool: True if bot should handle this race
+            bool: Always False - we don't auto-join races
         """
-    # Handle all races in the configured category
-        return True
+        # Always return False - we use explicit joining via scheduler, not automatic polling
+        return False
     
     def get_handler_class(self):
         """
@@ -889,15 +906,25 @@ async def start_racetime_bot(
                         backoff_delay = initial_backoff
                         
                         # Instead of calling bot.run() which tries to take over the event loop,
-                        # we manually create the tasks that run() would create
-                        # This allows the bot to work within our existing async context
+                        # we manually create the reauthorize task that run() would create.
+                        # This allows the bot to work within our existing async context.
+                        #
+                        # NOTE: We do NOT create the refresh_races() task here. In the original
+                        # racetime-bot library, refresh_races() polls for race rooms and automatically
+                        # joins them based on should_handle(). We explicitly disable this behavior
+                        # because SahaBot2 uses the task scheduler system to join race rooms at
+                        # scheduled times instead of automatic polling.
+                        #
+                        # Race rooms are joined explicitly via:
+                        # - Scheduled tasks (task scheduler system)
+                        # - Manual commands (!startrace, etc.)
+                        # - API calls (startrace, join_race_room)
                         reauth_task = asyncio.create_task(bot.reauthorize())
-                        refresh_task = asyncio.create_task(bot.refresh_races())
                         
-                        # Wait for both tasks (they run forever until cancelled)
-                        await asyncio.gather(reauth_task, refresh_task)
+                        # Wait for the reauth task (runs forever until cancelled)
+                        await reauth_task
                         
-                        logger.info("bot tasks completed normally for category: %s", category)
+                        logger.info("bot reauth task completed normally for category: %s", category)
                         break  # Exit retry loop on normal completion
                         
                     except asyncio.CancelledError:

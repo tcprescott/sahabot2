@@ -1,6 +1,23 @@
-# RaceTime.gg OAuth2 Integration Implementation Summary
+# RaceTime.gg Integration Guide
 
 ## Overview
+This document covers SahaBot2's integration with RaceTime.gg, including OAuth2 account linking, bot client functionality, and race room management.
+
+## Important: Automatic Polling Disabled
+
+**SahaBot2 does NOT use automatic race room polling**. The RaceTime bot client explicitly disables the `refresh_races()` polling mechanism from the upstream library. Instead, race rooms are joined explicitly via:
+
+- **Task Scheduler System** - Schedule race room creation/joining at specific times
+- **Manual Commands** - Discord bot commands like `!startrace`
+- **API Calls** - Programmatic race room creation via `bot.startrace()` or `bot.join_race_room()`
+
+**See**: [`RACETIME_POLLING_DISABLED.md`](RACETIME_POLLING_DISABLED.md) for detailed explanation of this architectural decision.
+
+---
+
+## OAuth2 Account Linking
+
+### Overview
 This implementation adds RaceTime.gg OAuth2 account linking functionality to SahaBot2, allowing users to link their RaceTime.gg accounts to their Discord-authenticated profiles.
 
 ## Implementation Details

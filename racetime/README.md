@@ -8,6 +8,27 @@ The racetime bot integrates with [racetime.gg](https://racetime.gg) to provide r
 
 **Multi-Bot Architecture**: Racetime.gg requires a separate bot instance for each game category. This implementation supports running multiple bot instances simultaneously, each with its own OAuth2 credentials and category assignment.
 
+## Important: Automatic Polling Disabled
+
+**SahaBot2 does NOT use automatic race room polling**. The bot client explicitly disables the `refresh_races()` polling mechanism from the upstream racetime-bot library.
+
+### Why Polling is Disabled
+
+- **Precise Control**: We want explicit control over when and how race rooms are joined
+- **Scheduler Integration**: Race rooms should be created/joined via the task scheduler system
+- **Multi-Tenant Model**: Random auto-joining conflicts with organization-scoped automation
+- **Resource Efficiency**: No continuous polling overhead
+
+### How Race Rooms Are Joined
+
+Instead of automatic polling, race rooms are joined **explicitly** via:
+
+1. **Task Scheduler System** - Create scheduled tasks to open race rooms at specific times
+2. **Manual Commands** - Discord bot commands like `!startrace`
+3. **API Calls** - Programmatic creation via `bot.startrace()` or `bot.join_race_room()`
+
+**See**: [`../docs/integrations/RACETIME_POLLING_DISABLED.md`](../docs/integrations/RACETIME_POLLING_DISABLED.md) for complete details.
+
 ## Configuration
 
 Required environment variable (add to `.env`):
