@@ -30,6 +30,9 @@ Backend systems and architecture:
 - **[Notification System](systems/NOTIFICATION_SYSTEM.md)** - Discord notification handlers
 - **[Task Scheduler](systems/TASK_SCHEDULER.md)** - Background task scheduling
 - **[Built-in Tasks](systems/BUILTIN_TASKS.md)** - Reference for built-in scheduled tasks
+- **[Feature Flags](systems/FEATURE_FLAGS.md)** - Organization feature flag system for SUPERADMIN
+- **[Feature Flags Summary](systems/FEATURE_FLAGS_SUMMARY.md)** - Implementation summary and quick start
+- **[Feature Flags Integration](systems/FEATURE_FLAGS_INTEGRATION.md)** - Integration examples and patterns
 
 ### 🚀 Operations & Deployment
 

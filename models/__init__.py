@@ -40,6 +40,7 @@ from models.racer_verification import RacerVerification, UserRacerVerification
 from models.notification_subscription import NotificationSubscription, NotificationMethod, NotificationEventType
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
 from models.discord_scheduled_event import DiscordScheduledEvent
+from models.organization_feature_flag import OrganizationFeatureFlag, FeatureFlag
 
 __all__ = [
     'User',
@@ -91,6 +92,8 @@ __all__ = [
     'NotificationLog',
     'NotificationDeliveryStatus',
     'DiscordScheduledEvent',
+    'OrganizationFeatureFlag',
+    'FeatureFlag',
     # Helper functions/constants
     'SYSTEM_USER_ID',
     'is_system_user_id',
