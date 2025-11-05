@@ -14,12 +14,13 @@ Start here if you're new to the codebase:
 
 ### 🏗️ Core Development Guides
 
-Essential guides for UI and frontend development:
+Essential guides for UI, backend, and architecture development:
 
 - **[BasePage Guide](core/BASEPAGE_GUIDE.md)** - Using the BasePage template for pages
 - **[Components Guide](core/COMPONENTS_GUIDE.md)** - Reusable UI components
 - **[Dialog Action Row Pattern](core/DIALOG_ACTION_ROW_PATTERN.md)** - Dialog button layout pattern
 - **[JavaScript Guidelines](core/JAVASCRIPT_GUIDELINES.md)** - JavaScript organization and patterns
+- **[Repository Pattern Guide](core/REPOSITORIES_PATTERN.md)** - Data access layer patterns and examples
 
 ### ⚙️ System Documentation
 
@@ -29,6 +30,14 @@ Backend systems and architecture:
 - **[Notification System](systems/NOTIFICATION_SYSTEM.md)** - Discord notification handlers
 - **[Task Scheduler](systems/TASK_SCHEDULER.md)** - Background task scheduling
 - **[Built-in Tasks](systems/BUILTIN_TASKS.md)** - Reference for built-in scheduled tasks
+
+### 🚀 Operations & Deployment
+
+Deployment, configuration, and troubleshooting:
+
+- **[Environment Variables Reference](reference/ENVIRONMENT_VARIABLES.md)** - Complete configuration reference
+- **[Troubleshooting Guide](operations/TROUBLESHOOTING_GUIDE.md)** - Common issues and debugging procedures
+- **[Deployment Guide](operations/DEPLOYMENT_GUIDE.md)** - Production deployment, scaling, and operations
 
 ### 🔌 Integration Guides
 
@@ -50,12 +59,23 @@ End-user and administrator documentation:
 - **[Async Tournaments Guide](guides/user/ASYNC_TOURNAMENT_END_USER_GUIDE.md)** - End user tournament guide
 - **[Live Races User Guide](guides/user/USER_GUIDE_LIVE_RACES.md)** - Using live race features
 
-### 📖 Reference
+### Reference
 
 Quick reference documentation:
 
+- **[Services Reference](reference/SERVICES_REFERENCE.md)** - Complete reference for all 33 services with methods and examples
+- **[API Endpoints Reference](reference/API_ENDPOINTS_REFERENCE.md)** - All 65+ REST endpoints with parameters and responses
+- **[Database Models Reference](reference/DATABASE_MODELS_REFERENCE.md)** - All 30+ models with fields, relationships, and indexes
 - **[API Documentation](reference/API_SWAGGER_GUIDE.md)** - Using the Swagger API docs
 - **[Known Issues](reference/KNOWN_ISSUES.md)** - Current known issues and workarounds
+
+### 📊 Documentation Analysis
+
+Current state of documentation coverage and recommendations:
+
+- **[Documentation Gap Analysis](DOCUMENTATION_GAP_ANALYSIS.md)** - Comprehensive analysis of missing/incomplete documentation (services, APIs, models, infrastructure)
+- **[Documentation Gap Summary](DOCUMENTATION_GAP_SUMMARY.md)** - Executive summary with action plan
+- **[Documentation Checklist](DOCUMENTATION_CHECKLIST.md)** - Tracking checklist for all items needing documentation (100+ items)
 
 ### 📋 Planning & Analysis
 
@@ -63,6 +83,8 @@ Current planning and reorganization documents:
 
 - **[Copilot Instructions Reorganization](COPILOT_INSTRUCTIONS_REORGANIZATION.md)** - Plan for streamlining copilot instructions
 - **[Documentation Cleanup Analysis](DOCS_CLEANUP_ANALYSIS.md)** - Analysis of documentation reorganization
+- **[Documentation Gap Analysis](DOCUMENTATION_GAP_ANALYSIS.md)** - Comprehensive analysis of all undocumented services, APIs, and models
+- **[Documentation Checklist](DOCUMENTATION_CHECKLIST.md)** - Complete tracking list for documentation work (100+ items to document)
 
 ### 📦 Archive
 
