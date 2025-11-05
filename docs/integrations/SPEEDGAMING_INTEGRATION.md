@@ -168,12 +168,13 @@ SpeedGaming Episode Player (No Discord ID):
   "publicStream": ""
 }
 
-→ Check for placeholder user with username="sg_11111"
+→ Check for placeholder user with speedgaming_id=11111
 → If not found, create User:
    - discord_id=0
    - discord_username="sg_11111"
    - display_name="the_synack"  (from streamingFrom)
    - is_placeholder=True
+   - speedgaming_id=11111  (track SpeedGaming ID)
 → Add to organization
 → Create MatchPlayers record linking placeholder User to Match
 ```
@@ -195,7 +196,15 @@ class Match(Model):
 # User model additions
 class User(Model):
     is_placeholder = fields.BooleanField(default=False)
+    speedgaming_id = fields.IntField(null=True)  # SpeedGaming player/crew ID
 ```
+
+### SpeedGaming ID Tracking
+
+The `speedgaming_id` field on the User model enables:
+- **Deduplication**: Find existing placeholder users even if username changes
+- **Change detection**: Update placeholder display names when SpeedGaming data changes
+- **Player/crew sync**: Detect when players/crew are added or removed from episodes
 
 ### SpeedGaming Data Classes
 

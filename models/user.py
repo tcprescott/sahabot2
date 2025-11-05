@@ -94,6 +94,7 @@ class User(Model):
 
     # SpeedGaming integration - track placeholder users created from SG data
     is_placeholder = fields.BooleanField(default=False)  # True if created as placeholder for SpeedGaming import
+    speedgaming_id = fields.IntField(null=True)  # SpeedGaming player/crew ID for placeholder users
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

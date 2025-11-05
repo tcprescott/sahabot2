@@ -89,6 +89,7 @@ ALTER TABLE `matches` ADD `speedgaming_episode_id` INT UNIQUE;
 
 -- Users table
 ALTER TABLE `users` ADD `is_placeholder` BOOL NOT NULL DEFAULT 0;
+ALTER TABLE `users` ADD `speedgaming_id` INT;
 ```
 
 ## How It Works
@@ -104,6 +105,7 @@ ALTER TABLE `users` ADD `is_placeholder` BOOL NOT NULL DEFAULT 0;
    - For each episode:
      - **New**: Create match, players, crew
      - **Existing**: Check for updates, update if changed
+     - **Player/Crew Changes**: Detect additions/removals, sync accordingly
    - Detect missing episodes and delete matches
 
 3. **Read-Only Enforcement**: When SpeedGaming enabled
@@ -113,6 +115,8 @@ ALTER TABLE `users` ADD `is_placeholder` BOOL NOT NULL DEFAULT 0;
 
 4. **User Matching**:
    - Match by Discord ID if available
+   - Match by SpeedGaming ID for existing placeholders
+   - Update placeholder display names if changed
    - Create placeholder with smart display name if not
    - Add users to organization automatically
 

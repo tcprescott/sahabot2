@@ -51,11 +51,12 @@ class SpeedGamingETLService:
         sg_player: SpeedGamingPlayer,
     ) -> User:
         """
-        Find existing user by Discord ID or create placeholder user.
+        Find existing user by Discord ID or SpeedGaming ID, or create placeholder user.
 
         Priority:
         1. Match by discord_id (if available)
-        2. Create placeholder user with display name from SpeedGaming
+        2. Match by speedgaming_id (for existing placeholders)
+        3. Create new placeholder user with display name from SpeedGaming
 
         Args:
             organization_id: Organization ID to add user to
@@ -86,18 +87,41 @@ class SpeedGamingETLService:
 
                 return user
 
-        # Create placeholder user
-        # Use a unique identifier based on SG player ID to avoid duplicates
-        placeholder_username = f"sg_{sg_player.id}"
-
-        # Check if placeholder already exists
-        user = await User.get_or_none(discord_username=placeholder_username)
+        # Try to find placeholder user by SpeedGaming ID
+        user = await User.get_or_none(
+            is_placeholder=True,
+            speedgaming_id=sg_player.id
+        )
+        
         if user:
             logger.info(
                 "Found existing placeholder user for SG player %s",
                 sg_player.id
             )
+            
+            # Update display name if it has changed
+            new_display_name = (
+                sg_player.streaming_from
+                or sg_player.public_stream
+                or sg_player.display_name
+                or f"sg_{sg_player.id}"
+            )
+            
+            if user.display_name != new_display_name:
+                logger.info(
+                    "Updating placeholder user %s display name: %s -> %s",
+                    user.id,
+                    user.display_name,
+                    new_display_name
+                )
+                user.display_name = new_display_name
+                await user.save()
+            
             return user
+
+        # Create new placeholder user
+        # Use a unique identifier based on SG player ID to avoid duplicates
+        placeholder_username = f"sg_{sg_player.id}"
 
         # Determine best display name
         # Priority: streaming_from (Twitch), public_stream, display_name
@@ -117,6 +141,7 @@ class SpeedGamingETLService:
             discord_email=None,
             display_name=display_name,
             is_placeholder=True,  # Mark as placeholder
+            speedgaming_id=sg_player.id,  # Store SpeedGaming ID
         )
         logger.info(
             "Created placeholder user %s for SpeedGaming player '%s' "
@@ -144,7 +169,12 @@ class SpeedGamingETLService:
         sg_crew: SpeedGamingCrewMember,
     ) -> User:
         """
-        Find existing user by Discord ID or create placeholder user for crew.
+        Find existing user by Discord ID or SpeedGaming ID, or create placeholder user for crew.
+
+        Priority:
+        1. Match by discord_id (if available)
+        2. Match by speedgaming_id (for existing placeholders)
+        3. Create new placeholder user
 
         Args:
             organization_id: Organization ID to add user to
@@ -175,18 +205,40 @@ class SpeedGamingETLService:
 
                 return user
 
-        # Create placeholder user
-        # Use a unique identifier based on SG crew ID to avoid duplicates
-        placeholder_username = f"sg_crew_{sg_crew.id}"
-
-        # Check if placeholder already exists
-        user = await User.get_or_none(discord_username=placeholder_username)
+        # Try to find placeholder user by SpeedGaming ID
+        user = await User.get_or_none(
+            is_placeholder=True,
+            speedgaming_id=sg_crew.id
+        )
+        
         if user:
             logger.info(
                 "Found existing placeholder crew user for SG crew %s",
                 sg_crew.id
             )
+            
+            # Update display name if it has changed
+            new_display_name = (
+                sg_crew.public_stream
+                or sg_crew.display_name
+                or f"sg_crew_{sg_crew.id}"
+            )
+            
+            if user.display_name != new_display_name:
+                logger.info(
+                    "Updating placeholder crew user %s display name: %s -> %s",
+                    user.id,
+                    user.display_name,
+                    new_display_name
+                )
+                user.display_name = new_display_name
+                await user.save()
+            
             return user
+
+        # Create new placeholder user
+        # Use a unique identifier based on SG crew ID to avoid duplicates
+        placeholder_username = f"sg_crew_{sg_crew.id}"
 
         # Determine best display name
         # Priority: public_stream (Twitch), display_name
@@ -205,6 +257,7 @@ class SpeedGamingETLService:
             discord_email=None,
             display_name=display_name,
             is_placeholder=True,
+            speedgaming_id=sg_crew.id,  # Store SpeedGaming ID
         )
         logger.info(
             "Created placeholder crew user %s for SpeedGaming crew '%s' "
@@ -225,6 +278,233 @@ class SpeedGamingETLService:
         )
 
         return user
+
+    async def _sync_match_players(
+        self,
+        match: Match,
+        sg_players: List[SpeedGamingPlayer],
+        organization_id: int
+    ) -> None:
+        """
+        Sync match players with SpeedGaming data.
+
+        Detects added/removed players and updates accordingly.
+
+        Args:
+            match: Match to sync
+            sg_players: Current players from SpeedGaming
+            organization_id: Organization ID
+        """
+        # Get current players
+        current_players = await MatchPlayers.filter(
+            match=match
+        ).prefetch_related('user').all()
+
+        # Build set of current user IDs (both real and placeholder via SG ID)
+        current_user_ids = set()
+        current_sg_ids = set()
+        
+        for mp in current_players:
+            current_user_ids.add(mp.user_id)
+            if mp.user.is_placeholder and mp.user.speedgaming_id:
+                current_sg_ids.add(mp.user.speedgaming_id)
+            elif not mp.user.is_placeholder and mp.user.discord_id:
+                # Track by discord_id for real users
+                pass
+
+        # Build set of new player SpeedGaming IDs and Discord IDs
+        new_sg_ids = {p.id for p in sg_players}
+        new_discord_ids = {
+            p.discord_id_int for p in sg_players if p.discord_id_int
+        }
+
+        # Find players to add (in SG but not in current)
+        for sg_player in sg_players:
+            # Check if this player is already in the match
+            already_exists = False
+            
+            # Check by Discord ID first
+            if sg_player.discord_id_int:
+                for mp in current_players:
+                    if (not mp.user.is_placeholder and 
+                        mp.user.discord_id == sg_player.discord_id_int):
+                        already_exists = True
+                        break
+            
+            # Check by SpeedGaming ID for placeholders
+            if not already_exists and sg_player.id in current_sg_ids:
+                already_exists = True
+            
+            if not already_exists:
+                # Add new player
+                user = await self._find_or_create_user(organization_id, sg_player)
+                await MatchPlayers.create(match=match, user=user)
+                logger.info(
+                    "Added new player %s to match %s (SG player %s)",
+                    user.id,
+                    match.id,
+                    sg_player.id
+                )
+
+        # Find players to remove (in current but not in SG)
+        for mp in current_players:
+            should_remove = False
+            
+            if mp.user.is_placeholder and mp.user.speedgaming_id:
+                # Placeholder user - check by SG ID
+                if mp.user.speedgaming_id not in new_sg_ids:
+                    should_remove = True
+            elif not mp.user.is_placeholder and mp.user.discord_id:
+                # Real user - check by Discord ID
+                if mp.user.discord_id not in new_discord_ids:
+                    should_remove = True
+            
+            if should_remove:
+                logger.info(
+                    "Removing player %s from match %s (no longer in SG episode)",
+                    mp.user_id,
+                    match.id
+                )
+                await mp.delete()
+
+    async def _sync_match_crew(
+        self,
+        match: Match,
+        sg_commentators: List[SpeedGamingCrewMember],
+        sg_trackers: List[SpeedGamingCrewMember],
+        organization_id: int
+    ) -> None:
+        """
+        Sync match crew with SpeedGaming data.
+
+        Detects added/removed crew and updates accordingly.
+        Only syncs approved crew members.
+
+        Args:
+            match: Match to sync
+            sg_commentators: Current commentators from SpeedGaming
+            sg_trackers: Current trackers from SpeedGaming
+            organization_id: Organization ID
+        """
+        # Get current crew
+        current_crew = await Crew.filter(
+            match=match
+        ).prefetch_related('user').all()
+
+        # Build current crew sets by role and SG ID
+        current_commentator_sg_ids = set()
+        current_tracker_sg_ids = set()
+        current_crew_by_user = {}
+        
+        for crew in current_crew:
+            current_crew_by_user[crew.user_id] = crew
+            if crew.user.is_placeholder and crew.user.speedgaming_id:
+                if crew.role == CrewRole.COMMENTATOR:
+                    current_commentator_sg_ids.add(crew.user.speedgaming_id)
+                elif crew.role == CrewRole.TRACKER:
+                    current_tracker_sg_ids.add(crew.user.speedgaming_id)
+
+        # Sync commentators (approved only)
+        approved_commentators = [c for c in sg_commentators if c.approved]
+        for sg_comm in approved_commentators:
+            # Check if already exists
+            already_exists = False
+            
+            if sg_comm.discord_id_int:
+                for crew in current_crew:
+                    if (crew.role == CrewRole.COMMENTATOR and
+                        not crew.user.is_placeholder and
+                        crew.user.discord_id == sg_comm.discord_id_int):
+                        already_exists = True
+                        break
+            
+            if not already_exists and sg_comm.id in current_commentator_sg_ids:
+                already_exists = True
+            
+            if not already_exists:
+                user = await self._find_or_create_crew_user(organization_id, sg_comm)
+                await Crew.create(
+                    match=match,
+                    user=user,
+                    role=CrewRole.COMMENTATOR,
+                    approved=True
+                )
+                logger.info(
+                    "Added new commentator %s to match %s (SG crew %s)",
+                    user.id,
+                    match.id,
+                    sg_comm.id
+                )
+
+        # Sync trackers (approved only)
+        approved_trackers = [t for t in sg_trackers if t.approved]
+        for sg_tracker in approved_trackers:
+            # Check if already exists
+            already_exists = False
+            
+            if sg_tracker.discord_id_int:
+                for crew in current_crew:
+                    if (crew.role == CrewRole.TRACKER and
+                        not crew.user.is_placeholder and
+                        crew.user.discord_id == sg_tracker.discord_id_int):
+                        already_exists = True
+                        break
+            
+            if not already_exists and sg_tracker.id in current_tracker_sg_ids:
+                already_exists = True
+            
+            if not already_exists:
+                user = await self._find_or_create_crew_user(organization_id, sg_tracker)
+                await Crew.create(
+                    match=match,
+                    user=user,
+                    role=CrewRole.TRACKER,
+                    approved=True
+                )
+                logger.info(
+                    "Added new tracker %s to match %s (SG crew %s)",
+                    user.id,
+                    match.id,
+                    sg_tracker.id
+                )
+
+        # Remove crew no longer in SpeedGaming
+        approved_comm_sg_ids = {c.id for c in approved_commentators}
+        approved_tracker_sg_ids = {t.id for t in approved_trackers}
+        approved_comm_discord_ids = {
+            c.discord_id_int for c in approved_commentators if c.discord_id_int
+        }
+        approved_tracker_discord_ids = {
+            t.discord_id_int for t in approved_trackers if t.discord_id_int
+        }
+        
+        for crew in current_crew:
+            should_remove = False
+            
+            if crew.role == CrewRole.COMMENTATOR:
+                if crew.user.is_placeholder and crew.user.speedgaming_id:
+                    if crew.user.speedgaming_id not in approved_comm_sg_ids:
+                        should_remove = True
+                elif not crew.user.is_placeholder and crew.user.discord_id:
+                    if crew.user.discord_id not in approved_comm_discord_ids:
+                        should_remove = True
+            
+            elif crew.role == CrewRole.TRACKER:
+                if crew.user.is_placeholder and crew.user.speedgaming_id:
+                    if crew.user.speedgaming_id not in approved_tracker_sg_ids:
+                        should_remove = True
+                elif not crew.user.is_placeholder and crew.user.discord_id:
+                    if crew.user.discord_id not in approved_tracker_discord_ids:
+                        should_remove = True
+            
+            if should_remove:
+                logger.info(
+                    "Removing crew %s (role: %s) from match %s (no longer in SG episode)",
+                    crew.user_id,
+                    crew.role,
+                    match.id
+                )
+                await crew.delete()
 
     async def import_episode(
         self,
@@ -305,8 +585,21 @@ class SpeedGamingETLService:
                 await existing_match.save()
                 logger.info("Updated match %s for episode %s", existing_match.id, episode.id)
 
-            # For updates, we don't modify players or crew
-            # (to avoid conflicts with manual changes)
+            # Check for player changes
+            await self._sync_match_players(
+                existing_match,
+                all_players,
+                organization_id
+            )
+
+            # Check for crew changes
+            await self._sync_match_crew(
+                existing_match,
+                episode.commentators,
+                episode.trackers,
+                organization_id
+            )
+
             return existing_match
 
         # Create new match
