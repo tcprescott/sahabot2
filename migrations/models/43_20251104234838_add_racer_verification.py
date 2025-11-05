@@ -10,7 +10,7 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     `guild_id` BIGINT NOT NULL,
     `role_id` BIGINT NOT NULL,
     `role_name` VARCHAR(255) NOT NULL,
-    `category` VARCHAR(50) NOT NULL,
+    `catagories` JSON NOT NULL,
     `minimum_races` INT NOT NULL DEFAULT 5,
     `count_forfeits` BOOL NOT NULL DEFAULT 0,
     `count_dq` BOOL NOT NULL DEFAULT 0,
@@ -18,7 +18,7 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     `created_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     `updated_at` DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     `organization_id` INT NOT NULL,
-    UNIQUE KEY `uid_racer_verif_organiz_3ba91b` (`organization_id`, `guild_id`, `category`),
+    UNIQUE KEY `uid_racer_verif_organiz_0a1e57` (`organization_id`, `guild_id`, `role_id`),
     CONSTRAINT `fk_racer_ve_organiza_aaf71f6e` FOREIGN KEY (`organization_id`) REFERENCES `organization` (`id`) ON DELETE CASCADE,
     KEY `idx_racer_verif_guild_i_e5d9ac` (`guild_id`)
 ) CHARACTER SET utf8mb4 COMMENT='Racer verification configuration for an organization.';
