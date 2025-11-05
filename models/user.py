@@ -59,8 +59,14 @@ class User(Model):
         show_pronouns: Whether to display pronouns with the user's name
         permission: User permission level
         is_active: Whether the user account is active
+        is_placeholder: True if this is a placeholder user created from SpeedGaming import
+        speedgaming_id: SpeedGaming player/crew ID for placeholder users (nullable)
         created_at: Account creation timestamp
         updated_at: Last update timestamp
+    
+    Constraints:
+        - discord_id can only be NULL if is_placeholder is True
+        - This ensures all real users have a Discord ID, while placeholders may not
     """
 
     id = fields.IntField(pk=True)
@@ -111,6 +117,11 @@ class User(Model):
 
     class Meta:
         table = "users"
+        # Constraint: discord_id can only be NULL if is_placeholder is True
+        # In SQL: CHECK (discord_id IS NOT NULL OR is_placeholder = 1)
+        constraints = [
+            "CHECK (discord_id IS NOT NULL OR is_placeholder = 1)"
+        ]
 
     def __str__(self) -> str:
         """String representation of user."""

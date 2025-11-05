@@ -199,8 +199,15 @@ class Match(Model):
 
 # User model additions
 class User(Model):
+    discord_id = fields.BigIntField(unique=True, index=True, null=True)  # Made nullable
     is_placeholder = fields.BooleanField(default=False)
     speedgaming_id = fields.IntField(null=True)  # SpeedGaming player/crew ID
+    
+    class Meta:
+        # Constraint: discord_id can only be NULL if is_placeholder is True
+        constraints = [
+            "CHECK (discord_id IS NOT NULL OR is_placeholder = 1)"
+        ]
 ```
 
 ### SpeedGaming ID Tracking
