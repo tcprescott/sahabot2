@@ -53,12 +53,13 @@ class SpeedGamingETLService:
         sg_player: SpeedGamingPlayer,
     ) -> User:
         """
-        Find existing user by Discord ID or SpeedGaming ID, or create placeholder user.
+        Find existing user by Discord ID, username, or SpeedGaming ID, or create placeholder user.
 
         Priority:
         1. Match by discord_id (if available)
-        2. Match by speedgaming_id (for existing placeholders)
-        3. Create new placeholder user with display name from SpeedGaming
+        2. Match by discord_username (from discord_tag if available)
+        3. Match by speedgaming_id (for existing placeholders)
+        4. Create new placeholder user with display name from SpeedGaming
 
         Args:
             organization_id: Organization ID to add user to
@@ -72,7 +73,7 @@ class SpeedGamingETLService:
             user = await User.get_or_none(discord_id=sg_player.discord_id_int)
             if user:
                 logger.info(
-                    "Matched player '%s' to existing user %s",
+                    "Matched player '%s' to existing user %s by Discord ID",
                     sg_player.display_name,
                     user.id
                 )
@@ -88,6 +89,33 @@ class SpeedGamingETLService:
                     )
 
                 return user
+
+        # Try to find user by Discord username (from discord_tag)
+        if sg_player.discord_tag:
+            # Parse username from discord_tag (format: "username#discriminator")
+            discord_username = sg_player.discord_tag.split("#")[0] if "#" in sg_player.discord_tag else sg_player.discord_tag
+            
+            if discord_username:
+                user = await User.get_or_none(discord_username=discord_username)
+                if user:
+                    logger.info(
+                        "Matched player '%s' to existing user %s by Discord username '%s'",
+                        sg_player.display_name,
+                        user.id,
+                        discord_username
+                    )
+
+                    # Ensure user is a member of the organization
+                    org = await Organization.get(id=organization_id)
+                    if not await org.members.filter(id=user.id).exists():
+                        await org.members.add(user)
+                        logger.info(
+                            "Added user %s to organization %s",
+                            user.id,
+                            organization_id
+                        )
+
+                    return user
 
         # Try to find placeholder user by SpeedGaming ID
         user = await User.get_or_none(
@@ -171,12 +199,13 @@ class SpeedGamingETLService:
         sg_crew: SpeedGamingCrewMember,
     ) -> User:
         """
-        Find existing user by Discord ID or SpeedGaming ID, or create placeholder user for crew.
+        Find existing user by Discord ID, username, or SpeedGaming ID, or create placeholder user for crew.
 
         Priority:
         1. Match by discord_id (if available)
-        2. Match by speedgaming_id (for existing placeholders)
-        3. Create new placeholder user
+        2. Match by discord_username (from discord_tag if available)
+        3. Match by speedgaming_id (for existing placeholders)
+        4. Create new placeholder user
 
         Args:
             organization_id: Organization ID to add user to
@@ -190,7 +219,7 @@ class SpeedGamingETLService:
             user = await User.get_or_none(discord_id=sg_crew.discord_id_int)
             if user:
                 logger.info(
-                    "Matched crew '%s' to existing user %s",
+                    "Matched crew '%s' to existing user %s by Discord ID",
                     sg_crew.display_name,
                     user.id
                 )
@@ -206,6 +235,33 @@ class SpeedGamingETLService:
                     )
 
                 return user
+
+        # Try to find user by Discord username (from discord_tag)
+        if sg_crew.discord_tag:
+            # Parse username from discord_tag (format: "username#discriminator")
+            discord_username = sg_crew.discord_tag.split("#")[0] if "#" in sg_crew.discord_tag else sg_crew.discord_tag
+            
+            if discord_username:
+                user = await User.get_or_none(discord_username=discord_username)
+                if user:
+                    logger.info(
+                        "Matched crew '%s' to existing user %s by Discord username '%s'",
+                        sg_crew.display_name,
+                        user.id,
+                        discord_username
+                    )
+
+                    # Ensure user is a member of the organization
+                    org = await Organization.get(id=organization_id)
+                    if not await org.members.filter(id=user.id).exists():
+                        await org.members.add(user)
+                        logger.info(
+                            "Added crew user %s to organization %s",
+                            user.id,
+                            organization_id
+                        )
+
+                    return user
 
         # Try to find placeholder user by SpeedGaming ID
         user = await User.get_or_none(

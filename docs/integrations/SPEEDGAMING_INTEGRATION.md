@@ -89,16 +89,20 @@ This ensures the schedule stays in sync with SpeedGaming as the source of truth.
 
 ## Player & Crew Matching
 
-### Discord ID Matching
+### Matching Priority
 
-The integration attempts to match SpeedGaming players/crew to existing application users:
+The integration attempts to match SpeedGaming players/crew to existing application users using multiple strategies:
 
-1. **Match by Discord ID**: If the SpeedGaming data includes a `discordId`, find the existing user
-2. **Ensure Organization Membership**: Add matched users to the organization if not already a member
+1. **Match by Discord ID**: If the SpeedGaming data includes a `discordId`, find the existing user by Discord ID
+2. **Match by Discord Username**: If `discordTag` is provided (format: "username#discriminator"), attempt to match by Discord username
+3. **Match by SpeedGaming ID**: For existing placeholder users, match by `speedgaming_id`
+4. **Create Placeholder**: If no match found, create a new placeholder user
+
+This multi-strategy approach maximizes the chance of matching existing users and minimizes placeholder creation.
 
 ### Placeholder Users
 
-When a Discord ID is **not available** in SpeedGaming data, the integration creates a **placeholder user**:
+When a user cannot be matched by Discord ID or username, the integration creates a **placeholder user**:
 
 - **Username**: `sg_{player_id}` or `sg_crew_{crew_id}` (unique identifier based on SpeedGaming ID)
 - **Display Name**: Best available name from SpeedGaming data (priority: Twitch username, stream name, display name)
