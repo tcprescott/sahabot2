@@ -2,7 +2,6 @@
 Tests for SpeedGaming API service.
 """
 
-import pytest
 from datetime import datetime, timezone
 from application.services.speedgaming_service import (
     SpeedGamingService,

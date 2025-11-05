@@ -163,14 +163,15 @@ class SpeedGamingETLService:
         )
 
         # Create new placeholder user
+        # Note: discord_id=0 is used as sentinel for placeholders (Discord IDs are positive snowflakes)
         user = await User.create(
-            discord_id=0,  # Placeholder Discord ID
+            discord_id=0,  # Sentinel value for placeholder (Discord IDs start from 1)
             discord_username=placeholder_username,
             discord_discriminator="0000",
             discord_avatar_hash=None,
             discord_email=None,
             display_name=display_name,
-            is_placeholder=True,  # Mark as placeholder
+            is_placeholder=True,  # Primary indicator for placeholder users
             speedgaming_id=sg_player.id,  # Store SpeedGaming ID
         )
         logger.info(
@@ -307,14 +308,15 @@ class SpeedGamingETLService:
         )
 
         # Create new placeholder user
+        # Note: discord_id=0 is used as sentinel for placeholders (Discord IDs are positive snowflakes)
         user = await User.create(
-            discord_id=0,
+            discord_id=0,  # Sentinel value for placeholder (Discord IDs start from 1)
             discord_username=placeholder_username,
             discord_discriminator="0000",
             discord_avatar_hash=None,
             discord_email=None,
             display_name=display_name,
-            is_placeholder=True,
+            is_placeholder=True,  # Primary indicator for placeholder users
             speedgaming_id=sg_crew.id,  # Store SpeedGaming ID
         )
         logger.info(

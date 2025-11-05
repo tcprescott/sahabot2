@@ -102,6 +102,8 @@ class TournamentOverviewView:
                 ui.label('Recent Sync Activity').classes('text-lg font-bold mb-2')
 
                 # Fetch recent sync logs
+                # Note: Using JSON field filter for tournament_id. Consider adding
+                # a direct tournament_id field to AuditLog if performance becomes an issue.
                 sync_logs = await AuditLog.filter(
                     action="speedgaming_sync",
                     details__tournament_id=self.tournament.id,
@@ -192,7 +194,7 @@ class TournamentOverviewView:
                                                 ui.label('—').classes('text-secondary text-sm')
 
                 # Error summary (if any recent errors)
-                recent_errors = [log for log in sync_logs if not log.details.get('success', False)]
+                recent_errors = [log for log in sync_logs if log.details and not log.details.get('success', False)]
                 if recent_errors:
                     ui.separator().classes('my-4')
                     with ui.element('div').classes('p-3 bg-danger-light rounded'):
