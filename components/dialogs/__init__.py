@@ -42,6 +42,7 @@ from components.dialogs.organization import (
 from components.dialogs.tournaments import (
     MatchSeedDialog,
     EditMatchDialog,
+    CreateMatchDialog,
     SubmitMatchDialog,
     RegisterPlayerDialog,
     AsyncTournamentDialog,
@@ -93,6 +94,7 @@ __all__ = [
     'RegisterPlayerDialog',
     'MatchSeedDialog',
     'EditMatchDialog',
+    'CreateMatchDialog',
     'AsyncTournamentDialog',
     # User profile
     'CreateApiKeyDialog',

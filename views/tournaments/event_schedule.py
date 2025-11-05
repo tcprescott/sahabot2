@@ -10,10 +10,9 @@ from typing import Optional
 from nicegui import ui
 from models import Organization, User, CrewRole
 from models.match_schedule import Match
-from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
-from components.dialogs import MatchSeedDialog, EditMatchDialog
+from components.dialogs import MatchSeedDialog, EditMatchDialog, CreateMatchDialog
 from application.services.tournament_service import TournamentService
 from application.services.organization_service import OrganizationService
 from application.services.authorization_service import AuthorizationService
@@ -144,71 +143,86 @@ class EventScheduleView:
         # Apply filter
         matches = self._filter_matches(all_matches)
 
-        with Card.create(title=f'Event Schedule - {self.organization.name} ({len(matches)}/{len(all_matches)})'):
-            if not matches:
-                with ui.element('div').classes('text-center mt-4'):
-                    ui.icon('event').classes('text-secondary icon-large')
-                    ui.label('No upcoming events').classes('text-secondary')
-                    ui.label('Check back later for scheduled matches').classes('text-secondary text-sm')
-            else:
-                def render_tournament(match: Match):
-                    ui.label(match.tournament.name)
+        # Custom card with header action button
+        with ui.element('div').classes('card'):
+            # Card header with create match button
+            with ui.element('div').classes('card-header'):
+                with ui.row().classes('items-center justify-between w-full'):
+                    ui.label(f'Event Schedule - {self.organization.name} ({len(matches)}/{len(all_matches)})').classes('text-xl font-bold')
+                    # Show "Create Match" button for tournament admins and admins
+                    if self.can_manage_tournaments or self.auth_service.can_access_admin_panel(self.user):
+                        ui.button(
+                            'Create Match',
+                            icon='add_circle',
+                            on_click=self._create_match
+                        ).classes('btn').props('color=primary')
 
-                def render_title(match: Match):
-                    if match.title:
-                        ui.label(match.title)
-                    else:
-                        ui.label('—').classes('text-secondary')
+            # Card body
+            with ui.element('div').classes('card-body'):
+                if not matches:
+                    with ui.element('div').classes('text-center mt-4'):
+                        ui.icon('event').classes('text-secondary icon-large')
+                        ui.label('No upcoming events').classes('text-secondary')
+                        ui.label('Check back later for scheduled matches').classes('text-secondary text-sm')
+                else:
+                    def render_tournament(match: Match):
+                        ui.label(match.tournament.name)
 
-                def render_scheduled_time(match: Match):
-                    if match.scheduled_at:
-                        DateTimeLabel.datetime(match.scheduled_at)
-                    else:
-                        ui.label('TBD').classes('text-secondary')
+                    def render_title(match: Match):
+                        if match.title:
+                            ui.label(match.title)
+                        else:
+                            ui.label('—').classes('text-secondary')
 
-                def render_stream(match: Match):
-                    if match.stream_channel:
-                        ui.label(match.stream_channel.name)
-                    else:
-                        ui.label('—').classes('text-secondary')
+                    def render_scheduled_time(match: Match):
+                        if match.scheduled_at:
+                            DateTimeLabel.datetime(match.scheduled_at)
+                        else:
+                            ui.label('TBD').classes('text-secondary')
 
-                def render_players(match: Match):
-                    """Render the players participating in this match."""
-                    players = getattr(match, 'players', [])
+                    def render_stream(match: Match):
+                        if match.stream_channel:
+                            ui.label(match.stream_channel.name)
+                        else:
+                            ui.label('—').classes('text-secondary')
 
-                    if players:
-                        with ui.column().classes('gap-1'):
-                            for player in players:
-                                ui.label(player.user.get_display_name()).classes('text-sm')
-                    else:
-                        ui.label('—').classes('text-secondary')
+                    def render_players(match: Match):
+                        """Render the players participating in this match."""
+                        players = getattr(match, 'players', [])
 
-                def render_status(match: Match):
-                    if match.finished_at:
-                        ui.label('Finished').classes('badge badge-success')
-                    elif match.started_at:
-                        ui.label('In Progress').classes('badge badge-info')
-                    elif match.checked_in_at:
-                        ui.label('Checked In').classes('badge badge-warning')
-                    elif match.scheduled_at:
-                        ui.label('Scheduled').classes('badge badge-secondary')
-                    else:
-                        ui.label('Pending').classes('badge')
+                        if players:
+                            with ui.column().classes('gap-1'):
+                                for player in players:
+                                    ui.label(player.user.get_display_name()).classes('text-sm')
+                        else:
+                            ui.label('—').classes('text-secondary')
 
-                async def signup_crew(match_id: int, role: CrewRole):
-                    """Sign up for a crew role."""
-                    try:
-                        await self.service.signup_crew(
-                            user=self.user,
-                            organization_id=self.organization.id,
-                            match_id=match_id,
-                            role=role.value
-                        )
-                        ui.notify(f'Signed up as {role.value}', type='positive')
-                        await self._refresh()
-                    except Exception as e:
-                        logger.error("Failed to sign up as crew: %s", e)
-                        ui.notify(f'Failed to sign up: {str(e)}', type='negative')
+                    def render_status(match: Match):
+                        if match.finished_at:
+                            ui.label('Finished').classes('badge badge-success')
+                        elif match.started_at:
+                            ui.label('In Progress').classes('badge badge-info')
+                        elif match.checked_in_at:
+                            ui.label('Checked In').classes('badge badge-warning')
+                        elif match.scheduled_at:
+                            ui.label('Scheduled').classes('badge badge-secondary')
+                        else:
+                            ui.label('Pending').classes('badge')
+
+                    async def signup_crew(match_id: int, role: CrewRole):
+                        """Sign up for a crew role."""
+                        try:
+                            await self.service.signup_crew(
+                                user=self.user,
+                                organization_id=self.organization.id,
+                                match_id=match_id,
+                                role=role.value
+                            )
+                            ui.notify(f'Signed up as {role.value}', type='positive')
+                            await self._refresh()
+                        except Exception as e:
+                            logger.error("Failed to sign up as crew: %s", e)
+                            ui.notify(f'Failed to sign up: {str(e)}', type='negative')
 
                 async def remove_crew(match_id: int, role: CrewRole):
                     """Remove crew signup."""
@@ -606,6 +620,209 @@ class EventScheduleView:
 
                 table = ResponsiveTable(columns, matches)
                 await table.render()
+
+    async def _create_match(self) -> None:
+        """Open dialog to create a new match."""
+        # Get list of active tournaments
+        tournaments = await self.service.list_all_org_tournaments(self.organization.id)
+        active_tournaments = [t for t in tournaments if t.is_active]
+
+        if not active_tournaments:
+            ui.notify('No active tournaments available', type='warning')
+            return
+
+        # If only one tournament, use it directly; otherwise include tournament selector in the create dialog
+        if len(active_tournaments) == 1:
+            tournament = active_tournaments[0]
+            await self._show_create_match_dialog(tournament)
+        else:
+            # Show combined dialog with tournament selection
+            await self._show_create_match_dialog_with_tournament_select(active_tournaments)
+
+    async def _show_create_match_dialog_with_tournament_select(self, tournaments: list) -> None:
+        """Show create match dialog with tournament selection included."""
+        from components.dialogs.common.base_dialog import BaseDialog
+        
+        class CreateMatchWithTournamentDialog(BaseDialog):
+            """Dialog for creating a match with tournament selection."""
+            
+            def __init__(self, tournaments, user, organization_id, on_save):
+                super().__init__()
+                self.tournaments = tournaments
+                self.user = user
+                self.organization_id = organization_id
+                self.on_save_callback = on_save
+                
+                # UI refs
+                self._tournament_select = None
+                self._title_input = None
+                self._scheduled_input = None
+                self._stream_select = None
+                self._player_select = None
+                self._comment_input = None
+                
+            async def show(self):
+                self.create_dialog(
+                    title='Create Match',
+                    icon='add_circle',
+                    max_width='dialog-card'
+                )
+                await super().show()
+                
+            def _render_body(self):
+                with self.create_form_grid(columns=1):
+                    # Tournament selection (only if multiple)
+                    with ui.element('div'):
+                        self._tournament_select = ui.select(
+                            label='Tournament',
+                            options={t.id: t.name for t in self.tournaments},
+                        ).classes('w-full')
+                    
+                    with ui.element('div'):
+                        self._title_input = ui.input(
+                            label='Match Title',
+                            placeholder='e.g., Quarterfinal Match 1'
+                        ).classes('w-full')
+                    
+                    with ui.element('div'):
+                        self._scheduled_input = ui.input(
+                            label='Scheduled Time (Optional)',
+                            placeholder='YYYY-MM-DD HH:MM'
+                        ).classes('w-full').props('type=datetime-local')
+                    
+                    with ui.element('div'):
+                        self._player_select = ui.select(
+                            label='Players',
+                            options={},
+                            multiple=True,
+                        ).classes('w-full').props('use-chips')
+                    
+                    with ui.element('div'):
+                        self._stream_select = ui.select(
+                            label='Stream Channel (Optional)',
+                            options={None: 'No stream'},
+                        ).classes('w-full')
+                    
+                    with ui.element('div'):
+                        self._comment_input = ui.textarea(
+                            label='Notes/Comments (Optional)',
+                            placeholder='Add any notes about this match...'
+                        ).classes('w-full').props('rows=3')
+                
+                ui.separator()
+                
+                # Load data async
+                async def load_data():
+                    try:
+                        from application.services.stream_channel_service import StreamChannelService
+                        from application.services.organization_service import OrganizationService
+                        
+                        stream_service = StreamChannelService()
+                        streams = await stream_service.list_org_channels(self.user, self.organization_id)
+                        stream_options = {None: 'No stream'}
+                        stream_options.update({s.id: s.name for s in streams})
+                        if self._stream_select:
+                            self._stream_select.options = stream_options
+                            self._stream_select.update()
+                        
+                        org_service = OrganizationService()
+                        members = await org_service.list_members(self.organization_id)
+                        player_options = {}
+                        for member in members:
+                            await member.fetch_related('user')
+                            player_options[member.user.id] = member.user.discord_username
+                        if self._player_select:
+                            self._player_select.options = player_options
+                            self._player_select.update()
+                    except Exception as e:
+                        logger.error("Failed to load data: %s", e)
+                        ui.notify(f'Error loading data: {str(e)}', type='negative')
+                
+                ui.timer(0.1, load_data, once=True)
+                
+                with self.create_actions_row():
+                    ui.button('Cancel', on_click=self.close).classes('btn')
+                    ui.button('Create Match', on_click=self._handle_create).classes('btn').props('color=positive')
+            
+            async def _handle_create(self):
+                from datetime import datetime
+                from application.services.tournament_service import TournamentService
+                
+                if not self._tournament_select or not self._tournament_select.value:
+                    ui.notify('Please select a tournament', type='warning')
+                    return
+                
+                if not self._title_input or not self._title_input.value.strip():
+                    ui.notify('Match title is required', type='warning')
+                    return
+                
+                player_ids = self._player_select.value if self._player_select and self._player_select.value else []
+                if not player_ids or len(player_ids) < 1:
+                    ui.notify('At least one player is required', type='warning')
+                    return
+                
+                tournament_id = self._tournament_select.value
+                title = self._title_input.value.strip()
+                scheduled_str = self._scheduled_input.value.strip() if self._scheduled_input and self._scheduled_input.value else None
+                stream_id = self._stream_select.value if self._stream_select and self._stream_select.value else None
+                comment = self._comment_input.value.strip() if self._comment_input and self._comment_input.value else None
+                
+                scheduled_at = None
+                if scheduled_str:
+                    try:
+                        scheduled_at = datetime.fromisoformat(scheduled_str)
+                    except ValueError as e:
+                        ui.notify(f'Invalid date/time format: {e}', type='negative')
+                        return
+                
+                try:
+                    service = TournamentService()
+                    match = await service.create_match(
+                        user=self.user,
+                        organization_id=self.organization_id,
+                        tournament_id=tournament_id,
+                        player_ids=player_ids,
+                        scheduled_at=scheduled_at,
+                        comment=comment,
+                        title=title,
+                    )
+                    
+                    if match:
+                        if stream_id:
+                            await service.update_match(
+                                user=self.user,
+                                organization_id=self.organization_id,
+                                match_id=match.id,
+                                stream_channel_id=stream_id,
+                            )
+                        
+                        ui.notify(f'Match "{title}" created successfully!', type='positive')
+                        
+                        if self.on_save_callback:
+                            await self.on_save_callback()
+                        
+                        await self.close()
+                    else:
+                        ui.notify('Failed to create match', type='negative')
+                
+                except ValueError as e:
+                    ui.notify(str(e), type='negative')
+                except Exception as e:
+                    ui.notify(f'Error creating match: {str(e)}', type='negative')
+                    logger.error("Failed to create match: %s", e)
+        
+        dialog = CreateMatchWithTournamentDialog(tournaments, self.user, self.organization.id, self._refresh)
+        await dialog.show()
+
+    async def _show_create_match_dialog(self, tournament) -> None:
+        """Show the create match dialog for the given tournament."""
+        dialog = CreateMatchDialog(
+            user=self.user,
+            organization_id=self.organization.id,
+            tournament=tournament,
+            on_save=self._refresh
+        )
+        await dialog.show()
 
     async def render(self) -> None:
         """Render the event schedule view."""

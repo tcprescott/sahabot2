@@ -2,6 +2,7 @@
 
 from components.dialogs.tournaments.match_seed_dialog import MatchSeedDialog
 from components.dialogs.tournaments.edit_match_dialog import EditMatchDialog
+from components.dialogs.tournaments.create_match_dialog import CreateMatchDialog
 from components.dialogs.tournaments.submit_match_dialog import SubmitMatchDialog
 from components.dialogs.tournaments.register_player_dialog import RegisterPlayerDialog
 from components.dialogs.tournaments.pool_dialog import PoolDialog
@@ -14,6 +15,7 @@ from components.dialogs.tournaments.create_live_race_dialog import CreateLiveRac
 __all__ = [
     'MatchSeedDialog',
     'EditMatchDialog',
+    'CreateMatchDialog',
     'SubmitMatchDialog',
     'RegisterPlayerDialog',
     'PoolDialog',
