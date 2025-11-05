@@ -51,12 +51,43 @@ class ProfileSettingsView:
         ).classes('mt-2')
         show_pronouns_checkbox.tooltip('When enabled, your pronouns will appear in italics after your name')
 
+        ui.separator().classes('my-4')
+
+        # Email section
+        ui.label('Email Address').classes('font-semibold text-lg')
+        ui.label('Set your email address for notifications and account recovery.').classes('text-sm text-secondary mb-2')
+
+        email_input = ui.input(
+            label='Email',
+            placeholder='your.email@example.com',
+            value=self.user.email or ''
+        ).classes('w-full')
+
+        # Show verification status
+        if self.user.email:
+            if self.user.email_verified:
+                with ui.row().classes('items-center gap-2 text-sm text-success'):
+                    ui.icon('verified').classes('text-lg')
+                    ui.label('Email verified')
+            else:
+                with ui.row().classes('items-center gap-2 text-sm text-warning'):
+                    ui.icon('warning').classes('text-lg')
+                    ui.label('Email not verified')
+
+        # Warning about auto-verification
+        with ui.element('div').classes('p-3 rounded bg-warning-light mt-2'):
+            with ui.row().classes('items-start gap-2'):
+                ui.icon('info').classes('text-warning')
+                with ui.column().classes('flex-1'):
+                    ui.label('Email Verification Notice').classes('font-semibold text-sm')
+                    ui.label('Email verification is currently disabled. Email addresses are automatically approved for development purposes. See SECURITY.md for details.').classes('text-xs text-secondary')
+
         # Preview section
         ui.separator()
         ui.label('Preview').classes('font-semibold mt-4')
-        
+
         preview_container = ui.element('div').classes('p-4 rounded bg-surface-color')
-        
+
         def update_preview():
             """Update the preview display."""
             preview_container.clear()
@@ -64,7 +95,7 @@ class ProfileSettingsView:
                 # Calculate what would be shown
                 display = display_name_input.value.strip() if display_name_input.value.strip() else self.user.discord_username
                 pronouns_value = pronouns_input.value.strip()
-                
+
                 if show_pronouns_checkbox.value and pronouns_value:
                     with ui.row().classes('items-center gap-2'):
                         ui.label(display).classes('font-bold')
@@ -76,7 +107,7 @@ class ProfileSettingsView:
         display_name_input.on('input', update_preview)
         pronouns_input.on('input', update_preview)
         show_pronouns_checkbox.on('change', update_preview)
-        
+
         # Initial preview
         update_preview()
 
@@ -89,8 +120,9 @@ class ProfileSettingsView:
                 display_name = display_name_input.value.strip() if display_name_input.value else None
                 pronouns = pronouns_input.value.strip() if pronouns_input.value else None
                 show_pronouns = show_pronouns_checkbox.value
+                email = email_input.value.strip() if email_input.value else None
 
-                # Update via service
+                # Update profile via service
                 await self.service.update_user_profile(
                     user=self.user,
                     display_name=display_name,
@@ -98,8 +130,17 @@ class ProfileSettingsView:
                     show_pronouns=show_pronouns
                 )
 
+                # Update email via service
+                await self.service.update_user_email(
+                    user=self.user,
+                    email=email
+                )
+
                 ui.notify('Profile settings saved', type='positive')
                 await self._refresh()
+            except ValueError as e:
+                logger.error("Validation error saving profile settings: %s", e)
+                ui.notify(f'Validation error: {str(e)}', type='warning')
             except Exception as e:
                 logger.error("Failed to save profile settings: %s", e)
                 ui.notify(f'Failed to save settings: {str(e)}', type='negative')

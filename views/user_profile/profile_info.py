@@ -35,13 +35,18 @@ class ProfileInfoView:
                         ui.label('Discord ID').classes('text-sm text-secondary')
                         ui.label(str(self.user.discord_id)).classes('font-mono')
 
-                # Email (only show to superadmin or self)
-                if self.user.discord_email:
+                # Email (user-provided, not from Discord)
+                if self.user.email:
                     with ui.row().classes('items-center'):
                         ui.icon('email').classes('text-secondary')
                         with ui.column().classes('flex-1'):
                             ui.label('Email').classes('text-sm text-secondary')
-                            ui.label(self.user.discord_email).classes('font-mono')
+                            with ui.row().classes('items-center gap-2'):
+                                ui.label(self.user.email).classes('font-mono')
+                                if self.user.email_verified:
+                                    ui.icon('verified').classes('text-success text-sm').tooltip('Email verified')
+                                else:
+                                    ui.icon('warning').classes('text-warning text-sm').tooltip('Email not verified')
 
                 # Permission Level
                 with ui.row().classes('items-center'):

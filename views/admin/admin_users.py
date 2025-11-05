@@ -169,8 +169,11 @@ class AdminUsersView:
                         ui.label(u.discord_username).classes('font-semibold')
 
                 async def render_email_cell(u: User):
-                    if u.discord_email:
-                        ui.label(u.discord_email).classes('text-sm')
+                    if u.email:
+                        with ui.row().classes('items-center gap-1'):
+                            ui.label(u.email).classes('text-sm')
+                            if u.email_verified:
+                                ui.icon('verified').classes('text-success text-xs').tooltip('Verified')
                     else:
                         ui.label('—').classes('text-secondary')
 

@@ -6,7 +6,7 @@ from typing import Optional
 
 class UserOut(BaseModel):
     """User profile output schema."""
-    
+
     id: int = Field(..., description="Internal user ID")
     discord_id: int = Field(..., description="Discord user ID")
     discord_username: str = Field(..., description="Discord username")
@@ -15,7 +15,9 @@ class UserOut(BaseModel):
         description="Discord discriminator (deprecated by Discord but kept for compatibility)"
     )
     discord_avatar: Optional[str] = Field(None, description="Discord avatar hash")
-    discord_email: Optional[str] = Field(None, description="Discord email address")
+    discord_email: Optional[str] = Field(None, description="Discord email address (deprecated, no longer synced)")
+    email: Optional[str] = Field(None, description="User-provided email address")
+    email_verified: bool = Field(False, description="Whether email has been verified")
     permission: int = Field(
         ...,
         description="User permission level (0=USER, 50=MODERATOR, 100=ADMIN, 200=SUPERADMIN)"

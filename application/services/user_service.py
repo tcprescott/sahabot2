@@ -5,7 +5,8 @@ This module contains all business logic related to user management.
 """
 
 import logging
-from datetime import datetime
+import secrets
+from datetime import datetime, timezone
 from models import User, Permission, SYSTEM_USER_ID
 from typing import Optional
 from application.repositories.user_repository import UserRepository
@@ -32,8 +33,7 @@ class UserService:
         discord_id: int,
         discord_username: str,
         discord_discriminator: Optional[str] = None,
-        discord_avatar: Optional[str] = None,
-        discord_email: Optional[str] = None
+        discord_avatar: Optional[str] = None
     ) -> User:
         """
         Get or create a user from Discord OAuth data.
@@ -43,7 +43,6 @@ class UserService:
             discord_username: Discord username
             discord_discriminator: Discord discriminator
             discord_avatar: Discord avatar hash
-            discord_email: Discord email
 
         Returns:
             User: The existing or newly created user
@@ -62,9 +61,6 @@ class UserService:
             if discord_avatar and user.discord_avatar != discord_avatar:
                 user.discord_avatar = discord_avatar
                 updated = True
-            if discord_email and user.discord_email != discord_email:
-                user.discord_email = discord_email
-                updated = True
 
             if updated:
                 await user.save()
@@ -77,7 +73,6 @@ class UserService:
             discord_username=discord_username,
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
-            discord_email=discord_email,
             permission=Permission.USER
         )
 
@@ -98,7 +93,6 @@ class UserService:
         self,
         discord_id: int,
         discord_username: str,
-        discord_email: Optional[str] = None,
         permission: Permission = Permission.USER,
         is_active: bool = True,
         discord_discriminator: Optional[str] = None,
@@ -112,7 +106,6 @@ class UserService:
         Args:
             discord_id: Discord user ID (unique)
             discord_username: Display username
-            discord_email: Optional email
             permission: Initial permission level (default USER)
             is_active: Whether the account is active (default True)
             discord_discriminator: Optional discriminator (legacy)
@@ -138,7 +131,6 @@ class UserService:
             discord_username=discord_username,
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
-            discord_email=discord_email,
             permission=permission,
         )
 
@@ -600,13 +592,130 @@ class UserService:
         """
         if display_name is not None:
             user.display_name = display_name.strip() if display_name else None
-        
+
         if pronouns is not None:
             user.pronouns = pronouns.strip() if pronouns else None
-        
+
         if show_pronouns is not None:
             user.show_pronouns = show_pronouns
 
         await user.save()
         logger.info("Updated profile for user %s", user.id)
         return user
+
+    async def update_user_email(
+        self,
+        user: User,
+        email: Optional[str]
+    ) -> User:
+        """
+        Update a user's email address.
+
+        Note: Email verification is currently stubbed - emails are automatically marked as verified.
+        This is a placeholder for future email verification implementation.
+
+        Args:
+            user: User to update
+            email: New email address (None or empty string to clear)
+
+        Returns:
+            User: Updated user
+
+        Raises:
+            ValueError: If email format is invalid
+        """
+        # Normalize email
+        normalized_email = email.strip().lower() if email else None
+
+        # Basic email validation
+        if normalized_email:
+            if '@' not in normalized_email or '.' not in normalized_email.split('@')[-1]:
+                raise ValueError("Invalid email format")
+
+        # Clear email if None or empty
+        if not normalized_email:
+            user.email = None
+            user.email_verified = False
+            user.email_verification_token = None
+            user.email_verified_at = None
+            await user.save()
+            logger.info("Cleared email for user %s", user.id)
+            return user
+
+        # Update email
+        user.email = normalized_email
+
+        # STUBBED: Auto-verify email without sending verification email
+        # TODO: Implement proper email verification flow with email provider
+        user.email_verified = True
+        user.email_verification_token = None
+        user.email_verified_at = datetime.now(timezone.utc)
+
+        await user.save()
+        logger.info("Updated and auto-verified email for user %s", user.id)
+        return user
+
+    async def initiate_email_verification(
+        self,
+        user: User
+    ) -> str:
+        """
+        Initiate email verification process.
+
+        Note: This is currently stubbed and auto-verifies the email.
+        In the future, this will send a verification email.
+
+        Args:
+            user: User to verify email for
+
+        Returns:
+            str: Verification token (for future use)
+
+        Raises:
+            ValueError: If user has no email set
+        """
+        if not user.email:
+            raise ValueError("User has no email address set")
+
+        # Generate verification token
+        verification_token = secrets.token_urlsafe(32)
+
+        # STUBBED: In production, we would:
+        # 1. Store the token
+        # 2. Send verification email
+        # 3. Wait for user to click link
+        # For now, just auto-verify
+        user.email_verification_token = None  # Don't store token since we auto-verify
+        user.email_verified = True
+        user.email_verified_at = datetime.now(timezone.utc)
+        await user.save()
+
+        logger.info("Auto-verified email for user %s (verification stubbed)", user.id)
+        return verification_token
+
+    async def verify_email(
+        self,
+        user: User,
+        verification_token: str
+    ) -> bool:
+        """
+        Verify user's email with token.
+
+        Note: This is currently stubbed. In production, this would validate the token.
+
+        Args:
+            user: User to verify
+            verification_token: Token from verification email
+
+        Returns:
+            bool: True if verification successful
+        """
+        # STUBBED: Always return True since we auto-verify
+        if not user.email_verified:
+            user.email_verified = True
+            user.email_verified_at = datetime.now(timezone.utc)
+            user.email_verification_token = None
+            await user.save()
+            logger.info("Verified email for user %s", user.id)
+
+        return True

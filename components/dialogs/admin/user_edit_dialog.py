@@ -60,8 +60,12 @@ class UserEditDialog(BaseDialog):
         self.create_section_title('User Information')
         self.create_info_row('Discord ID', str(self.target_user.discord_id))
         self.create_info_row('Username', self.target_user.discord_username)
-        if self.target_user.discord_email:
-            self.create_info_row('Email', self.target_user.discord_email)
+        # Note: Email is now user-managed, not from Discord
+        if self.target_user.email:
+            email_display = self.target_user.email
+            if self.target_user.email_verified:
+                email_display += ' ✓'
+            self.create_info_row('Email', email_display)
 
         ui.separator()
 

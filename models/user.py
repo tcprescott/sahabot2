@@ -45,7 +45,11 @@ class User(Model):
         discord_username: Discord username
         discord_discriminator: Discord discriminator (deprecated by Discord but kept for compatibility)
         discord_avatar: Discord avatar hash
-        discord_email: Discord email address
+        discord_email: Discord email address (deprecated, no longer synced from OAuth)
+        email: User-provided email address
+        email_verified: Whether email has been verified
+        email_verification_token: Token for email verification
+        email_verified_at: Timestamp when email was verified
         racetime_id: RaceTime.gg user ID (unique, nullable)
         racetime_name: RaceTime.gg username (nullable)
         racetime_access_token: OAuth2 access token for RaceTime.gg API (nullable)
@@ -65,7 +69,13 @@ class User(Model):
     discord_username = fields.CharField(max_length=255)
     discord_discriminator = fields.CharField(max_length=4, null=True)
     discord_avatar = fields.CharField(max_length=255, null=True)
-    discord_email = fields.CharField(max_length=255, null=True)
+    discord_email = fields.CharField(max_length=255, null=True)  # Deprecated: From Discord OAuth, no longer synced
+
+    # User-managed email (replaces discord_email)
+    email = fields.CharField(max_length=255, null=True)  # User-provided email
+    email_verified = fields.BooleanField(default=False)  # Whether email is verified
+    email_verification_token = fields.CharField(max_length=255, null=True)  # Token for email verification
+    email_verified_at = fields.DatetimeField(null=True)  # When email was verified
 
     # RaceTime.gg account linking
     racetime_id = fields.CharField(max_length=255, null=True, unique=True, index=True)

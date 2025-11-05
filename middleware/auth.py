@@ -49,7 +49,7 @@ class DiscordAuthService:
             'client_id': settings.DISCORD_CLIENT_ID,
             'redirect_uri': settings.DISCORD_REDIRECT_URI,
             'response_type': 'code',
-            'scope': 'identify email',
+            'scope': 'identify',
             'state': state
         }
         
@@ -147,12 +147,12 @@ class DiscordAuthService:
             logger.info("Successfully retrieved user info for Discord ID: %s", discord_user['id'])
             
             # Get or create user in database
+            # Note: We no longer request or sync email from Discord OAuth
             user = await self.user_service.get_or_create_user_from_discord(
                 discord_id=int(discord_user['id']),
                 discord_username=discord_user['username'],
                 discord_discriminator=discord_user.get('discriminator'),
-                discord_avatar=discord_user.get('avatar'),
-                discord_email=discord_user.get('email')
+                discord_avatar=discord_user.get('avatar')
             )
             
             # Log the login

@@ -36,7 +36,6 @@ class UserAddDialog(BaseDialog):
         # Form state
         self.discord_id: Optional[int] = None
         self.discord_username: str = ""
-        self.discord_email: Optional[str] = None
         self.permission: Permission = Permission.USER
         self.is_active: bool = True
 
@@ -61,11 +60,6 @@ class UserAddDialog(BaseDialog):
             with ui.element('div'):
                 username_input = ui.input(label='Username', placeholder='Discord username').classes('w-full')
                 username_input.on('update:model-value', lambda e: setattr(self, 'discord_username', e.args))
-
-            # Email (optional) spans full width on desktop
-            with ui.element('div').classes('span-2'):
-                email_input = ui.input(label='Email (optional)', placeholder='name@example.com').classes('w-full')
-                email_input.on('update:model-value', lambda e: setattr(self, 'discord_email', e.args))
 
             # Permission (cannot assign >= current user's permission)
             with ui.element('div'):
@@ -107,7 +101,6 @@ class UserAddDialog(BaseDialog):
             user = await self.user_service.create_user_manual(
                 discord_id=self.discord_id,
                 discord_username=self.discord_username,
-                discord_email=self.discord_email,
                 permission=self.permission,
                 is_active=self.is_active,
             )

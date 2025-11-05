@@ -35,6 +35,8 @@ You can expect:
 
 #### Discord OAuth2
 - **OAuth2 Flow**: Secure authentication via Discord's OAuth2 implementation
+- **OAuth Scopes**: Only requests `identify` scope (user ID, username, avatar)
+  - **No email scope**: Email addresses are user-provided, not from Discord OAuth
 - **CSRF Protection**: State parameter validation with cryptographically secure random tokens
 - **State Management**: 10-minute expiration window for OAuth state tokens
 - **Session Security**: Sessions encrypted with `SECRET_KEY` stored securely
@@ -85,8 +87,21 @@ All responses include the following security headers:
 #### Sensitive Data Handling
 - **Database Credentials**: Never logged or exposed in error messages
 - **OAuth Tokens**: Access tokens not persisted, only used during authentication flow
-- **User Emails**: Treated as PII, only visible to SUPERADMIN users
+- **User Emails**: User-provided emails (not from Discord OAuth), treated as PII
 - **Audit Logging**: All authentication events and permission changes logged
+
+#### Email Address Management
+- **User-Managed**: Email addresses are provided by users, not from Discord OAuth
+- **Verification Status**: Email verification is currently **DISABLED** (stubbed)
+  - All email addresses are automatically marked as verified for development purposes
+  - No verification emails are sent
+  - This is a known limitation and must be addressed before production deployment
+- **Future Implementation**: Email verification will require:
+  - Integration with an email service provider (e.g., SendGrid, AWS SES, Mailgun)
+  - Secure token generation and validation
+  - Time-limited verification links
+  - Resend verification capability
+  - Email change confirmation workflow
 
 #### Data Validation
 - **ORM Protection**: Tortoise ORM with parameterized queries prevents SQL injection
@@ -238,6 +253,11 @@ allowed_origins = [
 
 Future security enhancements planned:
 
+- [ ] **Email verification system** - Currently stubbed, needs email provider integration
+  - Implement secure token-based email verification
+  - Integrate with email service provider (SendGrid/AWS SES/Mailgun)
+  - Add email change confirmation workflow
+  - Add resend verification capability
 - [ ] Two-factor authentication (2FA) support
 - [ ] IP-based rate limiting in addition to user-based
 - [ ] Account lockout after failed authentication attempts
