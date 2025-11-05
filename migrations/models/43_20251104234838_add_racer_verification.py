@@ -10,7 +10,7 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
     `guild_id` BIGINT NOT NULL,
     `role_id` BIGINT NOT NULL,
     `role_name` VARCHAR(255) NOT NULL,
-    `catagories` JSON NOT NULL,
+    `categories` JSON NOT NULL,
     `minimum_races` INT NOT NULL DEFAULT 5,
     `count_forfeits` BOOL NOT NULL DEFAULT 0,
     `count_dq` BOOL NOT NULL DEFAULT 0,

@@ -75,8 +75,8 @@ class RacerVerificationDialog(BaseDialog):
                     on_change=self._on_guild_change
                 ).classes('w-full')
 
-                # Load guilds
-                self._load_guilds()
+                # Load guilds asynchronously
+                ui.timer(0.1, self._load_guilds, once=True)
 
             # Discord Role
             with ui.element('div'):
@@ -145,7 +145,7 @@ class RacerVerificationDialog(BaseDialog):
             return
 
         # Get current user
-        current_user = DiscordAuthService.get_current_user()
+        current_user = await DiscordAuthService.get_current_user()
 
         # Get guilds linked to organization
         guilds = await self.guild_service.list_guilds(current_user, self.organization_id)
@@ -191,11 +191,28 @@ class RacerVerificationDialog(BaseDialog):
 
         discord_guild = guild_data['discord_guild']
 
-        # Build role options (exclude @everyone)
+        # Get bot member to check role permissions
+        bot_member = discord_guild.get_member(discord_guild.me.id)
+
+        # Build role options (exclude @everyone and roles bot can't manage)
         options = {}
         for role in discord_guild.roles:
-            if role.name != '@everyone':
+            if role.name == '@everyone':
+                continue
+            
+            # Check if bot can manage this role
+            # Bot must have manage_roles permission AND role must be below bot's highest role
+            can_manage = False
+            if bot_member and bot_member.guild_permissions.manage_roles:
+                # Check role hierarchy - bot can only manage roles below its highest role
+                bot_top_role = bot_member.top_role
+                can_manage = role < bot_top_role
+            
+            # Add role with permission indicator
+            if can_manage:
                 options[role.id] = role.name
+            else:
+                options[role.id] = f"{role.name} ⚠️ (Bot cannot manage)"
 
         self.role_select.set_options(options)
 
@@ -239,17 +256,33 @@ class RacerVerificationDialog(BaseDialog):
             None
         )
         role_name = 'Unknown Role'
+        bot_can_manage = False
         if guild_data:
+            discord_guild = guild_data['discord_guild']
             role = next(
-                (r for r in guild_data['discord_guild'].roles if r.id == self.role_select.value),
+                (r for r in discord_guild.roles if r.id == self.role_select.value),
                 None
             )
             if role:
                 role_name = role.name
+                
+                # Check if bot can manage this role
+                bot_member = discord_guild.get_member(discord_guild.me.id)
+                if bot_member and bot_member.guild_permissions.manage_roles:
+                    bot_top_role = bot_member.top_role
+                    bot_can_manage = role < bot_top_role
+
+        # Warn if bot cannot manage the role
+        if not bot_can_manage:
+            ui.notify(
+                f'Warning: Bot cannot manage role "{role_name}". Verification will be created but role assignment will fail.',
+                type='warning',
+                timeout=10000
+            )
 
         # Get current user
         from middleware.auth import DiscordAuthService
-        current_user = DiscordAuthService.get_current_user()
+        current_user = await DiscordAuthService.get_current_user()
 
         try:
             if self.verification:
