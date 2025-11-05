@@ -73,6 +73,7 @@ The integration attempts to match SpeedGaming players/crew to existing applicati
 When a Discord ID is **not available** in SpeedGaming data, the integration creates a **placeholder user**:
 
 - **Username**: `sg_{player_id}` or `sg_crew_{crew_id}` (unique identifier based on SpeedGaming ID)
+- **Display Name**: Best available name from SpeedGaming data (priority: Twitch username, stream name, display name)
 - **Marked as Placeholder**: `is_placeholder = True` flag for tracking
 - **Discord ID**: Set to `0` (invalid ID indicating placeholder)
 - **Organization Membership**: Automatically added to the tournament's organization
@@ -82,6 +83,35 @@ Placeholder users can be **upgraded** to real users when:
 - An admin manually links the placeholder to a real account
 - SpeedGaming data is updated with a Discord ID
 
+### Placeholder User Display Names
+
+When creating placeholder users, the system uses the best available information to set a meaningful display name:
+
+**For Players** (priority order):
+1. `streaming_from` - Twitch username (e.g., "the_synack")
+2. `public_stream` - Stream channel name
+3. `display_name` - SpeedGaming display name
+4. Fallback: `sg_{player_id}`
+
+**For Crew** (priority order):
+1. `public_stream` - Stream channel name
+2. `display_name` - SpeedGaming display name
+3. Fallback: `sg_crew_{crew_id}`
+
+### Placeholder User Cleanup
+
+Abandoned placeholder users are automatically cleaned up by a scheduled task:
+
+- **Task**: `cleanup_placeholder_users`
+- **Schedule**: Daily at 2 AM UTC
+- **Criteria**: Removes placeholders that:
+  - Have `is_placeholder = True`
+  - Have not been updated in 30+ days (configurable)
+  - Have no associated matches (as players)
+  - Have no crew assignments (as commentators/trackers)
+
+This prevents the database from accumulating unused placeholder accounts over time.
+
 ### Example: Player Import Flow
 
 ```
@@ -90,7 +120,8 @@ SpeedGaming Episode Player:
   "id": 11111,
   "displayName": "synack",
   "discordId": "123456789012345678",  // Available
-  "discordTag": "Synack#1337"
+  "discordTag": "Synack#1337",
+  "streamingFrom": "the_synack"
 }
 
 → Find User with discord_id=123456789012345678
@@ -104,13 +135,16 @@ SpeedGaming Episode Player (No Discord ID):
   "id": 11111,
   "displayName": "synack",
   "discordId": "",  // Not available
-  "discordTag": "Synack#1337"
+  "discordTag": "Synack#1337",
+  "streamingFrom": "the_synack",
+  "publicStream": ""
 }
 
 → Check for placeholder user with username="sg_11111"
 → If not found, create User:
    - discord_id=0
    - discord_username="sg_11111"
+   - display_name="the_synack"  (from streamingFrom)
    - is_placeholder=True
 → Add to organization
 → Create MatchPlayers record linking placeholder User to Match
@@ -189,9 +223,9 @@ imported, skipped = await etl_service.import_episodes_for_tournament(tournament_
 total_imported, total_skipped = await etl_service.import_all_enabled_tournaments()
 ```
 
-## Scheduled Task
+## Scheduled Tasks
 
-### Task Configuration
+### Episode Import Task
 
 **Task ID**: `speedgaming_import`
 **Task Type**: `SPEEDGAMING_IMPORT`
@@ -214,16 +248,51 @@ The task is registered as a built-in task in `application/services/builtin_tasks
 )
 ```
 
-### Task Handler
+### Placeholder User Cleanup Task
 
-The task handler in `application/services/task_handlers.py` calls the ETL service:
+**Task ID**: `cleanup_placeholder_users`
+**Task Type**: `CLEANUP_PLACEHOLDER_USERS`
+**Schedule**: Daily at 2 AM UTC
+**Scope**: Global (not organization-specific)
 
+The task is registered as a built-in task in `application/services/builtin_tasks.py`:
+
+```python
+'cleanup_placeholder_users': BuiltInTask(
+    task_id='cleanup_placeholder_users',
+    name='Cleanup Placeholder Users',
+    description='Removes abandoned placeholder users that have no associated matches or crew assignments',
+    task_type=TaskType.CLEANUP_PLACEHOLDER_USERS,
+    schedule_type=ScheduleType.CRON,
+    is_global=True,
+    cron_expression='0 2 * * *',  # Daily at 2 AM UTC
+    task_config={
+        'days_inactive': 30,  # Remove placeholders unused for 30+ days
+    },
+    is_active=True,
+)
+```
+
+### Task Handlers
+
+The task handlers in `application/services/task_handlers.py`:
+
+**SpeedGaming Import**:
 ```python
 async def handle_speedgaming_import(task: ScheduledTask) -> None:
     """Import SpeedGaming episodes into matches."""
     etl_service = SpeedGamingETLService()
     imported, skipped = await etl_service.import_all_enabled_tournaments()
     logger.info("Completed SpeedGaming import: %s imported, %s skipped", imported, skipped)
+```
+
+**Placeholder Cleanup**:
+```python
+async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
+    """Clean up abandoned placeholder users."""
+    # Find placeholders older than days_inactive with no associations
+    # Delete users with no MatchPlayers or Crew records
+    logger.info("Completed placeholder cleanup: %s users deleted", deleted_count)
 ```
 
 ## Workflow Example

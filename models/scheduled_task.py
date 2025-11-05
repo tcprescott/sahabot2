@@ -24,6 +24,7 @@ class TaskType(IntEnum):
     ASYNC_TOURNAMENT_SCORE_CALCULATION = 5  # Recalculate async tournament scores
     ASYNC_LIVE_RACE_OPEN = 6  # Open a RaceTime.gg room for a scheduled live race
     SPEEDGAMING_IMPORT = 7  # Import SpeedGaming episodes into matches
+    CLEANUP_PLACEHOLDER_USERS = 8  # Clean up abandoned placeholder users
     CUSTOM = 99  # Custom task type
 
 

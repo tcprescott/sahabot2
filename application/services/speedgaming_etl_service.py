@@ -7,10 +7,15 @@ including player and crew member matching/creation.
 
 import logging
 from typing import Optional, List, Tuple
-from datetime import datetime, timezone
 
-from models import User, SYSTEM_USER_ID
-from models.match_schedule import Tournament, Match, MatchPlayers, Crew, CrewRole, StreamChannel
+from models import User
+from models.match_schedule import (
+    Tournament,
+    Match,
+    MatchPlayers,
+    Crew,
+    CrewRole,
+)
 from models.organizations import Organization
 from application.services.speedgaming_service import (
     SpeedGamingService,
@@ -63,25 +68,45 @@ class SpeedGamingETLService:
         if sg_player.discord_id_int:
             user = await User.get_or_none(discord_id=sg_player.discord_id_int)
             if user:
-                logger.info("Matched player '%s' to existing user %s", sg_player.display_name, user.id)
-                
+                logger.info(
+                    "Matched player '%s' to existing user %s",
+                    sg_player.display_name,
+                    user.id
+                )
+
                 # Ensure user is a member of the organization
                 org = await Organization.get(id=organization_id)
                 if not await org.members.filter(id=user.id).exists():
                     await org.members.add(user)
-                    logger.info("Added user %s to organization %s", user.id, organization_id)
-                
+                    logger.info(
+                        "Added user %s to organization %s",
+                        user.id,
+                        organization_id
+                    )
+
                 return user
 
         # Create placeholder user
         # Use a unique identifier based on SG player ID to avoid duplicates
         placeholder_username = f"sg_{sg_player.id}"
-        
+
         # Check if placeholder already exists
         user = await User.get_or_none(discord_username=placeholder_username)
         if user:
-            logger.info("Found existing placeholder user for SG player %s", sg_player.id)
+            logger.info(
+                "Found existing placeholder user for SG player %s",
+                sg_player.id
+            )
             return user
+
+        # Determine best display name
+        # Priority: streaming_from (Twitch), public_stream, display_name
+        display_name = (
+            sg_player.streaming_from
+            or sg_player.public_stream
+            or sg_player.display_name
+            or placeholder_username
+        )
 
         # Create new placeholder user
         user = await User.create(
@@ -90,19 +115,26 @@ class SpeedGamingETLService:
             discord_discriminator="0000",
             discord_avatar_hash=None,
             discord_email=None,
+            display_name=display_name,
             is_placeholder=True,  # Mark as placeholder
         )
         logger.info(
-            "Created placeholder user %s for SpeedGaming player '%s' (ID: %s)",
+            "Created placeholder user %s for SpeedGaming player '%s' "
+            "(ID: %s, display_name: %s)",
             user.id,
             sg_player.display_name,
-            sg_player.id
+            sg_player.id,
+            display_name
         )
 
         # Add to organization
         org = await Organization.get(id=organization_id)
         await org.members.add(user)
-        logger.info("Added placeholder user %s to organization %s", user.id, organization_id)
+        logger.info(
+            "Added placeholder user %s to organization %s",
+            user.id,
+            organization_id
+        )
 
         return user
 
@@ -125,25 +157,44 @@ class SpeedGamingETLService:
         if sg_crew.discord_id_int:
             user = await User.get_or_none(discord_id=sg_crew.discord_id_int)
             if user:
-                logger.info("Matched crew '%s' to existing user %s", sg_crew.display_name, user.id)
-                
+                logger.info(
+                    "Matched crew '%s' to existing user %s",
+                    sg_crew.display_name,
+                    user.id
+                )
+
                 # Ensure user is a member of the organization
                 org = await Organization.get(id=organization_id)
                 if not await org.members.filter(id=user.id).exists():
                     await org.members.add(user)
-                    logger.info("Added crew user %s to organization %s", user.id, organization_id)
-                
+                    logger.info(
+                        "Added crew user %s to organization %s",
+                        user.id,
+                        organization_id
+                    )
+
                 return user
 
         # Create placeholder user
         # Use a unique identifier based on SG crew ID to avoid duplicates
         placeholder_username = f"sg_crew_{sg_crew.id}"
-        
+
         # Check if placeholder already exists
         user = await User.get_or_none(discord_username=placeholder_username)
         if user:
-            logger.info("Found existing placeholder crew user for SG crew %s", sg_crew.id)
+            logger.info(
+                "Found existing placeholder crew user for SG crew %s",
+                sg_crew.id
+            )
             return user
+
+        # Determine best display name
+        # Priority: public_stream (Twitch), display_name
+        display_name = (
+            sg_crew.public_stream
+            or sg_crew.display_name
+            or placeholder_username
+        )
 
         # Create new placeholder user
         user = await User.create(
@@ -152,19 +203,26 @@ class SpeedGamingETLService:
             discord_discriminator="0000",
             discord_avatar_hash=None,
             discord_email=None,
+            display_name=display_name,
             is_placeholder=True,
         )
         logger.info(
-            "Created placeholder crew user %s for SpeedGaming crew '%s' (ID: %s)",
+            "Created placeholder crew user %s for SpeedGaming crew '%s' "
+            "(ID: %s, display_name: %s)",
             user.id,
             sg_crew.display_name,
-            sg_crew.id
+            sg_crew.id,
+            display_name
         )
 
         # Add to organization
         org = await Organization.get(id=organization_id)
         await org.members.add(user)
-        logger.info("Added placeholder crew user %s to organization %s", user.id, organization_id)
+        logger.info(
+            "Added placeholder crew user %s to organization %s",
+            user.id,
+            organization_id
+        )
 
         return user
 
@@ -226,44 +284,71 @@ class SpeedGamingETLService:
         # Add players
         for sg_player in all_players:
             user = await self._find_or_create_user(organization_id, sg_player)
-            
+
             await MatchPlayers.create(
                 match=match,
                 user=user,
             )
             logger.info("Added player %s to match %s", user.id, match.id)
 
-        # Add commentators
+        # Add commentators (only if approved)
+        approved_commentators = 0
         for sg_commentator in episode.commentators:
-            user = await self._find_or_create_crew_user(organization_id, sg_commentator)
-            
+            if not sg_commentator.approved:
+                logger.info(
+                    "Skipping unapproved commentator '%s' for match %s",
+                    sg_commentator.display_name,
+                    match.id
+                )
+                continue
+
+            user = await self._find_or_create_crew_user(
+                organization_id,
+                sg_commentator
+            )
+
             await Crew.create(
                 match=match,
                 user=user,
                 role=CrewRole.COMMENTATOR,
-                approved=sg_commentator.approved,
+                approved=True,
             )
+            approved_commentators += 1
             logger.info("Added commentator %s to match %s", user.id, match.id)
 
-        # Add trackers
+        # Add trackers (only if approved)
+        approved_trackers = 0
         for sg_tracker in episode.trackers:
-            user = await self._find_or_create_crew_user(organization_id, sg_tracker)
-            
+            if not sg_tracker.approved:
+                logger.info(
+                    "Skipping unapproved tracker '%s' for match %s",
+                    sg_tracker.display_name,
+                    match.id
+                )
+                continue
+
+            user = await self._find_or_create_crew_user(
+                organization_id,
+                sg_tracker
+            )
+
             await Crew.create(
                 match=match,
                 user=user,
                 role=CrewRole.TRACKER,
-                approved=True,  # Assume trackers are approved
+                approved=True,
             )
+            approved_trackers += 1
             logger.info("Added tracker %s to match %s", user.id, match.id)
 
         logger.info(
-            "Successfully imported episode %s as match %s with %s players, %s commentators, %s trackers",
+            "Successfully imported episode %s as match %s with %s players, "
+            "%s commentators, %s trackers",
             episode.id,
             match.id,
             len(all_players),
-            len(episode.commentators),
-            len(episode.trackers)
+            approved_commentators,
+            approved_trackers
         )
 
         return match
