@@ -209,6 +209,15 @@ class MatchCompletedEvent(EntityEvent):
     winner_user_id: Optional[int] = None
 
 
+@dataclass(frozen=True)
+class MatchFinishedEvent(EntityEvent):
+    """Emitted when a match race finishes and results are recorded."""
+    entity_type: str = field(default="MatchSchedule", init=False)
+    match_id: Optional[int] = None
+    tournament_id: Optional[int] = None
+    finisher_count: int = 0
+
+
 # ============================================================================
 # Async Live Race Events
 # ============================================================================

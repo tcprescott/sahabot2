@@ -1,0 +1,95 @@
+"""
+Match race handler for RaceTime.gg integration.
+
+Extends SahaRaceHandler to add match-specific logic for tournament matches.
+"""
+
+import logging
+from racetime.client import SahaRaceHandler
+
+logger = logging.getLogger(__name__)
+
+
+class MatchRaceHandler(SahaRaceHandler):
+    """
+    Handler for tournament match races on RaceTime.gg.
+
+    Extends SahaRaceHandler to add match-specific functionality:
+    - Automatic race finish processing
+    - Automatic result recording for match players
+    - Match service integration
+    """
+
+    def __init__(
+        self,
+        match_id: int,
+        **kwargs,
+    ):
+        """
+        Initialize match race handler.
+
+        Args:
+            match_id: ID of the Match
+            **kwargs: Arguments for parent RaceHandler
+        """
+        super().__init__(**kwargs)
+        self.match_id = match_id
+        self._race_finished = False
+
+    async def race_data(self, data):
+        """
+        Override race_data to process match race events.
+
+        Calls parent to handle standard race events, then adds match processing:
+        - When race finishes: Call TournamentService.process_match_race_finish()
+        """
+        # Call parent to handle standard events
+        await super().race_data(data)
+
+        # Import here to avoid circular dependency
+        from application.services.tournament_service import TournamentService
+
+        race_status = data.get('status', {}).get('value')
+
+        # Process race finish (transitions to 'finished')
+        if race_status == 'finished' and not self._race_finished:
+            self._race_finished = True
+            race_slug = data.get('name', 'unknown')
+            logger.info(
+                "Match race %s finished on RaceTime.gg (slug: %s)",
+                self.match_id,
+                race_slug,
+            )
+
+            try:
+                # Extract results from entrants
+                entrants = data.get('entrants', [])
+                results = []
+
+                for entrant in entrants:
+                    racetime_id = entrant.get('user', {}).get('id')
+                    status = entrant.get('status', {}).get('value')
+                    finish_time = entrant.get('finish_time')
+                    place = entrant.get('place')
+
+                    if racetime_id:
+                        results.append({
+                            'racetime_id': racetime_id,
+                            'status': status,
+                            'finish_time': finish_time,
+                            'place': place,
+                        })
+
+                # Call service to record results
+                service = TournamentService()
+                await service.process_match_race_finish(
+                    match_id=self.match_id,
+                    results=results,
+                )
+            except Exception as e:
+                logger.error(
+                    "Failed to process match race finish for match %s: %s",
+                    self.match_id,
+                    e,
+                    exc_info=True,
+                )

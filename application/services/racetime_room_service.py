@@ -128,6 +128,35 @@ class RacetimeRoomService:
                 logger.error("Failed to create race room for match %s", match.id)
                 return None
 
+            # Replace generic handler with MatchRaceHandler for automatic result recording
+            from racetime.match_race_handler import MatchRaceHandler
+            
+            # If not already a MatchRaceHandler, replace it
+            if not isinstance(handler, MatchRaceHandler):
+                # Stop the generic handler
+                handler.should_stop = True
+                
+                # Extract race data from the handler
+                race_data = handler.data
+                
+                # Create new match race handler using bot's handler creation pattern
+                # The bot.create_handler() would normally be called, but we need our custom class
+                # So we instantiate it directly with the same arguments
+                match_handler = MatchRaceHandler(
+                    match_id=match.id,
+                    bot_instance=bot,
+                    race_data=race_data,
+                    race_logger=logger,
+                )
+                # Mark that bot created this room
+                match_handler._bot_created_room = True
+                
+                # Initialize the new handler
+                await match_handler.begin()
+                
+                # Use the new handler
+                handler = match_handler
+
             # Extract room slug from handler data
             room_slug = handler.data.get('name')  # e.g., "alttpr/cool-doge-1234"
 
