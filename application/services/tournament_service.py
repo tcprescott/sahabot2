@@ -622,8 +622,40 @@ class TournamentService:
                 match.racetime_room_slug = room_slug
                 match.racetime_goal = goal
                 await match.save()
-                
+
                 logger.info("Created RaceTime room %s for match %s", room_slug, match_id)
+
+                # Invite players to the room
+                players = await match.players.all().prefetch_related('user')
+                invited_count = 0
+                skipped_count = 0
+
+                for match_player in players:
+                    user = match_player.user
+                    if not user.racetime_id:
+                        logger.warning(
+                            "Player %s (%s) does not have RaceTime account linked, skipping invite",
+                            user.discord_username,
+                            user.id
+                        )
+                        skipped_count += 1
+                        continue
+
+                    try:
+                        await handler.invite_user(user.racetime_id)
+                        invited_count += 1
+                        logger.info("Invited user %s to race room %s", user.racetime_id, room_slug)
+                    except Exception as e:
+                        logger.error("Failed to invite user %s to room %s: %s", user.racetime_id, room_slug, e)
+
+                logger.info(
+                    "Invited %d/%d players to race room %s (%d skipped due to no RaceTime account)",
+                    invited_count,
+                    len(players),
+                    room_slug,
+                    skipped_count
+                )
+
                 return match
                 
             finally:
