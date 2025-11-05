@@ -23,6 +23,17 @@ SpeedGaming remains the **source of truth** for match scheduling:
 - The application does not push changes back to SpeedGaming
 - Schedule updates happen automatically via periodic import
 
+**When a tournament has SpeedGaming integration enabled** (`speedgaming_enabled=True`), **all match editing is disabled**:
+- ❌ Cannot create new matches manually
+- ❌ Cannot edit existing matches (title, schedule, stream channel)
+- ❌ Cannot add or remove crew members
+- ❌ Cannot approve or unapprove crew
+- ❌ Cannot sign up for crew roles
+- ✅ Can view matches and schedule
+- ✅ Matches are created/updated automatically from SpeedGaming
+
+This ensures SpeedGaming remains the single source of truth and prevents conflicts between manual edits and automated imports.
+
 ### Model Reuse
 
 Instead of creating SpeedGaming-specific models, the integration **reuses existing models**:

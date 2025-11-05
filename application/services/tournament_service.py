@@ -37,6 +37,18 @@ class TournamentService:
         self.repo = TournamentRepository()
         self.org_service = OrganizationService()
 
+    async def is_schedule_read_only(self, tournament: Tournament) -> bool:
+        """
+        Check if tournament schedule is read-only (managed by SpeedGaming).
+
+        Args:
+            tournament: Tournament to check
+
+        Returns:
+            True if schedule is read-only (SpeedGaming enabled), False otherwise
+        """
+        return tournament.speedgaming_enabled
+
     async def list_org_tournaments(self, user: Optional[User], organization_id: int) -> List[Tournament]:
         """List tournaments for an organization after access check."""
         allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
@@ -338,12 +350,13 @@ class TournamentService:
         title: Optional[str] = None,
     ) -> Optional[Match]:
         """Create a match for a tournament.
-        
+
         Open access - any member can submit a match request.
         In the future, this might require approval from tournament organizers.
-        
+
         Raises:
             ValueError: If tournament requires RaceTime link and players don't have it
+            ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
         # Verify user is a member of the organization
         if not user:
@@ -355,17 +368,30 @@ class TournamentService:
             logger.warning("User %s is not a member of org %s, cannot create match", user.id, organization_id)
             return None
 
-        # Validate RaceTime requirements if tournament has them enabled
+        # Check if tournament schedule is read-only
         tournament = await self.repo.get_for_org(organization_id, tournament_id)
-        if tournament and tournament.require_racetime_link:
+        if not tournament:
+            logger.warning("Tournament %s not found in org %s", tournament_id, organization_id)
+            return None
+
+        if await self.is_schedule_read_only(tournament):
+            error_msg = "Cannot create matches for this tournament - schedule is managed by SpeedGaming"
+            logger.warning(
+                "Match creation blocked - tournament %s has SpeedGaming integration enabled",
+                tournament_id
+            )
+            raise ValueError(error_msg)
+
+        # Validate RaceTime requirements if tournament has them enabled
+        if tournament.require_racetime_link:
             # Check that all players have RaceTime accounts linked
             from models.user import User as UserModel
             players = await UserModel.filter(id__in=player_ids).all()
-            
+
             players_without_racetime = [
                 p.discord_username for p in players if not p.racetime_id
             ]
-            
+
             if players_without_racetime:
                 player_list = ", ".join(players_without_racetime)
                 error_msg = f"This tournament requires RaceTime accounts. The following players must link their accounts first: {player_list}"
@@ -397,12 +423,15 @@ class TournamentService:
         comment: Optional[str] = None,
     ) -> Optional[Match]:
         """Update a match.
-        
+
         Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+
+        Raises:
+            ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
         # Check if user can manage tournaments (tournament admin) or is a moderator
         can_manage = await self.org_service.user_can_manage_tournaments(user, organization_id)
-        
+
         if not can_manage:
             # Check if user is at least a moderator
             from application.services.authorization_service import AuthorizationService
@@ -410,7 +439,7 @@ class TournamentService:
             if not auth_z.can_moderate(user):
                 logger.warning("Unauthorized update_match by user %s for org %s", getattr(user, 'id', None), organization_id)
                 return None
-        
+
         # Get the match before update to check channel changes and schedule changes
         match_before = await Match.filter(
             id=match_id,
@@ -420,6 +449,15 @@ class TournamentService:
         if not match_before:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
             return None
+
+        # Check if tournament schedule is read-only
+        if await self.is_schedule_read_only(match_before.tournament):
+            error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
+            logger.warning(
+                "Match update blocked - tournament %s has SpeedGaming integration enabled",
+                match_before.tournament_id
+            )
+            raise ValueError(error_msg)
 
         previous_channel_id = match_before.stream_channel_id
         previous_scheduled_at = match_before.scheduled_at
@@ -687,19 +725,40 @@ class TournamentService:
 
     async def signup_crew(self, user: User, organization_id: int, match_id: int, role: str) -> Optional['Crew']:
         """Sign up as crew for a match.
-        
+
         Any member can sign up. Requires approval from tournament manager.
+
+        Raises:
+            ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
         from models.match_schedule import Crew
-        
+
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
         if not member:
             logger.warning("User %s is not a member of org %s, cannot sign up as crew", user.id, organization_id)
             return None
 
+        # Check if tournament schedule is read-only
+        match = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('tournament').first()
+
+        if not match:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+
+        if await self.is_schedule_read_only(match.tournament):
+            error_msg = "Cannot sign up for crew - tournament schedule is managed by SpeedGaming"
+            logger.warning(
+                "Crew signup blocked - tournament %s has SpeedGaming integration enabled",
+                match.tournament_id
+            )
+            raise ValueError(error_msg)
+
         crew = await self.repo.signup_crew(match_id, user.id, role)
-        
+
         if crew:
             # Emit crew added event (self-signup, not approved)
             await EventBus.emit(CrewAddedEvent(
@@ -712,7 +771,7 @@ class TournamentService:
                 added_by_admin=False,
                 auto_approved=False,
             ))
-        
+
         return crew
 
     async def remove_crew_signup(self, user: User, organization_id: int, match_id: int, role: str) -> bool:
@@ -756,10 +815,10 @@ class TournamentService:
         approved: bool = True
     ) -> Optional['Crew']:
         """Add a user as crew for a match (admin action).
-        
+
         Requires ADMIN or TOURNAMENT_MANAGER permission in the organization.
         Admin-added crew is automatically approved by default.
-        
+
         Args:
             admin_user: User performing the admin action
             organization_id: Organization ID for permission check
@@ -767,12 +826,15 @@ class TournamentService:
             user_id: User ID to add as crew
             role: Crew role (e.g., 'commentator', 'tracker')
             approved: Whether the crew is pre-approved (default True)
-        
+
         Returns:
             The Crew record if successful, None if unauthorized.
+
+        Raises:
+            ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
         from models.match_schedule import Crew
-        
+
         # Check if admin user has permission to approve crew (same permission level)
         allowed = await self.org_service.user_can_approve_crew(admin_user, organization_id)
         if not allowed:
@@ -782,7 +844,25 @@ class TournamentService:
                 organization_id
             )
             return None
-        
+
+        # Check if tournament schedule is read-only
+        match = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('tournament').first()
+
+        if not match:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+
+        if await self.is_schedule_read_only(match.tournament):
+            error_msg = "Cannot add crew - tournament schedule is managed by SpeedGaming"
+            logger.warning(
+                "Crew assignment blocked - tournament %s has SpeedGaming integration enabled",
+                match.tournament_id
+            )
+            raise ValueError(error_msg)
+
         # Verify the user being added is a member of the organization
         member = await self.org_service.get_member(organization_id, user_id)
         if not member:
@@ -792,7 +872,7 @@ class TournamentService:
                 organization_id
             )
             return None
-        
+
         crew = await self.repo.admin_add_crew(
             match_id=match_id,
             user_id=user_id,
@@ -800,7 +880,7 @@ class TournamentService:
             approved=approved,
             approver_user_id=admin_user.id if approved else None
         )
-        
+
         if crew:
             # Emit crew added event (admin action)
             await EventBus.emit(CrewAddedEvent(
@@ -813,35 +893,51 @@ class TournamentService:
                 added_by_admin=True,
                 auto_approved=approved,
             ))
-        
+
         return crew
 
     async def approve_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
         """Approve a crew signup.
-        
+
         Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
-        
+
         Args:
             user: User attempting to approve the crew
             organization_id: Organization ID for permission check
             crew_id: ID of the crew signup to approve
-        
+
         Returns:
             The approved Crew record or None if unauthorized.
+
+        Raises:
+            ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
         from models.match_schedule import Crew
-        
+
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)
         if not allowed:
             logger.warning("Unauthorized crew approval by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
-        
+
         # Get crew info before approving
-        crew_before = await Crew.filter(id=crew_id).first()
-        
+        crew_before = await Crew.filter(id=crew_id).select_related('match__tournament').first()
+
+        if not crew_before:
+            logger.warning("Crew %s not found", crew_id)
+            return None
+
+        # Check if tournament schedule is read-only
+        if await self.is_schedule_read_only(crew_before.match.tournament):
+            error_msg = "Cannot approve crew - tournament schedule is managed by SpeedGaming"
+            logger.warning(
+                "Crew approval blocked - tournament %s has SpeedGaming integration enabled",
+                crew_before.match.tournament_id
+            )
+            raise ValueError(error_msg)
+
         crew = await self.repo.approve_crew(crew_id, user.id)
-        
+
         if crew and crew_before:
             # Emit crew approved event
             await EventBus.emit(CrewApprovedEvent(
@@ -853,7 +949,7 @@ class TournamentService:
                 role=crew.role,
                 approved_by_user_id=user.id,
             ))
-        
+
         return crew
 
     async def unapprove_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
