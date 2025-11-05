@@ -5,7 +5,7 @@
 ## Features
 
 - 🎨 **Mobile-First Responsive Design** - Fully functional on all device sizes
-- 🔐 **Discord OAuth2 Authentication** - Secure login via Discord
+- 🔐 **Discord OAuth2 Authentication** - Secure login via Discord with automatic token refresh
 - 🏁 **RaceTime.gg Integration** - Link your RaceTime.gg account for race tracking
 - 🗄️ **Database-Driven Authorization** - Flexible permission system
 - 🏗️ **Clean Architecture** - Separation of concerns with service and repository layers

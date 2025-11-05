@@ -43,6 +43,7 @@ Deployment, configuration, and troubleshooting:
 
 External service integrations:
 
+- **[Discord OAuth2 Token Refresh](integrations/DISCORD_TOKEN_REFRESH.md)** - Automatic token refresh implementation
 - **[RaceTime.gg Integration](integrations/RACETIME_INTEGRATION.md)** - RaceTime.gg API integration
 - **[RaceTime Chat Commands](integrations/RACETIME_CHAT_COMMANDS_QUICKSTART.md)** - Bot commands quick reference
 - **[Discord Channel Permissions](integrations/DISCORD_CHANNEL_PERMISSIONS.md)** - Required Discord permissions

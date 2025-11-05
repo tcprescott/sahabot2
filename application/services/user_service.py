@@ -458,6 +458,72 @@ class UserService:
         )
         return user
 
+    async def update_discord_tokens(
+        self,
+        user: User,
+        access_token: str,
+        refresh_token: str,
+        expires_at: datetime
+    ) -> User:
+        """
+        Update Discord OAuth2 tokens for a user.
+
+        Args:
+            user: User to update tokens for
+            access_token: OAuth2 access token
+            refresh_token: OAuth2 refresh token
+            expires_at: Access token expiration timestamp
+
+        Returns:
+            User: Updated user with new tokens
+        """
+        user.discord_access_token = access_token
+        user.discord_refresh_token = refresh_token
+        user.discord_token_expires_at = expires_at
+        await user.save()
+
+        logger.info("Updated Discord tokens for user %s", user.id)
+        return user
+
+    async def refresh_discord_token(self, user: User) -> User:
+        """
+        Refresh Discord access token for a user.
+
+        Args:
+            user: User with Discord OAuth2 tokens
+
+        Returns:
+            User: Updated user with refreshed token
+
+        Raises:
+            ValueError: If user has no refresh token
+            httpx.HTTPError: If token refresh fails
+        """
+        from middleware.auth import DiscordAuthService
+
+        if not user.discord_refresh_token:
+            raise ValueError("User has no Discord refresh token")
+
+        auth_service = DiscordAuthService()
+        token_response = await auth_service.refresh_discord_token(user.discord_refresh_token)
+
+        # Update user with new token information
+        user.discord_access_token = token_response.get('access_token')
+
+        # Update refresh token if provided (Discord rotates refresh tokens)
+        if 'refresh_token' in token_response:
+            user.discord_refresh_token = token_response['refresh_token']
+
+        # Calculate expiration if provided
+        if 'expires_in' in token_response:
+            expires_at = DiscordAuthService.calculate_token_expiry(token_response['expires_in'])
+            user.discord_token_expires_at = expires_at
+
+        await user.save()
+
+        logger.info("Refreshed Discord token for user %s", user.id)
+        return user
+
     async def get_all_racetime_accounts(
         self,
         admin_user: User,
