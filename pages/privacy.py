@@ -31,7 +31,7 @@ def register():
                     ui.label('Privacy Policy').classes('text-2xl text-bold')
 
                 with ui.element('div').classes('card-body'):
-                    ui.label('Last Updated: November 3, 2025').classes('text-sm text-gray-600 mb-4')
+                    ui.label('Last Updated: November 6, 2025').classes('text-sm text-gray-600 mb-4')
 
                     ui.separator()
 
@@ -87,6 +87,16 @@ def register():
                             ui.label('Discord - for authentication and user identification')
                         with ui.element('li'):
                             ui.label('RaceTime.gg - for racing functionality (optional)')
+                        with ui.element('li'):
+                            ui.label(
+                                'Sentry.io - for error tracking and performance monitoring. Sentry may collect '
+                                'error information, performance data, and user context when errors occur. '
+                                'This data is used solely for debugging and improving application reliability. '
+                            )
+                            with ui.link('Learn more about Sentry\'s privacy practices', 
+                                       'https://sentry.io/privacy/', 
+                                       new_tab=True).classes('text-blue-600 hover:text-blue-800'):
+                                pass
 
                     # User Rights
                     ui.label('Your Rights').classes('text-xl text-bold mt-4 mb-2')
