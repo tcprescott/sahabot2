@@ -19,7 +19,6 @@ All requirements from the issue have been fulfilled.
 - Subweight support (nested/conditional weights based on rolled preset)
 - Entrance shuffle randomization
 - Customizer settings (eq, item_pool, custom, timed-ohko, triforce-hunt)
-- Door randomizer mystery support
 - Comprehensive validation with detailed error messages
 - Type hints throughout
 - Proper logging with lazy % formatting
@@ -309,7 +308,6 @@ All requirements from the issue met:
 - [x] Implement preset rolling from weights
 - [x] Support for subweights
 - [x] Customizer integration
-- [x] Door randomizer mystery support
 
 ✅ **Storage System**
 - [x] Mystery weightset storage (using existing Presets model)
@@ -338,7 +336,6 @@ All requirements from the issue met:
 ## Future Enhancements (Out of Scope)
 
 Could be added in future PRs:
-- Door randomizer full integration (requires local ROM)
 - Multiworld mystery support
 - Custom preset templates in web UI
 - Mystery preset statistics

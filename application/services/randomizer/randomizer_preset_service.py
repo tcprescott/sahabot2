@@ -563,7 +563,7 @@ class RandomizerPresetService:
         mystery_weights = parsed.get('mystery_weights', parsed)
 
         # If using SahasrahBot format with 'settings' key, check there too
-        if 'settings' in parsed and not any(k in mystery_weights for k in ['weights', 'entrance_weights', 'customizer', 'door_weights']):
+        if 'settings' in parsed and not any(k in mystery_weights for k in ['weights', 'entrance_weights', 'customizer']):
             mystery_weights = parsed['settings']
 
         # Validate using mystery service

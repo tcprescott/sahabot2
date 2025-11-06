@@ -9,7 +9,6 @@ Mystery seeds use weighted selection to randomly choose:
 - **Subweights**: Conditional/nested settings based on the rolled preset
 - **Entrance Shuffle**: Entrance randomization options
 - **Customizer Settings**: Custom item pool and gameplay modifications
-- **Door Randomizer**: Door randomization settings
 
 ## Basic Structure
 
@@ -36,11 +35,6 @@ customizer:           # Optional - Customizer settings
   section_name:
     option_1: weight_value
     option_2: weight_value
-
-door_weights:         # Optional - Door randomizer settings
-  none: weight_value
-  basic: weight_value
-  crossed: weight_value
 ```
 
 ## Weights Section
@@ -141,17 +135,6 @@ customizer:
     off: 8
 ```
 
-## Door Randomizer Weights
-
-Control door randomization (if supported):
-
-```yaml
-door_weights:
-  none: 5              # No door randomization
-  basic: 3             # Basic door randomization
-  crossed: 1           # Crossed door randomization
-```
-
 ## Complete Example
 
 Here's a complete example mystery weightset:
@@ -210,10 +193,7 @@ When a mystery seed is generated:
    - Roll each section independently
    - Example: `eq: progressive`, `item_pool: normal`
 
-5. **Roll Door Settings** (if `door_weights` exists):
-   - Example: "none" is selected
-
-6. **Generate Seed**: Create seed with all rolled settings combined
+5. **Generate Seed**: Create seed with all rolled settings combined
 
 ## Weight Calculation
 
@@ -249,7 +229,7 @@ Both formats are equivalent. The service auto-detects the format.
 Mystery presets are validated when uploaded:
 
 ✅ **Valid:**
-- Has at least one of: `weights`, `entrance_weights`, `customizer`, `door_weights`
+- Has at least one of: `weights`, `entrance_weights`, `customizer`
 - All weight values are numeric
 - Weight structures are properly formatted dictionaries
 

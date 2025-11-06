@@ -116,13 +116,6 @@ class ALTTPRMysteryService:
             if customizer_settings:
                 description['customizer'] = 'yes'
 
-        # Step 5: Roll door randomizer mystery (if door_weights exist)
-        if 'door_weights' in mystery_weights:
-            door_value = self._roll_weighted_value(mystery_weights['door_weights'])
-            if door_value and door_value != 'none':
-                settings['door_shuffle'] = door_value
-                description['door'] = door_value
-
         return settings, description
 
     def _roll_weighted_preset(self, weights: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
@@ -310,8 +303,8 @@ class ALTTPRMysteryService:
                 return False, "Mystery weights must be a dictionary"
 
             # At least one of weights, entrance_weights, or customizer must exist
-            if not any(key in mystery_weights for key in ['weights', 'entrance_weights', 'customizer', 'door_weights']):
-                return False, "Mystery weights must contain at least one of: weights, entrance_weights, customizer, door_weights"
+            if not any(key in mystery_weights for key in ['weights', 'entrance_weights', 'customizer']):
+                return False, "Mystery weights must contain at least one of: weights, entrance_weights, customizer"
 
             # Validate weights structure
             if 'weights' in mystery_weights:
