@@ -36,6 +36,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Initialize in-memory log handler for admin UI
+from application.utils.log_handler import init_log_handler
+init_log_handler(max_records=1000)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

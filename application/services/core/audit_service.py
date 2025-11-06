@@ -4,9 +4,12 @@ Audit logging service.
 This module provides centralized audit logging for tracking user actions.
 """
 
+import logging
 from models import User, AuditLog
 from typing import Optional, Any
 from application.repositories.audit_repository import AuditRepository
+
+logger = logging.getLogger(__name__)
 
 
 class AuditService:
@@ -40,13 +43,20 @@ class AuditService:
         Returns:
             AuditLog: Created audit log entry
         """
-        return await self.audit_repository.create(
-            user=user,
-            action=action,
-            details=details,
-            ip_address=ip_address,
-            organization_id=organization_id,
-        )
+        try:
+            return await self.audit_repository.create(
+                user=user,
+                action=action,
+                details=details,
+                ip_address=ip_address,
+                organization_id=organization_id,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to create audit log: action=%s, user_id=%s, error=%s",
+                action, user.id if user else None, e, exc_info=True
+            )
+            raise
 
     async def log_login(self, user: User, ip_address: Optional[str] = None, organization_id: Optional[int] = None) -> AuditLog:
         """

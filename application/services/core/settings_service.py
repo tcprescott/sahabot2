@@ -3,8 +3,11 @@ Settings service encapsulating business logic for global and organization-specif
 """
 
 from __future__ import annotations
+import logging
 from typing import Optional
 from application.repositories.settings_repository import SettingsRepository
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsService:
@@ -26,9 +29,11 @@ class SettingsService:
     async def set_global(self, key: str, value: str, description: Optional[str] = None, is_public: bool = False) -> None:
         # Hook for validation/normalization per key can be added here
         await self.repo.set_global(key=key, value=value, description=description, is_public=is_public)
+        logger.info("Global setting updated: key=%s, is_public=%s", key, is_public)
 
     async def delete_global(self, key: str) -> None:
         await self.repo.delete_global(key)
+        logger.info("Global setting deleted: key=%s", key)
 
     # Organization
     async def list_org(self, organization_id: int) -> list:
@@ -43,9 +48,11 @@ class SettingsService:
     async def set_org(self, organization_id: int, key: str, value: str, description: Optional[str] = None) -> None:
         # Hook for per-org validation can be added here
         await self.repo.set_org(organization_id=organization_id, key=key, value=value, description=description)
+        logger.info("Organization setting updated: org_id=%s, key=%s", organization_id, key)
 
     async def delete_org(self, organization_id: int, key: str) -> None:
         await self.repo.delete_org(organization_id=organization_id, key=key)
+        logger.info("Organization setting deleted: org_id=%s, key=%s", organization_id, key)
 
     async def get_effective(self, key: str, organization_id: Optional[int] = None) -> Optional[str]:
         """Get effective value: org override first, then global setting."""
