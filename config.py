@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     # Sentry Configuration
     SENTRY_DSN: Optional[str] = None
     SENTRY_ENVIRONMENT: Optional[str] = None
+    SENTRY_RELEASE: Optional[str] = None
     SENTRY_TRACES_SAMPLE_RATE: float = 0.1  # 10% sampling to reduce costs
     SENTRY_PROFILES_SAMPLE_RATE: float = 0.1  # 10% profiling
 

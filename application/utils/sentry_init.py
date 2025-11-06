@@ -20,16 +20,16 @@ def _get_release_version() -> str:
     Get the release version for Sentry.
 
     Checks for version in the following order:
-    1. SENTRY_RELEASE environment variable
+    1. SENTRY_RELEASE from settings
     2. Git commit SHA (if .git directory exists)
     3. Default version from pyproject.toml
 
     Returns:
         str: Release version string
     """
-    # Check for explicit SENTRY_RELEASE environment variable
-    if os.environ.get('SENTRY_RELEASE'):
-        return os.environ['SENTRY_RELEASE']
+    # Check for explicit SENTRY_RELEASE in settings
+    if settings.SENTRY_RELEASE:
+        return settings.SENTRY_RELEASE
 
     # Try to get git commit SHA
     try:
