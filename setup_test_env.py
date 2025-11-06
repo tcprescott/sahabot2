@@ -239,6 +239,9 @@ async def main():
     if not await validate_environment():
         logger.warning("Environment validation had warnings")
     
+    # Import settings for database name check
+    from config import settings
+    
     logger.info("=" * 60)
     logger.info("✓ Test environment setup complete!")
     logger.info("=" * 60)
