@@ -2,15 +2,16 @@
 Tournament Match Settings Submission page.
 
 This page allows tournament players to submit settings for their matches.
+Form fields are dynamically generated based on tournament configuration.
 """
 
 from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
+from components.dynamic_form_builder import DynamicFormBuilder
 from application.services.tournaments.tournament_match_settings_service import TournamentMatchSettingsService
 from application.repositories.tournament_repository import TournamentRepository
 from models.match_schedule import Match
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -88,21 +89,10 @@ def register():
                             format='%.0f'
                         ).classes('w-32')
 
-                    # Settings input
-                    ui.label('Settings (JSON format):').classes('font-bold mb-2')
-                    ui.markdown(
-                        'Enter your race settings in JSON format. '
-                        'Example: `{"preset": "standard", "mode": "open"}`'
-                    ).classes('mb-2')
-
-                    # Pre-fill with existing submission if available
-                    default_settings = json.dumps(existing_submission.settings, indent=2) if existing_submission else '{}'
-
-                    settings_input = ui.textarea(
-                        label='Settings JSON',
-                        placeholder='{"preset": "standard"}',
-                        value=default_settings
-                    ).classes('w-full').props('rows=10')
+                    # Dynamic form based on tournament configuration
+                    form_builder = DynamicFormBuilder(match.tournament.settings_form_schema)
+                    existing_values = existing_submission.settings if existing_submission else None
+                    form_builder.render(existing_values)
 
                     # Notes input
                     notes_input = ui.textarea(
@@ -120,14 +110,21 @@ def register():
                         async def submit_settings():
                             """Handle settings submission."""
                             try:
-                                # Parse JSON
-                                settings_json = settings_input.value.strip()
-                                if not settings_json:
+                                # Validate form
+                                is_valid, error_msg = form_builder.validate()
+                                if not is_valid:
+                                    validation_msg.text = error_msg
+                                    validation_msg.classes('text-negative', remove='text-positive')
+                                    ui.notify(error_msg, color='negative')
+                                    return
+
+                                # Get form values
+                                settings = form_builder.get_values()
+
+                                if not settings:
                                     validation_msg.text = 'Settings cannot be empty'
                                     validation_msg.classes('text-negative', remove='text-positive')
                                     return
-
-                                settings = json.loads(settings_json)
 
                                 # Submit via service
                                 submission = await service.submit_settings(
@@ -150,10 +147,6 @@ def register():
                                     validation_msg.text = 'Failed to submit settings'
                                     validation_msg.classes('text-negative', remove='text-positive')
 
-                            except json.JSONDecodeError as e:
-                                validation_msg.text = f'Invalid JSON: {str(e)}'
-                                validation_msg.classes('text-negative', remove='text-positive')
-                                ui.notify('Invalid JSON format', color='negative')
                             except Exception as e:
                                 logger.error("Error submitting settings: %s", str(e), exc_info=True)
                                 validation_msg.text = f'Error: {str(e)}'

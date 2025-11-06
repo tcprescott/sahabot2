@@ -47,6 +47,9 @@ class Tournament(Model):
     speedgaming_enabled = fields.BooleanField(default=False)  # Enable SpeedGaming episode import
     speedgaming_event_slug = fields.CharField(max_length=255, null=True)  # SpeedGaming event slug to import from
 
+    # Settings submission form configuration
+    settings_form_schema = fields.JSONField(null=True)  # Form field definitions for settings submission
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
