@@ -102,7 +102,9 @@ sahabot2/
 
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Create a new application
-   - Add OAuth2 redirect URL: `http://localhost:8080/auth/callback`
+   - Add OAuth2 redirect URL to match your `BASE_URL`: `{BASE_URL}/auth/callback`
+     - Development: `http://localhost:8080/auth/callback`
+     - Production: `https://yourdomain.com/auth/callback`
    - Copy Client ID and Client Secret to `.env`
 
 6. **Configure RaceTime.gg OAuth2 (Optional)**
@@ -110,7 +112,9 @@ sahabot2/
    For users to link their RaceTime.gg accounts:
    - Go to [RaceTime.gg Developer Portal](https://racetime.gg/account/dev)
    - Create a new OAuth2 application
-   - Set redirect URI to: `http://localhost:8080/racetime/link/callback`
+   - Set redirect URI to match your `BASE_URL`: `{BASE_URL}/racetime/link/callback`
+     - Development: `http://localhost:8080/racetime/link/callback`
+     - Production: `https://yourdomain.com/racetime/link/callback`
    - Copy Client ID and Client Secret to `.env`:
      ```env
      RACETIME_CLIENT_ID=your_client_id
@@ -122,7 +126,9 @@ sahabot2/
    For users to link their Twitch accounts:
    - Go to [Twitch Developer Console](https://dev.twitch.tv/console/apps)
    - Create a new application
-   - Set OAuth redirect URL to: `http://localhost:8080/twitch/link/callback`
+   - Set OAuth redirect URL to match your `BASE_URL`: `{BASE_URL}/twitch/link/callback`
+     - Development: `http://localhost:8080/twitch/link/callback`
+     - Production: `https://yourdomain.com/twitch/link/callback`
    - Copy Client ID and Client Secret to `.env`:
      ```env
      TWITCH_CLIENT_ID=your_twitch_client_id
