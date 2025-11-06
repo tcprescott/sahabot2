@@ -496,6 +496,16 @@ class RandomizerPresetService:
         if not isinstance(parsed, dict):
             raise PresetValidationError("YAML must be a dictionary/mapping")
 
+        # Detect mystery preset
+        is_mystery = self._is_mystery_preset(parsed)
+
+        # If mystery preset, validate mystery structure
+        if is_mystery:
+            self._validate_mystery_preset(parsed)
+            # Tag it as mystery preset if not already tagged
+            if 'preset_type' not in parsed:
+                parsed['preset_type'] = 'mystery'
+
         # If it has a 'settings' key (SahasrahBot format), extract it
         # Otherwise treat the whole thing as settings
         if 'settings' in parsed:
@@ -504,3 +514,64 @@ class RandomizerPresetService:
                 raise PresetValidationError("'settings' must be a dictionary")
             return parsed  # Store whole structure with metadata
         return parsed  # Store as-is
+
+    def _is_mystery_preset(self, parsed: dict) -> bool:
+        """
+        Check if a parsed YAML is a mystery preset.
+
+        Mystery presets have:
+        - 'preset_type' == 'mystery' OR
+        - 'weights' key OR
+        - 'mystery_weights' key
+
+        Args:
+            parsed: Parsed YAML dict
+
+        Returns:
+            True if mystery preset
+        """
+        # Explicit mystery type
+        if parsed.get('preset_type') == 'mystery':
+            return True
+
+        # Has weights or mystery_weights
+        if 'weights' in parsed or 'mystery_weights' in parsed:
+            return True
+
+        # Check in 'settings' sub-dict (SahasrahBot format)
+        if 'settings' in parsed:
+            settings = parsed['settings']
+            if isinstance(settings, dict):
+                if 'weights' in settings or 'mystery_weights' in settings:
+                    return True
+
+        return False
+
+    def _validate_mystery_preset(self, parsed: dict) -> None:
+        """
+        Validate mystery preset structure.
+
+        Args:
+            parsed: Parsed YAML dict
+
+        Raises:
+            PresetValidationError: If mystery preset is invalid
+        """
+        from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
+
+        # Extract mystery weights (could be at root or in 'mystery_weights' key)
+        mystery_weights = parsed.get('mystery_weights', parsed)
+
+        # If the expected weight keys are not present in the current mystery_weights,
+        # and the preset uses SahasrahBot format (with a 'settings' key), check for weights inside 'settings'.
+        expected_weight_keys = ['weights', 'entrance_weights', 'customizer']
+        has_expected_keys = any(k in mystery_weights for k in expected_weight_keys)
+        if 'settings' in parsed and not has_expected_keys:
+            mystery_weights = parsed['settings']
+
+        # Validate using mystery service
+        service = ALTTPRMysteryService()
+        is_valid, error_message = service.validate_mystery_weights(mystery_weights)
+
+        if not is_valid:
+            raise PresetValidationError(f"Invalid mystery preset: {error_message}")

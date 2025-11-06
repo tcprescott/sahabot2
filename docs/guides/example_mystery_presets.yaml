@@ -1,0 +1,112 @@
+# Example ALTTPR Mystery Weightsets
+# These are sample mystery presets for testing and reference
+
+---
+# Basic Mystery - Simple preset rolling
+name: basic_mystery
+preset_type: mystery
+description: Simple mystery with three equally-weighted presets
+
+weights:
+  open: 1
+  standard: 1
+  inverted: 1
+
+---
+# Ladder Mystery - With subweights and entrance shuffle
+name: ladder_mystery
+preset_type: mystery
+description: ALTTPR Ladder style mystery with subweights
+
+weights:
+  open: 5
+  standard: 5
+
+subweights:
+  open:
+    normal: 3
+    hard: 2
+  standard:
+    keysanity: 1
+    no-keysanity: 4
+
+entrance_weights:
+  none: 3
+  simple: 2
+
+---
+# PogChamp Mystery - Everything random
+name: pogchamp_mystery
+preset_type: mystery
+description: PogChampionship style - all options equal weight
+
+weights:
+  open: 1
+  standard: 1
+  inverted: 1
+
+entrance_weights:
+  none: 1
+  simple: 1
+  restricted: 1
+  full: 1
+
+customizer:
+  eq:
+    progressive: 1
+    basic: 1
+  triforce-hunt:
+    on: 1
+    off: 9
+
+---
+# Beginner Friendly Mystery
+name: beginner_mystery
+preset_type: mystery
+description: Beginner-friendly mystery - mostly easy modes
+
+weights:
+  open: 7
+  standard: 3
+
+entrance_weights:
+  none: 8
+  simple: 2
+
+customizer:
+  item_pool:
+    normal: 9
+    hard: 1
+
+---
+# Expert Mystery - Hard modes favored
+name: expert_mystery
+preset_type: mystery
+description: Expert-level mystery with hard modes
+
+weights:
+  open: 3
+  inverted: 5
+  retro: 2
+
+subweights:
+  open:
+    hard: 4
+    expert: 1
+  inverted:
+    hard: 3
+    expert: 2
+
+entrance_weights:
+  simple: 2
+  restricted: 3
+  full: 2
+  crossed: 1
+
+customizer:
+  eq:
+    basic: 5
+    none: 2
+  item_pool:
+    hard: 4
+    expert: 1

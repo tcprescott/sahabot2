@@ -180,6 +180,98 @@ async def handle_entrants(
     return " | ".join(parts)
 
 
+async def handle_mystery(
+    _command: RacetimeChatCommand,
+    _args: list[str],
+    _racetime_user_id: str,
+    _race_data: dict,
+    _user: Optional[User],
+) -> str:
+    """
+    Handle the !mystery command.
+
+    Generates a mystery seed from a named mystery preset.
+
+    Args:
+        _command: Command configuration
+        _args: Command arguments (preset name)
+        _racetime_user_id: RaceTime.gg user ID
+        _race_data: Race data
+        _user: Authenticated user (if any)
+
+    Returns:
+        Response message with seed URL or error
+    """
+    from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
+
+    if not _args:
+        return "Usage: !mystery <preset_name>"
+
+    if not _user:
+        return "You must be authenticated to generate mystery seeds."
+
+    preset_name = _args[0]
+
+    try:
+        service = ALTTPRMysteryService()
+        result, description = await service.generate_from_preset_name(
+            mystery_preset_name=preset_name,
+            user_id=_user.id,
+            tournament=True,
+            spoilers='off'
+        )
+
+        # Format description
+        desc_parts = []
+        if 'preset' in description:
+            desc_parts.append(f"Preset: {description['preset']}")
+        if 'subweight' in description:
+            desc_parts.append(f"Subweight: {description['subweight']}")
+        if 'entrance' in description and description['entrance'] != 'none':
+            desc_parts.append(f"Entrance: {description['entrance']}")
+        if 'customizer' in description:
+            desc_parts.append("Customizer: enabled")
+
+        desc_text = " | ".join(desc_parts) if desc_parts else "Mystery seed generated"
+
+        return f"Mystery seed generated! {result.url} | {desc_text} | Hash: {result.hash_id}"
+
+    except ValueError as e:
+        logger.error("Mystery generation error: %s", str(e))
+        return f"Error: {str(e)}"
+    except PermissionError as e:
+        logger.error("Mystery permission error: %s", str(e))
+        return f"Error: {str(e)}"
+    except Exception as e:
+        logger.exception("Unexpected error generating mystery seed")
+        return f"An error occurred generating mystery seed: {str(e)}"
+
+
+async def handle_custommystery(
+    _command: RacetimeChatCommand,
+    _args: list[str],
+    _racetime_user_id: str,
+    _race_data: dict,
+    _user: Optional[User],
+) -> str:
+    """
+    Handle the !custommystery command.
+
+    Generates a mystery seed from inline mystery weights (YAML format).
+
+    Note: This is a placeholder - actual implementation would require
+    parsing YAML from chat which is not practical. Users should upload
+    mystery presets via the web UI instead.
+
+    Returns:
+        Informational message
+    """
+    return (
+        "To use custom mystery weights, please upload your mystery YAML file via the web UI "
+        "at /presets, then use !mystery <preset_name>"
+    )
+
+
 # Registry of all built-in handlers
 BUILTIN_HANDLERS = {
     'handle_help': handle_help,
@@ -187,6 +279,8 @@ BUILTIN_HANDLERS = {
     'handle_race_info': handle_race_info,
     'handle_time': handle_time,
     'handle_entrants': handle_entrants,
+    'handle_mystery': handle_mystery,
+    'handle_custommystery': handle_custommystery,
 }
 
 

@@ -54,6 +54,7 @@ External service integrations:
 - **[RaceTime Chat Commands](integrations/RACETIME_CHAT_COMMANDS_QUICKSTART.md)** - Bot commands quick reference
 - **[Discord Channel Permissions](integrations/DISCORD_CHANNEL_PERMISSIONS.md)** - Required Discord permissions
 - **[Discord Scheduled Events](integrations/DISCORD_SCHEDULED_EVENTS.md)** - Discord event integration
+- **[Sentry.io Integration](integrations/SENTRY.md)** - Error tracking and performance monitoring
 
 ### 👥 User & Admin Guides
 
