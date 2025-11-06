@@ -90,8 +90,7 @@ async def sample_user(request):
     Create a sample user in the database for testing.
     
     Args:
-        clean_db: Clean database fixture
-        mock_discord_user: Mock Discord user data
+        request: Pytest request object for accessing other fixtures
         
     Returns:
         Created user instance
@@ -112,7 +111,30 @@ async def sample_user(request):
         is_active=True
     )
     
-    return user
+    yield user
+    # Cleanup handled by db fixture teardown
+
+
+@pytest.fixture
+async def sample_organization(db):
+    """
+    Create a sample organization in the database for testing.
+    
+    Args:
+        db: Database fixture
+        
+    Returns:
+        Created organization instance
+    """
+    from models.organizations import Organization
+
+    org = await Organization.create(
+        name="Test Organization",
+        slug="test-org"
+    )
+    
+    yield org
+    # Cleanup handled by db fixture teardown
 
 
 @pytest.fixture
@@ -143,7 +165,8 @@ async def admin_user(request):
         is_active=True
     )
     
-    return user
+    yield user
+    # Cleanup handled by db fixture teardown
 
 
 @pytest.fixture

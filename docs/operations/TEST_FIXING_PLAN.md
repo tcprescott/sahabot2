@@ -8,12 +8,19 @@
 - Result: **160 tests passing** (+5), **42 tests failing** (-5)
 - Pass rate improved from 51.5% → 53.2%
 
-**Current Status** (as of November 5, 2025):
+**Phase 2: IN PROGRESS 🔄** (November 5, 2025)
+- Added `sample_organization` fixture to `tests/conftest.py`
+- Fixed all 11 tests in `test_repositories_scheduled_task.py`
+- Updated test methods to use organization fixture instead of hardcoded `organization_id=1`
+- Result: **170 tests passing** (+10), **32 tests failing** (-10)
+- Pass rate improved from 53.2% → 56.5% (+3.3%)
+
+**Current Status** (as of November 5, 2025 - Phase 2 Partial):
 - ✅ **301 tests collected** (0 import errors - circular dependencies fixed!)
-- ✅ **160 tests passing** (53.2% pass rate) - UP from 155
-- ❌ **42 tests failing** (14.0%) - DOWN from 47
-- ❌ **99 errors** (32.9% - fixture/setup issues)
-- **Next**: Phase 2 - Fix database fixture issues
+- ✅ **170 tests passing** (56.5% pass rate) - UP from 160 (Phase 1) / 155 (Original)
+- ❌ **32 tests failing** (10.6%) - DOWN from 42 (Phase 1) / 47 (Original)
+- ❌ **99 errors** (32.9% - fixture/setup issues) - UNCHANGED
+- **Next**: Continue Phase 2 - Identify and fix other database fixture errors
 
 **Original Status** (before Phase 1):
 - ✅ **155 tests passing** (51.5% pass rate)

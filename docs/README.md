@@ -41,6 +41,7 @@ Deployment, configuration, and troubleshooting:
 - **[Environment Variables Reference](reference/ENVIRONMENT_VARIABLES.md)** - Complete configuration reference
 - **[Authorization Migration Guide](operations/AUTHORIZATION_MIGRATION.md)** - Migrating from AuthorizationService to policy framework
 - **[Service Reorganization](operations/SERVICE_REORGANIZATION.md)** - Service layer domain-driven reorganization (November 2025)
+- **[Test Fixing Plan](operations/TEST_FIXING_PLAN.md)** - Comprehensive plan to fix all failing tests after reorganization
 - **[Troubleshooting Guide](operations/TROUBLESHOOTING_GUIDE.md)** - Common issues and debugging procedures
 - **[Deployment Guide](operations/DEPLOYMENT_GUIDE.md)** - Production deployment, scaling, and operations
 
