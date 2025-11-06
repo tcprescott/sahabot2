@@ -12,7 +12,6 @@ from tortoise import fields
 from tortoise.models import Model
 
 if TYPE_CHECKING:
-    from .match_schedule import Match
     from .user import User
 
 
