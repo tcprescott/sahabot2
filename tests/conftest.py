@@ -170,6 +170,33 @@ async def admin_user(request):
 
 
 @pytest.fixture
+async def sample_discord_guild(db, sample_user, sample_organization):
+    """
+    Create a sample Discord guild in the database for testing.
+    
+    Args:
+        db: Database fixture
+        sample_user: Sample user fixture (used as linked_by)
+        sample_organization: Sample organization fixture
+        
+    Returns:
+        Created Discord guild instance
+    """
+    from models.discord_guild import DiscordGuild
+
+    guild = await DiscordGuild.create(
+        organization=sample_organization,
+        linked_by=sample_user,
+        guild_id=987654321098765432,
+        guild_name="Test Guild",
+        is_active=True
+    )
+    
+    yield guild
+    # Cleanup handled by db fixture teardown
+
+
+@pytest.fixture
 def mock_discord_interaction(request):
     """
     Create a mock Discord interaction for testing bot commands.

@@ -11,16 +11,17 @@
 **Phase 2: IN PROGRESS 🔄** (November 5, 2025)
 - Added `sample_organization` fixture to `tests/conftest.py`
 - Fixed all 11 tests in `test_repositories_scheduled_task.py`
-- Updated test methods to use organization fixture instead of hardcoded `organization_id=1`
-- Result: **170 tests passing** (+10), **32 tests failing** (-10)
-- Pass rate improved from 53.2% → 56.5% (+3.3%)
+- Added `sample_discord_guild` fixture to `tests/conftest.py` (depends on sample_user + sample_organization)
+- Fixed all 7 tests in `test_orphaned_event_cleanup.py` (removed local fixtures, use shared conftest.py fixtures)
+- Result: **177 tests passing** (+17 total), **32 tests failing** (unchanged)
+- Pass rate improved from 53.2% → 58.8% (+5.6% this session)
 
-**Current Status** (as of November 5, 2025 - Phase 2 Partial):
+**Current Status** (as of November 5, 2025 - Phase 2 Priority 1 Partial):
 - ✅ **301 tests collected** (0 import errors - circular dependencies fixed!)
-- ✅ **170 tests passing** (56.5% pass rate) - UP from 160 (Phase 1) / 155 (Original)
-- ❌ **32 tests failing** (10.6%) - DOWN from 42 (Phase 1) / 47 (Original)
-- ❌ **99 errors** (32.9% - fixture/setup issues) - UNCHANGED
-- **Next**: Continue Phase 2 - Identify and fix other database fixture errors
+- ✅ **177 tests passing** (58.8% pass rate) - UP from 170 / 160 / 155 (Original)
+- ❌ **32 tests failing** (10.6%) - STABLE (was 42 before Phase 2)
+- ❌ **92 errors** (30.5%) - DOWN from 99 (7 errors resolved!)
+- **Next**: Continue Phase 2 Priority 1 - Fix remaining DiscordGuild fixture errors (~8 more tests)
 
 **Original Status** (before Phase 1):
 - ✅ **155 tests passing** (51.5% pass rate)
@@ -29,7 +30,7 @@
 
 ## Overview
 
-After the service layer reorganization, we have **42 failing tests** and **99 errors** remaining. This document provides a comprehensive plan to fix all test issues systematically.
+After the service layer reorganization, we have **32 failing tests** and **92 errors** remaining. This document provides a comprehensive plan to fix all test issues systematically.
 
 ## Root Causes Analysis
 
