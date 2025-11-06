@@ -10,7 +10,6 @@ from discord.ext import commands
 import logging
 from typing import Optional
 
-from models import User
 from application.services.randomizer.smz3_service import SMZ3Service, DEFAULT_SMZ3_SETTINGS
 from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
 
@@ -84,7 +83,7 @@ class SMZ3Commands(commands.Cog):
             # Create embed with seed info
             embed = discord.Embed(
                 title="🎮 SMZ3 Seed Generated",
-                description=f"Super Metroid + A Link to the Past Combo Randomizer",
+                description="Super Metroid + A Link to the Past Combo Randomizer",
                 color=discord.Color.green()
             )
 
@@ -120,7 +119,7 @@ class SMZ3Commands(commands.Cog):
                     details.append(f"Mode: {settings['mode']}")
                 if 'goal' in settings:
                     details.append(f"Goal: {settings['goal']}")
-                
+
                 if details:
                     embed.add_field(
                         name="Configuration",

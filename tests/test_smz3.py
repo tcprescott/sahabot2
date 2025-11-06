@@ -13,20 +13,20 @@ from racetime.smz3_handler import (
     handle_smz3_preset,
     handle_smz3_spoiler,
 )
-from models import RacetimeChatCommand, CommandResponseType, CommandScope
+from models import RacetimeChatCommand
 
 
 @pytest.mark.asyncio
 async def test_smz3_service_generate():
     """Test basic SMZ3 seed generation."""
     service = SMZ3Service()
-    
+
     settings = {
         'logic': 'normal',
         'mode': 'normal',
         'goal': 'defeatBoth',
     }
-    
+
     # Mock the httpx client
     with patch('httpx.AsyncClient') as mock_client:
         mock_response = MagicMock()
@@ -35,17 +35,17 @@ async def test_smz3_service_generate():
             'guid': 'test-guid-456',
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
         mock_client.return_value = mock_context
-        
+
         result = await service.generate(
             settings=settings,
             tournament=True,
             spoilers=False
         )
-        
+
         assert isinstance(result, RandomizerResult)
         assert result.randomizer == 'smz3'
         assert 'test-slug-123' in result.url
@@ -56,13 +56,13 @@ async def test_smz3_service_generate():
 async def test_smz3_service_generate_with_spoiler():
     """Test SMZ3 seed generation with spoiler log."""
     service = SMZ3Service()
-    
+
     settings = {
         'logic': 'normal',
         'mode': 'normal',
         'goal': 'defeatBoth',
     }
-    
+
     # Mock the httpx client
     with patch('httpx.AsyncClient') as mock_client:
         mock_response = MagicMock()
@@ -71,18 +71,18 @@ async def test_smz3_service_generate_with_spoiler():
             'guid': 'test-guid-456',
         }
         mock_response.raise_for_status = MagicMock()
-        
+
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value.post = AsyncMock(return_value=mock_response)
         mock_client.return_value = mock_context
-        
+
         result = await service.generate(
             settings=settings,
             tournament=False,
             spoilers=True,
             spoiler_key='test-key'
         )
-        
+
         assert isinstance(result, RandomizerResult)
         assert result.spoiler_url is not None
         assert 'test-key' in result.spoiler_url
@@ -93,11 +93,11 @@ async def test_handle_smz3_race_default():
     """Test !race command with default settings."""
     command = RacetimeChatCommand()
     command.command = 'race'
-    
+
     race_data = {
         'goal': {'name': 'Beat the games'}
     }
-    
+
     # Mock the SMZ3 service
     with patch('racetime.smz3_handler.SMZ3Service') as mock_service_class:
         mock_service = MagicMock()
@@ -109,7 +109,7 @@ async def test_handle_smz3_race_default():
         )
         mock_service.generate = AsyncMock(return_value=mock_result)
         mock_service_class.return_value = mock_service
-        
+
         # Mock preset service
         with patch('racetime.smz3_handler.RandomizerPresetService'):
             response = await handle_smz3_race(
@@ -119,7 +119,7 @@ async def test_handle_smz3_race_default():
                 race_data,
                 None
             )
-            
+
             assert 'https://samus.link/seed/test-123' in response
             assert 'Beat the games' in response
 
@@ -129,15 +129,15 @@ async def test_handle_smz3_preset():
     """Test !preset command with specified preset."""
     command = RacetimeChatCommand()
     command.command = 'preset'
-    
+
     race_data = {
         'goal': {'name': 'Beat the games'}
     }
-    
+
     # Mock services
     with patch('racetime.smz3_handler.SMZ3Service') as mock_service_class, \
          patch('racetime.smz3_handler.RandomizerPresetService') as mock_preset_class:
-        
+
         # Mock SMZ3 service
         mock_service = MagicMock()
         mock_result = RandomizerResult(
@@ -148,14 +148,14 @@ async def test_handle_smz3_preset():
         )
         mock_service.generate = AsyncMock(return_value=mock_result)
         mock_service_class.return_value = mock_service
-        
+
         # Mock preset service
         mock_preset_service = MagicMock()
         mock_preset = MagicMock()
         mock_preset.settings = {'logic': 'hard', 'mode': 'normal'}
         mock_preset_service.get_preset_by_name = AsyncMock(return_value=mock_preset)
         mock_preset_class.return_value = mock_preset_service
-        
+
         response = await handle_smz3_preset(
             command,
             ['hard-mode'],  # Preset name
@@ -163,7 +163,7 @@ async def test_handle_smz3_preset():
             race_data,
             None
         )
-        
+
         assert 'https://samus.link/seed/test-456' in response
         assert 'Preset: hard-mode' in response
 
@@ -173,15 +173,15 @@ async def test_handle_smz3_spoiler():
     """Test !spoiler command."""
     command = RacetimeChatCommand()
     command.command = 'spoiler'
-    
+
     race_data = {
         'goal': {'name': 'Beat the games'}
     }
-    
+
     # Mock services
     with patch('racetime.smz3_handler.SMZ3Service') as mock_service_class, \
          patch('racetime.smz3_handler.RandomizerPresetService'):
-        
+
         # Mock SMZ3 service with spoiler
         mock_service = MagicMock()
         mock_result = RandomizerResult(
@@ -193,7 +193,7 @@ async def test_handle_smz3_spoiler():
         )
         mock_service.generate = AsyncMock(return_value=mock_result)
         mock_service_class.return_value = mock_service
-        
+
         response = await handle_smz3_spoiler(
             command,
             [],  # No args
@@ -201,7 +201,7 @@ async def test_handle_smz3_spoiler():
             race_data,
             None
         )
-        
+
         assert 'https://samus.link/seed/test-789' in response
         assert 'Spoiler:' in response
         assert 'spoiler' in response
@@ -211,13 +211,13 @@ async def test_handle_smz3_spoiler():
 async def test_smz3_randomizer_service_integration():
     """Test that SMZ3 is registered with the main randomizer service."""
     from application.services.randomizer.randomizer_service import RandomizerService
-    
+
     service = RandomizerService()
-    
+
     # Check SMZ3 is in the list
     randomizers = service.list_randomizers()
     assert 'smz3' in randomizers
-    
+
     # Get SMZ3 service
     smz3_service = service.get_randomizer('smz3')
     assert isinstance(smz3_service, SMZ3Service)
