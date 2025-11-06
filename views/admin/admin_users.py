@@ -10,8 +10,7 @@ from models import User
 from models.user import Permission
 from application.services.core.user_service import UserService
 from components.dialogs import UserEditDialog, UserAddDialog
-from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
-from components.dialogs.admin.twitch_unlink_dialog import TwitchUnlinkDialog
+from components.dialogs.admin import RacetimeUnlinkDialog, TwitchUnlinkDialog
 from components.datetime_label import DateTimeLabel
 import logging
 

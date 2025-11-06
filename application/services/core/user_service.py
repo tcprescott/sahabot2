@@ -774,6 +774,10 @@ class UserService:
             logger.warning("User %s not found for admin unlink", user_id)
             return None
 
+        # Capture Twitch info before unlinking
+        twitch_id = user.twitch_id
+        twitch_name = user.twitch_name
+
         # Unlink account
         await self.unlink_twitch_account(user)
 
@@ -785,8 +789,8 @@ class UserService:
             action="admin_unlink_twitch_account",
             details={
                 "target_user_id": user_id,
-                "twitch_id": user.twitch_id,
-                "twitch_name": user.twitch_name
+                "twitch_id": twitch_id,
+                "twitch_name": twitch_name
             }
         )
 
