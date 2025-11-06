@@ -145,7 +145,7 @@ sahabot2/
      SENTRY_DSN=https://your_key@sentry.io/your_project_id
      SENTRY_ENVIRONMENT=development
      ```
-   
+
    See [docs/integrations/SENTRY.md](docs/integrations/SENTRY.md) for detailed configuration.
 
 9. **Initialize database migrations**
@@ -261,9 +261,9 @@ All configuration is loaded centrally via `config.py` using Pydantic Settings. D
 #### Database
 - `DB_HOST` - Database host (default: localhost)
 - `DB_PORT` - Database port (default: 3306)
-- `DB_USER` - Database username
+- `DB_USER` - Database username (default: sahabot2)
 - `DB_PASSWORD` - Database password
-- `DB_NAME` - Database name
+- `DB_NAME` - Database name (default: sahabot2)
 
 #### Discord OAuth2
 - `DISCORD_CLIENT_ID` - Discord application client ID
