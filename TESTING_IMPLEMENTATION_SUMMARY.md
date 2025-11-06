@@ -57,7 +57,7 @@ def database_url(self) -> str:
 - Auto-detects test environment via `ENVIRONMENT=testing`
 - Supports in-memory SQLite for ephemeral testing
 - Supports file-based SQLite for persistent test data
-- Made `DB_PASSWORD` optional (empty string default)
+- Made `DB_PASSWORD` optional (defaults to None)
 - No breaking changes to existing MySQL usage
 
 ### 2. Test Environment Configuration
