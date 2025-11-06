@@ -5,7 +5,7 @@ Tests the complete Twitch account linking workflow.
 """
 
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock
 from middleware.twitch_oauth import TwitchOAuthService
 from application.services.core.user_service import UserService
 from models import User
