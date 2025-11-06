@@ -15,6 +15,7 @@ from pages import (
     organization_admin,
     tournament_admin,
     async_tournament_admin,
+    tournament_match_settings,
     user_profile,
     invite,
     tournaments,
@@ -73,6 +74,7 @@ def register_routes(fastapi_app: FastAPI = None):
     organization_admin.register()
     tournament_admin.register()
     async_tournament_admin.register()
+    tournament_match_settings.register()
     user_profile.register()
     invite.register()
     tournaments.register()

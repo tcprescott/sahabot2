@@ -44,6 +44,7 @@ class NotificationEventType(IntEnum):
     MATCH_RESCHEDULED = 401
     MATCH_COMPLETED = 402
     MATCH_CANCELLED = 403
+    MATCH_SETTINGS_SUBMITTED = 404  # Settings submitted for match
     RACE_SUBMITTED = 410
     RACE_APPROVED = 411
     RACE_REJECTED = 412

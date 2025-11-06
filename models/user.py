@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from .match_schedule import MatchPlayers, TournamentPlayers, Crew
     from .organizations import OrganizationMember
     from .tournament_usage import TournamentUsage
+    from .tournament_match_settings import TournamentMatchSettings
 
 
 # Sentinel value for system/automation actions
@@ -128,6 +129,7 @@ class User(Model):
     approved_crew: fields.ReverseRelation["Crew"]
     organizations: fields.ReverseRelation["OrganizationMember"]
     tournament_usage: fields.ReverseRelation["TournamentUsage"]
+    tournament_settings_submissions: fields.ReverseRelation["TournamentMatchSettings"]
 
     class Meta:
         table = "users"

@@ -25,6 +25,10 @@ import frontend
 # Import to register event listeners
 import application.events.listeners  # noqa: F401
 
+# Initialize Sentry (must be done early, before other imports)
+from application.utils.sentry_init import init_sentry
+init_sentry()
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
