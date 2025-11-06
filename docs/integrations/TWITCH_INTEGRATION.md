@@ -252,4 +252,4 @@ Errors logged at ERROR level with sanitized details.
 - Twitch OAuth Documentation: https://dev.twitch.tv/docs/authentication
 - RaceTime Integration: `docs/integrations/RACETIME_INTEGRATION.md`
 - Architecture Guide: `docs/ARCHITECTURE.md`
-- Patterns &amp; Conventions: `docs/PATTERNS.md`
+- Patterns & Conventions: `docs/PATTERNS.md`
