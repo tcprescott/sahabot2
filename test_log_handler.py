@@ -7,13 +7,12 @@ the full application to be running.
 
 import logging
 import sys
-import time
 from pathlib import Path
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from application.utils.log_handler import init_log_handler, get_log_handler
+from application.utils.log_handler import init_log_handler
 
 
 def test_log_handler():

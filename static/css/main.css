@@ -295,3 +295,35 @@
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: var(--spacing-md);
 }
+
+/* Log Viewer Styles */
+.log-scroll-container {
+    height: 600px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+
+.log-timestamp {
+    min-width: 140px;
+}
+
+.log-level {
+    min-width: 60px;
+}
+
+.log-logger-name {
+    min-width: 200px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.log-message {
+    word-break: break-word;
+}
+
+.log-exception {
+    font-family: monospace;
+}
+

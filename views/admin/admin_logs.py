@@ -5,11 +5,12 @@ Provides a comprehensive interface for viewing application logs in real-time,
 with filtering by log level and search capabilities.
 """
 
+import logging
+from datetime import datetime, timezone
+from typing import Optional
 from nicegui import ui
 from models import User
 from application.utils.log_handler import get_log_handler, LogRecord
-from typing import Optional
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,9 @@ class AdminLogsView:
 
     async def render(self):
         """Render the log viewer interface."""
+        # Load external JavaScript for log viewer functionality
+        ui.add_head_html('<script src="/static/js/features/log-viewer.js"></script>')
+
         with ui.column().classes('full-width gap-md'):
             # Header section
             with ui.element('div').classes('card'):
@@ -107,7 +111,7 @@ class AdminLogsView:
                     ui.label(f'Showing {count} log records (max {self.log_handler.max_records})').classes('text-sm text-secondary mb-2')
 
                     # Log container with scrolling
-                    with ui.element('div').classes('border rounded p-2 bg-gray-50').style('height: 600px; overflow-y: auto; font-family: monospace; font-size: 0.875rem') as scroll_area:
+                    with ui.element('div').classes('border rounded p-2 bg-gray-50 log-scroll-container') as scroll_area:
                         self.log_container = ui.column().classes('full-width gap-1')
                         self.scroll_area = scroll_area
 
@@ -140,13 +144,8 @@ class AdminLogsView:
 
         # Auto-scroll to bottom if enabled
         if self.auto_scroll and self.scroll_area:
-            # Use JavaScript to scroll to bottom
-            ui.run_javascript(f'''
-                const element = getElement({self.scroll_area.id});
-                if (element) {{
-                    element.scrollTop = element.scrollHeight;
-                }}
-            ''')
+            # Use external JavaScript function for scrolling
+            await ui.run_javascript(f'window.LogViewer.scrollToBottom({self.scroll_area.id})')
 
     def _render_log_record(self, record: LogRecord):
         """
@@ -163,21 +162,21 @@ class AdminLogsView:
 
         with ui.row().classes('full-width gap-2 items-start'):
             # Timestamp
-            ui.label(timestamp).classes('text-gray-500 text-xs').style('min-width: 140px')
+            ui.label(timestamp).classes('text-gray-500 text-xs log-timestamp')
 
             # Level badge
-            ui.label(record.level).classes(f'{color_class} text-xs font-bold').style('min-width: 60px')
+            ui.label(record.level).classes(f'{color_class} text-xs font-bold log-level')
 
             # Logger name
-            ui.label(record.logger_name).classes('text-gray-600 text-xs').style('min-width: 200px; max-width: 200px; overflow: hidden; text-overflow: ellipsis')
+            ui.label(record.logger_name).classes('text-gray-600 text-xs log-logger-name')
 
             # Message
-            ui.label(record.message).classes('text-gray-800 text-xs flex-grow').style('word-break: break-word')
+            ui.label(record.message).classes('text-gray-800 text-xs flex-grow log-message')
 
         # Show exception info if present
         if record.exc_info:
             with ui.element('div').classes('ml-8 mt-1 p-2 bg-red-50 border-l-4 border-red-500 rounded'):
-                ui.label(record.exc_info).classes('text-red-800 text-xs whitespace-pre-wrap').style('font-family: monospace')
+                ui.label(record.exc_info).classes('text-red-800 text-xs whitespace-pre-wrap log-exception')
 
     async def _on_level_filter(self, e):
         """Handle level filter change."""
@@ -245,22 +244,10 @@ class AdminLogsView:
         content = '\n'.join(lines)
 
         # Generate timestamp for filename
-        from datetime import datetime, timezone
         timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+        filename = f'sahabot2_logs_{timestamp}.txt'
 
-        # Trigger download using JavaScript
-        # Create a data URL and trigger download
-        ui.run_javascript(f'''
-            const content = {repr(content)};
-            const blob = new Blob([content], {{ type: 'text/plain' }});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'sahabot2_logs_{timestamp}.txt';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        ''')
+        # Trigger download using external JavaScript function
+        await ui.run_javascript(f'window.LogViewer.downloadAsFile({repr(content)}, {repr(filename)})')
 
         ui.notify('Logs downloaded', type='positive')

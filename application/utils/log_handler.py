@@ -6,6 +6,7 @@ records in a circular buffer for display in the admin UI.
 """
 
 import logging
+import traceback
 from collections import deque
 from typing import List, Optional
 from datetime import datetime, timezone
@@ -83,7 +84,6 @@ class InMemoryLogHandler(logging.Handler):
             # Get exception info if available
             exc_info = None
             if record.exc_info:
-                import traceback
                 exc_info = ''.join(traceback.format_exception(*record.exc_info))
 
             # Create structured log record
