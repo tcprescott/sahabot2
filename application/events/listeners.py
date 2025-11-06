@@ -13,17 +13,28 @@ import logging
 from application.events import EventBus, EventPriority
 from application.events.types import (
     UserCreatedEvent,
+    UserUpdatedEvent,
+    UserDeletedEvent,
     UserPermissionChangedEvent,
     OrganizationCreatedEvent,
+    OrganizationUpdatedEvent,
+    OrganizationDeletedEvent,
     OrganizationMemberAddedEvent,
     OrganizationMemberRemovedEvent,
+    OrganizationMemberPermissionChangedEvent,
     TournamentCreatedEvent,
+    TournamentUpdatedEvent,
+    TournamentDeletedEvent,
+    TournamentStartedEvent,
+    TournamentEndedEvent,
     RaceSubmittedEvent,
     RaceApprovedEvent,
+    RaceRejectedEvent,
     MatchScheduledEvent,
     MatchUpdatedEvent,
     MatchDeletedEvent,
     MatchCompletedEvent,
+    MatchFinishedEvent,
     TournamentMatchSettingsSubmittedEvent,
     InviteCreatedEvent,
     CrewAddedEvent,
@@ -31,6 +42,7 @@ from application.events.types import (
     CrewRemovedEvent,
     # Async Live Race events
     AsyncLiveRaceCreatedEvent,
+    AsyncLiveRaceUpdatedEvent,
     AsyncLiveRaceRoomOpenedEvent,
     AsyncLiveRaceStartedEvent,
     AsyncLiveRaceFinishedEvent,
@@ -296,6 +308,303 @@ async def log_match_settings_submitted(event: TournamentMatchSettingsSubmittedEv
         event.match_id,
         event.submitted_by_user_id
     )
+
+
+@EventBus.on(UserUpdatedEvent, priority=EventPriority.HIGH)
+async def log_user_updated(event: UserUpdatedEvent) -> None:
+    """Log user update to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who performed the action
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="user_updated",
+        details={
+            "entity_id": event.entity_id,
+            "changed_fields": event.changed_fields,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged user update: user_id=%s", event.entity_id)
+
+
+@EventBus.on(UserDeletedEvent, priority=EventPriority.HIGH)
+async def log_user_deleted(event: UserDeletedEvent) -> None:
+    """Log user deletion to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who performed the action
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="user_deleted",
+        details={
+            "entity_id": event.entity_id,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged user deletion: user_id=%s", event.entity_id)
+
+
+@EventBus.on(OrganizationUpdatedEvent, priority=EventPriority.HIGH)
+async def log_organization_updated(event: OrganizationUpdatedEvent) -> None:
+    """Log organization update to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who updated the organization
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="organization_updated",
+        details={
+            "entity_id": event.entity_id,
+            "changed_fields": event.changed_fields,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged organization update: org_id=%s", event.entity_id)
+
+
+@EventBus.on(OrganizationDeletedEvent, priority=EventPriority.HIGH)
+async def log_organization_deleted(event: OrganizationDeletedEvent) -> None:
+    """Log organization deletion to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who deleted the organization
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="organization_deleted",
+        details={
+            "entity_id": event.entity_id,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged organization deletion: org_id=%s", event.entity_id)
+
+
+@EventBus.on(OrganizationMemberPermissionChangedEvent, priority=EventPriority.HIGH)
+async def log_organization_member_permission_changed(event: OrganizationMemberPermissionChangedEvent) -> None:
+    """Log member permission change to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who changed the permission
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="organization_member_permission_changed",
+        details={
+            "member_user_id": event.member_user_id,
+            "organization_id": event.organization_id,
+            "permission_name": event.permission_name,
+            "granted": event.granted,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info(
+        "Logged member permission change: user_id=%s in org_id=%s",
+        event.member_user_id,
+        event.organization_id
+    )
+
+
+@EventBus.on(TournamentUpdatedEvent, priority=EventPriority.HIGH)
+async def log_tournament_updated(event: TournamentUpdatedEvent) -> None:
+    """Log tournament update to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who updated the tournament
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="tournament_updated",
+        details={
+            "entity_id": event.entity_id,
+            "changed_fields": event.changed_fields,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged tournament update: tournament_id=%s", event.entity_id)
+
+
+@EventBus.on(TournamentDeletedEvent, priority=EventPriority.HIGH)
+async def log_tournament_deleted(event: TournamentDeletedEvent) -> None:
+    """Log tournament deletion to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who deleted the tournament
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="tournament_deleted",
+        details={
+            "entity_id": event.entity_id,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged tournament deletion: tournament_id=%s", event.entity_id)
+
+
+@EventBus.on(TournamentStartedEvent, priority=EventPriority.HIGH)
+async def log_tournament_started(event: TournamentStartedEvent) -> None:
+    """Log tournament start to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who started the tournament
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="tournament_started",
+        details={
+            "entity_id": event.entity_id,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged tournament start: tournament_id=%s", event.entity_id)
+
+
+@EventBus.on(TournamentEndedEvent, priority=EventPriority.HIGH)
+async def log_tournament_ended(event: TournamentEndedEvent) -> None:
+    """Log tournament end to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who ended the tournament
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="tournament_ended",
+        details={
+            "entity_id": event.entity_id,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged tournament end: tournament_id=%s", event.entity_id)
+
+
+@EventBus.on(RaceRejectedEvent, priority=EventPriority.HIGH)
+async def log_race_rejected(event: RaceRejectedEvent) -> None:
+    """Log race rejection to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the reviewer who rejected
+    user = await user_repo.get_by_id(event.reviewer_user_id) if event.reviewer_user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="race_rejected",
+        details={
+            "entity_id": event.entity_id,
+            "tournament_id": event.tournament_id,
+            "racer_user_id": event.racer_user_id,
+            "reason": event.reason,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info(
+        "Logged race rejection: race_id=%s, reviewer_id=%s",
+        event.entity_id,
+        event.reviewer_user_id
+    )
+
+
+@EventBus.on(MatchFinishedEvent, priority=EventPriority.HIGH)
+async def log_match_finished(event: MatchFinishedEvent) -> None:
+    """Log match finish to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who finished the match
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="match_finished",
+        details={
+            "entity_id": event.entity_id,
+            "match_id": event.match_id,
+            "tournament_id": event.tournament_id,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged match finish: match_id=%s", event.entity_id)
+
+
+@EventBus.on(AsyncLiveRaceUpdatedEvent, priority=EventPriority.HIGH)
+async def log_async_live_race_updated(event: AsyncLiveRaceUpdatedEvent) -> None:
+    """Log async live race update to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who updated the live race
+    user = await user_repo.get_by_id(event.user_id) if event.user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="async_live_race_updated",
+        details={
+            "entity_id": event.entity_id,
+            "tournament_id": event.tournament_id,
+            "changed_fields": event.changed_fields,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info("Logged async live race update: live_race_id=%s", event.entity_id)
 
 
 # ============================================================================

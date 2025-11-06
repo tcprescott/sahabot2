@@ -17,6 +17,7 @@ from views.organization.discord_servers import DiscordServersView
 from views.organization.org_presets import OrgPresetsView
 from views.organization.race_room_profile_management import RaceRoomProfileManagementView
 from views.organization.racer_verification_config import RacerVerificationConfigView
+from views.organization.audit_logs import OrganizationAuditLogsView
 
 __all__ = [
     'OrganizationOverviewView',
@@ -32,4 +33,5 @@ __all__ = [
     'OrgPresetsView',
     'RaceRoomProfileManagementView',
     'RacerVerificationConfigView',
+    'OrganizationAuditLogsView',
 ]

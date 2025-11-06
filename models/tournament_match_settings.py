@@ -12,6 +12,7 @@ from tortoise import fields
 from tortoise.models import Model
 
 if TYPE_CHECKING:
+    pass
 
 
 class TournamentMatchSettings(Model):

@@ -21,6 +21,7 @@ from views.organization import (
     DiscordServersView,
     RaceRoomProfileManagementView,
     RacerVerificationConfigView,
+    OrganizationAuditLogsView,
 )
 
 
@@ -158,6 +159,15 @@ def register():
                         view = RacerVerificationConfigView(org.id, page.user)
                         await view.render()
 
+            async def load_audit_logs():
+                """Load audit logs."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = OrganizationAuditLogsView(org, page.user)
+                        await view.render()
+
             # Register loaders (restrict for non-admin tournament managers)
             if allowed_admin:
                 page.register_content_loader('overview', load_overview)
@@ -167,6 +177,7 @@ def register():
                 page.register_content_loader('scheduled_tasks', load_scheduled_tasks)
                 page.register_content_loader('discord_servers', load_discord_servers)
                 page.register_content_loader('racer_verification', load_racer_verification)
+                page.register_content_loader('audit_logs', load_audit_logs)
                 page.register_content_loader('settings', load_settings)
             # Tournaments and race room profiles accessible to admins and TOURNAMENT_MANAGERs
             page.register_content_loader('tournaments', load_tournaments)
@@ -199,6 +210,7 @@ def register():
                 base.create_sidebar_item_with_loader('Discord Servers', 'dns', 'discord_servers'),
                 base.create_sidebar_item_with_loader('Racer Verification', 'verified', 'racer_verification'),
                 base.create_sidebar_item_with_loader('Scheduled Tasks', 'schedule', 'scheduled_tasks'),
+                base.create_sidebar_item_with_loader('Audit Logs', 'history', 'audit_logs'),
                 base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
             ])
         else:
