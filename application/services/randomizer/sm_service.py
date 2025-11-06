@@ -55,7 +55,7 @@ class SMService:
         Raises:
             httpx.HTTPError: If the API request fails
         """
-        # Set race mode
+        # Set race mode (VARIA API expects string "true"/"false")
         settings['race'] = "true" if tournament else "false"
 
         # Add spoiler key if requested
@@ -121,7 +121,7 @@ class SMService:
         Raises:
             httpx.HTTPError: If the API request fails
         """
-        # DASH API expects different parameter names
+        # DASH API expects boolean for 'race' (unlike VARIA which uses string)
         payload = {
             **settings,
             'race': tournament

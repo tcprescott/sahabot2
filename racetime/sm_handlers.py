@@ -6,7 +6,7 @@ Supports VARIA, DASH, and multiworld seed generation.
 """
 
 import logging
-from typing import Optional, Dict, Any
+from typing import Optional
 from models import User, RacetimeChatCommand
 from application.services.randomizer.sm_service import SMService
 from application.services.randomizer.sm_defaults import get_varia_settings, get_dash_settings
@@ -189,6 +189,7 @@ async def handle_multiworld(
             try:
                 player_count = int(args[0])
             except ValueError:
+                # First arg is preset name, not player count
                 preset_name = args[0]
 
         if len(args) >= 2:
@@ -196,6 +197,7 @@ async def handle_multiworld(
             try:
                 player_count = int(args[1])
             except ValueError:
+                # If args[1] is not an integer, ignore and use default player_count
                 pass
 
         # Multiworld settings
