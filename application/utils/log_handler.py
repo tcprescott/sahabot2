@@ -8,7 +8,6 @@ records in a circular buffer for display in the admin UI.
 import logging
 from collections import deque
 from typing import List, Optional
-from threading import Lock
 from datetime import datetime, timezone
 
 
@@ -68,7 +67,6 @@ class InMemoryLogHandler(logging.Handler):
         super().__init__()
         self.max_records = max_records
         self.records: deque[LogRecord] = deque(maxlen=max_records)
-        self.lock = Lock()
 
     def emit(self, record: logging.LogRecord):
         """
@@ -78,13 +76,15 @@ class InMemoryLogHandler(logging.Handler):
             record: The log record to emit
         """
         try:
-            # Format the message
-            message = self.format(record)
+            # Get the formatted message - use getMessage() instead of format()
+            # to avoid potential recursion issues
+            message = record.getMessage()
 
             # Get exception info if available
             exc_info = None
             if record.exc_info:
-                exc_info = self.formatter.formatException(record.exc_info) if self.formatter else str(record.exc_info)
+                import traceback
+                exc_info = ''.join(traceback.format_exception(*record.exc_info))
 
             # Create structured log record
             log_record = LogRecord(
@@ -95,9 +95,13 @@ class InMemoryLogHandler(logging.Handler):
                 exc_info=exc_info
             )
 
-            # Add to buffer (thread-safe)
-            with self.lock:
+            # Add to buffer - no manual locking needed as logging.Handler
+            # already provides thread-safety via self.lock attribute
+            self.acquire()
+            try:
                 self.records.append(log_record)
+            finally:
+                self.release()
 
         except Exception:
             self.handleError(record)
@@ -119,8 +123,11 @@ class InMemoryLogHandler(logging.Handler):
         Returns:
             List of log records matching the criteria
         """
-        with self.lock:
+        self.acquire()
+        try:
             records = list(self.records)
+        finally:
+            self.release()
 
         # Filter by level
         if level:
@@ -142,13 +149,19 @@ class InMemoryLogHandler(logging.Handler):
 
     def clear(self):
         """Clear all stored log records."""
-        with self.lock:
+        self.acquire()
+        try:
             self.records.clear()
+        finally:
+            self.release()
 
     def get_count(self) -> int:
         """Get the current number of stored log records."""
-        with self.lock:
+        self.acquire()
+        try:
             return len(self.records)
+        finally:
+            self.release()
 
 
 # Global instance for the application
