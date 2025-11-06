@@ -218,6 +218,18 @@ class MatchFinishedEvent(EntityEvent):
     finisher_count: int = 0
 
 
+@dataclass(frozen=True)
+class TournamentMatchSettingsSubmittedEvent(EntityEvent):
+    """Emitted when settings are submitted for a tournament match."""
+    entity_type: str = field(default="TournamentMatchSettings", init=False)
+    match_id: Optional[int] = None
+    tournament_id: Optional[int] = None
+    game_number: int = 1
+    submitted_by_user_id: Optional[int] = None
+    settings_data: Optional[dict] = None
+    priority: EventPriority = EventPriority.NORMAL
+
+
 # ============================================================================
 # Async Live Race Events
 # ============================================================================

@@ -24,6 +24,7 @@ from application.events.types import (
     MatchUpdatedEvent,
     MatchDeletedEvent,
     MatchCompletedEvent,
+    TournamentMatchSettingsSubmittedEvent,
     InviteCreatedEvent,
     CrewAddedEvent,
     CrewApprovedEvent,
@@ -265,6 +266,38 @@ async def log_race_approved(event: RaceApprovedEvent) -> None:
     )
 
 
+@EventBus.on(TournamentMatchSettingsSubmittedEvent, priority=EventPriority.HIGH)
+async def log_match_settings_submitted(event: TournamentMatchSettingsSubmittedEvent) -> None:
+    """Log tournament match settings submission to audit log."""
+    from application.services.core.audit_service import AuditService
+    from application.repositories.user_repository import UserRepository
+
+    audit_service = AuditService()
+    user_repo = UserRepository()
+
+    # Get the user who submitted
+    user = await user_repo.get_by_id(event.submitted_by_user_id) if event.submitted_by_user_id else None
+
+    await audit_service.log_action(
+        user=user,
+        action="tournament_match_settings_submitted",
+        details={
+            "entity_id": event.entity_id,
+            "match_id": event.match_id,
+            "tournament_id": event.tournament_id,
+            "game_number": event.game_number,
+            "settings": event.settings_data,
+        },
+        organization_id=event.organization_id,
+    )
+    logger.info(
+        "Logged settings submission: submission_id=%s, match_id=%s, user_id=%s",
+        event.entity_id,
+        event.match_id,
+        event.submitted_by_user_id
+    )
+
+
 # ============================================================================
 # Notification Listeners (Placeholder for future implementation)
 # ============================================================================
@@ -359,6 +392,89 @@ async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
             organization_id=event.organization_id,
         )
         logger.debug("Queued match scheduled notification for participant %s", participant.id)
+
+
+@EventBus.on(TournamentMatchSettingsSubmittedEvent, priority=EventPriority.NORMAL)
+async def notify_match_settings_submitted(event: TournamentMatchSettingsSubmittedEvent) -> None:
+    """Queue notifications for match settings submission."""
+    from application.services.notifications.notification_service import NotificationService
+    from application.repositories.user_repository import UserRepository
+    from models.notification_subscription import NotificationEventType
+    from models.match_schedule import MatchPlayers
+
+    notification_service = NotificationService()
+    user_repo = UserRepository()
+
+    # Get all participants in the match
+    participants = await MatchPlayers.filter(match_id=event.match_id).prefetch_related('user')
+    if not participants:
+        logger.debug("No participants for match %s, skipping notifications", event.match_id)
+        return
+
+    # Get the submitter
+    submitter = await user_repo.get_by_id(event.submitted_by_user_id) if event.submitted_by_user_id else None
+    submitter_name = submitter.get_display_name() if submitter else "Unknown"
+
+    # Base event data
+    base_event_data = {
+        "match_id": event.match_id,
+        "tournament_id": event.tournament_id,
+        "game_number": event.game_number,
+        "submitted_by": submitter_name,
+        "submitted_by_id": event.submitted_by_user_id,
+        "settings_summary": _format_settings_summary(event.settings_data) if event.settings_data else "Settings submitted",
+        "submission_url": f"/tournaments/matches/{event.match_id}/submit",
+    }
+
+    # Notify all participants except the submitter
+    for participant in participants:
+        if participant.user_id == event.submitted_by_user_id:
+            # Skip notifying the submitter themselves
+            continue
+
+        await notification_service.queue_notification(
+            user=participant.user,
+            event_type=NotificationEventType.MATCH_SETTINGS_SUBMITTED,
+            event_data=base_event_data,
+            organization_id=event.organization_id,
+        )
+        logger.debug(
+            "Queued match settings notification for participant %s (match %s)",
+            participant.user_id,
+            event.match_id
+        )
+
+
+def _format_settings_summary(settings: dict) -> str:
+    """
+    Format settings dict into a readable summary.
+
+    Args:
+        settings: Settings dictionary
+
+    Returns:
+        Formatted summary string
+    """
+    if not settings:
+        return "Settings submitted"
+
+    # Try to extract common fields
+    parts = []
+
+    if "preset" in settings:
+        parts.append(f"Preset: {settings['preset']}")
+
+    if "mode" in settings:
+        parts.append(f"Mode: {settings['mode']}")
+
+    if "difficulty" in settings:
+        parts.append(f"Difficulty: {settings['difficulty']}")
+
+    # If no common fields, show a count
+    if not parts:
+        parts.append(f"{len(settings)} settings configured")
+
+    return ", ".join(parts)
 
 
 @EventBus.on(TournamentCreatedEvent, priority=EventPriority.NORMAL)
