@@ -14,7 +14,7 @@ Commands:
 import logging
 from typing import Optional
 from models import User, RacetimeChatCommand
-from application.services.randomizer.smz3_service import SMZ3Service
+from application.services.randomizer.smz3_service import SMZ3Service, DEFAULT_SMZ3_SETTINGS
 from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
@@ -50,15 +50,8 @@ async def handle_smz3_race(
         smz3_service = SMZ3Service()
         preset_service = RandomizerPresetService()
 
-        # Default settings for SMZ3
-        settings = {
-            'logic': 'normal',
-            'mode': 'normal',
-            'goal': 'defeatBoth',
-            'itemPlacement': 'major',
-            'swordLocation': 'randomized',
-            'morphLocation': 'original',
-        }
+        # Start with default settings
+        settings = DEFAULT_SMZ3_SETTINGS.copy()
 
         # If preset specified, load it
         if args:
@@ -162,15 +155,8 @@ async def handle_smz3_spoiler(
         smz3_service = SMZ3Service()
         preset_service = RandomizerPresetService()
 
-        # Default settings for SMZ3
-        settings = {
-            'logic': 'normal',
-            'mode': 'normal',
-            'goal': 'defeatBoth',
-            'itemPlacement': 'major',
-            'swordLocation': 'randomized',
-            'morphLocation': 'original',
-        }
+        # Start with default settings
+        settings = DEFAULT_SMZ3_SETTINGS.copy()
 
         # If preset specified, load it
         preset_name = None
