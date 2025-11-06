@@ -1,5 +1,6 @@
 """User-related API endpoints."""
 
+import logging
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from api.schemas.user import UserOut, UserListResponse
 from api.deps import get_current_user, enforce_rate_limit
@@ -7,6 +8,7 @@ from application.services.core.user_service import UserService
 from middleware.auth import DiscordAuthService
 from models import User, Permission
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -209,16 +211,25 @@ async def start_impersonation(
     if not target_user:
         # Check if it's a permission issue or user not found
         if not current_user.has_permission(Permission.SUPERADMIN):
+            logger.warning(
+                "Unauthorized impersonation attempt by user %s (permission: %s) for user %s",
+                current_user.id, current_user.permission.name, user_id
+            )
             raise HTTPException(
                 status_code=403,
                 detail="Only SUPERADMIN users can impersonate others"
             )
         elif current_user.id == user_id:
+            logger.warning("User %s attempted to impersonate themselves", current_user.id)
             raise HTTPException(
                 status_code=400,
                 detail="Cannot impersonate yourself"
             )
         else:
+            logger.warning(
+                "User %s attempted to impersonate non-existent user %s",
+                current_user.id, user_id
+            )
             raise HTTPException(
                 status_code=404,
                 detail="User not found"
@@ -226,6 +237,10 @@ async def start_impersonation(
     
     # Set impersonation in session
     await DiscordAuthService.start_impersonation(target_user)
+    logger.info(
+        "User %s started impersonating user %s from IP %s",
+        current_user.id, target_user.id, ip_address
+    )
     
     return UserOut.model_validate(target_user)
 
@@ -273,6 +288,7 @@ async def stop_impersonation(
     """
     # Check if impersonation is active
     if not DiscordAuthService.is_impersonating():
+        logger.warning("Stop impersonation called when not impersonating")
         raise HTTPException(
             status_code=400,
             detail="Not currently impersonating"
@@ -295,6 +311,10 @@ async def stop_impersonation(
     
     # Clear impersonation from session
     await DiscordAuthService.stop_impersonation()
+    logger.info(
+        "User %s stopped impersonating user %s from IP %s",
+        original_user.id, impersonated_user.id, ip_address
+    )
     
     return UserOut.model_validate(original_user)
 
