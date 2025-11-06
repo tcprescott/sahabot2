@@ -63,9 +63,10 @@ def _get_command_service() -> RacetimeChatCommandService:
     global _command_service # pylint: disable=global-statement
     if _command_service is None:
         _command_service = RacetimeChatCommandService()
-        # Register all built-in handlers
-        from racetime.command_handlers import BUILTIN_HANDLERS
-        for handler_name, handler_func in BUILTIN_HANDLERS.items():
+        # Register all built-in handlers including SM handlers
+        from racetime.command_handlers import get_all_handlers
+        all_handlers = get_all_handlers()
+        for handler_name, handler_func in all_handlers.items():
             _command_service.register_handler(handler_name, handler_func)
         logger.info("Initialized racetime command service with %d built-in handlers", len(BUILTIN_HANDLERS))
 

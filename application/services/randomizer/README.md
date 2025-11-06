@@ -31,20 +31,50 @@ print(f"Hash: {result.hash_id}")
 ```
 
 ### SM - Super Metroid Randomizer
+
+**Supports**: VARIA and DASH randomizers
+
 ```python
 from application.services.randomizer import SMService
 
 service = SMService()
-result = await service.generate(
+
+# VARIA seed
+result = await service.generate_varia(
     settings={
-        'mode': 'standard',
+        'logic': 'casual',
         'itemProgression': 'normal',
-        # ... other settings
+        'morphPlacement': 'early',
     },
     tournament=True,
     spoilers=False
 )
+
+# DASH seed
+result = await service.generate_dash(
+    settings={
+        'area_rando': True,
+        'major_minor_split': True,
+    },
+    tournament=True
+)
+
+# Total randomization (uses DASH with all features)
+result = await service.generate(
+    settings={},
+    randomizer_type='total',
+    tournament=True
+)
+
+# Multiworld (uses VARIA with multiworld settings)
+result = await service.generate(
+    settings={'player_count': 2},
+    randomizer_type='multiworld',
+    tournament=True
+)
 ```
+
+**See also**: [SM Randomizer Support Documentation](../../docs/features/SM_RANDOMIZER_SUPPORT.md)
 
 ### SMZ3 - Super Metroid/ALTTP Combo Randomizer
 ```python

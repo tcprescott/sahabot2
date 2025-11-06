@@ -8,6 +8,7 @@ These handlers can be referenced by database commands via the handler_name field
 import logging
 from typing import Optional
 from models import User, RacetimeChatCommand
+from .sm_handlers import SM_HANDLERS
 
 logger = logging.getLogger(__name__)
 
@@ -281,3 +282,16 @@ BUILTIN_HANDLERS = {
     'handle_mystery': handle_mystery,
     'handle_custommystery': handle_custommystery,
 }
+
+
+def get_all_handlers() -> dict:
+    """
+    Get all available command handlers including SM-specific handlers.
+
+    Returns:
+        Dictionary of all handler functions
+    """
+    return {
+        **BUILTIN_HANDLERS,
+        **SM_HANDLERS,
+    }
