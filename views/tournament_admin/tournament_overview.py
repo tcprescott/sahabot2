@@ -243,8 +243,8 @@ class TournamentOverviewView:
         # Get placeholder users from crew
         crew_placeholders = await User.filter(
             is_placeholder=True,
-            crew_assignments__match_id__in=match_ids
-        ).distinct().prefetch_related('crew_assignments__match')
+            crew_memberships__match_id__in=match_ids
+        ).distinct().prefetch_related('crew_memberships__match')
 
         # Combine and deduplicate
         all_placeholder_ids = set()

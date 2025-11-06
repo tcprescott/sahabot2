@@ -16,17 +16,20 @@ from models.match_schedule import (
     MatchPlayers,
     Crew,
     CrewRole,
+    StreamChannel,
 )
-from models.organizations import Organization, OrganizationMember
+from models.organizations import OrganizationMember
 from models.audit_log import AuditLog
 from application.services.speedgaming.speedgaming_service import (
     SpeedGamingService,
     SpeedGamingEpisode,
     SpeedGamingPlayer,
     SpeedGamingCrewMember,
+    SpeedGamingChannel,
 )
 from application.repositories.tournament_repository import TournamentRepository
 from application.repositories.user_repository import UserRepository
+from application.repositories.stream_channel_repository import StreamChannelRepository
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +49,7 @@ class SpeedGamingETLService:
         self.sg_service = SpeedGamingService()
         self.tournament_repo = TournamentRepository()
         self.user_repo = UserRepository()
+        self.stream_channel_repo = StreamChannelRepository()
 
     async def _find_or_create_user(
         self,
@@ -367,6 +371,56 @@ class SpeedGamingETLService:
 
         return user
 
+    async def _find_or_create_stream_channel(
+        self,
+        organization_id: int,
+        sg_channel: SpeedGamingChannel,
+    ) -> Optional[StreamChannel]:
+        """
+        Find existing stream channel by name or create new one.
+
+        Matches by channel name within the organization.
+        Creates a new channel if no match is found.
+
+        Args:
+            organization_id: Organization ID
+            sg_channel: SpeedGaming channel data
+
+        Returns:
+            StreamChannel object (existing or newly created)
+        """
+        # Try to find existing channel by name
+        channel = await self.stream_channel_repo.get_by_name(
+            organization_id=organization_id,
+            name=sg_channel.name
+        )
+
+        if channel:
+            logger.info(
+                "Matched SpeedGaming channel '%s' to existing stream channel %s",
+                sg_channel.name,
+                channel.id
+            )
+            return channel
+
+        # Create new stream channel
+        # Use SpeedGaming slug as the stream URL base (if we want to construct it)
+        # For now, we'll leave stream_url empty since SpeedGaming doesn't provide it
+        channel = await self.stream_channel_repo.create(
+            organization_id=organization_id,
+            name=sg_channel.name,
+            stream_url=None,  # SpeedGaming API doesn't provide stream URLs
+            is_active=True
+        )
+        logger.info(
+            "Created stream channel %s for SpeedGaming channel '%s' (ID: %s)",
+            channel.id,
+            sg_channel.name,
+            sg_channel.id
+        )
+
+        return channel
+
     async def _sync_match_players(
         self,
         match: Match,
@@ -639,6 +693,16 @@ class SpeedGamingETLService:
             episode.match1.title if episode.match1 else "Untitled Match"
         )
 
+        # Find or create stream channel (if episode has channels)
+        stream_channel = None
+        if episode.channels:
+            # Use the first channel (SpeedGaming episodes typically have one primary channel)
+            sg_channel = episode.channels[0]
+            stream_channel = await self._find_or_create_stream_channel(
+                organization_id=organization_id,
+                sg_channel=sg_channel
+            )
+
         if existing_match:
             # Update existing match
             logger.info(
@@ -667,6 +731,18 @@ class SpeedGamingETLService:
                     episode.id,
                     existing_match.title,
                     match_title
+                )
+
+            # Check if stream channel changed
+            new_stream_channel_id = stream_channel.id if stream_channel else None
+            if existing_match.stream_channel_id != new_stream_channel_id:
+                existing_match.stream_channel_id = new_stream_channel_id
+                needs_update = True
+                logger.info(
+                    "Episode %s stream channel changed: %s -> %s",
+                    episode.id,
+                    existing_match.stream_channel_id,
+                    new_stream_channel_id
                 )
 
             if needs_update:
@@ -698,6 +774,7 @@ class SpeedGamingETLService:
             title=match_title,
             comment=f"Imported from SpeedGaming (Episode {episode.id})",
             racetime_auto_create=tournament.racetime_auto_create_rooms,
+            stream_channel=stream_channel,  # Assign stream channel
         )
         logger.info("Created match %s for episode %s", match.id, episode.id)
 
@@ -763,12 +840,13 @@ class SpeedGamingETLService:
 
         logger.info(
             "Successfully imported episode %s as match %s with %s players, "
-            "%s commentators, %s trackers",
+            "%s commentators, %s trackers%s",
             episode.id,
             match.id,
             len(all_players),
             approved_commentators,
-            approved_trackers
+            approved_trackers,
+            f", stream channel: {stream_channel.name}" if stream_channel else ""
         )
 
         return match

@@ -19,6 +19,10 @@ class StreamChannelRepository:
         """List stream channels for a specific organization ordered by name."""
         return await StreamChannel.filter(organization_id=organization_id).order_by('name')
 
+    async def get_by_name(self, organization_id: int, name: str) -> Optional[StreamChannel]:
+        """Get a stream channel by name within an organization (case-sensitive)."""
+        return await StreamChannel.get_or_none(organization_id=organization_id, name=name)
+
     async def get_for_org(self, organization_id: int, channel_id: int) -> Optional[StreamChannel]:
         """Get a stream channel by id ensuring it belongs to the organization."""
         return await StreamChannel.get_or_none(id=channel_id, organization_id=organization_id)
