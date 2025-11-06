@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 
-from models import User, SYSTEM_USER_ID
+from models import User
 from models.match_schedule import (
     Tournament,
     Match,
@@ -900,7 +900,7 @@ class SpeedGamingETLService:
             duration_ms = int((end_time - start_time).total_seconds() * 1000)
 
         await AuditLog.create(
-            user_id=SYSTEM_USER_ID,
+            user_id=None,  # System action, no actual user
             organization_id=organization_id,
             action="speedgaming_sync",
             details={
@@ -940,7 +940,7 @@ class SpeedGamingETLService:
             duration_ms = int((end_time - start_time).total_seconds() * 1000)
 
         await AuditLog.create(
-            user_id=SYSTEM_USER_ID,
+            user_id=None,  # System action, no actual user
             organization_id=None,  # System-wide, not specific to an organization
             action="speedgaming_sync_all",
             details={
