@@ -422,8 +422,8 @@ async def log_organization_member_permission_changed(event: OrganizationMemberPe
         details={
             "member_user_id": event.member_user_id,
             "organization_id": event.organization_id,
-            "old_permissions": event.old_permissions,
-            "new_permissions": event.new_permissions,
+            "permission_name": event.permission_name,
+            "granted": event.granted,
         },
         organization_id=event.organization_id,
     )
@@ -451,7 +451,6 @@ async def log_tournament_updated(event: TournamentUpdatedEvent) -> None:
         action="tournament_updated",
         details={
             "entity_id": event.entity_id,
-            "tournament_id": event.tournament_id,
             "changed_fields": event.changed_fields,
         },
         organization_id=event.organization_id,
@@ -476,7 +475,6 @@ async def log_tournament_deleted(event: TournamentDeletedEvent) -> None:
         action="tournament_deleted",
         details={
             "entity_id": event.entity_id,
-            "tournament_id": event.tournament_id,
         },
         organization_id=event.organization_id,
     )
@@ -500,7 +498,6 @@ async def log_tournament_started(event: TournamentStartedEvent) -> None:
         action="tournament_started",
         details={
             "entity_id": event.entity_id,
-            "tournament_id": event.tournament_id,
         },
         organization_id=event.organization_id,
     )
@@ -524,7 +521,6 @@ async def log_tournament_ended(event: TournamentEndedEvent) -> None:
         action="tournament_ended",
         details={
             "entity_id": event.entity_id,
-            "tournament_id": event.tournament_id,
         },
         organization_id=event.organization_id,
     )

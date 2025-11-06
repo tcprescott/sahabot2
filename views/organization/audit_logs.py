@@ -125,7 +125,7 @@ class OrganizationAuditLogsView:
             ),
             TableColumn(
                 label='Details',
-                cell_render=lambda log: render_audit_log_details(log)
+                cell_render=render_audit_log_details
             ),
         ]
 
