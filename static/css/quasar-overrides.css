@@ -60,21 +60,49 @@
     flex: 1;
 }
 
-/* ==================== TOGGLE/SWITCH ==================== */
-/* Off state - visible gray track */
-.q-toggle__track {
-    opacity: 1 !important;
+/* ==================== CHECKBOX ==================== */
+/* Clean, visible checkbox styling */
+.q-checkbox {
+    color: var(--text-primary);
 }
 
-.q-toggle__track:before {
-    background: #999999 !important;
-    opacity: 1 !important;
+/* Checkbox background/border */
+.q-checkbox__bg {
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-color);
 }
 
-/* On state - primary color track */
-.q-toggle--truthy .q-toggle__track:before {
-    background: var(--primary-color) !important;
-    opacity: 1 !important;
+/* Hover state */
+.q-checkbox:hover .q-checkbox__bg {
+    border-color: var(--primary-color);
+}
+
+/* Checked state */
+.q-checkbox--truthy .q-checkbox__bg {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Checkmark icon */
+.q-checkbox__svg {
+    color: #ffffff;
+}
+
+/* Checkbox label text */
+.q-checkbox__label {
+    color: var(--text-primary);
+    padding-left: var(--spacing-sm);
+}
+
+/* Disabled state */
+.q-checkbox--disabled {
+    opacity: 0.5;
+}
+
+.q-checkbox--disabled .q-checkbox__bg {
+    border-color: var(--border-color);
+    background-color: var(--background-color);
 }
 
 /* ==================== TABLE ==================== */
@@ -118,165 +146,68 @@
 }
 
 /* ==================== INPUT ==================== */
-/* Overall field container - provides vertical spacing between fields */
+/* 
+ * Clean input styling that works with Quasar's default filled/standard style
+ * Provides clear borders without breaking label behavior
+ */
+
+/* Field container - spacing between fields */
 .q-field {
-    margin-bottom: var(--spacing-md) !important;
+    margin-bottom: var(--spacing-md);
 }
 
-/* Field control - the main input area */
+/* Add border to all field types for visibility */
 .q-field__control {
-    background-color: var(--surface-color) !important;
-    color: var(--text-primary) !important;
-    min-height: 56px !important;
-    border-radius: var(--radius-sm) !important;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
 }
 
-/* Remove all underlines from inner field elements */
-.q-field__inner::before,
-.q-field__inner::after,
-.q-field__inner:before,
-.q-field__inner:after {
-    content: none !important;
-    display: none !important;
-    visibility: hidden !important;
+/* Focused state - blue border */
+.q-field--focused .q-field__control {
+    border-color: var(--primary-color);
 }
 
-/* Control before/after pseudo-elements - completely disable */
-.q-field__control::before,
-.q-field__control::after,
+/* Error state - red border */
+.q-field--error .q-field__control {
+    border-color: var(--error-color);
+}
+
+/* Hide Quasar's default bottom border (we're using our custom border) */
 .q-field__control:before,
 .q-field__control:after {
-    content: none !important;
-    display: none !important;
-    border: none !important;
-    background: none !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
+    display: none;
 }
 
-/* Also hide on all field type variants */
-.q-field--standard .q-field__control::before,
-.q-field--standard .q-field__control::after,
-.q-field--standard .q-field__control:before,
-.q-field--standard .q-field__control:after,
-.q-field--outlined .q-field__control::before,
-.q-field--outlined .q-field__control::after,
-.q-field--outlined .q-field__control:before,
-.q-field--outlined .q-field__control:after,
-.q-field--filled .q-field__control::before,
-.q-field--filled .q-field__control::after,
-.q-field--filled .q-field__control:before,
-.q-field--filled .q-field__control:after {
-    content: none !important;
-    display: none !important;
-    visibility: hidden !important;
-}
-
-/* Ensure proper height and padding for all field types */
-.q-field--standard .q-field__control,
-.q-field--outlined .q-field__control,
-.q-field--filled .q-field__control {
-    padding-top: 20px !important;
-    padding-bottom: 4px !important;
-    position: relative !important;
-    border-bottom: none !important;
-}
-
-/* Control-container - inner wrapper */
-.q-field__control-container {
-    padding-top: 20px !important;
-}
-
-/* Remove any borders/underlines from control-container */
-.q-field__control-container::before,
-.q-field__control-container::after,
-.q-field__control-container:before,
-.q-field__control-container:after {
-    content: none !important;
-    display: none !important;
-    visibility: hidden !important;
-    border: none !important;
-    background: none !important;
-}
-
-/* Field label styling */
+/* Label color */
 .q-field__label {
-    color: var(--text-secondary) !important;
-    top: 16px !important;
-    font-size: 1rem !important;
+    color: var(--text-secondary);
 }
 
-/* Focused field label */
 .q-field--focused .q-field__label {
-    color: var(--primary-color) !important;
+    color: var(--primary-color);
 }
 
-/* Floating label positioning - prevents overlap with input content */
-.q-field--float .q-field__label,
-.q-field--filled .q-field__label {
-    transform: translateY(-40%) scale(0.75) !important;
-    top: 8px !important;
-}
-
-/* Autofilled fields */
-.q-field--highlighted .q-field__label {
-    transform: translateY(-40%) scale(0.75) !important;
-    top: 8px !important;
-}
-
-/* Native input element positioning */
+/* Input text color */
 .q-field__native,
 .q-field__input {
-    padding: 0 !important;
-    padding-top: 2px !important;
-    line-height: 1.5 !important;
-    font-size: 1rem !important;
-    color: var(--text-primary) !important;
+    color: var(--text-primary);
 }
 
-/* Textarea specific styling */
+/* Textarea */
 textarea.q-field__native,
 textarea.q-field__input {
-    resize: vertical !important;
-    min-height: 80px !important;
+    min-height: 100px;
+    resize: vertical;
 }
 
-/* Dark mode input text color */
-.body--dark .q-field__native,
-.body--dark .q-field__input,
-.body--dark textarea.q-field__native,
-.body--dark textarea.q-field__input,
-.q-dark .q-field__native,
-.q-dark .q-field__input,
-.q-dark textarea.q-field__native,
-.q-dark textarea.q-field__input {
-    color: var(--text-primary) !important;
-}
-
-/* Select element specific styling */
-.q-select .q-field__native {
-    padding: 0 !important;
-}
-
-/* Bottom area (hints, errors) spacing */
+/* Hint/error text */
 .q-field__bottom {
-    padding-top: 2px !important;
-    font-size: 0.875rem !important;
+    color: var(--text-secondary);
 }
 
-/* Outlined variant - add border */
-.q-field--outlined .q-field__control {
-    border: 1px solid var(--border-color) !important;
-}
-
-.q-field--outlined.q-field--focused .q-field__control {
-    border-color: var(--primary-color) !important;
-}
-
-/* Filled variant - remove any underlines */
-.q-field--filled .q-field__control:before,
-.q-field--filled .q-field__control:after {
-    display: none !important;
+.q-field--error .q-field__bottom {
+    color: var(--error-color);
 }
 
 /* ==================== BUTTON ==================== */
@@ -346,11 +277,6 @@ textarea.q-field__input {
 .q-checkbox--truthy .q-checkbox__bg {
     background-color: var(--primary-color) !important;
     border-color: var(--primary-color) !important;
-}
-
-/* Checkbox label text */
-.q-checkbox__label {
-    color: var(--text-primary);
 }
 
 /* ==================== EXPANSION PANEL ==================== */
