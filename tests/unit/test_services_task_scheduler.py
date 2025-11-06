@@ -11,7 +11,6 @@ from application.services.tasks.task_scheduler_service import TaskSchedulerServi
 
 
 @pytest.mark.unit
-@pytest.mark.asyncio
 class TestTaskSchedulerService:
     """Test cases for TaskSchedulerService."""
 
@@ -73,6 +72,7 @@ class TestTaskSchedulerService:
 
         assert next_run is None
 
+    @pytest.mark.asyncio
     async def test_register_task_handler(self):
         """Test registering a task handler."""
 
@@ -84,6 +84,7 @@ class TestTaskSchedulerService:
         assert TaskType.CUSTOM in TaskSchedulerService._task_handlers
         assert TaskSchedulerService._task_handlers[TaskType.CUSTOM] == dummy_handler
 
+    @pytest.mark.asyncio
     async def test_create_task_interval(self, db, admin_user, sample_organization):
         """Test creating an interval-based task."""
         service = TaskSchedulerService()
@@ -106,6 +107,7 @@ class TestTaskSchedulerService:
         assert task.name == "Test Task"
         assert task.interval_seconds == 300
 
+    @pytest.mark.asyncio
     async def test_create_task_unauthorized(self, db, sample_user):
         """Test creating a task without authorization."""
         service = TaskSchedulerService()
@@ -125,6 +127,7 @@ class TestTaskSchedulerService:
 
         assert task is None
 
+    @pytest.mark.asyncio
     async def test_create_task_missing_interval(self, db, sample_user):
         """Test creating an interval task without interval_seconds."""
         service = TaskSchedulerService()
@@ -143,6 +146,7 @@ class TestTaskSchedulerService:
 
         assert task is None
 
+    @pytest.mark.asyncio
     async def test_create_task_invalid_cron(self, db, sample_user):
         """Test creating a cron task with invalid expression."""
         service = TaskSchedulerService()

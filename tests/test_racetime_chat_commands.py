@@ -5,31 +5,42 @@ This tests the command service and handler execution.
 """
 
 import pytest
-from models import RacetimeChatCommand, CommandResponseType
+from models import RacetimeChatCommand, CommandResponseType, CommandScope
 from application.services.racetime.racetime_chat_command_service import RacetimeChatCommandService
 
 
 @pytest.mark.asyncio
-async def test_text_command_execution():
+async def test_text_command_execution(db):
     """Test execution of a simple TEXT command."""
-    _service = RacetimeChatCommandService()
+    service = RacetimeChatCommandService()
 
-    # Create a mock TEXT command (in-memory, not persisted)
-    command = RacetimeChatCommand()
-    command.id = 1
-    command.command = 'test'
-    command.response_type = CommandResponseType.TEXT
-    command.response_text = 'This is a test response'
-    command.cooldown_seconds = 0
-    command.require_linked_account = False
+    # Create a TEXT command in the database
+    command = await RacetimeChatCommand.create(
+        command='test',
+        description='Test command',
+        response_type=CommandResponseType.TEXT,
+        response_text='This is a test response',
+        scope=CommandScope.BOT,  # Required field
+        cooldown_seconds=0,
+        require_linked_account=False,
+        is_active=True
+    )
     
-    # Mock repository response
-    # In real test, we'd use database fixtures
-    
-    # For now, just test the handler signature
-    # TODO: Add full integration test with database
-    
+    # Verify command was created
+    assert command.id is not None
+    assert command.command == 'test'
+    assert command.response_type == CommandResponseType.TEXT
     assert command.response_text == 'This is a test response'
+    assert command.scope == CommandScope.BOT
+    assert command.cooldown_seconds == 0
+    assert command.require_linked_account is False
+    assert command.is_active is True
+    
+    # Retrieve command from database
+    db_command = await RacetimeChatCommand.filter(command='test').first()
+    assert db_command is not None
+    assert db_command.id == command.id
+    assert db_command.response_text == 'This is a test response'
 
 
 @pytest.mark.asyncio

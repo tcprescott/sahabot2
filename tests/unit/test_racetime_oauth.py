@@ -13,7 +13,6 @@ from models import User, Permission
 
 
 @pytest.mark.unit
-@pytest.mark.asyncio
 class TestRacetimeOAuthService:
     """Test cases for RacetimeOAuthService."""
 
@@ -97,10 +96,10 @@ class TestRacetimeOAuthService:
 
 
 @pytest.mark.unit
-@pytest.mark.asyncio
 class TestRacetimeAccountLinking:
     """Test cases for RaceTime account linking in UserService."""
 
+    @pytest.mark.asyncio
     async def test_link_racetime_account_success(self):
         """Test successfully linking a RaceTime account."""
         # Create mock user
@@ -137,6 +136,7 @@ class TestRacetimeAccountLinking:
         assert mock_user.racetime_token_expires_at == expires_at
         mock_user.save.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_link_racetime_account_already_linked(self):
         """Test linking a RaceTime account that's already linked to another user."""
         # Create mock users
@@ -164,6 +164,7 @@ class TestRacetimeAccountLinking:
                 access_token='token_abc'
             )
 
+    @pytest.mark.asyncio
     async def test_unlink_racetime_account(self):
         """Test unlinking a RaceTime account."""
         # Create mock user with linked account
@@ -225,6 +226,7 @@ class TestRacetimeAccountLinking:
         assert expires_at > before + timedelta(seconds=3590)
         assert expires_at < after + timedelta(seconds=3610)
 
+    @pytest.mark.asyncio
     async def test_refresh_racetime_token(self):
         """Test refreshing user's RaceTime token."""
         # Create mock user with expired token
@@ -259,6 +261,7 @@ class TestRacetimeAccountLinking:
             assert mock_user.racetime_token_expires_at is not None
             mock_user.save.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_refresh_racetime_token_no_refresh_token(self):
         """Test refreshing token when user has no refresh token."""
         mock_user = MagicMock(spec=User)
@@ -273,10 +276,10 @@ class TestRacetimeAccountLinking:
 
 
 @pytest.mark.unit
-@pytest.mark.asyncio
 class TestAdminRacetimeFeatures:
     """Test cases for admin RaceTime account management."""
 
+    @pytest.mark.asyncio
     async def test_get_all_racetime_accounts_unauthorized(self):
         """Test that unauthorized users get empty list."""
         mock_user = MagicMock(spec=User)
@@ -290,6 +293,7 @@ class TestAdminRacetimeFeatures:
         assert result == []
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
+    @pytest.mark.asyncio
     @patch('application.services.core.audit_service.AuditService')
     async def test_get_all_racetime_accounts_authorized(self, mock_audit_class):
         """Test that admin users can get all accounts."""
@@ -321,6 +325,7 @@ class TestAdminRacetimeFeatures:
             offset=0
         )
 
+    @pytest.mark.asyncio
     async def test_search_racetime_accounts_unauthorized(self):
         """Test that unauthorized users cannot search racetime accounts."""
         mock_user = MagicMock(spec=User)
@@ -337,6 +342,7 @@ class TestAdminRacetimeFeatures:
         assert result == []
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
+    @pytest.mark.asyncio
     @patch('application.services.core.audit_service.AuditService')
     async def test_get_racetime_link_statistics_authorized(self, mock_audit_class):
         """Test that admin users can get statistics."""
@@ -363,6 +369,7 @@ class TestAdminRacetimeFeatures:
         assert result['link_percentage'] == 42.0
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
+    @pytest.mark.asyncio
     @patch('application.services.core.audit_service.AuditService')
     async def test_admin_unlink_racetime_account_success(self, mock_audit_class):
         """Test successful admin unlink."""
@@ -400,6 +407,7 @@ class TestAdminRacetimeFeatures:
         mock_admin.has_permission.assert_called_once_with(Permission.ADMIN)
         mock_target_user.save.assert_called_once()
 
+    @pytest.mark.asyncio
     async def test_admin_unlink_racetime_account_unauthorized(self):
         """Test that unauthorized users cannot admin unlink."""
         mock_user = MagicMock(spec=User)

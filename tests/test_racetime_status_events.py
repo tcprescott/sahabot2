@@ -12,7 +12,7 @@ Verifies that SahaRaceHandler emits events when:
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from racetime.client import SahaRaceHandler
 from application.events import (
@@ -323,7 +323,7 @@ async def test_entrant_leave_emits_event():
 
 @pytest.mark.asyncio
 async def test_bot_invite_emits_event():
-    """Test that bot inviting a player emits RacetimeEntrantInvitedEvent."""
+    """Test that bot invite action emits RacetimeEntrantInvitedEvent."""
     emitted_events = []
 
     @EventBus.on(RacetimeEntrantInvitedEvent)
@@ -331,13 +331,19 @@ async def test_bot_invite_emits_event():
         emitted_events.append(event)
 
     try:
-        # Mock websocket
-        mock_ws = AsyncMock()
-        
-        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
-            logger=AsyncMock(),
+        # Create handler with mocked dependencies
+        handler = SahaRaceHandler(
+            bot_instance=AsyncMock(),
+            logger=MagicMock(),  # Use MagicMock for sync logger methods
             conn=AsyncMock(),
-            state={},
+            state={
+                'race': {
+                    'name': 'alttpr/test-race-1234',
+                    'category': {'slug': 'alttpr'},
+                    'status': {'value': 'open'},
+                    'entrants': []
+                }
+            }
         )
         
         # Set up handler data and mock websocket
@@ -346,6 +352,7 @@ async def test_bot_invite_emits_event():
             'category': {'slug': 'alttpr'},
             'status': {'value': 'invitational'},
         }
+        mock_ws = AsyncMock()
         handler.ws = mock_ws  # Mock the websocket connection
 
         # Invite a user
@@ -481,7 +488,7 @@ async def test_user_id_lookup_from_racetime_id():
 
         # Create handler first
         handler = SahaRaceHandler(bot_instance=AsyncMock(), 
-            logger=AsyncMock(),
+            logger=MagicMock(),  # Use MagicMock for sync logger methods
             conn=AsyncMock(),
             state={},
         )
