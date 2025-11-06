@@ -20,6 +20,7 @@ from models.async_tournament import (
 from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
 from application.repositories.async_tournament_repository import AsyncTournamentRepository
 from application.services.organization_service import OrganizationService
+from application.services.authorization_service_v2 import AuthorizationServiceV2
 from application.events import (
     EventBus,
     AsyncLiveRaceCreatedEvent,
@@ -48,6 +49,7 @@ class AsyncLiveRaceService:
         self.repo = AsyncLiveRaceRepository()
         self.tournament_repo = AsyncTournamentRepository()
         self.org_service = OrganizationService()
+        self.auth = AuthorizationServiceV2()
 
     async def can_manage_live_races(self, user: Optional[User], organization_id: int) -> bool:
         """
@@ -57,7 +59,12 @@ class AsyncLiveRaceService:
         """
         if not user:
             return False
-        return await self.org_service.user_can_manage_tournaments(user, organization_id)
+        return await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("async_live_race", "manage"),
+            resource=self.auth.get_resource_identifier("async_live_race", "*"),
+            organization_id=organization_id
+        )
 
     async def can_review_races(self, user: Optional[User], organization_id: int) -> bool:
         """

@@ -15,6 +15,7 @@ from models import User
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from application.repositories.scheduled_task_repository import ScheduledTaskRepository
 from application.services.organization_service import OrganizationService
+from application.services.authorization_service_v2 import AuthorizationServiceV2
 from application.services.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ class TaskSchedulerService:
     def __init__(self) -> None:
         self.repo = ScheduledTaskRepository()
         self.org_service = OrganizationService()
+        self.auth = AuthorizationServiceV2()
 
     @classmethod
     def register_task_handler(cls, task_type: TaskType, handler: Callable) -> None:
@@ -106,11 +108,20 @@ class TaskSchedulerService:
                 return None
         else:
             # Organization task - require tournament management permission
-            allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+            if not user:
+                logger.warning("Unauthenticated create_task attempt for org %s", organization_id)
+                return None
+            
+            allowed = await self.auth.can(
+                user,
+                action=self.auth.get_action_for_operation("scheduled_task", "create"),
+                resource=self.auth.get_resource_identifier("scheduled_task", "*"),
+                organization_id=organization_id
+            )
             if not allowed:
                 logger.warning(
                     "Unauthorized create_task by user %s for org %s",
-                    getattr(user, 'id', None),
+                    user.id,
                     organization_id
                 )
                 return None
@@ -180,11 +191,20 @@ class TaskSchedulerService:
         Returns:
             List of ScheduledTask instances
         """
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        if not user:
+            logger.warning("Unauthenticated list_tasks attempt for org %s", organization_id)
+            return []
+        
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("scheduled_task", "list"),
+            resource=self.auth.get_resource_identifier("scheduled_task", "*"),
+            organization_id=organization_id
+        )
         if not allowed:
             logger.warning(
                 "Unauthorized list_tasks by user %s for org %s",
-                getattr(user, 'id', None),
+                user.id,
                 organization_id
             )
             return []
@@ -217,9 +237,17 @@ class TaskSchedulerService:
 
         # Get database tasks
         if organization_id is not None:
-            allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
-            if allowed:
-                result['database'] = await self.repo.list_by_org(organization_id, active_only=active_only)
+            if not user:
+                logger.warning("Unauthenticated list_all_tasks_with_builtin attempt for org %s", organization_id)
+            else:
+                allowed = await self.auth.can(
+                    user,
+                    action=self.auth.get_action_for_operation("scheduled_task", "list"),
+                    resource=self.auth.get_resource_identifier("scheduled_task", "*"),
+                    organization_id=organization_id
+                )
+                if allowed:
+                    result['database'] = await self.repo.list_by_org(organization_id, active_only=active_only)
         else:
             # Global tasks - require admin
             if user and user.is_admin():
@@ -301,11 +329,20 @@ class TaskSchedulerService:
         Returns:
             ScheduledTask instance or None
         """
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        if not user:
+            logger.warning("Unauthenticated get_task attempt for org %s", organization_id)
+            return None
+        
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("scheduled_task", "view"),
+            resource=self.auth.get_resource_identifier("scheduled_task", "*"),
+            organization_id=organization_id
+        )
         if not allowed:
             logger.warning(
                 "Unauthorized get_task by user %s for org %s",
-                getattr(user, 'id', None),
+                user.id,
                 organization_id
             )
             return None
@@ -336,11 +373,20 @@ class TaskSchedulerService:
         Returns:
             Updated ScheduledTask or None
         """
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        if not user:
+            logger.warning("Unauthenticated update_task attempt for org %s", organization_id)
+            return None
+        
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("scheduled_task", "update"),
+            resource=self.auth.get_resource_identifier("scheduled_task", str(task_id)),
+            organization_id=organization_id
+        )
         if not allowed:
             logger.warning(
                 "Unauthorized update_task by user %s for org %s",
-                getattr(user, 'id', None),
+                user.id,
                 organization_id
             )
             return None
@@ -384,11 +430,20 @@ class TaskSchedulerService:
         Returns:
             True if deleted, False otherwise
         """
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        if not user:
+            logger.warning("Unauthenticated delete_task attempt for org %s", organization_id)
+            return False
+        
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("scheduled_task", "delete"),
+            resource=self.auth.get_resource_identifier("scheduled_task", str(task_id)),
+            organization_id=organization_id
+        )
         if not allowed:
             logger.warning(
                 "Unauthorized delete_task by user %s for org %s",
-                getattr(user, 'id', None),
+                user.id,
                 organization_id
             )
             return False
@@ -435,11 +490,20 @@ class TaskSchedulerService:
                 return False
         else:
             # Organization task - check tournament management permission
-            allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+            if not user:
+                logger.warning("Unauthenticated execute_task_now attempt for org %s", organization_id)
+                return False
+            
+            allowed = await self.auth.can(
+                user,
+                action=self.auth.get_action_for_operation("scheduled_task", "execute"),
+                resource=self.auth.get_resource_identifier("scheduled_task", str(task_id)),
+                organization_id=organization_id
+            )
             if not allowed:
                 logger.warning(
                     "Unauthorized execute_task_now by user %s for org %s",
-                    getattr(user, 'id', None),
+                    user.id,
                     organization_id
                 )
                 return False

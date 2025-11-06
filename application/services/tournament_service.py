@@ -12,6 +12,7 @@ from models import User, SYSTEM_USER_ID
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organization_service import OrganizationService
+from application.services.authorization_service_v2 import AuthorizationServiceV2
 from application.events import (
     EventBus,
     CrewAddedEvent,
@@ -36,6 +37,7 @@ class TournamentService:
     def __init__(self) -> None:
         self.repo = TournamentRepository()
         self.org_service = OrganizationService()
+        self.auth = AuthorizationServiceV2()
 
     async def is_schedule_read_only(self, tournament: Tournament) -> bool:
         """
@@ -51,10 +53,24 @@ class TournamentService:
 
     async def list_org_tournaments(self, user: Optional[User], organization_id: int) -> List[Tournament]:
         """List tournaments for an organization after access check."""
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
-        if not allowed:
-            logger.warning("Unauthorized list_org_tournaments by user %s for org %s", getattr(user, 'id', None), organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated list_org_tournaments attempt for org %s", organization_id)
             return []
+        
+        # Check permission using new authorization service
+        # Action: tournament:list, Resource: tournament:* (any tournament in org)
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("tournament", "list"),
+            resource=self.auth.get_resource_identifier("tournament"),
+            organization_id=organization_id
+        )
+        
+        if not allowed:
+            logger.warning("Unauthorized list_org_tournaments by user %s for org %s", user.id, organization_id)
+            return []
+        
         return await self.repo.list_by_org(organization_id)
 
     async def list_active_org_tournaments(self, user: Optional[User], organization_id: int) -> List[Tournament]:
@@ -124,9 +140,21 @@ class TournamentService:
         discord_guild_ids: Optional[list[int]] = None,
     ) -> Optional[Tournament]:
         """Create a tournament in an org if user can admin the org."""
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated create_tournament attempt for org %s", organization_id)
+            return None
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("tournament", "create"),
+            resource=self.auth.get_resource_identifier("tournament"),
+            organization_id=organization_id
+        )
+        
         if not allowed:
-            logger.warning("Unauthorized create_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning("Unauthorized create_tournament by user %s for org %s", user.id, organization_id)
             return None
         
         tournament = await self.repo.create(
@@ -179,7 +207,19 @@ class TournamentService:
         event_duration_minutes: Optional[int] = None,
     ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated update_tournament attempt for org %s", organization_id)
+            return None
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("tournament", "update"),
+            resource=self.auth.get_resource_identifier("tournament", tournament_id),
+            organization_id=organization_id
+        )
+        
         if not allowed:
             logger.warning("Unauthorized update_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
             return None
@@ -235,10 +275,23 @@ class TournamentService:
 
     async def delete_tournament(self, user: Optional[User], organization_id: int, tournament_id: int) -> bool:
         """Delete a tournament if user can admin the org."""
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
-        if not allowed:
-            logger.warning("Unauthorized delete_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated delete_tournament attempt for org %s", organization_id)
             return False
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("tournament", "delete"),
+            resource=self.auth.get_resource_identifier("tournament", tournament_id),
+            organization_id=organization_id
+        )
+        
+        if not allowed:
+            logger.warning("Unauthorized delete_tournament by user %s for org %s", user.id, organization_id)
+            return False
+        
         return await self.repo.delete(organization_id, tournament_id)
 
     async def list_org_matches(self, organization_id: int) -> List[Match]:
@@ -289,12 +342,23 @@ class TournamentService:
         Requires TOURNAMENT_MANAGER permission or org admin privileges.
         Returns None if unauthorized or tournament doesn't exist.
         """
-        # Check if admin user has permission to manage tournaments
-        can_manage = await self.org_service.user_can_manage_tournaments(admin_user, organization_id)
-        if not can_manage:
+        # Use new authorization system
+        if not admin_user:
+            logger.warning("Unauthenticated admin_register_user_for_tournament attempt for org %s", organization_id)
+            return None
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            admin_user,
+            action=self.auth.get_action_for_operation("tournament", "manage_registration"),
+            resource=self.auth.get_resource_identifier("tournament", tournament_id),
+            organization_id=organization_id
+        )
+        
+        if not allowed:
             logger.warning(
                 "Unauthorized admin_register_user_for_tournament by user %s for org %s",
-                getattr(admin_user, 'id', None),
+                admin_user.id,
                 organization_id
             )
             return None
@@ -313,12 +377,23 @@ class TournamentService:
         Requires TOURNAMENT_MANAGER permission or org admin privileges.
         Returns False if unauthorized or user not registered.
         """
-        # Check if admin user has permission to manage tournaments
-        can_manage = await self.org_service.user_can_manage_tournaments(admin_user, organization_id)
-        if not can_manage:
+        # Use new authorization system
+        if not admin_user:
+            logger.warning("Unauthenticated admin_unregister_user_from_tournament attempt for org %s", organization_id)
+            return False
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            admin_user,
+            action=self.auth.get_action_for_operation("tournament", "manage_registration"),
+            resource=self.auth.get_resource_identifier("tournament", tournament_id),
+            organization_id=organization_id
+        )
+        
+        if not allowed:
             logger.warning(
                 "Unauthorized admin_unregister_user_from_tournament by user %s for org %s",
-                getattr(admin_user, 'id', None),
+                admin_user.id,
                 organization_id
             )
             return False
@@ -429,15 +504,31 @@ class TournamentService:
         Raises:
             ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
-        # Check if user can manage tournaments (tournament admin) or is a moderator
-        can_manage = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated update_match attempt for org %s", organization_id)
+            return None
+        
+        # Check if user can manage matches (tournament manager or moderator)
+        # Try tournament management permission first
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "update"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
 
         if not can_manage:
-            # Check if user is at least a moderator
-            from application.services.authorization_service import AuthorizationService
-            auth_z = AuthorizationService()
-            if not auth_z.can_moderate(user):
-                logger.warning("Unauthorized update_match by user %s for org %s", getattr(user, 'id', None), organization_id)
+            # Check if user is at least a moderator (organization-level permission)
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+            
+            if not can_moderate:
+                logger.warning("Unauthorized update_match by user %s for org %s", user.id, organization_id)
                 return None
 
         # Get the match before update to check channel changes and schedule changes
@@ -540,15 +631,31 @@ class TournamentService:
         Returns:
             Updated match with room slug, or None if unauthorized/failed
         """
-        # Check if user can manage tournaments (tournament admin) or is a moderator
-        can_manage = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated create_racetime_room attempt for org %s", organization_id)
+            return None
+        
+        # Check if user can manage matches (tournament manager or moderator)
+        # Try tournament management permission first
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "create_racetime_room"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
 
         if not can_manage:
-            # Check if user is at least a moderator
-            from application.services.authorization_service import AuthorizationService
-            auth_z = AuthorizationService()
-            if not auth_z.can_moderate(user):
-                logger.warning("Unauthorized create_racetime_room by user %s for org %s", getattr(user, 'id', None), organization_id)
+            # Check if user is at least a moderator (organization-level permission)
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+            
+            if not can_moderate:
+                logger.warning("Unauthorized create_racetime_room by user %s for org %s", user.id, organization_id)
                 return None
 
         # Get match and tournament details
@@ -997,9 +1104,21 @@ class TournamentService:
         Requires TOURNAMENT_MANAGER permission.
         Returns the MatchSeed instance or None if unauthorized.
         """
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated set_match_seed attempt for org %s", organization_id)
+            return None
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "set_seed"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+        
         if not allowed:
-            logger.warning("Unauthorized set_match_seed by user %s for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning("Unauthorized set_match_seed by user %s for org %s", user.id, organization_id)
             return None
         
         return await self.repo.create_or_update_match_seed(match_id, url, description)
@@ -1010,9 +1129,21 @@ class TournamentService:
         Requires TOURNAMENT_MANAGER permission.
         Returns True if deleted, False if not found or unauthorized.
         """
-        allowed = await self.org_service.user_can_manage_tournaments(user, organization_id)
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated delete_match_seed attempt for org %s", organization_id)
+            return False
+        
+        # Check permission using new authorization service
+        allowed = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "delete_seed"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+        
         if not allowed:
-            logger.warning("Unauthorized delete_match_seed by user %s for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning("Unauthorized delete_match_seed by user %s for org %s", user.id, organization_id)
             return False
         
         return await self.repo.delete_match_seed(match_id)

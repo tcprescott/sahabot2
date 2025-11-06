@@ -20,6 +20,7 @@ from models.async_tournament import (
 )
 from application.repositories.async_tournament_repository import AsyncTournamentRepository
 from application.services.organization_service import OrganizationService
+from application.services.authorization_service_v2 import AuthorizationServiceV2
 from application.events import (
     EventBus,
     TournamentCreatedEvent,
@@ -90,13 +91,20 @@ class AsyncTournamentService:
     def __init__(self) -> None:
         self.repo = AsyncTournamentRepository()
         self.org_service: OrganizationService = OrganizationService()
+        self.auth = AuthorizationServiceV2()
 
     async def can_manage_async_tournaments(self, user: Optional[User], organization_id: int) -> bool:
         """Check if user can manage async tournaments in the organization."""
         if not user:
             return False
-        # Check for ADMIN or TOURNAMENT_ADMIN permission
-        return await self.org_service.user_can_manage_tournaments(user, organization_id)
+        
+        # Use new authorization system
+        return await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("async_tournament", "manage"),
+            resource=self.auth.get_resource_identifier("async_tournament", "*"),
+            organization_id=organization_id
+        )
 
     async def can_review_async_races(self, user: Optional[User], organization_id: int) -> bool:
         """
@@ -108,8 +116,13 @@ class AsyncTournamentService:
         if not user:
             return False
 
-        # Use the organization service helper method
-        return await self.org_service.user_can_review_async_races(user, organization_id)
+        # Use new authorization system
+        return await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("async_race", "review"),
+            resource=self.auth.get_resource_identifier("async_race", "*"),
+            organization_id=organization_id
+        )
 
     # Tournament CRUD
 

@@ -10,6 +10,7 @@ from application.repositories.race_room_profile_repository import (
     RaceRoomProfileRepository,
 )
 from application.services.organization_service import OrganizationService
+from application.services.authorization_service_v2 import AuthorizationServiceV2
 from application.events import EventBus, PresetCreatedEvent, PresetUpdatedEvent
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class RaceRoomProfileService:
     def __init__(self):
         self.repository = RaceRoomProfileRepository()
         self.org_service = OrganizationService()
+        self.auth = AuthorizationServiceV2()
 
     async def get_profile(
         self, current_user: User, organization_id: int, profile_id: int
@@ -139,8 +141,15 @@ class RaceRoomProfileService:
             Created profile if authorized, None otherwise
         """
         # Check permission
-        can_manage = await self.org_service.user_can_manage_tournaments(
-            current_user, organization_id
+        if not current_user:
+            logger.warning("Unauthenticated create profile attempt for org %s", organization_id)
+            return None
+        
+        can_manage = await self.auth.can(
+            current_user,
+            action=self.auth.get_action_for_operation("race_room_profile", "create"),
+            resource=self.auth.get_resource_identifier("race_room_profile", "*"),
+            organization_id=organization_id
         )
         if not can_manage:
             logger.warning(
@@ -198,8 +207,15 @@ class RaceRoomProfileService:
             Updated profile if authorized, None otherwise
         """
         # Check permission
-        can_manage = await self.org_service.user_can_manage_tournaments(
-            current_user, organization_id
+        if not current_user:
+            logger.warning("Unauthenticated update profile attempt for org %s", organization_id)
+            return None
+        
+        can_manage = await self.auth.can(
+            current_user,
+            action=self.auth.get_action_for_operation("race_room_profile", "update"),
+            resource=self.auth.get_resource_identifier("race_room_profile", str(profile_id)),
+            organization_id=organization_id
         )
         if not can_manage:
             logger.warning(
@@ -241,8 +257,15 @@ class RaceRoomProfileService:
             True if deleted, False otherwise
         """
         # Check permission
-        can_manage = await self.org_service.user_can_manage_tournaments(
-            current_user, organization_id
+        if not current_user:
+            logger.warning("Unauthenticated delete profile attempt for org %s", organization_id)
+            return False
+        
+        can_manage = await self.auth.can(
+            current_user,
+            action=self.auth.get_action_for_operation("race_room_profile", "delete"),
+            resource=self.auth.get_resource_identifier("race_room_profile", str(profile_id)),
+            organization_id=organization_id
         )
         if not can_manage:
             logger.warning(
@@ -270,8 +293,15 @@ class RaceRoomProfileService:
             True if successful, False otherwise
         """
         # Check permission
-        can_manage = await self.org_service.user_can_manage_tournaments(
-            current_user, organization_id
+        if not current_user:
+            logger.warning("Unauthenticated set_default_profile attempt for org %s", organization_id)
+            return False
+        
+        can_manage = await self.auth.can(
+            current_user,
+            action=self.auth.get_action_for_operation("race_room_profile", "update"),
+            resource=self.auth.get_resource_identifier("race_room_profile", str(profile_id)),
+            organization_id=organization_id
         )
         if not can_manage:
             logger.warning(

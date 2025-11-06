@@ -10,7 +10,10 @@ organization administration.
 import logging
 from typing import Optional, Sequence, Iterable, Dict, List
 from models import Organization, User, Permission
+from models.authorization import OrganizationRole, OrganizationMemberRole
+from models.organizations import OrganizationMember
 from application.repositories.organization_repository import OrganizationRepository
+from application.authorization.builtin_roles import get_builtin_role_definitions
 from application.events import (
     EventBus,
     OrganizationCreatedEvent,
@@ -65,6 +68,115 @@ class OrganizationService:
         for name in self._PERMISSION_TYPES.keys():
             await self.repo.get_or_create_permission(organization_id, name, self._PERMISSION_TYPES[name])
 
+    async def create_builtin_roles(self, organization: Organization) -> list[OrganizationRole]:
+        """
+        Create built-in roles for an organization.
+
+        This creates the standard set of built-in roles (Admin, Tournament Manager,
+        Member Manager, etc.) for a regular organization, or the system roles
+        (User Manager, Organization Manager, etc.) for the System organization.
+
+        Args:
+            organization: Organization to create roles for
+
+        Returns:
+            List of created OrganizationRole instances
+        """
+        logger.info("Creating built-in roles for organization %s (id=%s)...", organization.name, organization.id)
+
+        # Get built-in role definitions for this organization type
+        role_defs = get_builtin_role_definitions(organization.id)
+
+        created_roles = []
+
+        for role_def in role_defs:
+            # Check if role already exists
+            existing = await OrganizationRole.filter(
+                organization=organization,
+                name=role_def.name
+            ).first()
+
+            if existing:
+                logger.debug("Role %s already exists, skipping", role_def.name)
+                continue
+
+            # Create the role
+            role = await OrganizationRole.create(
+                organization=organization,
+                name=role_def.name,
+                description=role_def.description,
+                is_builtin=True,
+                is_locked=role_def.is_locked,
+                created_by=None  # System-created
+            )
+            logger.info("Created built-in role: %s (id=%s)", role.name, role.id)
+            created_roles.append(role)
+
+        logger.info(
+            "Built-in roles creation complete: %s created, %s skipped (already existed)",
+            len(created_roles),
+            len(role_defs) - len(created_roles)
+        )
+
+        return created_roles
+
+    async def assign_role_to_member(
+        self,
+        member: OrganizationMember,
+        role_name: str,
+        assigned_by: Optional[User] = None
+    ) -> Optional[OrganizationMemberRole]:
+        """
+        Assign a role to an organization member.
+
+        Args:
+            member: OrganizationMember to assign role to
+            role_name: Name of the role to assign
+            assigned_by: User assigning the role (None for system)
+
+        Returns:
+            OrganizationMemberRole record or None if role not found
+        """
+        # Find the role
+        role = await OrganizationRole.filter(
+            organization=member.organization,
+            name=role_name
+        ).first()
+
+        if not role:
+            logger.error(
+                "Role %s not found for organization %s",
+                role_name,
+                member.organization.id
+            )
+            return None
+
+        # Check if already assigned
+        existing = await OrganizationMemberRole.filter(
+            member=member,
+            role=role
+        ).first()
+
+        if existing:
+            logger.debug("Role %s already assigned to member %s", role_name, member.id)
+            return existing
+
+        # Create the assignment
+        assignment = await OrganizationMemberRole.create(
+            member=member,
+            role=role,
+            assigned_by=assigned_by
+        )
+
+        logger.info(
+            "Assigned role %s to member %s in organization %s",
+            role_name,
+            member.user_id,
+            member.organization.id
+        )
+
+        return assignment
+
     async def list_organizations(self) -> list[Organization]:
         """List all organizations."""
         return await self.repo.list_organizations()
@@ -101,6 +213,21 @@ class OrganizationService:
         if organization:
             await self.initialize_default_permissions(organization.id)
             logger.info("Initialized default permissions for organization %s", organization.id)
+
+            # Create built-in roles for the new organization
+            builtin_roles = await self.create_builtin_roles(organization)
+            logger.info("Created %s built-in roles for organization %s", len(builtin_roles), organization.id)
+
+            # Auto-add creator as a member with Admin role
+            if current_user:
+                member = await self.add_member(organization.id, current_user.id, added_by_user_id=current_user.id)
+                if member:
+                    await self.assign_role_to_member(member, "Admin", assigned_by=current_user)
+                    logger.info(
+                        "Auto-added creator %s as member with Admin role to organization %s",
+                        current_user.id,
+                        organization.id
+                    )
 
             # Emit organization created event
             event = OrganizationCreatedEvent(

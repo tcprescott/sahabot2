@@ -41,6 +41,13 @@ from models.notification_subscription import NotificationSubscription, Notificat
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
 from models.discord_scheduled_event import DiscordScheduledEvent
 from models.organization_feature_flag import OrganizationFeatureFlag, FeatureFlag
+from models.authorization import (
+    OrganizationRole,
+    OrganizationMemberRole,
+    PolicyStatement,
+    RolePolicy,
+    UserPolicy,
+)
 
 __all__ = [
     'User',
@@ -94,6 +101,12 @@ __all__ = [
     'DiscordScheduledEvent',
     'OrganizationFeatureFlag',
     'FeatureFlag',
+    # Authorization models
+    'OrganizationRole',
+    'OrganizationMemberRole',
+    'PolicyStatement',
+    'RolePolicy',
+    'UserPolicy',
     # Helper functions/constants
     'SYSTEM_USER_ID',
     'is_system_user_id',
