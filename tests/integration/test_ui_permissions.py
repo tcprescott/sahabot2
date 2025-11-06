@@ -18,7 +18,7 @@ class TestUIPermissions:
     """Integration tests for UI permission system."""
 
     @pytest.fixture
-    async def organization(self):
+    async def organization(self, db):
         """Create a test organization."""
         org = await Organization.create(
             name="Test Organization",
@@ -28,7 +28,7 @@ class TestUIPermissions:
         await org.delete()
 
     @pytest.fixture
-    async def superadmin_user(self):
+    async def superadmin_user(self, db):
         """Create a SUPERADMIN user."""
         user = await User.create(
             discord_id=1000001,
@@ -39,7 +39,7 @@ class TestUIPermissions:
         await user.delete()
 
     @pytest.fixture
-    async def admin_user(self):
+    async def admin_user(self, db):
         """Create an ADMIN user."""
         user = await User.create(
             discord_id=1000002,
@@ -50,7 +50,7 @@ class TestUIPermissions:
         await user.delete()
 
     @pytest.fixture
-    async def moderator_user(self):
+    async def moderator_user(self, db):
         """Create a MODERATOR user."""
         user = await User.create(
             discord_id=1000003,
@@ -61,7 +61,7 @@ class TestUIPermissions:
         await user.delete()
 
     @pytest.fixture
-    async def regular_user(self):
+    async def regular_user(self, db):
         """Create a regular USER."""
         user = await User.create(
             discord_id=1000004,
@@ -72,7 +72,7 @@ class TestUIPermissions:
         await user.delete()
 
     @pytest.fixture
-    async def org_admin_user(self, organization):
+    async def org_admin_user(self, db, organization):
         """Create a user with ADMIN role in organization."""
         user = await User.create(
             discord_id=1000005,
@@ -97,7 +97,7 @@ class TestUIPermissions:
         await user.delete()
 
     @pytest.fixture
-    async def org_tournament_manager(self, organization):
+    async def org_tournament_manager(self, db, organization):
         """Create a user with TOURNAMENT_MANAGER role in organization."""
         user = await User.create(
             discord_id=1000006,
@@ -122,7 +122,7 @@ class TestUIPermissions:
         await user.delete()
 
     @pytest.fixture
-    async def org_member_user(self, organization):
+    async def org_member_user(self, db, organization):
         """Create a user who is just a member (no special roles)."""
         user = await User.create(
             discord_id=1000007,

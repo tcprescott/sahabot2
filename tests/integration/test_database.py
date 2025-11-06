@@ -22,12 +22,12 @@ class TestDatabaseIntegration:
         # TODO: Implement test
         pass
     
-    async def test_transaction_rollback(self, clean_db):
+    async def test_transaction_rollback(self, db):
         """Test transaction rollback on error."""
         # TODO: Implement test
         pass
     
-    async def test_concurrent_operations(self, clean_db):
+    async def test_concurrent_operations(self, db):
         """Test handling concurrent database operations."""
         # TODO: Implement test
         pass

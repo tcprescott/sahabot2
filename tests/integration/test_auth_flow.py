@@ -28,12 +28,12 @@ class TestDiscordOAuth2Flow:
         # TODO: Implement test
         pass
     
-    async def test_user_creation_from_oauth(self, clean_db):
+    async def test_user_creation_from_oauth(self, db):
         """Test creating user from OAuth data."""
         # TODO: Implement test
         pass
     
-    async def test_user_update_from_oauth(self, sample_user):
+    async def test_user_update_from_oauth(self, db, sample_user):
         """Test updating existing user from OAuth data."""
         # TODO: Implement test
         pass
