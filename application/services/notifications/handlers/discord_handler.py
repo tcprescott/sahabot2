@@ -13,7 +13,7 @@ from discordbot.client import get_bot_instance
 from models import User
 from models.notification_log import NotificationDeliveryStatus
 from models.notification_subscription import NotificationEventType
-from application.services.notification_handlers.base_handler import BaseNotificationHandler
+from application.services.notifications.handlers.base_handler import BaseNotificationHandler
 
 logger = logging.getLogger(__name__)
 

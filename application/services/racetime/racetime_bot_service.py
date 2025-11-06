@@ -14,7 +14,6 @@ from application.events import (
     RacetimeBotUpdatedEvent,
     RacetimeBotDeletedEvent,
 )
-from racetime.client import start_racetime_bot, stop_racetime_bot
 
 logger = logging.getLogger(__name__)
 
@@ -192,6 +191,9 @@ class RacetimeBotService:
         # Handle bot lifecycle changes when is_active is modified
         logger.debug("Checking for is_active change. updates keys: %s", list(updates.keys()))
         if 'is_active' in updates:
+            # Import here to avoid circular dependency
+            from racetime.client import start_racetime_bot, stop_racetime_bot
+            
             was_active = old_bot.is_active
             is_now_active = updates['is_active']
             logger.info(
@@ -304,6 +306,9 @@ class RacetimeBotService:
             return False
 
         logger.info("Restarting RaceTime bot %s (category: %s)", bot_id, bot.category)
+
+        # Import here to avoid circular dependency
+        from racetime.client import start_racetime_bot, stop_racetime_bot
 
         try:
             # Stop the bot

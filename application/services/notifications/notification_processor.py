@@ -13,7 +13,7 @@ from typing import Optional
 from models import User
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
 from models.notification_subscription import NotificationMethod, NotificationEventType
-from application.services.notification_handlers.discord_handler import DiscordNotificationHandler
+from application.services.notifications.handlers.discord_handler import DiscordNotificationHandler
 
 logger = logging.getLogger(__name__)
 

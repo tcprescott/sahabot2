@@ -17,7 +17,6 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 from models import Match, Tournament, User
-from racetime.client import get_racetime_bot_instance
 from application.events import EventBus, RacetimeRoomCreatedEvent
 
 logger = logging.getLogger(__name__)
@@ -59,6 +58,9 @@ class RacetimeRoomService:
         if not bot_config or not bot_config.is_active:
             logger.error("Tournament %s has inactive or missing RaceTime bot", tournament.id)
             return None
+        
+        # Import here to avoid circular dependency
+        from racetime.client import get_racetime_bot_instance
         
         # Get the bot instance
         bot = get_racetime_bot_instance(bot_config.category)
@@ -208,6 +210,9 @@ class RacetimeRoomService:
         Returns:
             True if message sent successfully, False otherwise
         """
+        # Import here to avoid circular dependency
+        from racetime.client import get_racetime_bot_instance
+        
         bot = get_racetime_bot_instance(category)
         if not bot:
             logger.error("No running bot instance for category %s", category)

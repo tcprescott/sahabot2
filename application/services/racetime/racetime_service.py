@@ -14,7 +14,6 @@ import logging
 from typing import Iterable, Optional, Tuple
 
 from models import RacetimeBot
-from racetime.client import start_racetime_bot, stop_all_racetime_bots
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +37,9 @@ class RacetimeService:
         Returns:
             int: Number of bots started successfully.
         """
+        # Lazy import to avoid circular dependency
+        from racetime.client import start_racetime_bot
+        
         started = 0
 
         # Load configs from database if not provided
@@ -76,6 +78,9 @@ class RacetimeService:
     @staticmethod
     async def stop_all() -> None:
         """Stop all running racetime bots (best-effort)."""
+        # Lazy import to avoid circular dependency
+        from racetime.client import stop_all_racetime_bots
+        
         try:
             await stop_all_racetime_bots()
         except Exception as e:
