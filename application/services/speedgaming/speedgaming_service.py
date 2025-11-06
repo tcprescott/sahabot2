@@ -230,7 +230,7 @@ class SpeedGamingService:
         Raises:
             httpx.HTTPError: If API request fails
         """
-        url = f"{self.base_url}/episode/{episode_id}"
+        url = f"{self.base_url}/episode/{episode_id}/"  # Trailing slash required by SpeedGaming API
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:

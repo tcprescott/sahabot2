@@ -195,4 +195,52 @@ class UserRepository:
             is_active=True
         ).order_by('racetime_name')
 
+    async def get_placeholder_users_for_tournament(self, tournament_id: int) -> list[User]:
+        """
+        Get all placeholder users associated with a tournament's matches.
 
+        This includes placeholders from both match players and crew.
+
+        Args:
+            tournament_id: Tournament ID
+
+        Returns:
+            list[User]: List of placeholder users
+        """
+        # Import here to avoid circular dependency
+        from models.match_schedule import Match
+
+        # Get all match IDs for this tournament
+        matches = await Match.filter(tournament_id=tournament_id).values_list('id', flat=True)
+        match_ids = list(matches)
+
+        if not match_ids:
+            return []
+
+        # Get placeholder users from match players
+        player_placeholders = await User.filter(
+            is_placeholder=True,
+            match_players__match_id__in=match_ids
+        ).distinct().prefetch_related('match_players__match')
+
+        # Get placeholder users from crew
+        crew_placeholders = await User.filter(
+            is_placeholder=True,
+            crew_memberships__match_id__in=match_ids
+        ).distinct().prefetch_related('crew_memberships__match')
+
+        # Combine and deduplicate
+        all_placeholder_ids = set()
+        all_placeholders = []
+
+        for user in player_placeholders:
+            if user.id not in all_placeholder_ids:
+                all_placeholder_ids.add(user.id)
+                all_placeholders.append(user)
+
+        for user in crew_placeholders:
+            if user.id not in all_placeholder_ids:
+                all_placeholder_ids.add(user.id)
+                all_placeholders.append(user)
+
+        return all_placeholders

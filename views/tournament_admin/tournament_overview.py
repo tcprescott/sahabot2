@@ -9,7 +9,7 @@ from nicegui import ui
 from models import User
 from models.organizations import Organization
 from models.async_tournament import AsyncTournament
-from models.audit_log import AuditLog
+from application.repositories.audit_repository import AuditRepository
 from components.datetime_label import DateTimeLabel
 
 
@@ -28,6 +28,7 @@ class TournamentOverviewView:
         self.user = user
         self.organization = organization
         self.tournament = tournament
+        self.audit_repository = AuditRepository()
 
     async def render(self):
         """Render the tournament overview."""
@@ -101,19 +102,12 @@ class TournamentOverviewView:
                 # Sync History
                 ui.label('Recent Sync Activity').classes('text-lg font-bold mb-2')
 
-                # Fetch recent sync logs
-                # Note: Filtering in Python since details is a JSON field.
-                # Tortoise ORM doesn't support JSON field queries like details__tournament_id
-                all_sync_logs = await AuditLog.filter(
-                    action="speedgaming_sync",
-                    organization_id=self.organization.id
-                ).order_by('-created_at').limit(50).all()
-                
-                # Filter for this tournament in Python
-                sync_logs = [
-                    log for log in all_sync_logs
-                    if log.details and log.details.get('tournament_id') == self.tournament.id
-                ][:10]  # Keep only 10 most recent
+                # Fetch recent sync logs via repository
+                sync_logs = await self.audit_repository.get_speedgaming_sync_logs_for_tournament(
+                    organization_id=self.organization.id,
+                    tournament_id=self.tournament.id,
+                    limit=10
+                )
 
                 if not sync_logs:
                     with ui.element('div').classes('text-center py-4'):
@@ -224,144 +218,75 @@ class TournamentOverviewView:
             await self._render_placeholder_users_section()
 
     async def _render_placeholder_users_section(self):
-        """Render placeholder users section for SpeedGaming integration."""
-        from models import User
-        from models.match_schedule import MatchPlayers, Crew
-        from components.data_table import ResponsiveTable, TableColumn
+        """Render section showing placeholder users from SpeedGaming imports."""
+        from application.repositories.user_repository import UserRepository
 
-        # Find placeholder users associated with this tournament's matches
-        # Get all matches for this tournament
-        matches = await self.tournament.matches.all()
-        match_ids = [m.id for m in matches]
-
-        # Get placeholder users from match players
-        player_placeholders = await User.filter(
-            is_placeholder=True,
-            match_players__match_id__in=match_ids
-        ).distinct().prefetch_related('match_players__match')
-
-        # Get placeholder users from crew
-        crew_placeholders = await User.filter(
-            is_placeholder=True,
-            crew_memberships__match_id__in=match_ids
-        ).distinct().prefetch_related('crew_memberships__match')
-
-        # Combine and deduplicate
-        all_placeholder_ids = set()
-        all_placeholders = []
-        
-        for user in player_placeholders:
-            if user.id not in all_placeholder_ids:
-                all_placeholder_ids.add(user.id)
-                all_placeholders.append(user)
-        
-        for user in crew_placeholders:
-            if user.id not in all_placeholder_ids:
-                all_placeholder_ids.add(user.id)
-                all_placeholders.append(user)
+        # Get placeholder users via repository
+        user_repo = UserRepository()
+        all_placeholders = await user_repo.get_placeholder_users_for_tournament(self.tournament.id)
 
         if not all_placeholders:
             return  # No placeholder users, don't show section
 
+        # Render placeholder users card
         with ui.element('div').classes('card mt-4'):
             with ui.element('div').classes('card-header'):
-                with ui.row().classes('items-center justify-between w-full'):
-                    ui.label('Placeholder Users').classes('text-xl font-bold')
-                    ui.badge(str(len(all_placeholders))).classes('badge-warning')
+                ui.label('Placeholder Users from SpeedGaming').classes('text-lg font-bold')
+                ui.label(
+                    f'{len(all_placeholders)} placeholder user(s) created from SpeedGaming imports'
+                ).classes('text-sm text-secondary')
 
             with ui.element('div').classes('card-body'):
-                # Info message
-                with ui.element('div').classes('p-3 bg-warning-light rounded mb-4'):
-                    with ui.row().classes('items-start gap-2'):
-                        ui.icon('info', color='warning')
-                        with ui.column().classes('gap-1'):
-                            ui.label('Action Required').classes('font-bold text-warning')
-                            ui.label(
-                                'The following users were created as placeholders because their Discord ID '
-                                'was not available in SpeedGaming. Please update the Discord ID in SpeedGaming.org '
-                                'so these users can be linked to their actual accounts.'
-                            ).classes('text-sm')
+                ui.label(
+                    'These users were automatically created when importing matches/crew from SpeedGaming. '
+                    'They should be linked to real Discord accounts by the users themselves.'
+                ).classes('text-sm mb-3')
 
-                # Placeholder users table
-                def render_username(user: User):
-                    with ui.row().classes('items-center gap-2'):
-                        ui.icon('account_circle', color='warning')
-                        ui.label(user.discord_username or 'Unknown').classes('font-mono')
+                # Display placeholder users as a simple list
+                with ui.element('div').classes('overflow-x-auto'):
+                    with ui.element('table').classes('data-table'):
+                        # Header
+                        with ui.element('thead'):
+                            with ui.element('tr'):
+                                with ui.element('th').classes('text-left'):
+                                    ui.label('Username')
+                                with ui.element('th').classes('text-left'):
+                                    ui.label('Display Name')
+                                with ui.element('th').classes('text-left'):
+                                    ui.label('Created')
+                                with ui.element('th').classes('text-left'):
+                                    ui.label('Roles')
 
-                def render_display_name(user: User):
-                    ui.label(user.display_name or user.discord_username or '—')
+                        # Body
+                        with ui.element('tbody'):
+                            for placeholder in all_placeholders:
+                                with ui.element('tr'):
+                                    # Username
+                                    with ui.element('td'):
+                                        ui.label(placeholder.discord_username).classes('font-mono')
 
-                def render_speedgaming_id(user: User):
-                    if user.speedgaming_id:
-                        ui.label(f'SG#{user.speedgaming_id}').classes('font-mono text-sm')
-                    else:
-                        ui.label('—').classes('text-secondary')
+                                    # Display Name
+                                    with ui.element('td'):
+                                        if placeholder.display_name:
+                                            ui.label(placeholder.display_name)
+                                        else:
+                                            ui.label('—').classes('text-secondary')
 
-                async def render_matches(user: User):
-                    # Get matches where this user is a player
-                    player_matches = await MatchPlayers.filter(
-                        user=user,
-                        match_id__in=match_ids
-                    ).prefetch_related('match').all()
-                    
-                    # Get matches where this user is crew
-                    crew_matches = await Crew.filter(
-                        user=user,
-                        match_id__in=match_ids
-                    ).prefetch_related('match').all()
+                                    # Created date
+                                    with ui.element('td'):
+                                        DateTimeLabel.create(placeholder.created_at, format_type='relative')
 
-                    match_count = len(set([mp.match.id for mp in player_matches] + [c.match.id for c in crew_matches]))
-                    
-                    if match_count > 0:
-                        ui.label(f'{match_count} match{"es" if match_count != 1 else ""}').classes('text-sm')
-                    else:
-                        ui.label('—').classes('text-secondary')
+                                    # Roles (show if player or crew in this tournament)
+                                    with ui.element('td'):
+                                        roles = []
+                                        # Check if player (via match_players relation)
+                                        if hasattr(placeholder, 'match_players'):
+                                            roles.append('Player')
+                                        # Check if crew (via crew_memberships relation)
+                                        if hasattr(placeholder, 'crew_memberships'):
+                                            roles.append('Crew')
 
-                async def render_roles(user: User):
-                    roles = []
-                    
-                    # Check if player
-                    player_count = await MatchPlayers.filter(
-                        user=user,
-                        match_id__in=match_ids
-                    ).count()
-                    if player_count > 0:
-                        roles.append('Player')
-                    
-                    # Check if crew
-                    crew_assignments = await Crew.filter(
-                        user=user,
-                        match_id__in=match_ids
-                    ).all()
-                    
-                    crew_roles = set(c.role.value for c in crew_assignments)
-                    roles.extend(crew_roles)
-                    
-                    if roles:
-                        with ui.column().classes('gap-1'):
-                            for role in roles:
-                                ui.badge(role).classes('badge-info text-xs')
-                    else:
-                        ui.label('—').classes('text-secondary')
-
-                def render_created(user: User):
-                    DateTimeLabel.create(user.created_at, format_type='relative')
-
-                def render_actions(user: User):
-                    if user.speedgaming_id:
-                        ui.label(f'Update Discord ID in SpeedGaming for player/crew #{user.speedgaming_id}').classes('text-xs text-secondary')
-                    else:
-                        ui.label('Missing SpeedGaming ID').classes('text-xs text-warning')
-
-                columns = [
-                    TableColumn('Username', cell_render=render_username),
-                    TableColumn('Display Name', cell_render=render_display_name),
-                    TableColumn('SG ID', cell_render=render_speedgaming_id),
-                    TableColumn('Matches', cell_render=render_matches),
-                    TableColumn('Roles', cell_render=render_roles),
-                    TableColumn('Created', cell_render=render_created),
-                    TableColumn('Action Needed', cell_render=render_actions),
-                ]
-
-                table = ResponsiveTable(columns=columns, rows=all_placeholders)
-                await table.render()
+                                        if roles:
+                                            ui.label(', '.join(roles)).classes('text-sm')
+                                        else:
+                                            ui.label('Unknown').classes('text-sm text-secondary')

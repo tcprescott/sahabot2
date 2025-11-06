@@ -57,13 +57,13 @@ class SpeedGamingETLService:
         sg_player: SpeedGamingPlayer,
     ) -> User:
         """
-        Find existing user by Discord ID, username, or SpeedGaming ID, or create placeholder user.
+        Find existing user by Discord ID, username, or SpeedGaming ID, or create user.
 
         Priority:
         1. Match by discord_id (if available)
         2. Match by discord_username (from discord_tag if available)
         3. Match by speedgaming_id (for existing placeholders)
-        4. Create new placeholder user with display name from SpeedGaming
+        4. Create new user with Discord ID if available, otherwise placeholder
 
         Args:
             organization_id: Organization ID to add user to
@@ -133,13 +133,87 @@ class SpeedGamingETLService:
 
                     return user
 
-        # Try to find placeholder user by SpeedGaming ID
+        # Try to find placeholder user by SpeedGaming ID (might need to upgrade to full user)
         user = await User.get_or_none(
             is_placeholder=True,
             speedgaming_id=sg_player.id
         )
         
         if user:
+            # If we now have a Discord ID, check if a real user with that ID already exists
+            if sg_player.discord_id_int:
+                # Check if there's already a real user with this Discord ID
+                existing_real_user = await User.get_or_none(
+                    discord_id=sg_player.discord_id_int,
+                    is_placeholder=False
+                )
+                
+                if existing_real_user:
+                    # A real user with this Discord ID exists - use that instead
+                    logger.info(
+                        "Found existing real user %s with Discord ID %s for placeholder %s (SG player %s)",
+                        existing_real_user.id,
+                        sg_player.discord_id_int,
+                        user.id,
+                        sg_player.id
+                    )
+                    
+                    # TODO: In the future, we could merge the placeholder into the real user
+                    # For now, we'll use the real user and leave the placeholder
+                    
+                    # Ensure real user is a member of the organization
+                    member = await OrganizationMember.get_or_none(
+                        organization_id=organization_id,
+                        user_id=existing_real_user.id
+                    )
+                    if not member:
+                        await OrganizationMember.create(
+                            organization_id=organization_id,
+                            user_id=existing_real_user.id
+                        )
+                        logger.info(
+                            "Added existing real user %s to organization %s",
+                            existing_real_user.id,
+                            organization_id
+                        )
+                    
+                    return existing_real_user
+                
+                # No existing real user - upgrade the placeholder
+                if not user.discord_id:
+                    logger.info(
+                        "Upgrading placeholder user %s to full user with Discord ID %s",
+                        user.id,
+                        sg_player.discord_id_int
+                    )
+                    
+                    # Best-effort username from discord_tag
+                    discord_username = None
+                    if sg_player.discord_tag:
+                        discord_username = sg_player.discord_tag.split("#")[0] if "#" in sg_player.discord_tag else sg_player.discord_tag
+                    
+                    if not discord_username:
+                        # Fallback: use display name or streaming username
+                        discord_username = (
+                            sg_player.streaming_from
+                            or sg_player.display_name
+                            or f"user_{sg_player.discord_id_int}"
+                        )
+                    
+                    user.discord_id = sg_player.discord_id_int
+                    user.discord_username = discord_username
+                    user.is_placeholder = False  # No longer a placeholder
+                    await user.save()
+                    
+                    logger.info(
+                        "Upgraded user %s: discord_id=%s, username=%s",
+                        user.id,
+                        user.discord_id,
+                        user.discord_username
+                    )
+                    return user
+            
+            # Still a placeholder (no Discord ID provided), just update display name if needed
             logger.info(
                 "Found existing placeholder user for SG player %s",
                 sg_player.id
@@ -165,9 +239,41 @@ class SpeedGamingETLService:
             
             return user
 
-        # Create new placeholder user
-        # Use a unique identifier based on SG player ID to avoid duplicates
-        placeholder_username = f"sg_{sg_player.id}"
+        # Create new user
+        # If we have a Discord ID, create full user; otherwise create placeholder
+        
+        # Determine username
+        if sg_player.discord_id_int:
+            # We have Discord ID - create full user with best-effort username
+            discord_id = sg_player.discord_id_int
+            
+            # Try to extract username from discord_tag
+            if sg_player.discord_tag:
+                discord_username = sg_player.discord_tag.split("#")[0] if "#" in sg_player.discord_tag else sg_player.discord_tag
+            else:
+                # Best effort: use streaming name, display name, or generic fallback
+                discord_username = (
+                    sg_player.streaming_from
+                    or sg_player.display_name
+                    or f"user_{discord_id}"
+                )
+            
+            is_placeholder = False
+            logger.info(
+                "Creating full user with Discord ID %s (username: %s) for SpeedGaming player '%s'",
+                discord_id,
+                discord_username,
+                sg_player.display_name
+            )
+        else:
+            # No Discord ID - create placeholder
+            discord_id = None
+            discord_username = f"sg_{sg_player.id}"
+            is_placeholder = True
+            logger.info(
+                "Creating placeholder user for SpeedGaming player '%s' (no Discord ID available)",
+                sg_player.display_name
+            )
 
         # Determine best display name
         # Priority: streaming_from (Twitch), public_stream, display_name
@@ -175,27 +281,30 @@ class SpeedGamingETLService:
             sg_player.streaming_from
             or sg_player.public_stream
             or sg_player.display_name
-            or placeholder_username
+            or discord_username
         )
 
-        # Create new placeholder user
-        # Note: discord_id=None for placeholders (no Discord account linked)
+        # Create user
         user = await User.create(
-            discord_id=None,  # No Discord ID available for placeholder
-            discord_username=placeholder_username,
-            discord_discriminator="0000",
-            discord_avatar_hash=None,
+            discord_id=discord_id,
+            discord_username=discord_username,
+            discord_discriminator="0000" if sg_player.discord_tag and "#" in sg_player.discord_tag else None,
+            discord_avatar=None,
             discord_email=None,
             display_name=display_name,
-            is_placeholder=True,  # Primary indicator for placeholder users
-            speedgaming_id=sg_player.id,  # Store SpeedGaming ID
+            is_placeholder=is_placeholder,
+            speedgaming_id=sg_player.id,  # Store SpeedGaming ID for tracking
         )
+        
+        user_type = "placeholder" if is_placeholder else "full"
         logger.info(
-            "Created placeholder user %s for SpeedGaming player '%s' "
-            "(ID: %s, display_name: %s)",
+            "Created %s user %s for SpeedGaming player '%s' "
+            "(SG ID: %s, discord_id: %s, display_name: %s)",
+            user_type,
             user.id,
             sg_player.display_name,
             sg_player.id,
+            discord_id,
             display_name
         )
 
@@ -205,7 +314,7 @@ class SpeedGamingETLService:
             user_id=user.id
         )
         logger.info(
-            "Added placeholder user %s to organization %s",
+            "Added user %s to organization %s",
             user.id,
             organization_id
         )
@@ -218,13 +327,13 @@ class SpeedGamingETLService:
         sg_crew: SpeedGamingCrewMember,
     ) -> User:
         """
-        Find existing user by Discord ID, username, or SpeedGaming ID, or create placeholder user for crew.
+        Find existing user by Discord ID, username, or SpeedGaming ID, or create user for crew.
 
         Priority:
         1. Match by discord_id (if available)
         2. Match by discord_username (from discord_tag if available)
         3. Match by speedgaming_id (for existing placeholders)
-        4. Create new placeholder user
+        4. Create new user with Discord ID if available, otherwise placeholder
 
         Args:
             organization_id: Organization ID to add user to
@@ -294,13 +403,87 @@ class SpeedGamingETLService:
 
                     return user
 
-        # Try to find placeholder user by SpeedGaming ID
+        # Try to find placeholder user by SpeedGaming ID (might need to upgrade to full user)
         user = await User.get_or_none(
             is_placeholder=True,
             speedgaming_id=sg_crew.id
         )
         
         if user:
+            # If we now have a Discord ID, check if a real user with that ID already exists
+            if sg_crew.discord_id_int:
+                # Check if there's already a real user with this Discord ID
+                existing_real_user = await User.get_or_none(
+                    discord_id=sg_crew.discord_id_int,
+                    is_placeholder=False
+                )
+                
+                if existing_real_user:
+                    # A real user with this Discord ID exists - use that instead
+                    logger.info(
+                        "Found existing real user %s with Discord ID %s for placeholder %s (SG crew %s)",
+                        existing_real_user.id,
+                        sg_crew.discord_id_int,
+                        user.id,
+                        sg_crew.id
+                    )
+                    
+                    # TODO: In the future, we could merge the placeholder into the real user
+                    # For now, we'll use the real user and leave the placeholder
+                    
+                    # Ensure real user is a member of the organization
+                    member = await OrganizationMember.get_or_none(
+                        organization_id=organization_id,
+                        user_id=existing_real_user.id
+                    )
+                    if not member:
+                        await OrganizationMember.create(
+                            organization_id=organization_id,
+                            user_id=existing_real_user.id
+                        )
+                        logger.info(
+                            "Added existing real user %s to organization %s",
+                            existing_real_user.id,
+                            organization_id
+                        )
+                    
+                    return existing_real_user
+                
+                # No existing real user - upgrade the placeholder
+                if not user.discord_id:
+                    logger.info(
+                        "Upgrading placeholder crew user %s to full user with Discord ID %s",
+                        user.id,
+                        sg_crew.discord_id_int
+                    )
+                    
+                    # Best-effort username from discord_tag
+                    discord_username = None
+                    if sg_crew.discord_tag:
+                        discord_username = sg_crew.discord_tag.split("#")[0] if "#" in sg_crew.discord_tag else sg_crew.discord_tag
+                    
+                    if not discord_username:
+                        # Fallback: use display name or streaming username
+                        discord_username = (
+                            sg_crew.public_stream
+                            or sg_crew.display_name
+                            or f"user_{sg_crew.discord_id_int}"
+                        )
+                    
+                    user.discord_id = sg_crew.discord_id_int
+                    user.discord_username = discord_username
+                    user.is_placeholder = False  # No longer a placeholder
+                    await user.save()
+                    
+                    logger.info(
+                        "Upgraded crew user %s: discord_id=%s, username=%s",
+                        user.id,
+                        user.discord_id,
+                        user.discord_username
+                    )
+                    return user
+            
+            # Still a placeholder (no Discord ID provided), just update display name if needed
             logger.info(
                 "Found existing placeholder crew user for SG crew %s",
                 sg_crew.id
@@ -325,36 +508,71 @@ class SpeedGamingETLService:
             
             return user
 
-        # Create new placeholder user
-        # Use a unique identifier based on SG crew ID to avoid duplicates
-        placeholder_username = f"sg_crew_{sg_crew.id}"
+        # Create new user
+        # If we have a Discord ID, create full user; otherwise create placeholder
+        
+        # Determine username
+        if sg_crew.discord_id_int:
+            # We have Discord ID - create full user with best-effort username
+            discord_id = sg_crew.discord_id_int
+            
+            # Try to extract username from discord_tag
+            if sg_crew.discord_tag:
+                discord_username = sg_crew.discord_tag.split("#")[0] if "#" in sg_crew.discord_tag else sg_crew.discord_tag
+            else:
+                # Best effort: use streaming name, display name, or generic fallback
+                discord_username = (
+                    sg_crew.public_stream
+                    or sg_crew.display_name
+                    or f"user_{discord_id}"
+                )
+            
+            is_placeholder = False
+            logger.info(
+                "Creating full crew user with Discord ID %s (username: %s) for SpeedGaming crew '%s'",
+                discord_id,
+                discord_username,
+                sg_crew.display_name
+            )
+        else:
+            # No Discord ID - create placeholder
+            discord_id = None
+            discord_username = f"sg_crew_{sg_crew.id}"
+            is_placeholder = True
+            logger.info(
+                "Creating placeholder crew user for SpeedGaming crew '%s' (no Discord ID available)",
+                sg_crew.display_name
+            )
 
         # Determine best display name
         # Priority: public_stream (Twitch), display_name
         display_name = (
             sg_crew.public_stream
             or sg_crew.display_name
-            or placeholder_username
+            or discord_username
         )
 
-        # Create new placeholder user
-        # Note: discord_id=None for placeholders (no Discord account linked)
+        # Create user
         user = await User.create(
-            discord_id=None,  # No Discord ID available for placeholder
-            discord_username=placeholder_username,
-            discord_discriminator="0000",
-            discord_avatar_hash=None,
+            discord_id=discord_id,
+            discord_username=discord_username,
+            discord_discriminator="0000" if sg_crew.discord_tag and "#" in sg_crew.discord_tag else None,
+            discord_avatar=None,
             discord_email=None,
             display_name=display_name,
-            is_placeholder=True,  # Primary indicator for placeholder users
-            speedgaming_id=sg_crew.id,  # Store SpeedGaming ID
+            is_placeholder=is_placeholder,
+            speedgaming_id=sg_crew.id,  # Store SpeedGaming ID for tracking
         )
+        
+        user_type = "placeholder" if is_placeholder else "full"
         logger.info(
-            "Created placeholder crew user %s for SpeedGaming crew '%s' "
-            "(ID: %s, display_name: %s)",
+            "Created %s crew user %s for SpeedGaming crew '%s' "
+            "(SG ID: %s, discord_id: %s, display_name: %s)",
+            user_type,
             user.id,
             sg_crew.display_name,
             sg_crew.id,
+            discord_id,
             display_name
         )
 
@@ -364,7 +582,7 @@ class SpeedGamingETLService:
             user_id=user.id
         )
         logger.info(
-            "Added placeholder crew user %s to organization %s",
+            "Added crew user %s to organization %s",
             user.id,
             organization_id
         )

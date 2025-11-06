@@ -150,3 +150,38 @@ class AuditRepository:
         logs = await query.prefetch_related('user').order_by('-created_at').offset(offset).limit(limit)
 
         return logs, total
+
+    async def get_speedgaming_sync_logs_for_tournament(
+        self,
+        organization_id: int,
+        tournament_id: int,
+        limit: int = 10
+    ) -> list[AuditLog]:
+        """
+        Get SpeedGaming sync logs for a specific tournament.
+
+        Note: Since details is a JSON field and Tortoise ORM doesn't support
+        JSON field queries, we fetch recent sync logs for the organization
+        and filter in Python.
+
+        Args:
+            organization_id: Organization ID
+            tournament_id: Tournament ID
+            limit: Maximum number of logs to return
+
+        Returns:
+            list[AuditLog]: SpeedGaming sync logs for the tournament
+        """
+        # Fetch recent sync logs for the organization (fetch more to account for filtering)
+        all_sync_logs = await AuditLog.filter(
+            action="speedgaming_sync",
+            organization_id=organization_id
+        ).order_by('-created_at').limit(50).all()
+
+        # Filter for this tournament in Python
+        tournament_logs = [
+            log for log in all_sync_logs
+            if log.details and log.details.get('tournament_id') == tournament_id
+        ][:limit]
+
+        return tournament_logs
