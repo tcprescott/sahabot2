@@ -102,13 +102,18 @@ class TournamentOverviewView:
                 ui.label('Recent Sync Activity').classes('text-lg font-bold mb-2')
 
                 # Fetch recent sync logs
-                # Note: Using JSON field filter for tournament_id. Consider adding
-                # a direct tournament_id field to AuditLog if performance becomes an issue.
-                sync_logs = await AuditLog.filter(
+                # Note: Filtering in Python since details is a JSON field.
+                # Tortoise ORM doesn't support JSON field queries like details__tournament_id
+                all_sync_logs = await AuditLog.filter(
                     action="speedgaming_sync",
-                    details__tournament_id=self.tournament.id,
                     organization_id=self.organization.id
-                ).order_by('-created_at').limit(10).all()
+                ).order_by('-created_at').limit(50).all()
+                
+                # Filter for this tournament in Python
+                sync_logs = [
+                    log for log in all_sync_logs
+                    if log.details and log.details.get('tournament_id') == self.tournament.id
+                ][:10]  # Keep only 10 most recent
 
                 if not sync_logs:
                     with ui.element('div').classes('text-center py-4'):
@@ -122,13 +127,20 @@ class TournamentOverviewView:
                             # Header
                             with ui.element('thead'):
                                 with ui.element('tr'):
-                                    ui.element('th').classes('text-left').add(ui.label('Time'))
-                                    ui.element('th').classes('text-left').add(ui.label('Status'))
-                                    ui.element('th').classes('text-center').add(ui.label('Imported'))
-                                    ui.element('th').classes('text-center').add(ui.label('Updated'))
-                                    ui.element('th').classes('text-center').add(ui.label('Deleted'))
-                                    ui.element('th').classes('text-left').add(ui.label('Duration'))
-                                    ui.element('th').classes('text-left').add(ui.label('Details'))
+                                    with ui.element('th').classes('text-left'):
+                                        ui.label('Time')
+                                    with ui.element('th').classes('text-left'):
+                                        ui.label('Status')
+                                    with ui.element('th').classes('text-center'):
+                                        ui.label('Imported')
+                                    with ui.element('th').classes('text-center'):
+                                        ui.label('Updated')
+                                    with ui.element('th').classes('text-center'):
+                                        ui.label('Deleted')
+                                    with ui.element('th').classes('text-left'):
+                                        ui.label('Duration')
+                                    with ui.element('th').classes('text-left'):
+                                        ui.label('Details')
 
                             # Body
                             with ui.element('tbody'):

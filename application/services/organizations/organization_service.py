@@ -139,7 +139,7 @@ class OrganizationService:
         """
         # Find the role
         role = await OrganizationRole.filter(
-            organization=member.organization,
+            organization_id=member.organization_id,
             name=role_name
         ).first()
 
@@ -147,7 +147,7 @@ class OrganizationService:
             logger.error(
                 "Role %s not found for organization %s",
                 role_name,
-                member.organization.id
+                member.organization_id
             )
             return None
 
@@ -172,7 +172,7 @@ class OrganizationService:
             "Assigned role %s to member %s in organization %s",
             role_name,
             member.user_id,
-            member.organization.id
+            member.organization_id
         )
 
         return assignment

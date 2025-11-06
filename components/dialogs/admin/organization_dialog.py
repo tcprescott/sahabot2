@@ -10,6 +10,7 @@ from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
 from models import Organization
 from application.services.organizations.organization_service import OrganizationService
+from middleware.auth import DiscordAuthService
 
 
 class OrganizationDialog(BaseDialog):
@@ -55,10 +56,27 @@ class OrganizationDialog(BaseDialog):
             ui.notify('Name is required', color='negative')
             return
 
+        # Get current user for service call
+        current_user = await DiscordAuthService.get_current_user()
+        if not current_user:
+            ui.notify('Authentication required', color='negative')
+            return
+
         if self.organization is None:
-            await self.service.create_organization(name=name, description=description, is_active=is_active)
+            await self.service.create_organization(
+                current_user=current_user,
+                name=name,
+                description=description,
+                is_active=is_active
+            )
         else:
-            await self.service.update_organization(self.organization.id, name=name, description=description, is_active=is_active)
+            await self.service.update_organization(
+                current_user=current_user,
+                organization_id=self.organization.id,
+                name=name,
+                description=description,
+                is_active=is_active
+            )
 
         if self.on_save:
             await self.on_save()

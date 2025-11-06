@@ -275,7 +275,7 @@ class SpeedGamingService:
         Raises:
             httpx.HTTPError: If API request fails
         """
-        url = f"{self.base_url}/schedule"
+        url = f"{self.base_url}/schedule/"  # Trailing slash required by SpeedGaming API
         params = {
             "event": event_slug,
             "limit": limit,

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 from typing import Optional, Callable
+import asyncio
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
 import logging
@@ -95,25 +96,51 @@ class TournamentDialog(BaseDialog):
 
 
 class ConfirmDialog(BaseDialog):
-    """Generic confirmation dialog with message and confirm action."""
+    """Generic confirmation dialog with message and confirm action.
+    
+    Supports two usage patterns:
+    1. Callback pattern: Pass on_confirm callback, dialog handles the action
+    2. Awaitable result pattern: Await show() and check result attribute
+    """
 
     def __init__(self, title: str, message: str, on_confirm: Optional[Callable[[], None]] = None) -> None:
         super().__init__()
         self._title = title
         self._message = message
         self._on_confirm = on_confirm
+        self.result: bool = False  # True if confirmed, False if cancelled
+        self._closed_event = asyncio.Event()
 
-    async def show(self) -> None:
+    async def show(self) -> bool:
+        """Show the dialog and wait for user response.
+        
+        Returns:
+            bool: True if user confirmed, False if cancelled
+        """
         self.create_dialog(title=self._title, icon='help', max_width='dialog-card-sm')
         await super().show()
+        
+        # Wait for dialog to close
+        await self._closed_event.wait()
+        
+        return self.result
 
     def _render_body(self) -> None:
         ui.label(self._message).classes('mb-2')
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
+            ui.button('Cancel', on_click=self._handle_cancel).classes('btn')
             ui.button('Confirm', on_click=self._handle_confirm).classes('btn').props('color=negative')
 
+    async def _handle_cancel(self) -> None:
+        """Handle cancel button click."""
+        self.result = False
+        await self.close()
+        self._closed_event.set()
+
     async def _handle_confirm(self) -> None:
+        """Handle confirm button click."""
+        self.result = True
         if self._on_confirm:
             await self._on_confirm()
         await self.close()
+        self._closed_event.set()

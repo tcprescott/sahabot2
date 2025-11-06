@@ -17,7 +17,7 @@ from models.match_schedule import (
     Crew,
     CrewRole,
 )
-from models.organizations import Organization
+from models.organizations import Organization, OrganizationMember
 from models.audit_log import AuditLog
 from application.services.speedgaming.speedgaming_service import (
     SpeedGamingService,
@@ -79,9 +79,15 @@ class SpeedGamingETLService:
                 )
 
                 # Ensure user is a member of the organization
-                org = await Organization.get(id=organization_id)
-                if not await org.members.filter(id=user.id).exists():
-                    await org.members.add(user)
+                member = await OrganizationMember.get_or_none(
+                    organization_id=organization_id,
+                    user_id=user.id
+                )
+                if not member:
+                    await OrganizationMember.create(
+                        organization_id=organization_id,
+                        user_id=user.id
+                    )
                     logger.info(
                         "Added user %s to organization %s",
                         user.id,
@@ -106,9 +112,15 @@ class SpeedGamingETLService:
                     )
 
                     # Ensure user is a member of the organization
-                    org = await Organization.get(id=organization_id)
-                    if not await org.members.filter(id=user.id).exists():
-                        await org.members.add(user)
+                    member = await OrganizationMember.get_or_none(
+                        organization_id=organization_id,
+                        user_id=user.id
+                    )
+                    if not member:
+                        await OrganizationMember.create(
+                            organization_id=organization_id,
+                            user_id=user.id
+                        )
                         logger.info(
                             "Added user %s to organization %s",
                             user.id,
@@ -184,8 +196,10 @@ class SpeedGamingETLService:
         )
 
         # Add to organization
-        org = await Organization.get(id=organization_id)
-        await org.members.add(user)
+        await OrganizationMember.create(
+            organization_id=organization_id,
+            user_id=user.id
+        )
         logger.info(
             "Added placeholder user %s to organization %s",
             user.id,
@@ -226,9 +240,15 @@ class SpeedGamingETLService:
                 )
 
                 # Ensure user is a member of the organization
-                org = await Organization.get(id=organization_id)
-                if not await org.members.filter(id=user.id).exists():
-                    await org.members.add(user)
+                member = await OrganizationMember.get_or_none(
+                    organization_id=organization_id,
+                    user_id=user.id
+                )
+                if not member:
+                    await OrganizationMember.create(
+                        organization_id=organization_id,
+                        user_id=user.id
+                    )
                     logger.info(
                         "Added crew user %s to organization %s",
                         user.id,
@@ -253,9 +273,15 @@ class SpeedGamingETLService:
                     )
 
                     # Ensure user is a member of the organization
-                    org = await Organization.get(id=organization_id)
-                    if not await org.members.filter(id=user.id).exists():
-                        await org.members.add(user)
+                    member = await OrganizationMember.get_or_none(
+                        organization_id=organization_id,
+                        user_id=user.id
+                    )
+                    if not member:
+                        await OrganizationMember.create(
+                            organization_id=organization_id,
+                            user_id=user.id
+                        )
                         logger.info(
                             "Added crew user %s to organization %s",
                             user.id,
@@ -329,8 +355,10 @@ class SpeedGamingETLService:
         )
 
         # Add to organization
-        org = await Organization.get(id=organization_id)
-        await org.members.add(user)
+        await OrganizationMember.create(
+            organization_id=organization_id,
+            user_id=user.id
+        )
         logger.info(
             "Added placeholder crew user %s to organization %s",
             user.id,

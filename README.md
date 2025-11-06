@@ -158,6 +158,35 @@ poetry run aerich upgrade
 poetry run aerich downgrade
 ```
 
+### Mock Data Generation
+
+For testing and development, you can generate realistic mock data:
+
+```bash
+# Quick start with small preset (20 users, 3 orgs, 5 tournaments)
+poetry run python tools/generate_mock_data.py --preset small
+
+# Use different presets
+poetry run python tools/generate_mock_data.py --preset tiny     # Minimal
+poetry run python tools/generate_mock_data.py --preset medium   # Moderate
+poetry run python tools/generate_mock_data.py --preset large    # Extensive
+
+# Custom configuration
+poetry run python tools/generate_mock_data.py --users 50 --orgs 5 --tournaments 10
+
+# Clear existing data first (WARNING: destructive!)
+poetry run python tools/generate_mock_data.py --preset small --clear-existing
+```
+
+The tool generates:
+- **Users** with different permission levels (SUPERADMIN, ADMIN, MODERATOR, USER)
+- **Organizations** with members and permission structures
+- **Tournaments** with scheduled matches, players, and results
+- **Async Tournaments** with pools, permalinks, and race submissions
+- **Matches** with realistic scheduling, player assignments, and completion states
+
+See [`tools/README.md`](tools/README.md) for detailed documentation.
+
 ### Policy Checks
 
 Run the configuration policy checks locally to ensure no direct environment access is used (all settings must come from `config.py`):
