@@ -10,6 +10,9 @@ from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
+from components.badge import Badge
+from components.empty_state import EmptyState
+from components.stat_card import StatGrid
 from application.services.tournaments.async_tournament_service import AsyncTournamentService
 
 
@@ -86,26 +89,13 @@ class AsyncDashboardView:
         best_race = min(completed_races, key=lambda r: r.elapsed_time.total_seconds()) if completed_races else None
 
         with Card.create(title='My Statistics'):
-            with ui.element('div').classes('grid grid-cols-2 md:grid-cols-4 gap-md'):
-                # Completed
-                with ui.element('div').classes('stat-card'):
-                    ui.label(str(len(completed_races))).classes('stat-value')
-                    ui.label('Completed').classes('stat-label')
-
-                # Forfeited
-                with ui.element('div').classes('stat-card'):
-                    ui.label(str(len(forfeited_races))).classes('stat-value text-danger')
-                    ui.label('Forfeited').classes('stat-label')
-
-                # Active
-                with ui.element('div').classes('stat-card'):
-                    ui.label(str(len(active_races))).classes('stat-value text-info')
-                    ui.label('Active').classes('stat-label')
-
-                # Total Score
-                with ui.element('div').classes('stat-card'):
-                    ui.label(f'{total_score:.1f}').classes('stat-value text-success')
-                    ui.label('Total Score').classes('stat-label')
+            stats = [
+                {'value': str(len(completed_races)), 'label': 'Completed'},
+                {'value': str(len(forfeited_races)), 'label': 'Forfeited', 'color': 'danger'},
+                {'value': str(len(active_races)), 'label': 'Active', 'color': 'info'},
+                {'value': f'{total_score:.1f}', 'label': 'Total Score', 'color': 'success'},
+            ]
+            StatGrid.render(stats, columns=4)
 
             # Best time
             if best_race:
@@ -171,17 +161,19 @@ class AsyncDashboardView:
     async def _render_no_races_message(self):
         """Render empty state message."""
         with Card.create(title='My Races'):
-            with ui.element('div').classes('text-center py-8'):
-                ui.icon('emoji_events').classes('text-secondary icon-large')
-                ui.label('No races yet').classes('text-secondary text-lg mt-4')
-                ui.label('Start a race from the Discord channel to begin your tournament journey!').classes('text-secondary mt-2')
+            action_callback = None
+            if self.tournament.discord_channel_id:
+                discord_url = f'https://discord.com/channels/@me/{self.tournament.discord_channel_id}'
+                action_callback = lambda: ui.navigate.to(discord_url, new_tab=True)
 
-                if self.tournament.discord_channel_id:
-                    discord_url = f'https://discord.com/channels/@me/{self.tournament.discord_channel_id}'
-                    ui.button(
-                        'Go to Discord Channel',
-                        on_click=lambda: ui.navigate.to(discord_url, new_tab=True)
-                    ).classes('btn btn-primary mt-4')
+            EmptyState.render(
+                icon='emoji_events',
+                title='No races yet',
+                message='Start a race from the Discord channel to begin your tournament journey!',
+                action_text='Go to Discord Channel' if action_callback else None,
+                action_callback=action_callback,
+                in_card=False
+            )
 
     async def _render_races_table(self, races: list[AsyncTournamentRace]):
         """Render table of user's races."""
@@ -297,17 +289,14 @@ class AsyncDashboardView:
 
     def _render_status(self, race: AsyncTournamentRace):
         """Render status cell."""
-        status_badge_class = {
-            'finished': 'badge-success',
-            'in_progress': 'badge-info',
-            'pending': 'badge-warning',
-            'forfeit': 'badge-danger',
-            'disqualified': 'badge-danger',
-        }.get(race.status, 'badge')
         status_label = race.status.replace('_', ' ').title()
         if race.reattempted:
             status_label += ' (Reattempt)'
-        ui.label(status_label).classes(f'badge {status_badge_class}')
+
+        # Use Badge component for race status
+        Badge.race_status(race.status)
+        if race.reattempted:
+            ui.label(' (Reattempt)').classes('text-sm text-warning')
 
     def _render_score(self, race: AsyncTournamentRace):
         """Render score cell."""

@@ -6,6 +6,8 @@ Provides a comprehensive interface for viewing, editing, and managing user accou
 
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
+from components.badge import Badge
+from components.empty_state import EmptyState
 from models import User
 from models.user import Permission
 from application.services.core.user_service import UserService
@@ -175,17 +177,10 @@ class AdminUsersView:
         
         # Clear existing content
         self.table_container.clear()
-        
+
         with self.table_container:
             if not self.users:
-                with ui.element('div').classes('card'):
-                    with ui.element('div').classes('card-body text-center'):
-                        ui.label('No users found').classes(
-                            'text-secondary text-lg'
-                        )
-                        ui.label(
-                            'Try adjusting your search or filters'
-                        ).classes('text-sm text-secondary')
+                EmptyState.no_results(in_card=True)
                 return
             
             # Create table using reusable component
@@ -209,18 +204,10 @@ class AdminUsersView:
                         ui.label('—').classes('text-secondary')
 
                 async def render_permission_cell(u: User):
-                    badge_class = (
-                        'badge-admin' if u.is_admin() else
-                        'badge-moderator' if u.is_moderator() else
-                        'badge-user'
-                    )
-                    with ui.element('span').classes(f'badge {badge_class}'):
-                        ui.label(u.permission.name)
+                    Badge.permission(u.permission)
 
                 async def render_status_cell(u: User):
-                    status_class = 'badge-success' if u.is_active else 'badge-danger'
-                    with ui.element('span').classes(f'badge {status_class}'):
-                        ui.label('Active' if u.is_active else 'Inactive')
+                    Badge.status(u.is_active)
 
                 async def render_racetime_cell(u: User):
                     if u.racetime_id:

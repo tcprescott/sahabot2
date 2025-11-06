@@ -17,7 +17,8 @@ Start here if you're new to the codebase:
 Essential guides for UI, backend, and architecture development:
 
 - **[BasePage Guide](core/BASEPAGE_GUIDE.md)** - Using the BasePage template for pages
-- **[Components Guide](core/COMPONENTS_GUIDE.md)** - Reusable UI components
+- **[Components Guide](core/COMPONENTS_GUIDE.md)** - Reusable UI components (Badge, EmptyState, StatCard)
+- **[UI Component Migration](core/UI_COMPONENT_MIGRATION.md)** - Guide for migrating to shared components
 - **[Dialog Action Row Pattern](core/DIALOG_ACTION_ROW_PATTERN.md)** - Dialog button layout pattern
 - **[JavaScript Guidelines](core/JAVASCRIPT_GUIDELINES.md)** - JavaScript organization and patterns
 - **[Repository Pattern Guide](core/REPOSITORIES_PATTERN.md)** - Data access layer patterns and examples
