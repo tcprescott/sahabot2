@@ -253,6 +253,23 @@ Sentry captures error information including:
 - User PII is captured only when errors occur
 - Configure `send_default_pii=False` if you want to disable automatic PII capture
 
+### DSN Security Model
+
+The Sentry DSN is a **public client-side credential** by design:
+- Frontend monitoring requires the DSN to be accessible in browser JavaScript
+- DSNs are intentionally safe to expose in client-side code and HTML
+- Security is enforced through:
+  - **Rate limiting** on the Sentry project (prevents abuse)
+  - **Allowed origins** configuration (restrict which domains can send events)
+  - **Inbound filters** (filter unwanted data)
+  - **Project settings** (control data retention, scrubbing rules)
+
+**Best Practices:**
+- Configure allowed origins in your Sentry project settings to restrict which domains can send events
+- Set up rate limits to prevent quota exhaustion
+- Use inbound filters to block spam or malicious events
+- Never put secrets/passwords in error messages or custom context
+
 ## Troubleshooting
 
 ### Sentry Not Capturing Errors

@@ -123,7 +123,10 @@ class BasePage:
         replays_on_error_sample_rate = 0.0
 
         # Load Sentry browser initialization script with configuration
-        # Use data attributes to pass configuration to avoid exposing DSN in source
+        # Note: DSN is intentionally embedded in HTML for browser SDK to function.
+        # Sentry DSNs are public client-side credentials by design - they're safe
+        # to expose in frontend code. Security is enforced via Sentry's rate limiting,
+        # allowed origins/domains configuration, and project settings.
         js_version = get_js_version('monitoring/sentry-browser.js')
         sentry_script = f'''<script 
             src="/static/js/monitoring/sentry-browser.js?v={js_version}"
