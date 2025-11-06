@@ -6,7 +6,6 @@ permissions, visibility, and custom badges.
 """
 
 from nicegui import ui
-from typing import Optional
 from models.user import Permission
 
 

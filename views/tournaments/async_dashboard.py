@@ -289,10 +289,6 @@ class AsyncDashboardView:
 
     def _render_status(self, race: AsyncTournamentRace):
         """Render status cell."""
-        status_label = race.status.replace('_', ' ').title()
-        if race.reattempted:
-            status_label += ' (Reattempt)'
-
         # Use Badge component for race status
         Badge.race_status(race.status)
         if race.reattempted:
