@@ -280,7 +280,107 @@ class MyService:
 
 ## Migrated Components
 
+### Service Layer (11 files total) ✅
+
+**Migration completed**: November 5, 2025
+
+All service files have been migrated from the deprecated `AuthorizationService` to the new permission framework. A total of **28+ permission checks** were replaced across 11 files.
+
+#### Global Permission Migrations (7 files, 24 checks)
+
+1. **application/services/organization_request_service.py** (2 checks)
+   - Pattern: `is_superadmin()` → `user.has_permission(Permission.SUPERADMIN)`
+   - Methods:
+     - `list_pending_requests()`: Requires SUPERADMIN
+     - `list_reviewed_requests()`: Requires SUPERADMIN
+
+2. **application/services/user_service.py** (6 checks)
+   - Pattern: `can_access_admin_panel()` → `user.has_permission(Permission.ADMIN)`
+   - Pattern: `can_moderate()` → `user.has_permission(Permission.MODERATOR)`
+   - Methods:
+     - `get_all_users()`: Requires ADMIN
+     - `search_users()`: Requires ADMIN
+     - `admin_unlink_racetime_account()`: Requires ADMIN
+     - `get_all_racetime_accounts()`: Requires ADMIN
+     - `search_racetime_accounts()`: Requires ADMIN
+     - `get_racetime_link_statistics()`: Requires ADMIN
+
+3. **application/services/racetime_bot_service.py** (9 checks)
+   - Pattern: `can_access_admin_panel()` → `user.has_permission(Permission.ADMIN)`
+   - All methods require ADMIN:
+     - `get_all_bots()`, `get_bot_by_id()`, `create_bot()`, `update_bot()`, `restart_bot()`
+     - `get_bots_for_organization()`, `assign_bot_to_organization()`
+     - `unassign_bot_from_organization()`, `get_organizations_for_bot()`
+
+4. **application/services/racetime_chat_command_service.py** (4 checks)
+   - Pattern: `can_access_admin_panel()` → `user.has_permission(Permission.ADMIN)`
+   - Methods:
+     - `get_all_commands()`, `create_command()`, `update_command()`, `delete_command()`
+
+5. **application/services/discord_guild_service.py**
+   - Removed unused `AuthorizationService` import
+   - No actual permission check changes needed
+
+6. **application/services/feature_flag_service.py**
+   - Removed unused `AuthorizationService` import
+   - No actual permission check changes needed
+
+#### Organization-Scoped Permission Migrations (1 file, 3 checks)
+
+7. **application/services/racer_verification_service.py** (3 checks)
+   - Pattern: `can_manage_org_members()` → `AuthorizationServiceV2.can("member:manage", ...)`
+   - Methods:
+     - `create_verification()`: Requires member management permission
+     - `update_verification()`: Requires member management permission
+     - `delete_verification()`: Requires member management permission
+   - **Note**: Only service file migrated to AuthorizationServiceV2 policy framework
+
+#### API Layer Migrations (2 files, 4+ checks)
+
+8. **api/deps.py**
+   - Simplified `require_permission()` dependency factory
+   - Before: 3 separate if statements checking different permission types via AuthorizationService
+   - After: Single check using `user.has_permission(required)`
+   - Impact: All API endpoints using `require_permission` dependency benefit from simplified logic
+
+9. **api/routes/discord_scheduled_events.py** (4 usage sites)
+   - Created `_can_manage_discord_events()` helper function
+   - Pattern: Custom inline helper (SUPERADMIN globally OR ADMIN role in organization)
+   - Replaced 4 usages across endpoints:
+     - `list_events()`, `get_events_for_match()`, `sync_events()`, `delete_event_for_match()`
+
+#### Documentation & Examples (2 files)
+
+10. **application/services/__init__.py**
+    - Removed `AuthorizationService` from imports
+    - Removed `AuthorizationService` from `__all__` exports
+    - Kept `AuthorizationServiceV2` in exports
+
+11. **docs/examples/system_user_id_example.py**
+    - Updated example to use `Permission` enum
+    - Changed from: `AuthorizationService.can_access_admin_panel(user)`
+    - Changed to: `user.has_permission(Permission.ADMIN)`
+
+#### Deleted Files (2 files)
+
+- **application/services/authorization_service.py**: Deleted (deprecated service, 189 lines)
+- **tests/unit/test_services_authorization.py**: Deleted (empty test file with only placeholders)
+
+#### Summary
+
+- **Total Files Migrated**: 11
+- **Permission Checks Replaced**: 28+
+- **Global Permission Patterns**: 24 checks across 7 files
+- **Organization Permission Patterns**: 3 checks in 1 file (using AuthorizationServiceV2)
+- **API Layer Patterns**: 4+ checks in 2 files (simplified dependency + custom helper)
+- **Files Deleted**: 2 (deprecated service + empty tests)
+- **Documentation Updated**: 2 files (exports + examples)
+
+All service layer migration is **complete** and the deprecated `AuthorizationService` has been fully removed from the codebase.
+
 ### UI Components (6 total) ✅
+
+**Migration completed**: October-November 2025
 
 1. **views/user_profile/user_organizations.py**
    - Pattern: Organization-scoped → UIAuthorizationHelper
@@ -364,6 +464,52 @@ can_manage = self.ui_auth.can_manage_members(user, org_id)
 can_manage = await self.ui_auth.can_manage_members(user, org_id)
 ```
 
+## Testing
+
+Comprehensive testing has been implemented to validate the migration:
+
+### Integration Tests
+
+**File**: `tests/integration/test_ui_permissions.py` (Created November 5, 2025)
+
+Comprehensive test suite validating the entire permission system:
+
+- **Test Coverage**: 40+ test methods across 13 categories
+- **Fixtures**: 8 user/organization fixtures covering all permission levels
+- **Test Categories**:
+  1. Global Permission Tests (4) - Permission hierarchy validation
+  2. Organization Management Tests (4) - `can_manage_organization()`
+  3. Member Management Tests (3) - `can_manage_members()`
+  4. Tournament Management Tests (5) - `can_manage_tournaments()`
+  5. Async Tournament Tests (3) - `can_manage_async_tournaments()`
+  6. Race Review Tests (2) - `can_review_async_races()`
+  7. Scheduled Tasks Tests (3) - `can_manage_scheduled_tasks()`
+  8. RaceTime Profile Tests (2) - `can_manage_race_room_profiles()`
+  9. Live Race Tests (2) - `can_manage_live_races()`
+  10. Graceful Degradation Tests (2) - Null/invalid handling
+  11. Permission Hierarchy Tests (2) - Ordering and `has_permission()`
+  12. Multiple Organization Tests (1) - Permission scoping
+  13. Combined Permission Tests (2) - Global vs org permissions
+
+**Coverage**:
+- ✅ All Permission enum values (SUPERADMIN, ADMIN, MODERATOR, USER)
+- ✅ All organization roles (ADMIN, TOURNAMENT_MANAGER, etc.)
+- ✅ All UIAuthorizationHelper methods
+- ✅ Permission hierarchy behavior
+- ✅ Organization scoping and isolation
+- ✅ Global admin override behavior
+- ✅ Graceful degradation (null users, invalid orgs)
+
+### Running Tests
+
+```bash
+# Run all integration tests
+pytest tests/integration/test_ui_permissions.py -v
+
+# Run specific test category
+pytest tests/integration/test_ui_permissions.py::TestUIPermissions::test_superadmin_has_all_global_permissions -v
+```
+
 ## Testing Strategy
 
 ### Test Cases for Each Pattern
@@ -441,10 +587,12 @@ print(f"Policy check result: {can_manage}")
 
 ## Related Documentation
 
+- **[Permission Audit](../reference/PERMISSION_AUDIT.md)** - Comprehensive permission system audit (Created November 5, 2025)
 - **[Policy Framework](../systems/POLICY_FRAMEWORK.md)** - Core policy system design
 - **[Architecture Guide](../ARCHITECTURE.md)** - System architecture overview
 - **[Patterns & Conventions](../PATTERNS.md)** - Code patterns and best practices
 - **[UIAuthorizationHelper Tests](../../tests/unit/test_ui_authorization_helper.py)** - Test suite examples
+- **[UI Permission Integration Tests](../../tests/integration/test_ui_permissions.py)** - Integration test suite
 
 ## Migration Timeline
 
