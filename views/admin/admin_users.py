@@ -11,6 +11,7 @@ from models.user import Permission
 from application.services.core.user_service import UserService
 from components.dialogs import UserEditDialog, UserAddDialog
 from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
+from components.dialogs.admin.twitch_unlink_dialog import TwitchUnlinkDialog
 from components.datetime_label import DateTimeLabel
 import logging
 
@@ -46,24 +47,38 @@ class AdminUsersView:
                 with ui.element('div').classes('card-header'):
                     ui.label('User Management').classes('text-xl font-bold')
                 with ui.element('div').classes('card-body'):
-                    ui.label('View and manage user accounts, permissions, and access levels.').classes('text-secondary')
+                    ui.label(
+                        'View and manage user accounts, permissions, '
+                        'and access levels.'
+                    ).classes('text-secondary')
             
             # Search and filters
             with ui.element('div').classes('card'):
                 with ui.element('div').classes('card-body'):
-                    with ui.row().classes('full-width gap-4 items-center justify-between'):
+                    with ui.row().classes(
+                        'full-width gap-4 items-center justify-between'
+                    ):
                         # Search input
                         with ui.row().classes('items-center gap-4 flex-grow'):
                             search_input = ui.input(
                                 label='Search users',
                                 placeholder='Search by username...'
                             ).classes('flex-grow')
-                            search_input.on('update:model-value', lambda e: self._on_search_change(e.args))
-                        
+                            search_input.on(
+                                'update:model-value',
+                                lambda e: self._on_search_change(e.args)
+                            )
+
                         # Include inactive checkbox
                         with ui.row().classes('items-center gap-3'):
-                            inactive_switch = ui.checkbox('Include Inactive', value=self.include_inactive)
-                            inactive_switch.on('update:model-value', lambda e: self._on_filter_change(e.args))
+                            inactive_switch = ui.checkbox(
+                                'Include Inactive',
+                                value=self.include_inactive
+                            )
+                            inactive_switch.on(
+                                'update:model-value',
+                                lambda e: self._on_filter_change(e.args)
+                            )
 
                             # Refresh button
                             ui.button(
@@ -92,7 +107,8 @@ class AdminUsersView:
             'admins': len([u for u in all_users if u.is_admin()]),
             'moderators': len([u for u in all_users if u.is_moderator() and not u.is_admin()]),
             'users': len([u for u in all_users if not u.is_moderator()]),
-            'racetime_linked': len([u for u in all_users if u.racetime_id])
+            'racetime_linked': len([u for u in all_users if u.racetime_id]),
+            'twitch_linked': len([u for u in all_users if u.twitch_id])
         }
 
         with ui.element('div').classes('card'):
@@ -129,6 +145,11 @@ class AdminUsersView:
                     with ui.column().classes('items-center'):
                         ui.label(str(stats['racetime_linked'])).classes('text-3xl font-bold')
                         ui.label('RaceTime Linked').classes('text-sm text-secondary')
+
+                    # Twitch linked
+                    with ui.column().classes('items-center'):
+                        ui.label(str(stats['twitch_linked'])).classes('text-3xl font-bold')
+                        ui.label('Twitch Linked').classes('text-sm text-secondary')
     
     async def _refresh_users(self):
         """Refresh the user list."""
@@ -160,8 +181,12 @@ class AdminUsersView:
             if not self.users:
                 with ui.element('div').classes('card'):
                     with ui.element('div').classes('card-body text-center'):
-                        ui.label('No users found').classes('text-secondary text-lg')
-                        ui.label('Try adjusting your search or filters').classes('text-sm text-secondary')
+                        ui.label('No users found').classes(
+                            'text-secondary text-lg'
+                        )
+                        ui.label(
+                            'Try adjusting your search or filters'
+                        ).classes('text-sm text-secondary')
                 return
             
             # Create table using reusable component
@@ -169,7 +194,10 @@ class AdminUsersView:
                 async def render_user_cell(u: User):
                     with ui.row().classes('items-center gap-2'):
                         if u.discord_avatar:
-                            avatar_url = f"https://cdn.discordapp.com/avatars/{u.discord_id}/{u.discord_avatar}.png"
+                            avatar_url = (
+                                f"https://cdn.discordapp.com/avatars/"
+                                f"{u.discord_id}/{u.discord_avatar}.png"
+                            )
                             ui.image(avatar_url).classes('w-8 h-8 rounded-full')
                         else:
                             ui.icon('account_circle').classes('text-2xl')
@@ -182,7 +210,11 @@ class AdminUsersView:
                         ui.label('—').classes('text-secondary')
 
                 async def render_permission_cell(u: User):
-                    badge_class = 'badge-admin' if u.is_admin() else 'badge-moderator' if u.is_moderator() else 'badge-user'
+                    badge_class = (
+                        'badge-admin' if u.is_admin() else
+                        'badge-moderator' if u.is_moderator() else
+                        'badge-user'
+                    )
                     with ui.element('span').classes(f'badge {badge_class}'):
                         ui.label(u.permission.name)
 
@@ -210,21 +242,58 @@ class AdminUsersView:
                                     'Unlink',
                                     icon='link_off',
                                     on_click=lambda x=u: self._unlink_racetime(x)
-                                ).classes('btn btn-sm').props('flat size=sm color=negative')
+                                ).classes('btn btn-sm').props(
+                                    'flat size=sm color=negative'
+                                )
                     else:
                         with ui.row().classes('items-center gap-2'):
                             ui.icon('link_off').classes('text-sm text-secondary')
                             ui.label('Not linked').classes('text-sm text-secondary')
 
+                async def render_twitch_cell(u: User):
+                    if u.twitch_id:
+                        with ui.column().classes('gap-1'):
+                            with ui.row().classes('items-center gap-2'):
+                                ui.icon('link').classes('text-sm text-success')
+                                ui.link(
+                                    u.twitch_display_name,
+                                    f'https://www.twitch.tv/{u.twitch_name}',
+                                    new_tab=True
+                                ).classes('text-sm')
+                            # Can edit if self or admin with higher permission
+                            can_edit = (
+                                self.current_user.id == u.id or
+                                (self.current_user.has_permission(Permission.ADMIN) and
+                                 self.current_user.permission > u.permission)
+                            )
+                            if can_edit:
+                                ui.button(
+                                    'Unlink',
+                                    icon='link_off',
+                                    on_click=lambda x=u: self._unlink_twitch(x)
+                                ).classes('btn btn-sm').props(
+                                    'flat size=sm color=negative'
+                                )
+                    else:
+                        with ui.row().classes('items-center gap-2'):
+                            ui.icon('link_off').classes('text-sm text-secondary')
+                            ui.label('Not linked').classes(
+                                'text-sm text-secondary'
+                            )
+
                 async def render_actions_cell(u: User):
                     # Can edit if self or admin with higher permission
-                    can_edit = (self.current_user.id == u.id or 
-                               (self.current_user.has_permission(Permission.ADMIN) and 
-                                self.current_user.permission > u.permission))
-                    
+                    can_edit = (
+                        self.current_user.id == u.id or
+                        (self.current_user.has_permission(Permission.ADMIN) and
+                         self.current_user.permission > u.permission)
+                    )
+
                     # Can impersonate if SUPERADMIN and not yourself
-                    can_impersonate = (self.current_user.has_permission(Permission.SUPERADMIN) and 
-                                     self.current_user.id != u.id)
+                    can_impersonate = (
+                        self.current_user.has_permission(Permission.SUPERADMIN) and
+                        self.current_user.id != u.id
+                    )
                     
                     with ui.row().classes('gap-1'):
                         if can_edit:
@@ -242,15 +311,28 @@ class AdminUsersView:
                             ui.button(
                                 icon='person_search',
                                 on_click=lambda x=u: self._impersonate_user(x)
-                            ).classes('btn btn-sm').props('flat color=warning').tooltip('Impersonate User')
+                            ).classes('btn btn-sm').props(
+                                'flat color=warning'
+                            ).tooltip('Impersonate User')
 
                 columns = [
                     TableColumn(label='User', cell_render=render_user_cell),
-                    TableColumn(label='Discord ID', key='discord_id', cell_classes='text-sm font-mono'),
+                    TableColumn(
+                        label='Discord ID',
+                        key='discord_id',
+                        cell_classes='text-sm font-mono'
+                    ),
                     TableColumn(label='Email', cell_render=render_email_cell),
-                    TableColumn(label='Permission', cell_render=render_permission_cell),
+                    TableColumn(
+                        label='Permission',
+                        cell_render=render_permission_cell
+                    ),
                     TableColumn(label='Status', cell_render=render_status_cell),
-                    TableColumn(label='RaceTime', cell_render=render_racetime_cell),
+                    TableColumn(
+                        label='RaceTime',
+                        cell_render=render_racetime_cell
+                    ),
+                    TableColumn(label='Twitch', cell_render=render_twitch_cell),
                     TableColumn(label='Actions', cell_render=render_actions_cell),
                 ]
 
@@ -283,6 +365,20 @@ class AdminUsersView:
             user: User to unlink RaceTime account from
         """
         dialog = RacetimeUnlinkDialog(
+            user=user,
+            admin_user=self.current_user,
+            on_unlink=self._refresh_users
+        )
+        await dialog.show()
+
+    async def _unlink_twitch(self, user: User):
+        """
+        Open unlink Twitch dialog for user.
+
+        Args:
+            user: User to unlink Twitch account from
+        """
+        dialog = TwitchUnlinkDialog(
             user=user,
             admin_user=self.current_user,
             on_unlink=self._refresh_users
