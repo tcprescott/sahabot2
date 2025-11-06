@@ -156,6 +156,7 @@ body:not(.body--dark):not(.q-dark) .card-body {
     padding: 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: opacity 0.3s ease;
+    display: none; /* Hidden by default, JavaScript will show if needed */
 }
 
 .motd-banner .q-btn {
@@ -169,4 +170,12 @@ body:not(.body--dark):not(.q-dark) .card-body {
 
 .motd-banner a:hover {
     opacity: 0.9;
+}
+
+/* MOTD Preview in Dialog */
+.motd-preview {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.75rem;
+    border-radius: var(--radius-md);
 }

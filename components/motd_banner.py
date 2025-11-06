@@ -6,8 +6,6 @@ The banner can be dismissed by users, but will reappear if an admin updates the 
 """
 
 from __future__ import annotations
-from datetime import datetime, timezone
-from typing import Optional
 from nicegui import ui
 from application.services.core.settings_service import SettingsService
 
@@ -55,15 +53,7 @@ class MOTDBanner:
         # if MOTD editing permissions are ever expanded to non-admin users.
 
         # Create banner container with initial visibility controlled by JavaScript
-        with ui.element('div').props(f'id="{banner_id}"').classes(
-            'w-full motd-banner'
-        ).style(
-            'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); '
-            'color: white; '
-            'padding: 1rem; '
-            'box-shadow: 0 2px 8px rgba(0,0,0,0.15); '
-            'display: none;'  # Hidden by default, JS will show if needed
-        ):
+        with ui.element('div').props(f'id="{banner_id}"').classes('w-full motd-banner'):
             with ui.row().classes('items-center justify-between w-full gap-4'):
                 # Icon and message
                 with ui.row().classes('items-center gap-3 flex-1'):
@@ -75,9 +65,7 @@ class MOTDBanner:
                 ui.button(
                     icon='close',
                     on_click=None  # Will be handled by JavaScript
-                ).props(
-                    f'flat round dense id="{banner_id}-dismiss-btn"'
-                ).style('color: white;')
+                ).props(f'flat round dense id="{banner_id}-dismiss-btn"')
 
         # Add JavaScript to handle banner visibility and dismissal
         # Note: motd_updated is server-generated timestamp, but we escape it for safety

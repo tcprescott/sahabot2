@@ -33,34 +33,30 @@ class MOTDDialog(BaseDialog):
         await super().show()
 
     def _render_body(self) -> None:
-        with ui.element('div').classes('card-body'):
-            ui.label('Customize the message that appears in the banner at the top of pages.').classes('mb-4')
-            ui.label('HTML formatting is supported. Leave empty to disable the banner.').classes('mb-4 text-secondary')
+        ui.label('Customize the message that appears in the banner at the top of pages.').classes('mb-4')
+        ui.label('HTML formatting is supported. Leave empty to disable the banner.').classes('mb-4 text-secondary')
 
-            # Security note: HTML preview uses ui.html() which renders raw HTML.
-            # This is acceptable for admin-only content. Admins are trusted users.
-            # If MOTD editing is ever expanded to non-admin users, implement
-            # server-side HTML sanitization (e.g., bleach library).
+        # Security note: HTML preview uses ui.html() which renders raw HTML.
+        # This is acceptable for admin-only content. Admins are trusted users.
+        # If MOTD editing is ever expanded to non-admin users, implement
+        # server-side HTML sanitization (e.g., bleach library).
 
-            self.motd_input = ui.textarea(
-                label='MOTD Message',
-                value=self.current_motd,
-                placeholder='Enter your message here...'
-            ).classes('w-full').props('rows=4 autogrow')
+        self.motd_input = ui.textarea(
+            label='MOTD Message',
+            value=self.current_motd,
+            placeholder='Enter your message here...'
+        ).classes('w-full').props('rows=4 autogrow')
 
-            ui.label('Preview:').classes('mt-4 font-bold')
-            with ui.element('div').classes('p-3 rounded').style(
-                'background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); '
-                'color: white;'
-            ):
-                self.preview_label = ui.html(self.current_motd or '<em>No message set</em>')
+        ui.label('Preview:').classes('mt-4 font-bold')
+        with ui.element('div').classes('motd-preview'):
+            self.preview_label = ui.html(self.current_motd or '<em>No message set</em>')
 
-            # Update preview when input changes
-            def update_preview():
-                text = self.motd_input.value or '<em>No message set</em>'
-                self.preview_label.set_content(text)
+        # Update preview when input changes
+        def update_preview():
+            text = self.motd_input.value or '<em>No message set</em>'
+            self.preview_label.set_content(text)
 
-            self.motd_input.on('input', update_preview)
+        self.motd_input.on('input', update_preview)
 
         with self.create_actions_row():
             ui.button('Cancel', on_click=self.close).classes('btn')
