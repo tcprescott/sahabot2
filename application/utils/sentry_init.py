@@ -45,8 +45,9 @@ def _get_release_version() -> str:
             commit_sha = result.stdout.strip()
             if commit_sha:
                 return f"sahabot2@{commit_sha}"
-    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
-        pass
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
+        # Failed to get git commit SHA; falling back to default version.
+        logger.debug("Could not determine git commit SHA for Sentry release version: %s", e, exc_info=True)
 
     # Fallback to default version
     return "sahabot2@0.1.0"
