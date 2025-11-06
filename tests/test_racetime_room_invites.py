@@ -101,9 +101,9 @@ async def test_create_room_invites_linked_players():
     mock_tournament.racetime_bot = mock_bot_config
 
     # Mock the service
-    with patch('application.services.tournament_service.Match') as MockMatch, \
-         patch('application.services.tournament_service.RacetimeBot') as MockBot, \
-         patch('application.services.tournament_service.aiohttp.ClientSession') as MockSession:
+    with patch('application.services.tournaments.tournament_service.Match') as MockMatch, \
+         patch('application.services.tournaments.tournament_service.RacetimeBot') as MockBot, \
+         patch('application.services.tournaments.tournament_service.aiohttp.ClientSession') as MockSession:
 
         # Setup Match.filter mock
         mock_filter = AsyncMock()
@@ -241,9 +241,9 @@ async def test_create_room_handles_invite_failure():
     mock_tournament.racetime_bot = mock_bot_config
 
     # Mock the service
-    with patch('application.services.tournament_service.Match') as MockMatch, \
-         patch('application.services.tournament_service.RacetimeBot') as MockBot, \
-         patch('application.services.tournament_service.aiohttp.ClientSession') as MockSession:
+    with patch('application.services.tournaments.tournament_service.Match') as MockMatch, \
+         patch('application.services.tournaments.tournament_service.RacetimeBot') as MockBot, \
+         patch('application.services.tournaments.tournament_service.aiohttp.ClientSession') as MockSession:
 
         # Setup Match.filter mock
         mock_filter = AsyncMock()

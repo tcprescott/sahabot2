@@ -485,7 +485,7 @@ async def test_user_id_lookup_from_racetime_id():
                 return mock_user
             return None
 
-        with patch('racetime.client.UserRepository') as MockRepo:
+        with patch('application.repositories.user_repository.UserRepository') as MockRepo:
             mock_repo_instance = AsyncMock()
             mock_repo_instance.get_by_racetime_id = mock_get_by_racetime_id
             MockRepo.return_value = mock_repo_instance
@@ -583,7 +583,7 @@ async def test_user_id_none_when_not_linked():
         async def mock_get_by_racetime_id(racetime_id: str):
             return None
 
-        with patch('racetime.client.UserRepository') as MockRepo:
+        with patch('application.repositories.user_repository.UserRepository') as MockRepo:
             mock_repo_instance = AsyncMock()
             mock_repo_instance.get_by_racetime_id = mock_get_by_racetime_id
             MockRepo.return_value = mock_repo_instance

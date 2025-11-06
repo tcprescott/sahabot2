@@ -176,7 +176,7 @@ class TestOrphanedEventCleanup:
         assert finished_match.id in event_ids
         assert disabled_match.id in event_ids
 
-    @patch('application.services.discord_scheduled_event_service.get_bot_instance')
+    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_cleanup_orphaned_events_service(
         self, mock_get_bot, db, sample_org, sample_tournament, sample_discord_guild
     ):

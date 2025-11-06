@@ -61,7 +61,7 @@ async def sample_match(db, sample_tournament):
 class TestDiscordScheduledEventListeners:
     """Test cases for Discord scheduled event listeners."""
 
-    @patch('application.services.discord_scheduled_event_service.get_bot_instance')
+    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_match_scheduled_event_creates_discord_event(
         self, mock_get_bot, db, sample_org, sample_tournament, sample_discord_guild
     ):
@@ -99,7 +99,7 @@ class TestDiscordScheduledEventListeners:
         events = await DiscordScheduledEvent.filter(match_id=match.id).all()
         assert len(events) >= 1
 
-    @patch('application.services.discord_scheduled_event_service.get_bot_instance')
+    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_match_updated_event_updates_discord_event(
         self, mock_get_bot, db, sample_org, sample_match, sample_discord_guild
     ):
@@ -139,7 +139,7 @@ class TestDiscordScheduledEventListeners:
         # Verify update was called
         assert mock_discord_event.edit.called or mock_guild.fetch_scheduled_event.called
 
-    @patch('application.services.discord_scheduled_event_service.get_bot_instance')
+    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_match_deleted_event_deletes_discord_event(
         self, mock_get_bot, db, sample_org, sample_match, sample_discord_guild
     ):
@@ -179,7 +179,7 @@ class TestDiscordScheduledEventListeners:
         events = await DiscordScheduledEvent.filter(match_id=sample_match.id).all()
         assert len(events) == 0
 
-    @patch('application.services.discord_scheduled_event_service.get_bot_instance')
+    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_event_not_created_when_disabled(
         self, mock_get_bot, db, sample_org, sample_discord_guild
     ):
@@ -238,7 +238,7 @@ class TestDiscordScheduledEventListeners:
         )
         await sample_tournament.discord_event_guilds.add(guild2)
 
-        with patch('application.services.discord_scheduled_event_service.get_bot_instance') as mock_get_bot:
+        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance') as mock_get_bot:
             # Mock Discord bot
             mock_bot = MagicMock()
 

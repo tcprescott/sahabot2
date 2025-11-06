@@ -41,7 +41,7 @@ async def test_auto_accept_join_request_for_match_player():
     }
 
     # Mock RacetimeRoomService to return that user is a match player
-    with patch('racetime.client.RacetimeRoomService') as MockService:
+    with patch('application.services.racetime.racetime_room_service.RacetimeRoomService') as MockService:
         mock_service_instance = AsyncMock()
         mock_service_instance.is_player_on_match = AsyncMock(return_value=(True, 1))
         MockService.return_value = mock_service_instance
@@ -81,7 +81,7 @@ async def test_no_auto_accept_for_non_match_player():
     }
 
     # Mock RacetimeRoomService to return that user is NOT a match player
-    with patch('racetime.client.RacetimeRoomService') as MockService:
+    with patch('application.services.racetime.racetime_room_service.RacetimeRoomService') as MockService:
         mock_service_instance = AsyncMock()
         mock_service_instance.is_player_on_match = AsyncMock(return_value=(False, 1))
         MockService.return_value = mock_service_instance
@@ -119,7 +119,7 @@ async def test_no_auto_accept_when_no_match_found():
     }
 
     # Mock RacetimeRoomService to return no match found
-    with patch('racetime.client.RacetimeRoomService') as MockService:
+    with patch('application.services.racetime.racetime_room_service.RacetimeRoomService') as MockService:
         mock_service_instance = AsyncMock()
         mock_service_instance.is_player_on_match = AsyncMock(return_value=(False, None))
         MockService.return_value = mock_service_instance
@@ -166,7 +166,7 @@ async def test_auto_accept_triggered_on_requested_status():
         handler.accept_request = AsyncMock(side_effect=track_accept)
 
         # Mock RacetimeRoomService
-        with patch('racetime.client.RacetimeRoomService') as MockService:
+        with patch('application.services.racetime.racetime_room_service.RacetimeRoomService') as MockService:
             mock_service_instance = AsyncMock()
             mock_service_instance.is_player_on_match = AsyncMock(return_value=(True, 1))
             MockService.return_value = mock_service_instance
