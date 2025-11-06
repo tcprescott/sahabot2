@@ -9,6 +9,7 @@ import logging
 from typing import Optional, Dict, Any
 from models import User, RacetimeChatCommand
 from application.services.randomizer.sm_service import SMService
+from application.services.randomizer.sm_defaults import get_varia_settings, get_dash_settings
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +40,10 @@ async def handle_varia(
         service = SMService()
 
         # Parse preset name from args or use default
-        preset_name = args[0] if args else 'default'
+        preset_name = args[0] if args else 'standard'
 
-        # TODO: Load preset from database when preset system is integrated
-        # For now, use basic default settings
-        settings = {
-            'preset': preset_name,
-            'logic': 'casual',
-            'itemProgression': 'normal',
-            'morphPlacement': 'early',
-        }
+        # Get default settings for preset
+        settings = get_varia_settings(preset_name)
 
         logger.info("Generating VARIA seed with preset %s", preset_name)
 
@@ -91,15 +86,10 @@ async def handle_dash(
         service = SMService()
 
         # Parse preset name from args or use default
-        preset_name = args[0] if args else 'default'
+        preset_name = args[0] if args else 'standard'
 
-        # TODO: Load preset from database when preset system is integrated
-        # For now, use basic default settings
-        settings = {
-            'preset': preset_name,
-            'area_rando': False,
-            'major_minor_split': True,
-        }
+        # Get default settings for preset
+        settings = get_dash_settings(preset_name)
 
         logger.info("Generating DASH seed with preset %s", preset_name)
 

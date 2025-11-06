@@ -214,4 +214,7 @@ class SMService:
             }
             return await self.generate_varia(multiworld_settings, tournament, spoilers, spoiler_key)
         else:
-            raise ValueError(f"Unknown SM randomizer type: {randomizer_type}")
+            raise ValueError(
+                f"Unknown SM randomizer type: {randomizer_type}. "
+                f"Supported types: 'varia', 'dash', 'total', 'multiworld'"
+            )

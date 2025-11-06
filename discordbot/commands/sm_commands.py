@@ -11,6 +11,7 @@ import logging
 from typing import Optional
 
 from application.services.randomizer.sm_service import SMService
+from application.services.randomizer.sm_defaults import get_varia_settings, get_dash_settings
 
 logger = logging.getLogger(__name__)
 
@@ -55,14 +56,8 @@ class SMCommands(commands.Cog):
         await interaction.response.defer()
 
         try:
-            # TODO: Load preset from database when preset system is integrated
-            # For now, use basic default settings
-            settings = {
-                'preset': preset,
-                'logic': 'casual',
-                'itemProgression': 'normal',
-                'morphPlacement': 'early',
-            }
+            # Get default settings for preset
+            settings = get_varia_settings(preset)
 
             logger.info(
                 "Generating VARIA seed for user %s with preset %s",
@@ -134,13 +129,9 @@ class SMCommands(commands.Cog):
         await interaction.response.defer()
 
         try:
-            # TODO: Load preset from database when preset system is integrated
-            # For now, use basic default settings
-            settings = {
-                'preset': preset,
-                'area_rando': area_rando,
-                'major_minor_split': True,
-            }
+            # Get default settings for preset and merge with options
+            settings = get_dash_settings(preset)
+            settings['area_rando'] = area_rando
 
             logger.info(
                 "Generating DASH seed for user %s with preset %s",

@@ -141,7 +141,8 @@ async def add_sm_example_presets():
 
         if not system_user:
             logger.warning("No system user found. Using first admin user.")
-            system_user = await User.filter(permission=3).first()  # ADMIN permission
+            from models import Permission
+            system_user = await User.filter(permission=Permission.ADMIN).first()
 
         if not system_user:
             logger.error("No suitable user found for preset creation. Please create a user first.")
