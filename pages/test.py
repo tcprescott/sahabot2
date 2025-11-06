@@ -68,21 +68,25 @@ def register():
                         ui.button('Loading Button', on_click=lambda: ui.notify('Loading...')).props('loading').classes('btn')
 
                         # Dialog example button
-                        async def show_example_dialog():
-                            class ExampleDialog(BaseDialog):
-                                def _render_body(self):
-                                    ui.label('This is an example dialog using BaseDialog.')
-                                    ui.label('It demonstrates the standard dialog structure.').classes('text-secondary mt-2')
-                                    ui.separator().classes('my-4')
-                                    with self.create_actions_row():
-                                        ui.button('Cancel', on_click=self.close).classes('btn')
-                                        ui.button('OK', on_click=self.close).classes('btn').props('color=positive')
+                        def create_dialog_button():
+                            """Create a button that shows an example dialog."""
+                            async def show_example_dialog():
+                                class ExampleDialog(BaseDialog):
+                                    def _render_body(self):
+                                        ui.label('This is an example dialog using BaseDialog.')
+                                        ui.label('It demonstrates the standard dialog structure.').classes('text-secondary mt-2')
+                                        ui.separator().classes('my-4')
+                                        with self.create_actions_row():
+                                            ui.button('Cancel', on_click=self.close).classes('btn')
+                                            ui.button('OK', on_click=self.close).classes('btn').props('color=positive')
 
-                            dialog = ExampleDialog()
-                            dialog.create_dialog(title='Example Dialog', icon='info')
-                            await dialog.show()
+                                dialog = ExampleDialog()
+                                dialog.create_dialog(title='Example Dialog', icon='info')
+                                await dialog.show()
 
-                        ui.button('Show Dialog', icon='open_in_new', on_click=show_example_dialog).classes('btn btn-primary')
+                            return ui.button('Show Dialog', icon='open_in_new', on_click=show_example_dialog).classes('btn btn-primary')
+
+                        create_dialog_button()
 
             # Badges Section
             with ui.element('div').classes('card mt-4'):
@@ -141,7 +145,7 @@ def register():
                     ui.color_picker(label='Choose color', value='#3b82f6')
 
                     ui.label('Date Input').classes('font-bold mb-2 mt-4')
-                    ui.date(value='2025-11-06').classes('w-full')
+                    ui.date(value=datetime.now().strftime('%Y-%m-%d')).classes('w-full')
 
                     ui.label('Time Input').classes('font-bold mb-2 mt-4')
                     ui.time(value='12:00').classes('w-full')
@@ -265,8 +269,14 @@ def register():
                 with ui.element('div').classes('card-header'):
                     ui.label('Material Icons').classes('text-2xl font-bold')
                 with ui.element('div').classes('card-body'):
+                    # Common Material icons for demonstration
+                    icon_names = [
+                        'home', 'person', 'settings', 'favorite', 'star', 'info',
+                        'warning', 'error', 'check_circle', 'delete', 'edit', 'search',
+                        'menu', 'close', 'add', 'remove'
+                    ]
                     with ui.row().classes('gap-md flex-wrap'):
-                        for icon in ['home', 'person', 'settings', 'favorite', 'star', 'info', 'warning', 'error', 'check_circle', 'delete', 'edit', 'search', 'menu', 'close', 'add', 'remove']:
+                        for icon in icon_names:
                             with ui.column().classes('items-center gap-sm'):
                                 ui.icon(icon).classes('icon-large')
                                 ui.label(icon).classes('text-sm')
