@@ -14,7 +14,7 @@ from application.repositories.racer_verification_repository import (
     UserRacerVerificationRepository,
 )
 from application.repositories.organization_repository import OrganizationRepository
-from application.services.authorization_service import AuthorizationService
+from application.services.authorization_service_v2 import AuthorizationServiceV2
 from application.services.racetime_api_service import RacetimeApiService
 from application.services.audit_service import AuditService
 from discordbot.client import get_bot_instance
@@ -29,7 +29,7 @@ class RacerVerificationService:
         self.repository = RacerVerificationRepository()
         self.user_verification_repository = UserRacerVerificationRepository()
         self.org_repository = OrganizationRepository()
-        self.auth_service = AuthorizationService()
+        self.auth_service = AuthorizationServiceV2()
         self.racetime_api = RacetimeApiService()
         self.audit = AuditService()
 
@@ -63,9 +63,11 @@ class RacerVerificationService:
             Created RacerVerification or None if unauthorized
         """
         # Check permissions
-        if not await self.auth_service.can_manage_org_members(
+        if not await self.auth_service.can(
             current_user,
-            organization_id
+            action="member:manage",
+            resource=self.auth_service.get_resource_identifier("member", "*"),
+            organization_id=organization_id
         ):
             logger.warning(
                 "User %s attempted to create racer verification for org %s without permission",
@@ -157,9 +159,11 @@ class RacerVerificationService:
             return None
 
         # Check permissions
-        if not await self.auth_service.can_manage_org_members(
+        if not await self.auth_service.can(
             current_user,
-            verification.organization_id
+            action="member:manage",
+            resource=self.auth_service.get_resource_identifier("member", "*"),
+            organization_id=verification.organization_id
         ):
             logger.warning(
                 "User %s attempted to update racer verification %s without permission",
@@ -204,9 +208,11 @@ class RacerVerificationService:
             return False
 
         # Check permissions
-        if not await self.auth_service.can_manage_org_members(
+        if not await self.auth_service.can(
             current_user,
-            verification.organization_id
+            action="member:manage",
+            resource=self.auth_service.get_resource_identifier("member", "*"),
+            organization_id=verification.organization_id
         ):
             logger.warning(
                 "User %s attempted to delete racer verification %s without permission",

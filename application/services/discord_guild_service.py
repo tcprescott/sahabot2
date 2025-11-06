@@ -15,7 +15,6 @@ from models import User
 from models.discord_guild import DiscordGuild
 from application.repositories.discord_guild_repository import DiscordGuildRepository
 from application.services.organization_service import OrganizationService
-from application.services.authorization_service import AuthorizationService
 from application.services.discord_permissions_config import AsyncTournamentChannelPermissions
 from application.events import EventBus, DiscordGuildLinkedEvent, DiscordGuildUnlinkedEvent
 from config import settings
@@ -46,7 +45,6 @@ class DiscordGuildService:
     def __init__(self):
         self.repo = DiscordGuildRepository()
         self.org_service = OrganizationService()
-        self.auth_service = AuthorizationService()
 
     def generate_bot_invite_url(self, organization_id: int, redirect_uri: str) -> str:
         """

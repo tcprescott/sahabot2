@@ -7,7 +7,6 @@ from typing import Optional
 
 from models import User, OrganizationFeatureFlag, Permission, FeatureFlag
 from application.repositories.feature_flag_repository import FeatureFlagRepository
-from application.services.authorization_service import AuthorizationService
 from application.services.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,6 @@ class FeatureFlagService:
 
     def __init__(self):
         self.repository = FeatureFlagRepository()
-        self.auth_service = AuthorizationService()
         self.audit_service = AuditService()
 
     async def is_feature_enabled(

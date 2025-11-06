@@ -3,7 +3,6 @@
 from typing import Callable, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from application.services.authorization_service import AuthorizationService
 from application.services.api_token_service import ApiTokenService
 from application.services.rate_limit_service import RateLimitService
 from config import settings
@@ -32,15 +31,10 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
 
 
 def require_permission(required: Permission) -> Callable[[User], User]:
-    """Dependency factory to enforce a minimum permission level using AuthorizationService."""
+    """Dependency factory to enforce a minimum permission level."""
 
     async def _enforce(user: User = Depends(get_current_user)) -> User:
-        authz = AuthorizationService()
-        if required == Permission.ADMIN and not authz.can_access_admin_panel(user):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-        if required == Permission.MODERATOR and not authz.can_moderate(user):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
-        if required == Permission.SUPERADMIN and not user.has_permission(Permission.SUPERADMIN):
+        if not user.has_permission(required):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return user
 

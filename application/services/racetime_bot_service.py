@@ -8,7 +8,6 @@ from typing import Optional
 from models import User, Permission, RacetimeBot, RacetimeBotOrganization, Organization
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.organization_repository import OrganizationRepository
-from application.services.authorization_service import AuthorizationService
 from application.events import (
     EventBus,
     RacetimeBotCreatedEvent,
@@ -26,7 +25,6 @@ class RacetimeBotService:
     def __init__(self):
         self.repository = RacetimeBotRepository()
         self.org_repository = OrganizationRepository()
-        self.auth_service = AuthorizationService()
 
     async def get_all_bots(self, current_user: Optional[User]) -> list[RacetimeBot]:
         """
@@ -40,9 +38,7 @@ class RacetimeBotService:
         Returns:
             List of all bots (or empty list if unauthorized)
         """
-        if not current_user or not self.auth_service.can_access_admin_panel(
-            current_user
-        ):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized access attempt to view all RaceTime bots by user %s",
                 current_user.id if current_user else None,
@@ -77,9 +73,7 @@ class RacetimeBotService:
         Returns:
             Bot or None if not found/unauthorized
         """
-        if not current_user or not self.auth_service.can_access_admin_panel(
-            current_user
-        ):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized access attempt to view RaceTime bot %s by user %s",
                 bot_id,
@@ -116,10 +110,10 @@ class RacetimeBotService:
         Returns:
             Created bot or None if unauthorized
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to create RaceTime bot by user %s",
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return None
 
@@ -169,11 +163,11 @@ class RacetimeBotService:
         Returns:
             Updated bot or None if not found/unauthorized
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to update RaceTime bot %s by user %s",
                 bot_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return None
 
@@ -292,11 +286,11 @@ class RacetimeBotService:
         Returns:
             True if restarted successfully, False if not found/unauthorized/inactive
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to restart RaceTime bot %s by user %s",
                 bot_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return False
 
@@ -357,7 +351,7 @@ class RacetimeBotService:
         # Check if user has access to this organization
         is_member = await self.org_repository.get_member(organization_id, current_user.id) is not None
 
-        if not is_member and not self.auth_service.can_access_admin_panel(current_user):
+        if not is_member and not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to view RaceTime bots for org %s by user %s",
                 organization_id,
@@ -383,12 +377,12 @@ class RacetimeBotService:
         Returns:
             Assignment or None if unauthorized
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to assign bot %s to org %s by user %s",
                 bot_id,
                 organization_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return None
 
@@ -412,12 +406,12 @@ class RacetimeBotService:
         Returns:
             True if unassigned, False if not found/unauthorized
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to unassign bot %s from org %s by user %s",
                 bot_id,
                 organization_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return False
 
@@ -440,11 +434,11 @@ class RacetimeBotService:
         Returns:
             List of organizations (or empty if unauthorized)
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to view orgs for bot %s by user %s",
                 bot_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return []
 

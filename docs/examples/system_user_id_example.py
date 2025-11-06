@@ -7,8 +7,7 @@ processing RaceTime events with proper authorization checks.
 
 from application.events import EventBus, RacetimeEntrantStatusChangedEvent
 from application.services.tournament_service import TournamentService
-from application.services.authorization_service import AuthorizationService
-from models import SYSTEM_USER_ID, is_system_user_id, is_authenticated_user_id, get_user_id_description
+from models import SYSTEM_USER_ID, Permission, is_system_user_id, is_authenticated_user_id, get_user_id_description
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,7 +36,6 @@ async def handle_race_finish(event: RacetimeEntrantStatusChangedEvent):
     
     # Initialize services
     tournament_service = TournamentService()
-    auth_service = AuthorizationService()
     
     # Handle based on user_id type
     if is_authenticated_user_id(event.user_id):
@@ -168,12 +166,19 @@ async def handle_racetime_bot_command(racetime_user_id: str, command: str, race_
     
     # Example: Privileged command that requires organization admin
     if command.startswith("!forceforfeit"):
-        auth_service = AuthorizationService()
-        
         # Get organization context (would come from race room metadata)
         org_id = 1  # Example
         
-        if auth_service.can_manage_tournament(user, org_id):
+        # Note: In practice, you would fetch the user and check permissions
+        # using AuthorizationServiceV2 or UIAuthorizationHelper
+        # For this example, we'll just show the pattern:
+        
+        # Get user object
+        from application.repositories.user_repository import UserRepository
+        user_repo = UserRepository()
+        user = await user_repo.get_by_id(user_id)
+        
+        if user and user.has_permission(Permission.ADMIN):
             # User has permission - execute command
             logger.info("User %s executing privileged command", user_id)
             # Implementation...

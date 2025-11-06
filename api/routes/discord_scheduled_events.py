@@ -9,10 +9,37 @@ from api.schemas.discord_scheduled_event import (
 )
 from api.deps import get_current_user, enforce_rate_limit
 from application.services.discord_scheduled_event_service import DiscordScheduledEventService
-from application.services.authorization_service import AuthorizationService
-from models import User
+from models import User, Permission
 
 router = APIRouter(prefix="/discord-events", tags=["discord-events"])
+
+
+async def _can_manage_discord_events(user: User, organization_id: int) -> bool:
+    """
+    Check if user can manage Discord scheduled events in an organization.
+    
+    Requires SUPERADMIN global permission OR ADMIN permission in the organization.
+    """
+    if not user:
+        return False
+    
+    # SUPERADMINs can manage Discord events in any organization
+    if user.has_permission(Permission.SUPERADMIN):
+        return True
+    
+    # Check if user has ADMIN permission in the org
+    from application.repositories.organization_repository import OrganizationRepository
+    repo = OrganizationRepository()
+    member = await repo.get_member(organization_id, user.id)
+    
+    if not member:
+        return False
+    
+    # Check if member has admin permissions
+    await member.fetch_related('permissions')
+    permission_names = [p.permission_name for p in member.permissions]
+    
+    return 'ADMIN' in permission_names
 
 
 # ==================== DISCORD SCHEDULED EVENTS ====================
@@ -54,8 +81,7 @@ async def list_events(
         HTTPException: 403 if user lacks permission
     """
     # Check permissions
-    auth_z = AuthorizationService()
-    if not auth_z.can_manage_discord_events(current_user, organization_id):
+    if not await _can_manage_discord_events(current_user, organization_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
 
     service = DiscordScheduledEventService()
@@ -104,8 +130,7 @@ async def get_match_events(
         HTTPException: 403 if user lacks permission
     """
     # Check permissions
-    auth_z = AuthorizationService()
-    if not auth_z.can_manage_discord_events(current_user, organization_id):
+    if not await _can_manage_discord_events(current_user, organization_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
 
     service = DiscordScheduledEventService()
@@ -155,8 +180,7 @@ async def sync_events(
         HTTPException: 403 if user lacks permission
     """
     # Check permissions
-    auth_z = AuthorizationService()
-    if not auth_z.can_manage_discord_events(current_user, organization_id):
+    if not await _can_manage_discord_events(current_user, organization_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
 
     service = DiscordScheduledEventService()
@@ -230,8 +254,7 @@ async def delete_match_events(
         HTTPException: 404 if match not found
     """
     # Check permissions
-    auth_z = AuthorizationService()
-    if not auth_z.can_manage_discord_events(current_user, organization_id):
+    if not await _can_manage_discord_events(current_user, organization_id):
         raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
 
     service = DiscordScheduledEventService()

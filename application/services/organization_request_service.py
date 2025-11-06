@@ -8,9 +8,9 @@ from typing import List, Optional
 import logging
 
 from models import User
+from models.user import Permission
 from models.organization_request import OrganizationRequest
 from application.repositories.organization_request_repository import OrganizationRequestRepository
-from application.services.authorization_service import AuthorizationService
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,6 @@ class OrganizationRequestService:
 
     def __init__(self) -> None:
         self.repo = OrganizationRequestRepository()
-        self.auth_service = AuthorizationService()
 
     async def list_pending_requests(self, user: Optional[User]) -> List[OrganizationRequest]:
         """
@@ -34,7 +33,7 @@ class OrganizationRequestService:
         Returns:
             List of pending requests, or empty list if user is not SUPERADMIN
         """
-        if not user or not self.auth_service.is_superadmin(user):
+        if not user or not user.has_permission(Permission.SUPERADMIN):
             logger.warning("Unauthorized list_pending_requests by user %s", getattr(user, 'id', None))
             return []
 
@@ -52,7 +51,7 @@ class OrganizationRequestService:
         Returns:
             List of reviewed requests, or empty list if user is not SUPERADMIN
         """
-        if not user or not self.auth_service.is_superadmin(user):
+        if not user or not user.has_permission(Permission.SUPERADMIN):
             logger.warning("Unauthorized list_reviewed_requests by user %s", getattr(user, 'id', None))
             return []
 

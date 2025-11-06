@@ -9,7 +9,6 @@ from datetime import datetime
 from models import User, Permission, SYSTEM_USER_ID
 from typing import Optional
 from application.repositories.user_repository import UserRepository
-from application.services.authorization_service import AuthorizationService
 from application.events import EventBus, UserCreatedEvent, UserPermissionChangedEvent
 
 logger = logging.getLogger(__name__)
@@ -132,7 +131,6 @@ class UserService:
             discord_username=discord_username,
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
-            discord_email=discord_email,
             permission=permission,
         )
 
@@ -267,7 +265,7 @@ class UserService:
             list[User]: List of users (empty list if unauthorized)
         """
         # Check authorization
-        if not AuthorizationService.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning("Unauthorized get_all_users attempt by user %s", getattr(current_user, 'id', None))
             return []
         
@@ -285,7 +283,7 @@ class UserService:
             list[User]: List of matching users (empty list if unauthorized)
         """
         # Check authorization
-        if not AuthorizationService.can_moderate(current_user):
+        if not current_user or not current_user.has_permission(Permission.MODERATOR):
             logger.warning("Unauthorized search_users attempt by user %s", getattr(current_user, 'id', None))
             return []
         
@@ -415,11 +413,10 @@ class UserService:
             Optional[User]: Updated user if successful, None if unauthorized or not found
         """
         # Check admin permissions
-        auth_service = AuthorizationService()
-        if not auth_service.can_access_admin_panel(admin_user):
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to admin unlink RaceTime account without permission",
-                admin_user.id
+                getattr(admin_user, 'id', None)
             )
             return None
 
@@ -536,11 +533,10 @@ class UserService:
             list[User]: List of users with RaceTime accounts (empty if unauthorized)
         """
         # Check admin permissions
-        auth_service = AuthorizationService()
-        if not auth_service.can_access_admin_panel(admin_user):
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to view RaceTime accounts without permission",
-                admin_user.id
+                getattr(admin_user, 'id', None)
             )
             return []
 
@@ -575,11 +571,10 @@ class UserService:
             list[User]: List of matching users (empty if unauthorized)
         """
         # Check admin permissions
-        auth_service = AuthorizationService()
-        if not auth_service.can_access_admin_panel(admin_user):
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to search RaceTime accounts without permission",
-                admin_user.id
+                getattr(admin_user, 'id', None)
             )
             return []
 
@@ -605,11 +600,10 @@ class UserService:
             dict: Statistics including total users, linked users, etc.
         """
         # Check admin permissions
-        auth_service = AuthorizationService()
-        if not auth_service.can_access_admin_panel(admin_user):
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to view RaceTime stats without permission",
-                admin_user.id
+                getattr(admin_user, 'id', None)
             )
             return {}
 

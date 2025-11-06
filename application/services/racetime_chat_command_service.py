@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from typing import Optional, Callable, Awaitable
 from models import (
     User,
+    Permission,
     RacetimeChatCommand,
     CommandScope,
     CommandResponseType,
@@ -16,7 +17,6 @@ from models import (
 from application.repositories.racetime_chat_command_repository import (
     RacetimeChatCommandRepository,
 )
-from application.services.authorization_service import AuthorizationService
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,6 @@ class RacetimeChatCommandService:
 
     def __init__(self):
         self.repository = RacetimeChatCommandRepository()
-        self.auth_service = AuthorizationService()
         # Command cooldown tracking: {command_id: {user_id: last_use_timestamp}}
         self._cooldowns: dict[int, dict[str, datetime]] = {}
         # Registry of dynamic command handlers
@@ -61,9 +60,7 @@ class RacetimeChatCommandService:
         Returns:
             List of commands or empty list if unauthorized
         """
-        if not current_user or not self.auth_service.can_access_admin_panel(
-            current_user
-        ):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized access to get all commands by user %s",
                 current_user.id if current_user else None,
@@ -158,9 +155,10 @@ class RacetimeChatCommandService:
         Returns:
             Created command or None if unauthorized
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
-                "Unauthorized attempt to create command by user %s", current_user.id
+                "Unauthorized attempt to create command by user %s",
+                getattr(current_user, 'id', None)
             )
             return None
 
@@ -214,11 +212,11 @@ class RacetimeChatCommandService:
         Returns:
             Updated command or None if unauthorized/not found
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to update command %s by user %s",
                 command_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return None
 
@@ -237,11 +235,11 @@ class RacetimeChatCommandService:
         Returns:
             True if deleted, False if unauthorized/not found
         """
-        if not self.auth_service.can_access_admin_panel(current_user):
+        if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to delete command %s by user %s",
                 command_id,
-                current_user.id,
+                getattr(current_user, 'id', None),
             )
             return False
 
