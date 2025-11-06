@@ -61,32 +61,37 @@
 }
 
 /* ==================== CHECKBOX ==================== */
-/* Clean, visible checkbox styling */
+/* Minimal checkbox styling - let Quasar handle the rendering */
 .q-checkbox {
     color: var(--text-primary);
+    cursor: pointer;
 }
 
-/* Checkbox background/border */
+/* Checkbox border color */
 .q-checkbox__bg {
-    border: 2px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    background-color: var(--surface-color);
+    border-color: var(--border-color) !important;
 }
 
 /* Hover state */
-.q-checkbox:hover .q-checkbox__bg {
-    border-color: var(--primary-color);
+.q-checkbox:not(.q-checkbox--dense):not(.disabled) .q-checkbox__inner:hover .q-checkbox__bg {
+    border-color: var(--primary-color) !important;
 }
 
-/* Checked state */
+/* Checked state - use primary color */
 .q-checkbox--truthy .q-checkbox__bg {
-    background-color: var(--primary-color);
-    border-color: var(--primary-color);
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
 }
 
-/* Checkmark icon */
-.q-checkbox__svg {
-    color: #ffffff;
+/* Indeterminate state */
+.q-checkbox--indeterminate .q-checkbox__bg {
+    background: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+
+/* Inner checkbox element - ensure it receives clicks */
+.q-checkbox__native {
+    pointer-events: auto;
 }
 
 /* Checkbox label text */
@@ -98,6 +103,7 @@
 /* Disabled state */
 .q-checkbox--disabled {
     opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .q-checkbox--disabled .q-checkbox__bg {
@@ -262,22 +268,7 @@ textarea.q-field__input {
     background-color: rgba(230, 214, 90, 0.1); /* subtle old-gold tint */
 }
 
-/* ==================== CHECKBOX ==================== */
-/* Checkbox container */
-.q-checkbox {
-    color: var(--text-primary);
-}
-
-/* Unchecked checkbox */
-.q-checkbox__bg {
-    border-color: var(--border-color);
-}
-
-/* Checked checkbox */
-.q-checkbox--truthy .q-checkbox__bg {
-    background-color: var(--primary-color) !important;
-    border-color: var(--primary-color) !important;
-}
+/* CHECKBOX section removed - already defined above at line 63 */
 
 /* ==================== EXPANSION PANEL ==================== */
 .q-expansion-item {

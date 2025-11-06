@@ -81,7 +81,7 @@ class UserEditDialog(BaseDialog):
 
         # Editable fields
         self.create_section_title('Account Status')
-        status_switch = ui.switch('Active Account', value=self.is_active)
+        status_switch = ui.checkbox('Active Account', value=self.is_active)
         status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
 
         # Permission level (only if user can change permissions)

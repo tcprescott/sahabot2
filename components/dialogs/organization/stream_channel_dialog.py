@@ -50,7 +50,7 @@ class StreamChannelDialog(BaseDialog):
                 with ui.element('div').classes('text-xs text-secondary mt-1'):
                     ui.label('Full URL to the stream (e.g., "https://twitch.tv/channel")')
             with ui.element('div'):
-                self._active_toggle = ui.switch(text='Active', value=self._initial_is_active)
+                self._active_toggle = ui.checkbox(text='Active', value=self._initial_is_active)
 
         with self.create_actions_row():
             ui.button('Cancel', on_click=self.close).classes('btn')

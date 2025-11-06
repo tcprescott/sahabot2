@@ -48,11 +48,11 @@ class TournamentSettingsView:
                 # Status
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Active:')
-                    active_toggle = ui.switch(value=self.tournament.is_active)
+                    active_toggle = ui.checkbox(value=self.tournament.is_active)
 
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Enable Tracker:')
-                    tracker_toggle = ui.switch(value=self.tournament.tracker_enabled or False)
+                    tracker_toggle = ui.checkbox(value=self.tournament.tracker_enabled or False)
 
                 ui.separator().classes('my-4')
 
@@ -60,7 +60,7 @@ class TournamentSettingsView:
                 ui.label('SpeedGaming Integration').classes('text-lg font-bold mb-2')
                 ui.label('Import tournament matches from SpeedGaming.org automatically').classes('text-sm text-grey mb-4')
 
-                speedgaming_enabled = ui.switch(
+                speedgaming_enabled = ui.checkbox(
                     'Enable SpeedGaming Integration',
                     value=self.tournament.speedgaming_enabled
                 ).classes('mb-2')

@@ -37,7 +37,7 @@ class OrganizationDialog(BaseDialog):
             with ui.element('div'):
                 self.name_input = ui.input(label='Name', value=self.organization.name if self.organization else '').classes('w-full')
             with ui.element('div'):
-                self.active_toggle = ui.switch(text='Active', value=True if self.organization is None else self.organization.is_active)
+                self.active_toggle = ui.checkbox(text='Active', value=True if self.organization is None else self.organization.is_active)
         with ui.element('div').classes('mt-1'):
             # NiceGUI's input supports .props for multi-line via Quasar
             self.desc_input = ui.input(label='Description', value=self.organization.description if self.organization else '').props('type=textarea autogrow').classes('w-full')

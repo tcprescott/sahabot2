@@ -112,7 +112,7 @@ class TournamentRacetimeSettingsView:
                 # Auto-create toggle
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Auto-create rooms:').classes('w-64')
-                    auto_create_toggle = ui.switch(value=self.tournament.racetime_auto_create_rooms or False)
+                    auto_create_toggle = ui.checkbox(value=self.tournament.racetime_auto_create_rooms or False)
                     ui.label('Automatically create RaceTime rooms when matches are scheduled').classes('text-sm text-secondary')
 
                 # Room opening time
@@ -129,7 +129,7 @@ class TournamentRacetimeSettingsView:
                 # Require RaceTime link
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Require RaceTime account:').classes('w-64')
-                    require_link_toggle = ui.switch(value=self.tournament.require_racetime_link or False)
+                    require_link_toggle = ui.checkbox(value=self.tournament.require_racetime_link or False)
                     ui.label('Players must have RaceTime accounts linked').classes('text-sm text-secondary')
 
                 # Default goal

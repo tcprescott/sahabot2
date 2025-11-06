@@ -458,6 +458,14 @@ Required in `.env`:
 - `DISCORD_BOT_TOKEN` - Bot authentication
 - `SECRET_KEY` - Application secret
 
+### Debugging & Screenshots
+When using MCP Chrome DevTools or other screenshot tools:
+- **Always save screenshots to `screenshots/` directory**
+- Path: `/Users/tprescott/Library/CloudStorage/OneDrive-Personal/Documents/VSCode/sahabot2/screenshots/filename.png`
+- This directory is excluded from git (in `.gitignore`)
+- Use descriptive filenames (e.g., `checkbox_unchecked_state.png`, `dialog_error_message.png`)
+- Screenshots are for debugging and documentation only, not committed to repository
+
 ## Quick Reference
 
 ### CSS Classes

@@ -62,7 +62,7 @@ class AdminUsersView:
                         
                         # Include inactive checkbox
                         with ui.row().classes('items-center gap-3'):
-                            inactive_switch = ui.switch('Include Inactive', value=self.include_inactive)
+                            inactive_switch = ui.checkbox('Include Inactive', value=self.include_inactive)
                             inactive_switch.on('update:model-value', lambda e: self._on_filter_change(e.args))
 
                             # Refresh button

@@ -107,7 +107,7 @@ class RaceRoomProfileDialog(BaseDialog):
         with self.create_form_grid(columns=2):
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.streaming_required_switch = ui.switch(
+                    self.streaming_required_switch = ui.checkbox(
                         value=self.profile.streaming_required if self.is_editing else False
                     )
                     ui.label('Require Streaming')
@@ -115,7 +115,7 @@ class RaceRoomProfileDialog(BaseDialog):
 
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.auto_start_switch = ui.switch(
+                    self.auto_start_switch = ui.checkbox(
                         value=self.profile.auto_start if self.is_editing else True
                     )
                     ui.label('Auto-start When Ready')
@@ -129,7 +129,7 @@ class RaceRoomProfileDialog(BaseDialog):
         with self.create_form_grid(columns=2):
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.allow_comments_switch = ui.switch(
+                    self.allow_comments_switch = ui.checkbox(
                         value=self.profile.allow_comments if self.is_editing else True
                     )
                     ui.label('Allow Race Comments')
@@ -137,7 +137,7 @@ class RaceRoomProfileDialog(BaseDialog):
 
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.hide_comments_switch = ui.switch(
+                    self.hide_comments_switch = ui.checkbox(
                         value=self.profile.hide_comments if self.is_editing else False
                     )
                     ui.label('Hide Comments Until Finish')
@@ -145,7 +145,7 @@ class RaceRoomProfileDialog(BaseDialog):
 
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.allow_prerace_chat_switch = ui.switch(
+                    self.allow_prerace_chat_switch = ui.checkbox(
                         value=self.profile.allow_prerace_chat if self.is_editing else True
                     )
                     ui.label('Pre-race Chat')
@@ -153,7 +153,7 @@ class RaceRoomProfileDialog(BaseDialog):
 
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.allow_midrace_chat_switch = ui.switch(
+                    self.allow_midrace_chat_switch = ui.checkbox(
                         value=self.profile.allow_midrace_chat if self.is_editing else True
                     )
                     ui.label('Mid-race Chat')
@@ -161,7 +161,7 @@ class RaceRoomProfileDialog(BaseDialog):
 
             with ui.element('div'):
                 with ui.row().classes('items-center gap-2'):
-                    self.allow_non_entrant_chat_switch = ui.switch(
+                    self.allow_non_entrant_chat_switch = ui.checkbox(
                         value=self.profile.allow_non_entrant_chat if self.is_editing else True
                     )
                     ui.label('Non-entrant Chat')
@@ -173,7 +173,7 @@ class RaceRoomProfileDialog(BaseDialog):
         self.create_section_title('Default Profile')
 
         with ui.row().classes('items-center gap-2 w-full'):
-            self.is_default_switch = ui.switch(
+            self.is_default_switch = ui.checkbox(
                 value=self.profile.is_default if self.is_editing else False
             )
             ui.label('Set as default profile for this organization')

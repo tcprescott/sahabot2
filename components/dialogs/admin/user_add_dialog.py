@@ -77,7 +77,7 @@ class UserAddDialog(BaseDialog):
 
             # Active switch
             with ui.element('div'):
-                active_switch = ui.switch('Active Account', value=self.is_active)
+                active_switch = ui.checkbox('Active Account', value=self.is_active)
                 active_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
 
         ui.separator()

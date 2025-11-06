@@ -55,11 +55,11 @@ class TournamentDialog(BaseDialog):
                 ui.label('Optional description visible to players').classes('text-xs text-secondary mt-1')
             
             with ui.element('div'):
-                self._active_toggle = ui.switch(text='Active', value=self._initial_is_active)
+                self._active_toggle = ui.checkbox(text='Active', value=self._initial_is_active)
                 ui.label('Inactive tournaments are hidden from players').classes('text-xs text-secondary mt-1')
             
             with ui.element('div'):
-                self._tracker_toggle = ui.switch(text='Enable Tracker Role', value=self._initial_tracker_enabled)
+                self._tracker_toggle = ui.checkbox(text='Enable Tracker Role', value=self._initial_tracker_enabled)
                 ui.label('Allows players to request tracker role for notifications').classes('text-xs text-secondary mt-1')
 
         # Info about additional settings

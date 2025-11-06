@@ -40,7 +40,7 @@ class GlobalSettingDialog(BaseDialog):
             with ui.element('div').classes('span-2'):
                 self.desc_input = ui.input(label='Description', value=self.description).classes('w-full')
             with ui.element('div'):
-                self.public_switch = ui.switch('Publicly Readable', value=self.is_public)
+                self.public_switch = ui.checkbox('Publicly Readable', value=self.is_public)
         with self.create_actions_row():
             ui.button('Cancel', on_click=self.close).classes('btn')
             ui.button('Save', on_click=self._save).props('color=positive').classes('btn')

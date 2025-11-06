@@ -85,7 +85,7 @@ class AsyncTournamentDialog(BaseDialog):
 
         with self.create_form_grid(columns=2):
             with ui.element('div'):
-                self.is_active_switch = ui.switch(
+                self.is_active_switch = ui.checkbox(
                     text='Tournament Active',
                     value=self.tournament.is_active if self.tournament else True
                 )
@@ -104,7 +104,7 @@ class AsyncTournamentDialog(BaseDialog):
 
         with self.create_form_grid(columns=1):
             with ui.element('div'):
-                self.hide_results_switch = ui.switch(
+                self.hide_results_switch = ui.checkbox(
                     text='Hide Other Players\' Results',
                     value=self.tournament.hide_results if self.tournament else False
                 )

@@ -157,7 +157,7 @@ class ScheduledTaskDialog(BaseDialog):
                 ).classes('w-full').props('outlined')
 
             # Active status
-            self.is_active_switch = ui.switch(
+            self.is_active_switch = ui.checkbox(
                 'Active',
                 value=self.task.is_active if self.task else True
             )

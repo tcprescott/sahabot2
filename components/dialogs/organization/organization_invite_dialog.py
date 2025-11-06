@@ -48,7 +48,7 @@ class OrganizationInviteDialog(BaseDialog):
                     ui.label('Limit how many people can use this invite')
             
             with ui.element('div'):
-                self._expires_toggle = ui.switch(text='Set expiration', value=False)
+                self._expires_toggle = ui.checkbox(text='Set expiration', value=False)
                 self._expires_days_input = ui.input(label='Expires in (days)', value='7', placeholder='7').classes('w-full')
                 self._expires_days_input.visible = False
                 

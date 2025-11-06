@@ -55,3 +55,9 @@ Thumbs.db
 
 # NiceGUI
 .nicegui/
+
+# Screenshots (for debugging/documentation)
+screenshots/
+*.png
+*.jpg
+*.jpeg

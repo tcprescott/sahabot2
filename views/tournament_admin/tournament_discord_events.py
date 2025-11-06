@@ -67,13 +67,13 @@ class TournamentDiscordEventsView:
                 # Enable/disable toggle
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Create Discord scheduled events:').classes('font-bold')
-                    create_toggle = ui.switch(value=self.tournament.create_scheduled_events)
+                    create_toggle = ui.checkbox(value=self.tournament.create_scheduled_events)
                     ui.label('When enabled, Discord events will be created for matches').classes('text-sm text-secondary')
 
                 # Events currently enabled toggle
                 with ui.row().classes('items-center gap-4 mb-4'):
                     ui.label('Events currently enabled:').classes('font-bold')
-                    enabled_toggle = ui.switch(value=self.tournament.scheduled_events_enabled)
+                    enabled_toggle = ui.checkbox(value=self.tournament.scheduled_events_enabled)
                     ui.label('Disable this to temporarily stop creating new events').classes('text-sm text-secondary')
 
                 ui.separator().classes('my-4')
