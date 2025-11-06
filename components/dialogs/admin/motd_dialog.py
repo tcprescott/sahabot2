@@ -37,6 +37,11 @@ class MOTDDialog(BaseDialog):
             ui.label('Customize the message that appears in the banner at the top of pages.').classes('mb-4')
             ui.label('HTML formatting is supported. Leave empty to disable the banner.').classes('mb-4 text-secondary')
 
+            # Security note: HTML preview uses ui.html() which renders raw HTML.
+            # This is acceptable for admin-only content. Admins are trusted users.
+            # If MOTD editing is ever expanded to non-admin users, implement
+            # server-side HTML sanitization (e.g., bleach library).
+
             self.motd_input = ui.textarea(
                 label='MOTD Message',
                 value=self.current_motd,

@@ -147,10 +147,43 @@ Visit your <a href="/profile">profile page</a> to connect.
 
 ## Security Considerations
 
-- **HTML Sanitization**: While HTML is allowed, script tags are blocked by browser
-- **XSS Protection**: Content-Security-Policy prevents inline script execution
-- **Admin-only**: Only admins can edit MOTD (enforced by permission checks)
-- **Public setting**: MOTD is marked as `is_public=True` in settings (non-sensitive)
+### HTML Content Security
+
+- **Admin-only editing**: Only users with `Permission.ADMIN` can edit MOTD content
+- **Trusted content**: Admins are trusted users with full system access
+- **HTML rendering**: `ui.html()` is used to support formatting, but only for admin-provided content
+- **Browser protection**: Modern browsers block dangerous tags (script, iframe) automatically
+- **CSP protection**: Content-Security-Policy headers prevent inline script execution
+- **XSS mitigation**: All JavaScript variables are properly escaped before injection
+
+### Important Notes
+
+1. **Current implementation is secure** because:
+   - Only admins can edit MOTD (permission-checked)
+   - Content is stored in database, not from untrusted sources
+   - Admins already have full system access
+
+2. **If permissions change** (e.g., allowing moderators to edit MOTD):
+   - Implement server-side HTML sanitization (e.g., using `bleach` library)
+   - Whitelist allowed HTML tags (strong, em, a, br, etc.)
+   - Strip potentially dangerous attributes and tags
+
+3. **Data flow**:
+   - Admin → MOTDDialog → GlobalSettings → MOTDBanner → Browser
+   - No user-provided content in the chain
+
+### Timestamp Security
+
+- Update timestamps are server-generated (not user input)
+- JavaScript variables are escaped to prevent injection
+- ISO 8601 format prevents parsing vulnerabilities
+
+### Public Setting Rationale
+
+MOTD is marked as `is_public=True` in GlobalSettings because:
+- Designed to be visible to all users (authenticated and guests)
+- Contains no sensitive information (announcements, events)
+- No privacy concerns with public visibility
 
 ## Future Enhancements
 

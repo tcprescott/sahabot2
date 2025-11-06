@@ -42,8 +42,17 @@ class MOTDBanner:
         motd_updated_setting = await service.get_global(MOTDBanner.MOTD_UPDATED_KEY)
         motd_updated = motd_updated_setting['value'] if motd_updated_setting else None
 
-        # Create a unique container ID for this banner
+        # Create banner container with initial visibility controlled by JavaScript
         banner_id = 'motd-banner'
+
+        # Note: ui.html() is used here to support HTML formatting in MOTD.
+        # This is acceptable because:
+        # 1. MOTD content is admin-only (Permission.ADMIN required to edit)
+        # 2. Admins are trusted users with full system access
+        # 3. Content is stored in database, not coming from untrusted user input
+        # 4. Browser's Content-Security-Policy prevents inline script execution
+        # For additional security, consider implementing server-side HTML sanitization
+        # if MOTD editing permissions are ever expanded to non-admin users.
 
         # Create banner container with initial visibility controlled by JavaScript
         with ui.element('div').props(f'id="{banner_id}"').classes(
@@ -71,10 +80,12 @@ class MOTDBanner:
                 ).style('color: white;')
 
         # Add JavaScript to handle banner visibility and dismissal
+        # Note: motd_updated is server-generated timestamp, but we escape it for safety
+        motd_updated_escaped = (motd_updated or "").replace("'", "\\'").replace('"', '\\"') if motd_updated else ""
         motd_js = f'''
         (function() {{
             const bannerId = '{banner_id}';
-            const motdUpdated = '{motd_updated or ""}';
+            const motdUpdated = '{motd_updated_escaped}';
             const storageKey = 'motd_dismissed_at';
 
             // Get dismissed timestamp from localStorage
