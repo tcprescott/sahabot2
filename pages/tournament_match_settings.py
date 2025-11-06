@@ -6,12 +6,15 @@ Form fields are dynamically generated based on tournament configuration.
 """
 
 from __future__ import annotations
+import asyncio
+import logging
+
 from nicegui import ui
 from components.base_page import BasePage
 from components.dynamic_form_builder import DynamicFormBuilder
+from components.datetime_label import DateTimeLabel
+from middleware.auth import DiscordAuthService
 from application.services.tournaments.tournament_match_settings_service import TournamentMatchSettingsService
-from models.match_schedule import Match
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -24,32 +27,24 @@ def register():
         """Match settings submission page."""
         base = BasePage.authenticated_page(title='Submit Match Settings')
 
-        # Pre-check: get match and validate it exists
-        from middleware.auth import DiscordAuthService
+        # Pre-check: get user
         user = await DiscordAuthService.get_current_user()
         if not user:
             return
 
-        match = await Match.get_or_none(id=match_id).prefetch_related('tournament', 'players')
-        if not match:
-            ui.notify('Match not found', color='negative')
-            ui.navigate.to('/')
-            return
-
         async def content(page: BasePage):
             """Render submission form content."""
-            # Verify authorization - try to get any existing submission
-            # If user doesn't have access, service will return None
+            # Get match details via service (includes authorization check)
             service = TournamentMatchSettingsService()
-            existing_submission = await service.get_submission(page.user, match_id, game_number=1)
-
-            # Additional check: try to list submissions to verify access
-            accessible_submissions = await service.list_submissions_for_match(page.user, match_id)
-            if existing_submission is None and not accessible_submissions:
-                # User has no access to this match
-                ui.notify('You do not have permission to submit settings for this match', color='negative')
+            match = await service.get_match_for_submission(page.user, match_id)
+            
+            if not match:
+                ui.notify('Match not found or you do not have permission to access it', color='negative')
                 ui.navigate.to('/')
                 return
+
+            # Get existing submission if any
+            existing_submission = await service.get_submission(page.user, match_id, game_number=1)
 
             # Page header
             with ui.element('div').classes('card mb-4'):
@@ -65,7 +60,6 @@ def register():
                     if match.title:
                         ui.label(f'Match: {match.title}')
                     if match.scheduled_at:
-                        from components.datetime_label import DateTimeLabel
                         with ui.row().classes('items-center gap-2'):
                             ui.label('Scheduled:')
                             DateTimeLabel.create(match.scheduled_at, format_type='datetime')
@@ -139,8 +133,9 @@ def register():
                                     validation_msg.text = 'Settings submitted successfully!'
                                     validation_msg.classes('text-positive', remove='text-negative')
 
-                                    # Redirect to match page after short delay
-                                    await ui.run_javascript('setTimeout(() => { window.location.href = "/"; }, 2000);')
+                                    # Redirect using NiceGUI's navigation
+                                    await asyncio.sleep(2)  # Short delay to show success message
+                                    ui.navigate.to('/')
                                 else:
                                     ui.notify('Failed to submit settings', color='negative')
                                     validation_msg.text = 'Failed to submit settings'
@@ -163,7 +158,6 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Current Submission')
                     with ui.element('div').classes('card-body'):
-                        from components.datetime_label import DateTimeLabel
                         with ui.row().classes('items-center gap-2 mb-2'):
                             ui.label('Submitted:')
                             DateTimeLabel.create(existing_submission.submitted_at, format_type='relative')

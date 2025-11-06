@@ -65,6 +65,39 @@ class TournamentMatchSettingsService:
         )
         return can_manage
 
+    async def get_match_for_submission(
+        self,
+        user: Optional[User],
+        match_id: int
+    ) -> Optional[Match]:
+        """
+        Get match details for settings submission with authorization check.
+
+        Args:
+            user: Current user
+            match_id: Match ID
+
+        Returns:
+            Match object with related data or None if not found/unauthorized
+        """
+        # Get the match with related data
+        match = await Match.get_or_none(id=match_id).prefetch_related('tournament', 'players')
+        if not match:
+            logger.warning("Match %s not found", match_id)
+            return None
+
+        # Validate access
+        has_access = await self._validate_match_access(user, match)
+        if not has_access:
+            logger.warning(
+                "Unauthorized access to match %s by user %s",
+                match_id,
+                getattr(user, 'id', None)
+            )
+            return None
+
+        return match
+
     async def get_submission(
         self,
         user: Optional[User],

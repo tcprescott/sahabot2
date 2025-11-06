@@ -4,9 +4,11 @@ Dynamic form builder for tournament settings submission.
 Renders form fields based on tournament configuration schema.
 """
 
-from nicegui import ui
-from typing import Dict, Any, List, Optional
+import json
 import logging
+from typing import Dict, Any, List, Optional
+
+from nicegui import ui
 
 logger = logging.getLogger(__name__)
 
@@ -159,8 +161,6 @@ class DynamicFormBuilder:
         Returns:
             Dict of field names to values
         """
-        import json
-        
         # Handle JSON fallback mode
         if '_json_fallback' in self.fields:
             try:
@@ -185,7 +185,6 @@ class DynamicFormBuilder:
         """
         # Handle JSON fallback mode
         if '_json_fallback' in self.fields:
-            import json
             try:
                 json.loads(self.fields['_json_fallback'].value)
                 return True, None
