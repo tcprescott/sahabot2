@@ -160,3 +160,59 @@ class CrewApprovalRequest(BaseModel):
     """Request schema for approving/unapproving crew."""
 
     crew_id: int = Field(..., description="Crew signup ID to approve/unapprove")
+
+
+# ============================================================================
+# Tournament Match Settings Schemas
+# ============================================================================
+
+
+class TournamentMatchSettingsOut(BaseModel):
+    """Tournament match settings output schema."""
+
+    id: int = Field(..., description="Settings submission ID")
+    match_id: int = Field(..., description="Match ID")
+    game_number: int = Field(..., description="Game number in match series")
+    settings: dict = Field(..., description="Settings data (JSON)")
+    submitted: bool = Field(..., description="Whether settings are submitted")
+    submitted_by_id: int = Field(..., description="User ID of submitter")
+    submitted_at: datetime = Field(..., description="Submission timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+    notes: Optional[str] = Field(None, description="Optional notes from submitter")
+    is_valid: bool = Field(..., description="Whether settings passed validation")
+    validation_error: Optional[str] = Field(None, description="Validation error message if invalid")
+    applied: bool = Field(..., description="Whether settings have been applied to generate race")
+    applied_at: Optional[datetime] = Field(None, description="When settings were applied")
+
+    class Config:
+        from_attributes = True
+
+
+class TournamentMatchSettingsListResponse(BaseModel):
+    """Response schema for lists of tournament match settings."""
+
+    items: list[TournamentMatchSettingsOut] = Field(..., description="List of settings submissions")
+    count: int = Field(..., description="Total number of submissions in the result")
+
+
+class TournamentMatchSettingsSubmitRequest(BaseModel):
+    """Request schema for submitting tournament match settings."""
+
+    settings: dict = Field(..., description="Settings data (structure varies by tournament type)")
+    game_number: int = Field(1, ge=1, le=10, description="Game number in match series (1-10)")
+    notes: Optional[str] = Field(None, max_length=1000, description="Optional notes from submitter")
+
+
+class TournamentMatchSettingsValidateRequest(BaseModel):
+    """Request schema for validating tournament match settings."""
+
+    settings: dict = Field(..., description="Settings data to validate")
+    tournament_id: int = Field(..., description="Tournament ID for tournament-specific validation")
+
+
+class TournamentMatchSettingsValidateResponse(BaseModel):
+    """Response schema for settings validation."""
+
+    is_valid: bool = Field(..., description="Whether settings are valid")
+    error_message: Optional[str] = Field(None, description="Error message if invalid")
+
