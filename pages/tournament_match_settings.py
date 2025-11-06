@@ -10,7 +10,6 @@ from nicegui import ui
 from components.base_page import BasePage
 from components.dynamic_form_builder import DynamicFormBuilder
 from application.services.tournaments.tournament_match_settings_service import TournamentMatchSettingsService
-from application.repositories.tournament_repository import TournamentRepository
 from models.match_schedule import Match
 import logging
 
