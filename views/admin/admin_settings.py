@@ -10,6 +10,7 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
 from components.dialogs import GlobalSettingDialog
+from components.dialogs.admin import MOTDDialog
 from application.services.core.settings_service import SettingsService
 
 
@@ -30,6 +31,11 @@ class AdminSettingsView:
 
     async def _open_create(self) -> None:
         dialog = GlobalSettingDialog(on_save=self._refresh)
+        await dialog.show()
+
+    async def _open_motd_dialog(self) -> None:
+        """Open the MOTD editing dialog."""
+        dialog = MOTDDialog(on_save=self._refresh)
         await dialog.show()
 
     async def _open_edit(self, key: str, value: Any, description: str, is_public: bool) -> None:
@@ -60,6 +66,13 @@ class AdminSettingsView:
         """Render the global settings table and controls."""
         settings = await self.service.list_global()
 
+        # MOTD Management Card
+        with Card.create(title='Message of the Day'):
+            with ui.row().classes('w-full justify-between items-center'):
+                ui.label('Manage the banner message displayed at the top of pages.')
+                ui.button('Edit MOTD', icon='campaign', on_click=self._open_motd_dialog).props('color=primary').classes('btn')
+
+        # Global Settings Card
         with Card.create(title='Global Settings'):
             with ui.row().classes('w-full justify-between'):
                 ui.label('Manage application-wide configuration settings.')
