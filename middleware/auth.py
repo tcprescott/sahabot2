@@ -268,9 +268,25 @@ class DiscordAuthService:
         or expiring soon (within 5 minutes). If refresh fails, the user session is
         cleared and None is returned.
 
+        When impersonation is active, returns the impersonated user but maintains
+        the original user session for stopping impersonation.
+
         Returns:
             Optional[User]: Current user with valid token or None if not authenticated
         """
+        # Check if impersonation is active
+        impersonated_user_id = app.storage.user.get('impersonated_user_id')
+        if impersonated_user_id:
+            # Return the impersonated user
+            user_repo = UserRepository()
+            impersonated_user = await user_repo.get_by_id(impersonated_user_id)
+            if impersonated_user:
+                return impersonated_user
+            else:
+                # Impersonated user was deleted, stop impersonation
+                await DiscordAuthService.stop_impersonation()
+                # Fall through to get original user
+
         user_id = app.storage.user.get('user_id')
         if not user_id:
             return None
@@ -306,6 +322,34 @@ class DiscordAuthService:
         return user
     
     @staticmethod
+    async def get_original_user() -> Optional[User]:
+        """
+        Get the original authenticated user (before impersonation).
+
+        This returns the actual logged-in user, even when impersonation is active.
+        Used for audit logging and stopping impersonation.
+
+        Returns:
+            Optional[User]: Original user or None if not authenticated
+        """
+        user_id = app.storage.user.get('user_id')
+        if not user_id:
+            return None
+
+        user_repo = UserRepository()
+        return await user_repo.get_by_id(user_id)
+    
+    @staticmethod
+    def is_impersonating() -> bool:
+        """
+        Check if currently impersonating another user.
+
+        Returns:
+            bool: True if impersonation is active
+        """
+        return app.storage.user.get('impersonated_user_id') is not None
+    
+    @staticmethod
     async def set_current_user(user: User) -> None:
         """
         Set current authenticated user in session.
@@ -317,6 +361,45 @@ class DiscordAuthService:
         app.storage.user['user_id'] = user.id
         app.storage.user['discord_id'] = user.discord_id
         app.storage.user['permission'] = user.permission.value
+    
+    @staticmethod
+    async def start_impersonation(target_user: User) -> None:
+        """
+        Start impersonating another user.
+
+        The original user session is preserved so impersonation can be stopped.
+
+        Args:
+            target_user: User to impersonate
+        """
+        # Store the impersonated user ID
+        app.storage.user['impersonated_user_id'] = target_user.id
+        app.storage.user['impersonated_discord_id'] = target_user.discord_id
+        app.storage.user['impersonated_permission'] = target_user.permission.value
+
+        logger.info(
+            "Started impersonation: original_user=%s, impersonated_user=%s",
+            app.storage.user.get('user_id'),
+            target_user.id
+        )
+    
+    @staticmethod
+    async def stop_impersonation() -> None:
+        """
+        Stop impersonating and return to original user.
+        """
+        impersonated_user_id = app.storage.user.get('impersonated_user_id')
+        
+        # Clear impersonation data
+        app.storage.user.pop('impersonated_user_id', None)
+        app.storage.user.pop('impersonated_discord_id', None)
+        app.storage.user.pop('impersonated_permission', None)
+
+        logger.info(
+            "Stopped impersonation: original_user=%s, was_impersonating=%s",
+            app.storage.user.get('user_id'),
+            impersonated_user_id
+        )
     
     @staticmethod
     async def clear_current_user() -> None:

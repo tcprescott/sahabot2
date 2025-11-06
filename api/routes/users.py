@@ -1,10 +1,11 @@
 """User-related API endpoints."""
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from api.schemas.user import UserOut, UserListResponse
 from api.deps import get_current_user, enforce_rate_limit
 from application.services.core.user_service import UserService
-from models import User
+from middleware.auth import DiscordAuthService
+from models import User, Permission
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -145,3 +146,155 @@ async def search_users(
     users = await service.search_users(current_user, q)
     items = [UserOut.model_validate(u) for u in users]
     return UserListResponse(items=items, count=len(items))
+
+
+@router.post(
+    "/admin/impersonate/{user_id}",
+    response_model=UserOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Start Impersonating User",
+    description="Start impersonating another user. Requires SUPERADMIN permission.",
+    responses={
+        200: {
+            "description": "Impersonation started successfully",
+        },
+        401: {
+            "description": "Invalid or missing authentication token",
+        },
+        403: {
+            "description": "Insufficient permissions (requires SUPERADMIN)",
+        },
+        404: {
+            "description": "Target user not found",
+        },
+        429: {
+            "description": "Rate limit exceeded",
+        },
+    },
+)
+async def start_impersonation(
+    user_id: int,
+    request: Request,
+    current_user: User = Depends(get_current_user)
+) -> UserOut:
+    """
+    Start impersonating another user (SUPERADMIN only).
+    
+    Only SUPERADMIN users can impersonate others.
+    Cannot impersonate yourself.
+    All impersonation actions are audit logged with IP address.
+    
+    Args:
+        user_id: ID of user to impersonate
+        request: FastAPI request (for IP address)
+        current_user: Currently authenticated user
+        
+    Returns:
+        UserOut: The user being impersonated
+        
+    Raises:
+        HTTPException: 403 if unauthorized, 404 if user not found
+    """
+    # Get IP address
+    ip_address = request.client.host if request.client else None
+    
+    # Start impersonation via service (handles permissions and audit)
+    service = UserService()
+    target_user = await service.start_impersonation(
+        admin_user=current_user,
+        target_user_id=user_id,
+        ip_address=ip_address
+    )
+    
+    if not target_user:
+        # Check if it's a permission issue or user not found
+        if not current_user.has_permission(Permission.SUPERADMIN):
+            raise HTTPException(
+                status_code=403,
+                detail="Only SUPERADMIN users can impersonate others"
+            )
+        elif current_user.id == user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot impersonate yourself"
+            )
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="User not found"
+            )
+    
+    # Set impersonation in session
+    await DiscordAuthService.start_impersonation(target_user)
+    
+    return UserOut.model_validate(target_user)
+
+
+@router.post(
+    "/admin/stop-impersonation",
+    response_model=UserOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Stop Impersonating User",
+    description="Stop impersonating and return to original user.",
+    responses={
+        200: {
+            "description": "Impersonation stopped successfully",
+        },
+        401: {
+            "description": "Invalid or missing authentication token",
+        },
+        400: {
+            "description": "Not currently impersonating",
+        },
+        429: {
+            "description": "Rate limit exceeded",
+        },
+    },
+)
+async def stop_impersonation(
+    request: Request,
+    current_user: User = Depends(get_current_user)
+) -> UserOut:
+    """
+    Stop impersonating and return to original user.
+    
+    Can only be called when impersonation is active.
+    All impersonation actions are audit logged with IP address.
+    
+    Args:
+        request: FastAPI request (for IP address)
+        current_user: Currently authenticated user (impersonated user)
+        
+    Returns:
+        UserOut: The original user
+        
+    Raises:
+        HTTPException: 400 if not currently impersonating
+    """
+    # Check if impersonation is active
+    if not DiscordAuthService.is_impersonating():
+        raise HTTPException(
+            status_code=400,
+            detail="Not currently impersonating"
+        )
+    
+    # Get original user and impersonated user
+    original_user = await DiscordAuthService.get_original_user()
+    impersonated_user = current_user  # This is the impersonated user
+    
+    # Get IP address
+    ip_address = request.client.host if request.client else None
+    
+    # Stop impersonation via service (audit logging)
+    service = UserService()
+    await service.stop_impersonation(
+        original_user=original_user,
+        impersonated_user=impersonated_user,
+        ip_address=ip_address
+    )
+    
+    # Clear impersonation from session
+    await DiscordAuthService.stop_impersonation()
+    
+    return UserOut.model_validate(original_user)
+

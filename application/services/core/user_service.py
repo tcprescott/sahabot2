@@ -664,3 +664,107 @@ class UserService:
         await user.save()
         logger.info("Updated profile for user %s", user.id)
         return user
+
+    async def start_impersonation(
+        self,
+        admin_user: User,
+        target_user_id: int,
+        ip_address: Optional[str] = None
+    ) -> Optional[User]:
+        """
+        Start impersonating another user.
+
+        Only SUPERADMIN users can impersonate others.
+        Cannot impersonate yourself.
+        All impersonation actions are audit logged.
+
+        Args:
+            admin_user: Admin user starting the impersonation
+            target_user_id: ID of user to impersonate
+            ip_address: IP address of the admin
+
+        Returns:
+            User: Target user to impersonate, or None if unauthorized
+        """
+        # Only SUPERADMIN can impersonate
+        if not admin_user.has_permission(Permission.SUPERADMIN):
+            logger.warning(
+                "User %s attempted to impersonate without SUPERADMIN permission",
+                admin_user.id
+            )
+            return None
+
+        # Cannot impersonate yourself
+        if admin_user.id == target_user_id:
+            logger.warning(
+                "User %s attempted to impersonate themselves",
+                admin_user.id
+            )
+            return None
+
+        # Get target user
+        target_user = await self.user_repository.get_by_id(target_user_id)
+        if not target_user:
+            logger.warning(
+                "User %s attempted to impersonate non-existent user %s",
+                admin_user.id,
+                target_user_id
+            )
+            return None
+
+        # Audit log the impersonation start
+        from application.services.core.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="impersonation_started",
+            details={
+                "target_user_id": target_user.id,
+                "target_username": target_user.discord_username,
+                "target_permission": target_user.permission.name,
+            },
+            ip_address=ip_address
+        )
+
+        logger.info(
+            "User %s (SUPERADMIN) started impersonating user %s",
+            admin_user.id,
+            target_user.id
+        )
+
+        return target_user
+
+    async def stop_impersonation(
+        self,
+        original_user: User,
+        impersonated_user: User,
+        ip_address: Optional[str] = None
+    ) -> None:
+        """
+        Stop impersonating and return to original user.
+
+        Audit logs the end of impersonation.
+
+        Args:
+            original_user: Original admin user
+            impersonated_user: User that was being impersonated
+            ip_address: IP address of the admin
+        """
+        # Audit log the impersonation stop
+        from application.services.core.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=original_user,
+            action="impersonation_stopped",
+            details={
+                "impersonated_user_id": impersonated_user.id,
+                "impersonated_username": impersonated_user.discord_username,
+            },
+            ip_address=ip_address
+        )
+
+        logger.info(
+            "User %s stopped impersonating user %s",
+            original_user.id,
+            impersonated_user.id
+        )

@@ -150,6 +150,51 @@ class BasePage:
         """Render the header using the Header component."""
         header = Header(self.user, self._toggle_sidebar)
         header.render()
+    
+    async def _render_impersonation_banner(self) -> None:
+        """Render an impersonation warning banner if currently impersonating."""
+        if not DiscordAuthService.is_impersonating():
+            return
+        
+        # Get original user
+        original_user = await DiscordAuthService.get_original_user()
+        if not original_user or not self.user:
+            return
+        
+        # Create warning banner
+        with ui.element('div').classes('w-full').style(
+            'background-color: #ff9800; '
+            'color: white; '
+            'padding: 0.75rem 1rem; '
+            'text-align: center; '
+            'font-weight: 600; '
+            'box-shadow: 0 2px 4px rgba(0,0,0,0.2);'
+        ):
+            with ui.row().classes('items-center justify-center gap-4'):
+                ui.icon('warning').classes('text-2xl')
+                ui.label(
+                    f'IMPERSONATING: {self.user.discord_username} '
+                    f'(Logged in as: {original_user.discord_username})'
+                ).classes('text-base')
+                
+                # Stop impersonation button
+                async def stop_impersonation():
+                    from application.services.core.user_service import UserService
+                    user_service = UserService()
+                    await user_service.stop_impersonation(
+                        original_user=original_user,
+                        impersonated_user=self.user,
+                        ip_address=None
+                    )
+                    await DiscordAuthService.stop_impersonation()
+                    ui.notify('Stopped impersonation', type='info')
+                    ui.navigate.to('/')
+                
+                ui.button(
+                    'Stop Impersonation',
+                    icon='close',
+                    on_click=stop_impersonation
+                ).props('flat').style('color: white; border: 1px solid white;')
 
     def _render_sidebar(self, items: Optional[list] = None) -> None:
         """
@@ -394,6 +439,9 @@ class BasePage:
 
         # Render header
         self._render_header()
+        
+        # Render impersonation banner if active
+        await self._render_impersonation_banner()
         
         # Render sidebar via component
         sidebar_component = Sidebar(self._toggle_sidebar)

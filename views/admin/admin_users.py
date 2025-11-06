@@ -222,16 +222,27 @@ class AdminUsersView:
                                (self.current_user.has_permission(Permission.ADMIN) and 
                                 self.current_user.permission > u.permission))
                     
+                    # Can impersonate if SUPERADMIN and not yourself
+                    can_impersonate = (self.current_user.has_permission(Permission.SUPERADMIN) and 
+                                     self.current_user.id != u.id)
+                    
                     with ui.row().classes('gap-1'):
                         if can_edit:
                             ui.button(
                                 icon='edit',
                                 on_click=lambda x=u: self._edit_user(x)
-                            ).classes('btn btn-sm').props('flat')
+                            ).classes('btn btn-sm').props('flat').tooltip('Edit User')
                         else:
                             ui.button(
                                 icon='edit'
                             ).classes('btn btn-sm').props('flat disable')
+                        
+                        # Impersonate button
+                        if can_impersonate:
+                            ui.button(
+                                icon='person_search',
+                                on_click=lambda x=u: self._impersonate_user(x)
+                            ).classes('btn btn-sm').props('flat color=warning').tooltip('Impersonate User')
 
                 columns = [
                     TableColumn(label='User', cell_render=render_user_cell),
@@ -277,6 +288,47 @@ class AdminUsersView:
             on_unlink=self._refresh_users
         )
         await dialog.show()
+
+    async def _impersonate_user(self, user: User):
+        """
+        Start impersonating another user.
+
+        Args:
+            user: User to impersonate
+        """
+        try:
+            from middleware.auth import DiscordAuthService
+            
+            # Start impersonation via service (handles permissions and audit)
+            target_user = await self.user_service.start_impersonation(
+                admin_user=self.current_user,
+                target_user_id=user.id,
+                ip_address=None  # IP tracking not available in UI context
+            )
+            
+            if not target_user:
+                ui.notify(
+                    'You do not have permission to impersonate users',
+                    type='negative'
+                )
+                return
+            
+            # Set impersonation in session
+            await DiscordAuthService.start_impersonation(target_user)
+            
+            # Notify and reload
+            ui.notify(
+                f'Now impersonating {user.discord_username}',
+                type='warning',
+                position='top'
+            )
+            
+            # Redirect to home page to show impersonation banner
+            ui.navigate.to('/')
+            
+        except Exception as e:
+            logger.error("Error starting impersonation: %s", e, exc_info=True)
+            ui.notify(f'Error: {str(e)}', type='negative')
 
     async def _open_add_user(self):
         """Open dialog to add a new user and refresh on success."""
