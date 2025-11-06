@@ -181,19 +181,22 @@ class AdminLogsView:
 
     async def _on_level_filter(self, e):
         """Handle level filter change."""
-        value = e.args[0] if e.args else 'ALL'
+        # Get value from event args, defaulting to 'ALL' if not available
+        value = e.args[0] if hasattr(e, 'args') and e.args else 'ALL'
         self.level_filter = value if value != 'ALL' else None
         await self._refresh_logs()
 
     async def _on_search_filter(self, e):
         """Handle search filter change."""
-        value = e.args[0] if e.args else ''
+        # Get value from event args, defaulting to empty string if not available
+        value = e.args[0] if hasattr(e, 'args') and e.args else ''
         self.search_filter = value.strip() if value and value.strip() else None
         await self._refresh_logs()
 
     def _on_auto_scroll_toggle(self, e):
         """Handle auto-scroll toggle."""
-        self.auto_scroll = e.args[0] if e.args else False
+        # Get value from event args, defaulting to False if not available
+        self.auto_scroll = e.args[0] if hasattr(e, 'args') and e.args else False
 
     async def _clear_logs(self):
         """Clear all stored logs."""
