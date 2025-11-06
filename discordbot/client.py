@@ -155,6 +155,13 @@ class DiscordBot(commands.Bot):
             logger.info("Loaded async tournament commands")
         except Exception as e:
             logger.error("Failed to load async tournament commands: %s", e, exc_info=True)
+
+        # Load SM randomizer cog
+        try:
+            await self.load_extension('discordbot.commands.sm_commands')
+            logger.info("Loaded SM randomizer commands")
+        except Exception as e:
+            logger.error("Failed to load SM randomizer commands: %s", e, exc_info=True)
         
         # Smart sync commands to Discord
         try:

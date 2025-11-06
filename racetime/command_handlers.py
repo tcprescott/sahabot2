@@ -187,3 +187,18 @@ BUILTIN_HANDLERS = {
     'handle_time': handle_time,
     'handle_entrants': handle_entrants,
 }
+
+
+def get_all_handlers() -> dict:
+    """
+    Get all available command handlers including SM-specific handlers.
+
+    Returns:
+        Dictionary of all handler functions
+    """
+    from .sm_handlers import SM_HANDLERS
+
+    return {
+        **BUILTIN_HANDLERS,
+        **SM_HANDLERS,
+    }
