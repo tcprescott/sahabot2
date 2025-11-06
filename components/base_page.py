@@ -99,6 +99,45 @@ class BasePage:
         """Load current user from session."""
         self.user = await DiscordAuthService.get_current_user()
 
+    def _load_sentry_browser(self) -> None:
+        """
+        Load Sentry browser monitoring script with configuration.
+
+        This loads the Sentry browser SDK to capture frontend JavaScript errors,
+        unhandled promise rejections, and client-side performance data.
+        Only loads if SENTRY_DSN is configured in settings.
+        """
+        from config import settings
+
+        # Only load if DSN is configured
+        if not settings.SENTRY_DSN:
+            return
+
+        # Get configuration
+        environment = settings.SENTRY_ENVIRONMENT or settings.ENVIRONMENT
+        traces_sample_rate = settings.SENTRY_TRACES_SAMPLE_RATE
+
+        # Session replay is disabled by default (can be expensive)
+        # Set to > 0 to enable session recording
+        replays_session_sample_rate = 0.0
+        replays_on_error_sample_rate = 0.0
+
+        # Load Sentry browser initialization script with configuration
+        # Note: DSN is intentionally embedded in HTML for browser SDK to function.
+        # Sentry DSNs are public client-side credentials by design - they're safe
+        # to expose in frontend code. Security is enforced via Sentry's rate limiting,
+        # allowed origins/domains configuration, and project settings.
+        js_version = get_js_version('monitoring/sentry-browser.js')
+        sentry_script = f'''<script 
+            src="/static/js/monitoring/sentry-browser.js?v={js_version}"
+            data-sentry-dsn="{settings.SENTRY_DSN}"
+            data-sentry-environment="{environment}"
+            data-traces-sample-rate="{traces_sample_rate}"
+            data-replays-session-sample-rate="{replays_session_sample_rate}"
+            data-replays-on-error-sample-rate="{replays_on_error_sample_rate}"
+        ></script>'''
+        ui.add_head_html(sentry_script)
+
     async def _show_query_param_notifications(self) -> None:
         """Display notifications based on query parameters (success, error, message)."""
         # Get query parameters from URL using URLManager
@@ -430,6 +469,9 @@ class BasePage:
         for module in js_modules:
             js_version = get_js_version(module)
             ui.add_head_html(f'<script src="/static/js/{module}?v={js_version}"></script>')
+
+        # Load Sentry browser monitoring (if configured)
+        self._load_sentry_browser()
 
         # Set page title
         ui.page_title(self.title)
