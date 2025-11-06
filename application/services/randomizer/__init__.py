@@ -7,6 +7,7 @@ Each randomizer has its own service class that handles generation and configurat
 
 from .randomizer_service import RandomizerService
 from .alttpr_service import ALTTPRService
+from .alttpr_mystery_service import ALTTPRMysteryService
 from .aosr_service import AOSRService
 from .z1r_service import Z1RService
 from .ootr_service import OOTRService
@@ -20,6 +21,7 @@ from .bingosync_service import BingosyncService
 __all__ = [
     'RandomizerService',
     'ALTTPRService',
+    'ALTTPRMysteryService',
     'AOSRService',
     'Z1RService',
     'OOTRService',

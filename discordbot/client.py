@@ -138,11 +138,11 @@ class DiscordBot(commands.Bot):
     async def setup_hook(self) -> None:
         """
         Setup hook called when the bot is starting up.
-        
+
         This is where we'll load cogs/extensions.
         """
         logger.info("Bot setup hook called")
-        
+
         # Load command cogs
         try:
             await self.load_extension('discordbot.commands.test_commands')
@@ -156,7 +156,14 @@ class DiscordBot(commands.Bot):
             logger.info("Loaded async tournament commands")
         except Exception as e:
             logger.error("Failed to load async tournament commands: %s", e, exc_info=True)
-        
+
+        # Load mystery commands
+        try:
+            await self.load_extension('discordbot.commands.mystery_commands')
+            logger.info("Loaded mystery commands")
+        except Exception as e:
+            logger.error("Failed to load mystery commands: %s", e, exc_info=True)
+
         # Smart sync commands to Discord
         try:
             if await self._should_sync_commands():
