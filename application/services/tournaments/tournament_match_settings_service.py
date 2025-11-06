@@ -5,7 +5,6 @@ Contains business logic for settings submissions with authorization checks.
 
 from __future__ import annotations
 from typing import Optional, List
-from datetime import datetime, timezone
 import logging
 
 from models import User, SYSTEM_USER_ID
