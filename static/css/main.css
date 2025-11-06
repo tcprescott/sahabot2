@@ -274,3 +274,24 @@
         display: none;
     }
 }
+
+/* Test page demo styles */
+.demo-card-column {
+    flex: 1;
+    min-width: 300px;
+}
+
+.demo-layout-item {
+    padding: var(--spacing-md);
+}
+
+.demo-layout-item-flex {
+    padding: var(--spacing-md);
+    flex: 1;
+}
+
+.demo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+}

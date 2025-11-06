@@ -145,7 +145,7 @@ def register():
                     ui.color_picker(label='Choose color', value='#3b82f6')
 
                     ui.label('Date Input').classes('font-bold mb-2 mt-4')
-                    ui.date(value=datetime.now().strftime('%Y-%m-%d')).classes('w-full')
+                    ui.date(value=datetime.now(timezone.utc).strftime('%Y-%m-%d')).classes('w-full')
 
                     ui.label('Time Input').classes('font-bold mb-2 mt-4')
                     ui.time(value='12:00').classes('w-full')
@@ -168,14 +168,14 @@ def register():
                     ui.label('Card Components').classes('text-2xl font-bold')
                 with ui.element('div').classes('card-body'):
                     with ui.row().classes('gap-md flex-wrap'):
-                        with ui.column().classes('gap-md').style('flex: 1; min-width: 300px;'):
+                        with ui.column().classes('gap-md demo-card-column'):
                             Card.simple('Simple Card', 'This is a simple card with a title and description')
                             Card.info('Info Card', [
                                 ('Label 1', 'Value 1'),
                                 ('Label 2', 'Value 2'),
                                 ('Label 3', 'Value 3'),
                             ])
-                        with ui.column().classes('gap-md').style('flex: 1; min-width: 300px;'):
+                        with ui.column().classes('gap-md demo-card-column'):
                             Card.action(
                                 'Action Card',
                                 'This card has an action button',
@@ -242,26 +242,26 @@ def register():
                 with ui.element('div').classes('card-body'):
                     ui.label('Row Layout').classes('font-bold mb-2')
                     with ui.row().classes('gap-md'):
-                        with ui.element('div').classes('card').style('padding: 1rem; flex: 1;'):
+                        with ui.element('div').classes('card demo-layout-item-flex'):
                             ui.label('Item 1')
-                        with ui.element('div').classes('card').style('padding: 1rem; flex: 1;'):
+                        with ui.element('div').classes('card demo-layout-item-flex'):
                             ui.label('Item 2')
-                        with ui.element('div').classes('card').style('padding: 1rem; flex: 1;'):
+                        with ui.element('div').classes('card demo-layout-item-flex'):
                             ui.label('Item 3')
 
                     ui.label('Column Layout').classes('font-bold mb-2 mt-4')
                     with ui.column().classes('gap-md'):
-                        with ui.element('div').classes('card').style('padding: 1rem;'):
+                        with ui.element('div').classes('card demo-layout-item'):
                             ui.label('Item A')
-                        with ui.element('div').classes('card').style('padding: 1rem;'):
+                        with ui.element('div').classes('card demo-layout-item'):
                             ui.label('Item B')
-                        with ui.element('div').classes('card').style('padding: 1rem;'):
+                        with ui.element('div').classes('card demo-layout-item'):
                             ui.label('Item C')
 
                     ui.label('Grid Layout').classes('font-bold mb-2 mt-4')
-                    with ui.element('div').style('display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;'):
+                    with ui.element('div').classes('demo-grid'):
                         for i in range(6):
-                            with ui.element('div').classes('card').style('padding: 1rem;'):
+                            with ui.element('div').classes('card demo-layout-item'):
                                 ui.label(f'Grid Item {i+1}')
 
             # Icons
