@@ -19,6 +19,7 @@ from pages import (
     invite,
     tournaments,
     racetime_oauth,
+    twitch_oauth,
     discord_guild_callback,
     privacy
 )
@@ -76,6 +77,7 @@ def register_routes(fastapi_app: FastAPI = None):
     invite.register()
     tournaments.register()
     racetime_oauth.register()
+    twitch_oauth.register()
     discord_guild_callback.register()
     privacy.register()
 

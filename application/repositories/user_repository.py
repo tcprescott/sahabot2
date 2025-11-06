@@ -195,6 +195,79 @@ class UserRepository:
             is_active=True
         ).order_by('racetime_name')
 
+    async def get_by_twitch_id(self, twitch_id: str) -> Optional[User]:
+        """
+        Get user by Twitch ID.
+
+        Args:
+            twitch_id: Twitch user ID
+
+        Returns:
+            Optional[User]: User if found, None otherwise
+        """
+        return await User.filter(twitch_id=twitch_id).first()
+
+    async def get_users_with_twitch(
+        self,
+        include_inactive: bool = False,
+        limit: Optional[int] = None,
+        offset: int = 0
+    ) -> list[User]:
+        """
+        Get all users with linked Twitch accounts.
+
+        Args:
+            include_inactive: Whether to include inactive users
+            limit: Maximum number of users to return
+            offset: Number of users to skip
+
+        Returns:
+            list[User]: List of users with Twitch accounts
+        """
+        query = User.filter(twitch_id__not_isnull=True)
+        if not include_inactive:
+            query = query.filter(is_active=True)
+
+        query = query.order_by('-created_at')
+
+        if offset > 0:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        return await query
+
+    async def count_twitch_linked_users(self, include_inactive: bool = False) -> int:
+        """
+        Count users with linked Twitch accounts.
+
+        Args:
+            include_inactive: Whether to include inactive users
+
+        Returns:
+            int: Number of users with linked Twitch accounts
+        """
+        query = User.filter(twitch_id__not_isnull=True)
+        if not include_inactive:
+            query = query.filter(is_active=True)
+        return await query.count()
+
+    async def search_by_twitch_name(self, query: str) -> list[User]:
+        """
+        Search users by Twitch username.
+
+        Args:
+            query: Search query
+
+        Returns:
+            list[User]: List of matching users
+        """
+        return await User.filter(
+            twitch_name__icontains=query,
+            twitch_id__not_isnull=True,
+            is_active=True
+        ).order_by('twitch_name')
+
     async def get_placeholder_users_for_tournament(self, tournament_id: int) -> list[User]:
         """
         Get all placeholder users associated with a tournament's matches.

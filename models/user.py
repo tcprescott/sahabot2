@@ -54,6 +54,12 @@ class User(Model):
         racetime_access_token: OAuth2 access token for RaceTime.gg API (nullable)
         racetime_refresh_token: OAuth2 refresh token for RaceTime.gg API (nullable)
         racetime_token_expires_at: Access token expiration timestamp (nullable)
+        twitch_id: Twitch user ID (unique, nullable)
+        twitch_name: Twitch username (lowercase, nullable)
+        twitch_display_name: Twitch display name (with capitalization, nullable)
+        twitch_access_token: OAuth2 access token for Twitch API (nullable)
+        twitch_refresh_token: OAuth2 refresh token for Twitch API (nullable)
+        twitch_token_expires_at: Access token expiration timestamp (nullable)
         display_name: User's chosen display name (falls back to discord_username if not set)
         pronouns: User's pronouns (optional)
         show_pronouns: Whether to display pronouns with the user's name
@@ -87,6 +93,14 @@ class User(Model):
     racetime_access_token = fields.TextField(null=True)
     racetime_refresh_token = fields.TextField(null=True)
     racetime_token_expires_at = fields.DatetimeField(null=True)
+
+    # Twitch account linking
+    twitch_id = fields.CharField(max_length=255, null=True, unique=True, index=True)
+    twitch_name = fields.CharField(max_length=255, null=True)
+    twitch_display_name = fields.CharField(max_length=255, null=True)
+    twitch_access_token = fields.TextField(null=True)
+    twitch_refresh_token = fields.TextField(null=True)
+    twitch_token_expires_at = fields.DatetimeField(null=True)
 
     # User profile preferences
     display_name = fields.CharField(max_length=255, null=True)

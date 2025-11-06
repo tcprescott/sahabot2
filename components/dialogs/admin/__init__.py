@@ -11,6 +11,7 @@ from components.dialogs.admin.approve_org_request_dialog import ApproveOrgReques
 from components.dialogs.admin.reject_org_request_dialog import RejectOrgRequestDialog
 from components.dialogs.admin.view_namespace_dialog import ViewNamespaceDialog
 from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
+from components.dialogs.admin.twitch_unlink_dialog import TwitchUnlinkDialog
 
 __all__ = [
     'UserEditDialog',
@@ -24,4 +25,5 @@ __all__ = [
     'RejectOrgRequestDialog',
     'ViewNamespaceDialog',
     'RacetimeUnlinkDialog',
+    'TwitchUnlinkDialog',
 ]

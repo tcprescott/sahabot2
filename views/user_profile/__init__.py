@@ -9,6 +9,7 @@ from views.user_profile.profile_settings import ProfileSettingsView
 from views.user_profile.api_keys import ApiKeysView
 from views.user_profile.user_organizations import UserOrganizationsView
 from views.user_profile.racetime_account import RacetimeAccountView
+from views.user_profile.twitch_account import TwitchAccountView
 from views.user_profile.preset_namespaces import PresetNamespacesView
 from views.user_profile.notification_preferences import NotificationPreferencesView
 from views.user_profile.racer_verification import RacerVerificationView
@@ -19,6 +20,7 @@ __all__ = [
     'ApiKeysView',
     'UserOrganizationsView',
     'RacetimeAccountView',
+    'TwitchAccountView',
     'PresetNamespacesView',
     'NotificationPreferencesView',
     'RacerVerificationView',
