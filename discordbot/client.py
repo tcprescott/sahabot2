@@ -12,6 +12,7 @@ import json
 import logging
 from typing import Optional
 from config import settings
+import sentry_sdk
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -184,21 +185,32 @@ class DiscordBot(commands.Bot):
     async def on_error(self, event_method: str, *args, **kwargs) -> None:
         """
         Event handler for bot errors.
-        
+
         Args:
             event_method: The event method that raised the error
         """
         logger.error('Error in %s', event_method, exc_info=True)
-    
+        # Capture exception in Sentry
+        sentry_sdk.capture_exception()
+
     async def on_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         """
         Event handler for command errors.
-        
+
         Args:
             ctx: Command context
             error: The error that occurred
         """
         logger.error('Command error in %s: %s', ctx.command, error, exc_info=error)
+        # Capture exception in Sentry with additional context
+        with sentry_sdk.push_scope() as scope:
+            scope.set_context("discord_command", {
+                "command": str(ctx.command),
+                "author": str(ctx.author),
+                "guild": str(ctx.guild) if ctx.guild else None,
+                "channel": str(ctx.channel),
+            })
+            sentry_sdk.capture_exception(error)
     
     @property
     def is_ready(self) -> bool:

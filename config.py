@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     ALTTPR_BASEURL: str = "https://alttpr.com"
     OOTR_API_KEY: Optional[str] = None
 
+    # Sentry Configuration
+    SENTRY_DSN: Optional[str] = None
+    SENTRY_ENVIRONMENT: Optional[str] = None
+    SENTRY_TRACES_SAMPLE_RATE: float = 1.0
+    SENTRY_PROFILES_SAMPLE_RATE: float = 1.0
+
     @property
     def database_url(self) -> str:
         """
