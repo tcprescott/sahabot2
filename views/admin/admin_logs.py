@@ -181,19 +181,19 @@ class AdminLogsView:
 
     async def _on_level_filter(self, e):
         """Handle level filter change."""
-        value = e.args
+        value = e.args[0] if e.args else 'ALL'
         self.level_filter = value if value != 'ALL' else None
         await self._refresh_logs()
 
     async def _on_search_filter(self, e):
         """Handle search filter change."""
-        value = e.args
+        value = e.args[0] if e.args else ''
         self.search_filter = value.strip() if value and value.strip() else None
         await self._refresh_logs()
 
     def _on_auto_scroll_toggle(self, e):
         """Handle auto-scroll toggle."""
-        self.auto_scroll = e.args
+        self.auto_scroll = e.args[0] if e.args else False
 
     async def _clear_logs(self):
         """Clear all stored logs."""
@@ -241,6 +241,10 @@ class AdminLogsView:
 
         content = '\n'.join(lines)
 
+        # Generate timestamp for filename
+        from datetime import datetime, timezone
+        timestamp = datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')
+
         # Trigger download using JavaScript
         # Create a data URL and trigger download
         ui.run_javascript(f'''
@@ -249,7 +253,7 @@ class AdminLogsView:
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'sahabot2_logs_{record.timestamp.strftime('%Y%m%d_%H%M%S')}.txt';
+            a.download = 'sahabot2_logs_{timestamp}.txt';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
