@@ -11,7 +11,7 @@ from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import LeaveOrganizationDialog, RequestOrganizationDialog
 from application.services.organization_service import OrganizationService
-from application.services.authorization_service import AuthorizationService
+from application.services.ui_authorization_helper import UIAuthorizationHelper
 import logging
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class UserOrganizationsView:
     def __init__(self, user: User) -> None:
         self.user = user
         self.service = OrganizationService()
-        self.auth_service = AuthorizationService()
+        self.ui_auth = UIAuthorizationHelper()
         self.container = None
 
     async def _refresh(self) -> None:
@@ -116,8 +116,7 @@ class UserOrganizationsView:
                 async def render_actions(m):
                     with ui.row().classes('gap-2'):
                         # Show admin button if user can access the organization admin panel
-                        # (superadmins or organization admins)
-                        can_admin = await self.service.user_can_admin_org(self.user, m.organization.id)
+                        can_admin = await self.ui_auth.can_manage_organization(self.user, m.organization.id)
                         if can_admin:
                             ui.button('Admin Panel', icon='admin_panel_settings',
                                     on_click=lambda org=m.organization: ui.navigate.to(f'/orgs/{org.id}/admin')).classes('btn')

@@ -166,7 +166,93 @@ async def get_tournaments(self, organization_id: int, current_user: User):
     return await self.repository.list_by_organization(organization_id)
 ```
 
-### 13. Database Migrations with Aerich
+### 13. Authorization Patterns (Policy Framework)
+
+**Use the new policy-based authorization system** - `AuthorizationService` is deprecated.
+
+**Three authorization patterns** based on context:
+
+#### Pattern 1: Organization-Scoped Permissions (UI Layer)
+Use `UIAuthorizationHelper` for checking organization-specific permissions in UI components:
+
+```python
+from application.services.ui_authorization_helper import UIAuthorizationHelper
+
+class MyView:
+    def __init__(self):
+        self.ui_auth = UIAuthorizationHelper()
+    
+    async def render(self):
+        # Check organization-scoped permissions
+        can_manage_members = await self.ui_auth.can_manage_members(user, org_id)
+        can_manage_tournaments = await self.ui_auth.can_manage_tournaments(user, org_id)
+        can_manage_org = await self.ui_auth.can_manage_organization(user, org_id)
+```
+
+**Available UIAuthorizationHelper methods**:
+- `can_manage_organization()` - Organization settings
+- `can_manage_members()` - Organization members
+- `can_manage_tournaments()` - Tournament management
+- `can_manage_async_tournaments()` - Async tournaments
+- `can_review_async_races()` - Race review
+- `can_manage_scheduled_tasks()` - Task scheduling
+- `can_manage_race_room_profiles()` - RaceTime profiles
+- `can_manage_live_races()` - Live race management
+
+#### Pattern 2: Global Permissions (UI Layer)
+Use inline `Permission` enum checks for global admin/moderator permissions:
+
+```python
+from models.user import Permission
+
+# Check for global admin
+if user.has_permission(Permission.ADMIN):
+    # Show admin features
+    pass
+
+# Check for moderator (includes admin and superadmin)
+if user.has_permission(Permission.MODERATOR):
+    # Show moderator features
+    pass
+
+# Multiple permission check
+if user.has_permission(Permission.MODERATOR) or user.has_permission(Permission.ADMIN):
+    # User has moderator or admin permissions
+    pass
+```
+
+**Permission Levels** (from highest to lowest):
+- `Permission.SUPERADMIN` - Full system access
+- `Permission.ADMIN` - Administrative access
+- `Permission.MODERATOR` - Moderation capabilities
+- `Permission.USER` - Standard user
+
+#### Pattern 3: Service Layer Permissions
+Use policy framework directly in service layer (NOT UIAuthorizationHelper):
+
+```python
+from application.policies.organization_permissions import OrganizationPermissions
+
+class MyService:
+    async def my_method(self, user, organization_id):
+        # Use policy framework directly
+        checker = OrganizationPermissions(organization_id)
+        can_manage = await checker.can_manage_tournaments(user)
+        
+        if not can_manage:
+            return None  # Graceful degradation
+```
+
+**Critical Rules**:
+- ✅ **UI components**: Use `UIAuthorizationHelper` or inline `Permission` checks
+- ✅ **Service layer**: Use policy framework directly
+- ❌ **Never use** `AuthorizationService` (deprecated)
+- ❌ **Never use** `UIAuthorizationHelper` in service layer
+- ✅ **Always await** UIAuthorizationHelper methods (they're async)
+
+**See**: [`docs/operations/AUTHORIZATION_MIGRATION.md`](../docs/operations/AUTHORIZATION_MIGRATION.md) for complete migration guide
+
+### 14. Database Migrations with Aerich
 - **NEVER manually create migration files** - Aerich requires special `models_state` tracking
 - **Always use `poetry run aerich migrate --name "description"`** to generate migrations
 - **Edit the generated migration SQL if needed** - but keep the file structure intact
@@ -440,6 +526,9 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - Forget `async`/`await`
 - Skip docstrings
 - Mix authorization with business logic
+- Use `AuthorizationService` (deprecated - use UIAuthorizationHelper or Permission enum)
+- Use UIAuthorizationHelper in service layer (use policy framework directly)
+- Forget to `await` UIAuthorizationHelper methods (they're async)
 - Use prefix (chat-based) commands in Discord bot
 - Use `print()` for logging in application code
 - Use f-strings in logging statements
@@ -462,6 +551,10 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - Use `with ui.element('div').classes('header'):` then `ui.label('Text')`
 - Use services for all business logic
 - Use repositories for data access
+- Use UIAuthorizationHelper for organization permissions in UI
+- Use Permission enum for global permissions in UI
+- Use policy framework directly in service layer
+- Always `await` UIAuthorizationHelper methods
 - Enforce permissions server-side
 - Use `ResponsiveTable` for tabular data
 - Test on mobile viewports

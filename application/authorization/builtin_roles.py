@@ -43,11 +43,15 @@ REGULAR_ORG_BUILTIN_ROLES = [
         description="Full administrative access to organization",
         is_locked=True,
         actions=[
-            "organization:*",  # All organization actions
-            "member:*",        # All member actions
-            "tournament:*",    # All tournament actions
-            "match:*",         # All match actions
-            "async_race:*",    # All async race actions
+            "organization:*",      # All organization actions
+            "member:*",            # All member actions
+            "tournament:*",        # All tournament actions
+            "match:*",             # All match actions
+            "async_race:*",        # All async race actions
+            "async_tournament:*",  # All async tournament actions
+            "async_live_race:*",   # All async live race actions
+            "scheduled_task:*",    # All scheduled task actions
+            "race_room_profile:*", # All race room profile actions
         ],
         scope="organization"
     ),
@@ -56,9 +60,12 @@ REGULAR_ORG_BUILTIN_ROLES = [
         description="Manage tournaments and matches",
         is_locked=True,
         actions=[
-            "tournament:*",      # All tournament actions
-            "match:*",           # All match actions
-            "organization:read", # Read org info
+            "tournament:*",        # All tournament actions
+            "match:*",             # All match actions
+            "async_tournament:*",  # All async tournament actions
+            "scheduled_task:*",    # All scheduled task actions (for tournament scheduling)
+            "race_room_profile:*", # All race room profile actions (for tournament setup)
+            "organization:read",   # Read org info
         ],
         scope="organization"
     ),

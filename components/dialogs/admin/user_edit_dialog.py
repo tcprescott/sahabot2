@@ -10,7 +10,6 @@ from typing import Optional, Callable
 from nicegui import ui
 from models import User, Permission
 from application.services.user_service import UserService
-from application.services.authorization_service import AuthorizationService
 from application.services.audit_service import AuditService
 from components.dialogs.common.base_dialog import BaseDialog
 import logging
@@ -39,12 +38,27 @@ class UserEditDialog(BaseDialog):
         self.current_user = current_user
         self.on_save = on_save
         self.user_service = UserService()
-        self.auth_service = AuthorizationService()
         self.audit_service = AuditService()
 
         # State
         self.is_active = target_user.is_active
         self.permission = target_user.permission
+
+    def _can_change_permissions(self, new_permission: Permission) -> bool:
+        """
+        Check if current user can change target user's permissions.
+        
+        Only SUPERADMINs can change permissions.
+        Can't change your own permissions.
+        Can't elevate someone to your level or higher.
+        """
+        if not self.current_user.has_permission(Permission.SUPERADMIN):
+            return False
+        if self.current_user.id == self.target_user.id:
+            return False
+        if new_permission >= self.current_user.permission:
+            return False
+        return True
 
     async def show(self) -> None:
         """Display the edit dialog using BaseDialog structure."""
@@ -71,7 +85,7 @@ class UserEditDialog(BaseDialog):
         status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
 
         # Permission level (only if user can change permissions)
-        if self.auth_service.can_change_permissions(self.current_user, self.target_user, Permission.USER):
+        if self._can_change_permissions(Permission.USER):
             self.create_section_title('Permission Level')
             self.create_permission_select(
                 current_permission=self.permission,
@@ -109,7 +123,7 @@ class UserEditDialog(BaseDialog):
 
             # Update permission
             if self.permission != self.target_user.permission:
-                if self.auth_service.can_change_permissions(self.current_user, self.target_user, self.permission):
+                if self._can_change_permissions(self.permission):
                     await self.user_service.update_user_permission(self.target_user.id, self.permission)
                     changes.append(f'changed permission to {self.permission.name}')
                     changed = True

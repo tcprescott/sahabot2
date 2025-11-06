@@ -19,7 +19,7 @@ from components.dialogs import (
     ConfirmDialog,
 )
 from application.services.organization_service import OrganizationService
-from application.services.authorization_service import AuthorizationService
+from application.services.ui_authorization_helper import UIAuthorizationHelper
 from application.services.organization_invite_service import OrganizationInviteService
 from config import settings
 
@@ -31,7 +31,7 @@ class OrganizationMembersView:
         self.organization = organization
         self.user = user
         self.service = OrganizationService()
-        self.auth_service = AuthorizationService()
+        self.ui_auth = UIAuthorizationHelper()
         self.invite_service = OrganizationInviteService()
         self.container = None
         self.can_manage = False  # Will be set in render
@@ -233,7 +233,7 @@ class OrganizationMembersView:
     async def render(self) -> None:
         """Render the members view."""
         # Check if user can manage members
-        self.can_manage = await self.auth_service.can_manage_org_members(self.user, self.organization.id)
+        self.can_manage = await self.ui_auth.can_manage_members(self.user, self.organization.id)
         
         self.container = ui.column().classes('full-width')
         with self.container:

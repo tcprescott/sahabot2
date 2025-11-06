@@ -7,8 +7,8 @@ Provides a comprehensive interface for viewing, editing, and managing user accou
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from models import User
+from models.user import Permission
 from application.services.user_service import UserService
-from application.services.authorization_service import AuthorizationService
 from components.dialogs import UserEditDialog, UserAddDialog
 from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
 from components.datetime_label import DateTimeLabel
@@ -31,7 +31,6 @@ class AdminUsersView:
         """
         self.current_user = current_user
         self.user_service = UserService()
-        self.auth_service = AuthorizationService()
         
         # State
         self.users: list[User] = []
@@ -202,7 +201,11 @@ class AdminUsersView:
                                     f'https://racetime.gg/user/{u.racetime_id}',
                                     new_tab=True
                                 ).classes('text-sm')
-                            if self.auth_service.can_edit_user(self.current_user, u):
+                            # Can edit if self or admin with higher permission
+                            can_edit = (self.current_user.id == u.id or 
+                                       (self.current_user.has_permission(Permission.ADMIN) and 
+                                        self.current_user.permission > u.permission))
+                            if can_edit:
                                 ui.button(
                                     'Unlink',
                                     icon='link_off',
@@ -214,8 +217,13 @@ class AdminUsersView:
                             ui.label('Not linked').classes('text-sm text-secondary')
 
                 async def render_actions_cell(u: User):
+                    # Can edit if self or admin with higher permission
+                    can_edit = (self.current_user.id == u.id or 
+                               (self.current_user.has_permission(Permission.ADMIN) and 
+                                self.current_user.permission > u.permission))
+                    
                     with ui.row().classes('gap-1'):
-                        if self.auth_service.can_edit_user(self.current_user, u):
+                        if can_edit:
                             ui.button(
                                 icon='edit',
                                 on_click=lambda x=u: self._edit_user(x)

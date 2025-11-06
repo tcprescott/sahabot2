@@ -9,13 +9,13 @@ import logging
 from typing import Optional
 from nicegui import ui
 from models import Organization, User, CrewRole
+from models.user import Permission
 from models.match_schedule import Match
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from components.dialogs import MatchSeedDialog, EditMatchDialog, CreateMatchDialog
 from application.services.tournament_service import TournamentService
 from application.services.organization_service import OrganizationService
-from application.services.authorization_service import AuthorizationService
 from config import Settings
 
 settings = Settings()
@@ -31,7 +31,6 @@ class EventScheduleView:
         self.user = user
         self.service = TournamentService()
         self.org_service = OrganizationService()
-        self.auth_service = AuthorizationService()
         self.container = None
         self.filter_states = ['pending', 'scheduled', 'checked_in']  # Default: show pending, scheduled, checked_in
         self.selected_tournaments = []  # List of selected tournament IDs
@@ -96,7 +95,10 @@ class EventScheduleView:
         )
 
         # Check if user can edit matches (tournament manager or moderator)
-        self.can_edit_matches = self.can_manage_tournaments or self.auth_service.can_moderate(self.user)
+        self.can_edit_matches = self.can_manage_tournaments or (
+            self.user.has_permission(Permission.MODERATOR) or 
+            self.user.has_permission(Permission.ADMIN)
+        )
 
         # Check if user can approve crew
         self.can_approve_crew = await self.org_service.user_can_approve_crew(
@@ -150,7 +152,7 @@ class EventScheduleView:
                 with ui.row().classes('items-center justify-between w-full'):
                     ui.label(f'Event Schedule - {self.organization.name} ({len(matches)}/{len(all_matches)})').classes('text-xl font-bold')
                     # Show "Create Match" button for tournament admins and admins
-                    if self.can_manage_tournaments or self.auth_service.can_access_admin_panel(self.user):
+                    if self.can_manage_tournaments or self.user.has_permission(Permission.ADMIN):
                         ui.button(
                             'Create Match',
                             icon='add_circle',

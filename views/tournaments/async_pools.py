@@ -12,7 +12,6 @@ from components.card import Card
 from components.dialogs.tournaments import PoolDialog, PermalinkDialog
 from components.dialogs.common import ConfirmDialog
 from application.services.async_tournament_service import AsyncTournamentService
-from application.services.authorization_service import AuthorizationService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -25,7 +24,6 @@ class AsyncPoolsView:
         self.user = user
         self.tournament = tournament
         self.service = AsyncTournamentService()
-        self.auth_service = AuthorizationService()
         self.can_manage = False
         self.container = None
 
