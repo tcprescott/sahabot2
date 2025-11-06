@@ -80,7 +80,10 @@ def register():
                         ui.label('Twitch Linking Failed')
                     with ui.element('div').classes('card-body'):
                         ui.label(f'Error: {error}').classes('text-error')
-                        ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                        ui.button(
+                            'Back to Profile',
+                            on_click=lambda: ui.navigate.to('/profile')
+                        ).classes('btn btn-primary mt-2')
                 return
 
             # Verify CSRF state
@@ -93,8 +96,13 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Linking Failed')
                     with ui.element('div').classes('card-body'):
-                        ui.label('Invalid state token. Please try again.').classes('text-error')
-                        ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                        ui.label(
+                            'Invalid state token. Please try again.'
+                        ).classes('text-error')
+                        ui.button(
+                            'Back to Profile',
+                            on_click=lambda: ui.navigate.to('/profile')
+                        ).classes('btn btn-primary mt-2')
                 return
 
             if state not in stored_states:
@@ -103,9 +111,17 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Linking Failed')
                     with ui.element('div').classes('card-body'):
-                        ui.label('Invalid state token. Please try again.').classes('text-error')
-                        ui.label('This can happen if you took too long or if cookies are disabled.').classes('text-secondary text-sm mt-2')
-                        ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                        ui.label(
+                            'Invalid state token. Please try again.'
+                        ).classes('text-error')
+                        ui.label(
+                            'This can happen if you took too long or '
+                            'if cookies are disabled.'
+                        ).classes('text-secondary text-sm mt-2')
+                        ui.button(
+                            'Back to Profile',
+                            on_click=lambda: ui.navigate.to('/profile')
+                        ).classes('btn btn-primary mt-2')
                 return
 
             # Check if state is expired (older than 10 minutes)
@@ -116,8 +132,13 @@ def register():
                     with ui.element('div').classes('card-header'):
                         ui.label('Linking Failed')
                     with ui.element('div').classes('card-body'):
-                        ui.label('Linking session expired. Please try again.').classes('text-error')
-                        ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                        ui.label(
+                            'Linking session expired. Please try again.'
+                        ).classes('text-error')
+                        ui.button(
+                            'Back to Profile',
+                            on_click=lambda: ui.navigate.to('/profile')
+                        ).classes('btn btn-primary mt-2')
                 return
 
             # Get user ID from state
@@ -136,8 +157,13 @@ def register():
                             with ui.element('div').classes('card-header'):
                                 ui.label('Linking Failed')
                             with ui.element('div').classes('card-body'):
-                                ui.label('User not found. Please log in again.').classes('text-error')
-                                ui.button('Login', on_click=lambda: ui.navigate.to('/auth/login')).classes('btn btn-primary mt-2')
+                                ui.label(
+                                    'User not found. Please log in again.'
+                                ).classes('text-error')
+                                ui.button(
+                                    'Login',
+                                    on_click=lambda: ui.navigate.to('/auth/login')
+                                ).classes('btn btn-primary mt-2')
                         return
 
                     # Exchange code for token
@@ -168,7 +194,11 @@ def register():
                         expires_at=expires_at
                     )
 
-                    logger.info("Successfully linked Twitch account %s to user %s", twitch_id, current_user.id)
+                    logger.info(
+                        "Successfully linked Twitch account %s to user %s",
+                        twitch_id,
+                        current_user.id
+                    )
 
                     # Clear the used OAuth state
                     stored_states = app.storage.browser.get('twitch_oauth_states', {})
@@ -180,8 +210,14 @@ def register():
                         with ui.element('div').classes('card-header'):
                             ui.label('Account Linked Successfully!')
                         with ui.element('div').classes('card-body'):
-                            ui.label(f'Your Twitch account "{twitch_display_name}" has been linked.').classes('text-success')
-                            ui.button('Go to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                            ui.label(
+                                f'Your Twitch account "{twitch_display_name}" '
+                                'has been linked.'
+                            ).classes('text-success')
+                            ui.button(
+                                'Go to Profile',
+                                on_click=lambda: ui.navigate.to('/profile')
+                            ).classes('btn btn-primary mt-2')
 
                 except ValueError as e:
                     logger.error("Error linking Twitch account: %s", str(e))
@@ -190,22 +226,36 @@ def register():
                             ui.label('Linking Failed')
                         with ui.element('div').classes('card-body'):
                             ui.label(str(e)).classes('text-error')
-                            ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                            ui.button(
+                                'Back to Profile',
+                                on_click=lambda: ui.navigate.to('/profile')
+                            ).classes('btn btn-primary mt-2')
                 except Exception as e:
                     logger.error("Error in Twitch callback: %s", str(e), exc_info=True)
                     with ui.element('div').classes('card text-center'):
                         with ui.element('div').classes('card-header'):
                             ui.label('Linking Failed')
                         with ui.element('div').classes('card-body'):
-                            ui.label('An error occurred while linking your account. Please try again.').classes('text-error')
-                            ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                            ui.label(
+                                'An error occurred while linking your account. '
+                                'Please try again.'
+                            ).classes('text-error')
+                            ui.button(
+                                'Back to Profile',
+                                on_click=lambda: ui.navigate.to('/profile')
+                            ).classes('btn btn-primary mt-2')
             else:
                 # No code provided
                 with ui.element('div').classes('card text-center'):
                     with ui.element('div').classes('card-header'):
                         ui.label('Linking Failed')
                     with ui.element('div').classes('card-body'):
-                        ui.label('No authorization code received.').classes('text-error')
-                        ui.button('Back to Profile', on_click=lambda: ui.navigate.to('/profile')).classes('btn btn-primary mt-2')
+                        ui.label(
+                            'No authorization code received.'
+                        ).classes('text-error')
+                        ui.button(
+                            'Back to Profile',
+                            on_click=lambda: ui.navigate.to('/profile')
+                        ).classes('btn btn-primary mt-2')
 
         await base.render(content)

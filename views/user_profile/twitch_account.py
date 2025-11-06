@@ -36,15 +36,23 @@ class TwitchAccountView:
                     with ui.row().classes('items-center'):
                         ui.icon('person').classes('text-secondary')
                         with ui.column().classes('flex-1'):
-                            ui.label('Twitch Display Name').classes('text-sm text-secondary')
-                            ui.label(self.user.twitch_display_name or 'Unknown').classes('font-bold')
+                            ui.label('Twitch Display Name').classes(
+                                'text-sm text-secondary'
+                            )
+                            ui.label(
+                                self.user.twitch_display_name or 'Unknown'
+                            ).classes('font-bold')
 
                     # Twitch username
                     with ui.row().classes('items-center'):
                         ui.icon('alternate_email').classes('text-secondary')
                         with ui.column().classes('flex-1'):
-                            ui.label('Twitch Username').classes('text-sm text-secondary')
-                            ui.label(self.user.twitch_name or 'Unknown').classes('font-mono')
+                            ui.label('Twitch Username').classes(
+                                'text-sm text-secondary'
+                            )
+                            ui.label(
+                                self.user.twitch_name or 'Unknown'
+                            ).classes('font-mono')
 
                     # Twitch ID
                     with ui.row().classes('items-center'):
@@ -71,16 +79,25 @@ class TwitchAccountView:
                     # Unlink button
                     async def handle_unlink():
                         """Handle unlinking Twitch account."""
-                        from components.dialogs.common.tournament_dialogs import ConfirmDialog
+                        from components.dialogs.common.tournament_dialogs import (
+                            ConfirmDialog
+                        )
 
                         dialog = ConfirmDialog(
                             title='Unlink Twitch Account',
-                            message='Are you sure you want to unlink your Twitch account? This will remove any Twitch-related integrations and features.',
+                            message=(
+                                'Are you sure you want to unlink your Twitch '
+                                'account? This will remove any Twitch-related '
+                                'integrations and features.'
+                            ),
                             on_confirm=self._unlink_account
                         )
                         await dialog.show()
 
-                    ui.button('Unlink Account', on_click=handle_unlink).classes('btn').props('color=negative')
+                    ui.button(
+                        'Unlink Account',
+                        on_click=handle_unlink
+                    ).classes('btn').props('color=negative')
 
                 else:
                     # Account is not linked
@@ -96,9 +113,15 @@ class TwitchAccountView:
                     with ui.element('div').classes('flex flex-col gap-2'):
                         ui.label('Link your Twitch account to:').classes('text-sm')
                         with ui.element('ul').classes('list-disc pl-6 text-sm'):
-                            ui.label('Enable Twitch-based features and integrations').classes('list-item')
-                            ui.label('Connect your streams to tournaments and races').classes('list-item')
-                            ui.label('Receive notifications and alerts via Twitch').classes('list-item')
+                            ui.label(
+                                'Enable Twitch-based features and integrations'
+                            ).classes('list-item')
+                            ui.label(
+                                'Connect your streams to tournaments and races'
+                            ).classes('list-item')
+                            ui.label(
+                                'Receive notifications and alerts via Twitch'
+                            ).classes('list-item')
 
                     ui.separator()
 
@@ -127,5 +150,12 @@ class TwitchAccountView:
             ui.navigate.to('/profile')
 
         except Exception as e:
-            logger.error("Error unlinking Twitch account: %s", str(e), exc_info=True)
-            ui.notify('An error occurred while unlinking your account', type='negative')
+            logger.error(
+                "Error unlinking Twitch account: %s",
+                str(e),
+                exc_info=True
+            )
+            ui.notify(
+                'An error occurred while unlinking your account',
+                type='negative'
+            )

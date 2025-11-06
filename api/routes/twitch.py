@@ -202,7 +202,11 @@ async def admin_unlink_account(
     if not user:
         return {"success": False, "message": "Unauthorized or user not found"}
 
-    logger.info("Admin %s unlinked Twitch account for user %s", current_user.id, user_id)
+    logger.info(
+        "Admin %s unlinked Twitch account for user %s",
+        current_user.id,
+        user_id
+    )
 
     return {
         "success": True,

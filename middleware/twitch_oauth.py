@@ -6,7 +6,7 @@ This module handles OAuth2 authentication flow with Twitch for linking user acco
 
 import httpx
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlencode
 from config import settings
@@ -80,8 +80,11 @@ class TwitchOAuthService:
 
             # Log error details if request fails
             if response.status_code != 200:
-                # Don't log the full error response as it may contain sensitive info
-                logger.error("Twitch token exchange failed with status %s", response.status_code)
+                # Don't log the full error response
+                logger.error(
+                    "Twitch token exchange failed with status %s",
+                    response.status_code
+                )
                 raise httpx.HTTPStatusError(
                     "Twitch token exchange failed",
                     request=response.request,
@@ -118,7 +121,10 @@ class TwitchOAuthService:
             )
 
             if response.status_code != 200:
-                logger.error("Twitch token refresh failed with status %s", response.status_code)
+                logger.error(
+                    "Twitch token refresh failed with status %s",
+                    response.status_code
+                )
                 raise httpx.HTTPStatusError(
                     "Twitch token refresh failed",
                     request=response.request,
@@ -162,8 +168,11 @@ class TwitchOAuthService:
             )
 
             if response.status_code != 200:
-                # Don't log the full error response as it may contain sensitive info
-                logger.error("Twitch userinfo request failed with status %s", response.status_code)
+                # Don't log the full error response
+                logger.error(
+                    "Twitch userinfo request failed with status %s",
+                    response.status_code
+                )
                 raise httpx.HTTPStatusError(
                     "Twitch userinfo request failed",
                     request=response.request,
