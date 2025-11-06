@@ -10,6 +10,8 @@ from components.base_page import BasePage
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
+from components.dynamic_form_builder import DynamicFormBuilder
+from components.dialogs.common.base_dialog import BaseDialog
 from config import settings
 
 
@@ -64,6 +66,23 @@ def register():
                         ui.button('Disabled Button', on_click=lambda: ui.notify('Should not see this')).props('disabled').classes('btn')
                         ui.button('Icon Button', icon='star', on_click=lambda: ui.notify('Icon button!')).classes('btn btn-primary')
                         ui.button('Loading Button', on_click=lambda: ui.notify('Loading...')).props('loading').classes('btn')
+
+                        # Dialog example button
+                        async def show_example_dialog():
+                            class ExampleDialog(BaseDialog):
+                                def _render_body(self):
+                                    ui.label('This is an example dialog using BaseDialog.')
+                                    ui.label('It demonstrates the standard dialog structure.').classes('text-secondary mt-2')
+                                    ui.separator().classes('my-4')
+                                    with self.create_actions_row():
+                                        ui.button('Cancel', on_click=self.close).classes('btn')
+                                        ui.button('OK', on_click=self.close).classes('btn').props('color=positive')
+
+                            dialog = ExampleDialog()
+                            dialog.create_dialog(title='Example Dialog', icon='info')
+                            await dialog.show()
+
+                        ui.button('Show Dialog', icon='open_in_new', on_click=show_example_dialog).classes('btn btn-primary')
 
             # Badges Section
             with ui.element('div').classes('card mt-4'):
@@ -126,6 +145,18 @@ def register():
 
                     ui.label('Time Input').classes('font-bold mb-2 mt-4')
                     ui.time(value='12:00').classes('w-full')
+
+                    ui.label('File Upload').classes('font-bold mb-2 mt-4')
+                    ui.upload(label='Upload file', on_upload=lambda e: ui.notify(f'Uploaded: {e.name}')).classes('w-full')
+
+                    ui.label('Knob').classes('font-bold mb-2 mt-4')
+                    ui.knob(value=0.3, show_value=True)
+
+                    ui.label('Linear Progress').classes('font-bold mb-2 mt-4')
+                    ui.linear_progress(value=0.7).classes('w-full')
+
+                    ui.label('Circular Progress').classes('font-bold mb-2 mt-4')
+                    ui.circular_progress(value=0.5)
 
             # Card Component Examples
             with ui.element('div').classes('card mt-4'):
@@ -251,14 +282,110 @@ def register():
                         ui.button('Warning Notification', on_click=lambda: ui.notify('Warning!', type='warning')).classes('btn btn-warning')
                         ui.button('Info Notification', on_click=lambda: ui.notify('Info!', type='info')).classes('btn')
 
-            # Separators
-            with ui.element('div').classes('card mt-4 mb-4'):
+            # DynamicFormBuilder Component
+            with ui.element('div').classes('card mt-4'):
                 with ui.element('div').classes('card-header'):
-                    ui.label('Separators').classes('text-2xl font-bold')
+                    ui.label('DynamicFormBuilder Component').classes('text-2xl font-bold')
+                with ui.element('div').classes('card-body'):
+                    ui.label('Example of a dynamic form based on JSON schema:').classes('mb-2')
+                    schema = {
+                        'fields': [
+                            {
+                                'name': 'username',
+                                'label': 'Username',
+                                'type': 'text',
+                                'placeholder': 'Enter username',
+                                'required': True,
+                            },
+                            {
+                                'name': 'preset',
+                                'label': 'Preset',
+                                'type': 'select',
+                                'options': ['Standard', 'Open', 'Inverted'],
+                                'default': 'Standard',
+                            },
+                            {
+                                'name': 'difficulty',
+                                'label': 'Difficulty',
+                                'type': 'number',
+                                'min': 1,
+                                'max': 10,
+                                'default': 5,
+                            },
+                            {
+                                'name': 'enable_hints',
+                                'label': 'Enable Hints',
+                                'type': 'checkbox',
+                                'default': True,
+                            },
+                        ]
+                    }
+                    form_builder = DynamicFormBuilder(schema)
+                    form_builder.render()
+
+            # Separators
+            with ui.element('div').classes('card mt-4'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Separators & Dividers').classes('text-2xl font-bold')
                 with ui.element('div').classes('card-body'):
                     ui.label('Content before separator')
                     ui.separator()
                     ui.label('Content after separator')
+
+            # Links
+            with ui.element('div').classes('card mt-4'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Links').classes('text-2xl font-bold')
+                with ui.element('div').classes('card-body'):
+                    ui.link('Internal Link (Home)', '/')
+                    ui.link('External Link (GitHub)', 'https://github.com', new_tab=True).classes('mt-2')
+                    with ui.link(target='https://nicegui.io', new_tab=True).classes('mt-2'):
+                        ui.label('Custom Link Content with Icon')
+                        ui.icon('open_in_new').classes('ml-1')
+
+            # Expansion Panels
+            with ui.element('div').classes('card mt-4'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Expansion Panels').classes('text-2xl font-bold')
+                with ui.element('div').classes('card-body'):
+                    with ui.expansion('Expandable Section 1', icon='info'):
+                        ui.label('This is the content of the first expandable section.')
+                        ui.label('You can put any content here.')
+
+                    with ui.expansion('Expandable Section 2', icon='help'):
+                        ui.label('This is another expandable section.')
+                        ui.button('Button in expansion', on_click=lambda: ui.notify('Clicked!')).classes('btn btn-primary mt-2')
+
+            # Spinners & Loading
+            with ui.element('div').classes('card mt-4'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Spinners & Loading Indicators').classes('text-2xl font-bold')
+                with ui.element('div').classes('card-body'):
+                    with ui.row().classes('gap-md flex-wrap items-center'):
+                        ui.spinner(size='lg', color='primary')
+                        ui.spinner(size='md', color='secondary')
+                        ui.spinner(size='sm', color='positive')
+                        ui.spinner('dots', size='lg', color='negative')
+
+            # Chips
+            with ui.element('div').classes('card mt-4'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Chips').classes('text-2xl font-bold')
+                with ui.element('div').classes('card-body'):
+                    with ui.row().classes('gap-md flex-wrap'):
+                        ui.chip('Default Chip', icon='star')
+                        ui.chip('Clickable Chip', icon='check', on_click=lambda: ui.notify('Chip clicked!')).props('clickable')
+                        ui.chip('Removable Chip', icon='person', removable=True)
+
+            # Tooltips
+            with ui.element('div').classes('card mt-4 mb-4'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Tooltips').classes('text-2xl font-bold')
+                with ui.element('div').classes('card-body'):
+                    with ui.row().classes('gap-md'):
+                        ui.button('Hover for tooltip', on_click=lambda: None).tooltip('This is a tooltip').classes('btn')
+                        ui.label('Hover over this text').tooltip('Tooltip on text')
+                        ui.icon('info').tooltip('Tooltip on icon').classes('cursor-pointer')
 
         # Sidebar
         sidebar_items = [
