@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 import logging
 
 from models.tournament_match_settings import TournamentMatchSettings
-from models.match_schedule import Match
 
 logger = logging.getLogger(__name__)
 
