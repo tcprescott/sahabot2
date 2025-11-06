@@ -47,6 +47,11 @@ class Settings(BaseSettings):
     RACETIME_OAUTH_REDIRECT_URI: Optional[str] = None  # Will default to {BASE_URL}/racetime/link/callback
     RACETIME_URL: str = "https://racetime.gg"
 
+    # Twitch OAuth2 Configuration (for user account linking)
+    TWITCH_CLIENT_ID: str = ""
+    TWITCH_CLIENT_SECRET: str = ""
+    TWITCH_OAUTH_REDIRECT_URI: Optional[str] = None  # Will default to {BASE_URL}/twitch/link/callback
+
     # Application Configuration
     SECRET_KEY: str
     ENVIRONMENT: str = "development"
@@ -132,6 +137,20 @@ class Settings(BaseSettings):
         if self.RACETIME_OAUTH_REDIRECT_URI:
             return self.RACETIME_OAUTH_REDIRECT_URI
         return f"{self.BASE_URL.rstrip('/')}/racetime/link/callback"
+
+    def get_twitch_oauth_redirect_uri(self) -> str:
+        """
+        Get the Twitch OAuth redirect URI.
+
+        If TWITCH_OAUTH_REDIRECT_URI is set in the environment, use that.
+        Otherwise, construct it from BASE_URL.
+
+        Returns:
+            str: The OAuth redirect URI for Twitch
+        """
+        if self.TWITCH_OAUTH_REDIRECT_URI:
+            return self.TWITCH_OAUTH_REDIRECT_URI
+        return f"{self.BASE_URL.rstrip('/')}/twitch/link/callback"
 
 
 # Global settings instance

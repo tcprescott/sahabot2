@@ -12,6 +12,7 @@ from views.user_profile import (
     ApiKeysView,
     UserOrganizationsView,
     RacetimeAccountView,
+    TwitchAccountView,
     PresetNamespacesView,
     NotificationPreferencesView,
     RacerVerificationView,
@@ -39,6 +40,7 @@ def register():
             page.register_content_loader('api-keys', page.create_instance_view_loader(lambda: ApiKeysView(page.user)))
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: UserOrganizationsView(page.user)))
             page.register_content_loader('racetime', page.create_instance_view_loader(lambda: RacetimeAccountView(page.user)))
+            page.register_content_loader('twitch', page.create_instance_view_loader(lambda: TwitchAccountView(page.user)))
             page.register_content_loader('preset-namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
             page.register_content_loader('notifications', page.create_instance_view_loader(lambda: NotificationPreferencesView(page.user)))
             page.register_content_loader('racer-verification', page.create_instance_view_loader(lambda: RacerVerificationView(page.user)))
@@ -59,6 +61,7 @@ def register():
             base.create_sidebar_item_with_loader('Preset Namespaces', 'folder', 'preset-namespaces'),
             base.create_separator(),
             base.create_sidebar_item_with_loader('RaceTime Account', 'link', 'racetime'),
+            base.create_sidebar_item_with_loader('Twitch Account', 'videocam', 'twitch'),
             base.create_sidebar_item_with_loader('Racer Verification', 'verified', 'racer-verification'),
         ]
 

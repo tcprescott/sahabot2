@@ -14,6 +14,7 @@ from pages import (
     async_tournament_admin,
     user_profile,
     racetime_oauth,
+    twitch_oauth,
     discord_guild_callback,
     privacy
 )
@@ -27,6 +28,7 @@ __all__ = [
     'async_tournament_admin',
     'user_profile',
     'racetime_oauth',
+    'twitch_oauth',
     'discord_guild_callback',
     'privacy',
 ]

@@ -633,6 +633,288 @@ class UserService:
         logger.info("Admin %s viewed RaceTime link statistics", admin_user.id)
         return stats
 
+    async def link_twitch_account(
+        self,
+        user: User,
+        twitch_id: str,
+        twitch_name: str,
+        twitch_display_name: str,
+        access_token: str,
+        refresh_token: Optional[str] = None,
+        expires_at: Optional[datetime] = None
+    ) -> User:
+        """
+        Link Twitch account to a user.
+
+        Args:
+            user: User to link the account to
+            twitch_id: Twitch user ID
+            twitch_name: Twitch username (lowercase)
+            twitch_display_name: Twitch display name (with capitalization)
+            access_token: OAuth2 access token
+            refresh_token: OAuth2 refresh token (optional)
+            expires_at: Access token expiration timestamp (optional)
+
+        Returns:
+            User: Updated user with linked Twitch account
+
+        Raises:
+            ValueError: If Twitch account is already linked to another user
+        """
+        # Check if this twitch_id is already linked to a different user
+        existing_user = await self.user_repository.get_by_twitch_id(twitch_id)
+        if existing_user and existing_user.id != user.id:
+            logger.warning(
+                "Twitch account %s already linked to user %s, attempted by user %s",
+                twitch_id,
+                existing_user.id,
+                user.id
+            )
+            raise ValueError("This Twitch account is already linked to another user")
+
+        # Update user with Twitch information
+        user.twitch_id = twitch_id
+        user.twitch_name = twitch_name
+        user.twitch_display_name = twitch_display_name
+        user.twitch_access_token = access_token
+        user.twitch_refresh_token = refresh_token
+        user.twitch_token_expires_at = expires_at
+        await user.save()
+
+        logger.info("Linked Twitch account %s to user %s", twitch_id, user.id)
+        return user
+
+    async def refresh_twitch_token(self, user: User) -> User:
+        """
+        Refresh Twitch access token for a user.
+
+        Args:
+            user: User with linked Twitch account
+
+        Returns:
+            User: Updated user with refreshed token
+
+        Raises:
+            ValueError: If user has no linked account or no refresh token
+            httpx.HTTPError: If token refresh fails
+        """
+        from middleware.twitch_oauth import TwitchOAuthService
+
+        if not user.twitch_id or not user.twitch_refresh_token:
+            raise ValueError("User has no linked Twitch account or refresh token")
+
+        oauth_service = TwitchOAuthService()
+        token_response = await oauth_service.refresh_access_token(user.twitch_refresh_token)
+
+        # Update user with new token information
+        user.twitch_access_token = token_response.get('access_token')
+
+        # Update refresh token if provided (some OAuth providers rotate refresh tokens)
+        if 'refresh_token' in token_response:
+            user.twitch_refresh_token = token_response['refresh_token']
+
+        # Calculate expiration if provided
+        if 'expires_in' in token_response:
+            user.twitch_token_expires_at = oauth_service.calculate_token_expiry(
+                token_response['expires_in']
+            )
+
+        await user.save()
+
+        logger.info("Refreshed Twitch token for user %s", user.id)
+        return user
+
+    async def unlink_twitch_account(self, user: User) -> User:
+        """
+        Unlink Twitch account from a user.
+
+        Args:
+            user: User to unlink the account from
+
+        Returns:
+            User: Updated user with unlinked Twitch account
+        """
+        user.twitch_id = None
+        user.twitch_name = None
+        user.twitch_display_name = None
+        user.twitch_access_token = None
+        user.twitch_refresh_token = None
+        user.twitch_token_expires_at = None
+        await user.save()
+
+        logger.info("Unlinked Twitch account from user %s", user.id)
+        return user
+
+    async def admin_unlink_twitch_account(
+        self,
+        user_id: int,
+        admin_user: User
+    ) -> Optional[User]:
+        """
+        Administratively unlink Twitch account from a user.
+
+        Args:
+            user_id: ID of user to unlink
+            admin_user: Admin user performing the action
+
+        Returns:
+            Optional[User]: Updated user if successful, None if unauthorized or not found
+        """
+        # Check admin permissions
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
+            logger.warning(
+                "User %s attempted to admin unlink Twitch account without permission",
+                getattr(admin_user, 'id', None)
+            )
+            return None
+
+        # Get target user
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            logger.warning("User %s not found for admin unlink", user_id)
+            return None
+
+        # Unlink account
+        await self.unlink_twitch_account(user)
+
+        # Audit log
+        from application.services.core.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_unlink_twitch_account",
+            details={
+                "target_user_id": user_id,
+                "twitch_id": user.twitch_id,
+                "twitch_name": user.twitch_name
+            }
+        )
+
+        logger.info(
+            "Admin %s unlinked Twitch account for user %s",
+            admin_user.id,
+            user_id
+        )
+        return user
+
+    async def get_all_twitch_accounts(
+        self,
+        admin_user: User,
+        limit: Optional[int] = None,
+        offset: int = 0
+    ) -> list[User]:
+        """
+        Get all users with linked Twitch accounts (admin only).
+
+        Args:
+            admin_user: Admin user requesting the data
+            limit: Maximum number of users to return
+            offset: Number of users to skip
+
+        Returns:
+            list[User]: List of users with Twitch accounts (empty if unauthorized)
+        """
+        # Check admin permissions
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
+            logger.warning(
+                "User %s attempted to view Twitch accounts without permission",
+                getattr(admin_user, 'id', None)
+            )
+            return []
+
+        # Audit log
+        from application.services.core.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_view_twitch_accounts",
+            details={"limit": limit, "offset": offset}
+        )
+
+        return await self.user_repository.get_users_with_twitch(
+            include_inactive=False,
+            limit=limit,
+            offset=offset
+        )
+
+    async def search_twitch_accounts(
+        self,
+        admin_user: User,
+        query: str
+    ) -> list[User]:
+        """
+        Search users by Twitch username (admin only).
+
+        Args:
+            admin_user: Admin user performing the search
+            query: Search query
+
+        Returns:
+            list[User]: List of matching users (empty if unauthorized)
+        """
+        # Check admin permissions
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
+            logger.warning(
+                "User %s attempted to search Twitch accounts without permission",
+                getattr(admin_user, 'id', None)
+            )
+            return []
+
+        # Audit log
+        from application.services.core.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_search_twitch_accounts",
+            details={"query": query}
+        )
+
+        return await self.user_repository.search_by_twitch_name(query)
+
+    async def get_twitch_link_statistics(self, admin_user: User) -> dict:
+        """
+        Get statistics about Twitch account linking (admin only).
+
+        Args:
+            admin_user: Admin user requesting the stats
+
+        Returns:
+            dict: Statistics including total users, linked users, etc.
+        """
+        # Check admin permissions
+        if not admin_user or not admin_user.has_permission(Permission.ADMIN):
+            logger.warning(
+                "User %s attempted to view Twitch stats without permission",
+                getattr(admin_user, 'id', None)
+            )
+            return {}
+
+        # Get statistics
+        total_users = await self.user_repository.count_active_users()
+        linked_users = await self.user_repository.count_twitch_linked_users(
+            include_inactive=False
+        )
+        link_percentage = (linked_users / total_users * 100) if total_users > 0 else 0
+
+        stats = {
+            "total_users": total_users,
+            "linked_users": linked_users,
+            "unlinked_users": total_users - linked_users,
+            "link_percentage": round(link_percentage, 2)
+        }
+
+        # Audit log
+        from application.services.core.audit_service import AuditService
+        audit_service = AuditService()
+        await audit_service.log_action(
+            user=admin_user,
+            action="admin_view_twitch_stats",
+            details=stats
+        )
+
+        logger.info("Admin %s viewed Twitch link statistics", admin_user.id)
+        return stats
+
     async def update_user_profile(
         self,
         user: User,
