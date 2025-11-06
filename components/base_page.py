@@ -16,6 +16,7 @@ from models import User, Permission
 from components.header import Header
 from components.footer import Footer
 from components.sidebar import Sidebar
+from components.motd_banner import MOTDBanner
 
 
 def get_css_version() -> str:
@@ -234,6 +235,10 @@ class BasePage:
                     icon='close',
                     on_click=stop_impersonation
                 ).props('flat').style('color: white; border: 1px solid white;')
+
+    async def _render_motd_banner(self) -> None:
+        """Render the MOTD banner if there is an active message."""
+        await MOTDBanner.render()
 
     def _render_sidebar(self, items: Optional[list] = None) -> None:
         """
@@ -481,10 +486,13 @@ class BasePage:
 
         # Render header
         self._render_header()
-        
+
         # Render impersonation banner if active
         await self._render_impersonation_banner()
-        
+
+        # Render MOTD banner if there is an active message
+        await self._render_motd_banner()
+
         # Render sidebar via component
         sidebar_component = Sidebar(self._toggle_sidebar)
         self._sidebar_container, self._backdrop = sidebar_component.render(sidebar_items or [])
