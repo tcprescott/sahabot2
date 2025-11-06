@@ -152,7 +152,7 @@ def register():
                                 validation_msg.classes('text-negative', remove='text-positive')
                                 ui.notify('An error occurred', color='negative')
 
-                        submit_btn = ui.button('Submit Settings', on_click=submit_settings).props('color=primary')
+                        ui.button('Submit Settings', on_click=submit_settings).props('color=primary')
 
                         # Cancel button
                         ui.button('Cancel', on_click=lambda: ui.navigate.to('/')).props('outline')
