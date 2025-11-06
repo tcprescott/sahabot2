@@ -12,6 +12,7 @@ from tortoise import fields
 from tortoise.models import Model
 
 if TYPE_CHECKING:
+    from models.match_schedule import Match
 
 
 class TournamentMatchSettings(Model):
