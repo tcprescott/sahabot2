@@ -55,7 +55,6 @@ from application.events.types import (
     MatchCompletedEvent,
     MatchFinishedEvent,
     TournamentMatchSettingsSubmittedEvent,
-    TournamentMatchSettingsSubmittedEvent,
     # Async Live Race events
     AsyncLiveRaceCreatedEvent,
     AsyncLiveRaceUpdatedEvent,

@@ -9,7 +9,7 @@ from nicegui import ui
 from components.base_page import BasePage
 from application.services.tournaments.tournament_match_settings_service import TournamentMatchSettingsService
 from application.repositories.tournament_repository import TournamentRepository
-from models.match_schedule import Match, MatchPlayers
+from models.match_schedule import Match
 import json
 import logging
 
@@ -36,22 +36,20 @@ def register():
             ui.navigate.to('/')
             return
 
-        # Check if user is a player in this match
-        is_player = await MatchPlayers.filter(match_id=match_id, user_id=user.id).exists()
-
         async def content(page: BasePage):
             """Render submission form content."""
-            # Verify authorization
+            # Verify authorization - try to get any existing submission
+            # If user doesn't have access, service will return None
             service = TournamentMatchSettingsService()
-            has_access = await service._validate_match_access(page.user, match)
+            existing_submission = await service.get_submission(page.user, match_id, game_number=1)
 
-            if not has_access:
+            # Additional check: try to list submissions to verify access
+            accessible_submissions = await service.list_submissions_for_match(page.user, match_id)
+            if existing_submission is None and not accessible_submissions:
+                # User has no access to this match
                 ui.notify('You do not have permission to submit settings for this match', color='negative')
                 ui.navigate.to('/')
                 return
-
-            # Get existing submission if any
-            existing_submission = await service.get_submission(page.user, match_id, game_number=1)
 
             # Page header
             with ui.element('div').classes('card mb-4'):
@@ -146,9 +144,7 @@ def register():
                                     validation_msg.classes('text-positive', remove='text-negative')
 
                                     # Redirect to match page after short delay
-                                    async def redirect():
-                                        await ui.run_javascript('setTimeout(() => { window.location.href = "/"; }, 2000);')
-                                    await redirect()
+                                    await ui.run_javascript('setTimeout(() => { window.location.href = "/"; }, 2000);')
                                 else:
                                     ui.notify('Failed to submit settings', color='negative')
                                     validation_msg.text = 'Failed to submit settings'
