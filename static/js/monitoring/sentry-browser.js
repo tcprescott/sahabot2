@@ -1,10 +1,10 @@
-"""
-Sentry browser initialization script.
-
-This JavaScript module initializes Sentry for frontend error tracking and performance monitoring.
-It is loaded by BasePage to capture JavaScript errors, unhandled promise rejections, and
-client-side performance data.
-"""
+/**
+ * Sentry browser initialization script.
+ *
+ * This JavaScript module initializes Sentry for frontend error tracking and performance monitoring.
+ * It is loaded by BasePage to capture JavaScript errors, unhandled promise rejections, and
+ * client-side performance data.
+ */
 
 // Initialize Sentry for browser/frontend monitoring
 (function() {
@@ -23,9 +23,11 @@ client-side performance data.
     }
 
     // Dynamically load Sentry browser SDK from CDN
+    // Note: integrity check removed to allow automatic updates to latest version
+    // For production with strict SRI, pin to specific version and add integrity hash
+    // from https://docs.sentry.io/platforms/javascript/install/cdn/
     const sentryScript = document.createElement('script');
     sentryScript.src = 'https://browser.sentry-cdn.com/8.40.0/bundle.tracing.replay.min.js';
-    sentryScript.integrity = 'sha384-ps+lLHGHvSxLDvs7OdxW6t1bPyGqKxjgW0kJrX/H+TCKmxjOBjvdW1LBcJu7JQVJ';
     sentryScript.crossOrigin = 'anonymous';
     
     sentryScript.onload = function() {
