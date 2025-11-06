@@ -698,6 +698,17 @@ class SpeedGamingETLService:
             if not already_exists:
                 # Add new player
                 user = await self._find_or_create_user(organization_id, sg_player)
+                
+                # Register player with tournament (if not already registered)
+                # Skip RaceTime account requirement - register all players
+                await match.fetch_related('tournament')
+                await self.tournament_repo.register_user_for_tournament(
+                    organization_id=organization_id,
+                    tournament_id=match.tournament_id,
+                    user_id=user.id
+                )
+                logger.info("Registered player %s with tournament %s", user.id, match.tournament_id)
+                
                 await MatchPlayers.create(match=match, user=user)
                 logger.info(
                     "Added new player %s to match %s (SG player %s)",
@@ -999,6 +1010,15 @@ class SpeedGamingETLService:
         # Add players
         for sg_player in all_players:
             user = await self._find_or_create_user(organization_id, sg_player)
+
+            # Register player with tournament (if not already registered)
+            # Skip RaceTime account requirement - register all players
+            await self.tournament_repo.register_user_for_tournament(
+                organization_id=organization_id,
+                tournament_id=tournament.id,
+                user_id=user.id
+            )
+            logger.info("Registered player %s with tournament %s", user.id, tournament.id)
 
             await MatchPlayers.create(
                 match=match,
