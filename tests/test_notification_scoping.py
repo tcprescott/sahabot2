@@ -15,7 +15,7 @@ class TestNotificationOrganizationScoping:
     """Test organization scoping for notification subscriptions."""
 
     @pytest.fixture
-    async def user(self):
+    async def user(self, db):
         """Create a test user."""
         user = User(
             id=1,

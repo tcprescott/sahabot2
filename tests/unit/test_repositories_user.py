@@ -13,7 +13,7 @@ from application.repositories.user_repository import UserRepository
 class TestUserRepository:
     """Test cases for UserRepository."""
     
-    async def test_get_all_users(self, clean_db):
+    async def test_get_all_users(self, db):
         """Test retrieving all users."""
         # TODO: Implement test
         pass
@@ -28,7 +28,7 @@ class TestUserRepository:
         # TODO: Implement test
         pass
     
-    async def test_create_user(self, clean_db, mock_discord_user):
+    async def test_create_user(self, db, discord_user_payload):
         """Test creating a new user."""
         # TODO: Implement test
         pass

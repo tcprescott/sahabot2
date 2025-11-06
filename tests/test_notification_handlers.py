@@ -56,7 +56,7 @@ class TestDiscordNotificationHandler:
     @pytest.fixture
     def handler(self, mock_bot):
         """Create a Discord notification handler with mocked bot."""
-        with patch('application.services.notification_handlers.discord_handler.get_bot_instance', return_value=mock_bot):
+        with patch('application.services.notifications.handlers.discord_handler.get_bot_instance', return_value=mock_bot):
             handler = DiscordNotificationHandler()
             return handler
 
@@ -151,7 +151,7 @@ class TestDiscordNotificationHandler:
 
     async def test_send_discord_dm_handles_bot_not_available(self, user):
         """Verify handler fails gracefully when bot is not available."""
-        with patch('application.services.notification_handlers.discord_handler.get_bot_instance', return_value=None):
+        with patch('application.services.notifications.handlers.discord_handler.get_bot_instance', return_value=None):
             handler = DiscordNotificationHandler()
 
             status, error = await handler._send_discord_dm(user, "Test message")

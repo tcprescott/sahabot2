@@ -29,7 +29,7 @@ class TestExample:
         result = await async_function()
         assert result == "async works"
     
-    def test_example_with_fixture(self, mock_discord_user):
+    def test_example_with_fixture(self, discord_user_payload):
         """Test using a fixture from conftest."""
-        assert mock_discord_user["id"] == "123456789012345678"
-        assert mock_discord_user["username"] == "testuser"
+        assert discord_user_payload["id"] == "123456789012345678"
+        assert discord_user_payload["username"] == "testuser"

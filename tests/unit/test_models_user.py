@@ -13,7 +13,7 @@ from models.user import User, Permission
 class TestUserModel:
     """Test cases for the User model."""
     
-    async def test_create_user(self, clean_db, mock_discord_user):
+    async def test_create_user(self, db, discord_user_payload):
         """Test creating a user."""
         # TODO: Implement test
         pass
@@ -33,7 +33,7 @@ class TestUserModel:
         # TODO: Implement test
         pass
     
-    async def test_user_permissions_hierarchy(self, clean_db):
+    async def test_user_permissions_hierarchy(self, db):
         """Test permission hierarchy logic."""
         # TODO: Implement test
         pass
