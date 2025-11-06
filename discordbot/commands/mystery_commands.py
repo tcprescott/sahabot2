@@ -129,11 +129,21 @@ class MysteryCommands(commands.Cog):
             preset_repo = RandomizerPresetRepository()
             presets = await preset_repo.list_public_presets(randomizer='alttpr')
 
-            # Filter for mystery presets
-            mystery_presets = [
-                p for p in presets
-                if p.settings.get('preset_type') == 'mystery'
-            ]
+            # Filter for mystery presets using the same logic as _is_mystery_preset
+            mystery_presets = []
+            for p in presets:
+                # Check if explicit mystery type
+                if p.settings.get('preset_type') == 'mystery':
+                    mystery_presets.append(p)
+                # Check if has weights or mystery_weights
+                elif 'weights' in p.settings or 'mystery_weights' in p.settings:
+                    mystery_presets.append(p)
+                # Check in 'settings' sub-dict (SahasrahBot format)
+                elif 'settings' in p.settings:
+                    settings = p.settings.get('settings')
+                    if isinstance(settings, dict):
+                        if 'weights' in settings or 'mystery_weights' in settings:
+                            mystery_presets.append(p)
 
             if not mystery_presets:
                 await interaction.followup.send(

@@ -562,8 +562,11 @@ class RandomizerPresetService:
         # Extract mystery weights (could be at root or in 'mystery_weights' key)
         mystery_weights = parsed.get('mystery_weights', parsed)
 
-        # If using SahasrahBot format with 'settings' key, check there too
-        if 'settings' in parsed and not any(k in mystery_weights for k in ['weights', 'entrance_weights', 'customizer']):
+        # If the expected weight keys are not present in the current mystery_weights,
+        # and the preset uses SahasrahBot format (with a 'settings' key), check for weights inside 'settings'.
+        expected_weight_keys = ['weights', 'entrance_weights', 'customizer']
+        has_expected_keys = any(k in mystery_weights for k in expected_weight_keys)
+        if 'settings' in parsed and not has_expected_keys:
             mystery_weights = parsed['settings']
 
         # Validate using mystery service

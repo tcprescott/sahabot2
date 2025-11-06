@@ -7,7 +7,7 @@ Mystery seeds randomly select presets and settings based on configured weights.
 
 import logging
 import random
-from typing import Dict, Any, Optional, List, Tuple
+from typing import Dict, Any, Optional, Tuple
 from .alttpr_service import ALTTPRService
 from .randomizer_service import RandomizerResult
 
@@ -138,9 +138,10 @@ class ALTTPRMysteryService:
         for name, value in weights.items():
             if isinstance(value, dict):
                 # Value is the settings dict with optional 'weight' key
-                weight = value.pop('weight', 1) if 'weight' in value else 1
+                weight = value.get('weight', 1)
                 preset_weights[name] = weight
-                preset_settings[name] = value
+                # Create a copy without the 'weight' key for settings
+                preset_settings[name] = {k: v for k, v in value.items() if k != 'weight'}
             else:
                 # Value is just the weight
                 preset_weights[name] = value
@@ -275,7 +276,14 @@ class ALTTPRMysteryService:
             raise ValueError(f"Preset '{mystery_preset_name}' is not a mystery preset")
 
         # Extract mystery weights from preset
-        mystery_weights = preset.settings.get('mystery_weights', {})
+        mystery_weights = preset.settings.get('mystery_weights')
+        if not mystery_weights:
+            # Fall back to using preset.settings directly (excluding metadata keys)
+            # Remove keys that are not part of the weights (e.g., 'preset_type')
+            mystery_weights = {
+                k: v for k, v in preset.settings.items()
+                if k not in ('preset_type', 'is_public', 'user_id')
+            }
         if not mystery_weights:
             raise ValueError(f"Mystery preset '{mystery_preset_name}' has no mystery weights")
 
