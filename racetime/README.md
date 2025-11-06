@@ -77,6 +77,15 @@ The `SahaRaceHandler` class extends `RaceHandler` and handles individual race ro
 - **Race Data Updates**: `race_data()` called when race state changes
 - **Commands**: Monitor commands that can be used in race chat (using `@monitor_cmd`)
 
+### Game-Specific Handlers
+
+Game-specific command handlers are implemented as separate modules:
+
+- **`command_handlers.py`** - Built-in generic commands (!help, !status, !race, !time, !entrants)
+- **`smz3_handler.py`** - SMZ3-specific commands (!race, !preset, !spoiler for SMZ3 category)
+
+Handlers are registered with the `RacetimeChatCommandService` and executed dynamically based on database command configuration.
+
 ### Key Methods
 
 - `begin()` - Called when handler is created (initial setup)

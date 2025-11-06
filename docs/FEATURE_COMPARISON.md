@@ -33,7 +33,7 @@ This document analyzes the feature set of the original SahasrahBot compared to t
 | ALTTPR Mystery | ✅ Full Weightsets | ❌ No | 🔴 Missing | High |
 | ALTTPR Door Randomizer | ✅ Yes | ❌ No | 🔴 Missing | Medium |
 | ALTTPR Customizer | ✅ Yes | ⚠️ Limited | 🟡 Partial | Medium |
-| SMZ3 | ✅ Yes | ❌ No | 🔴 Missing | High |
+| SMZ3 | ✅ Yes | ✅ Yes | ✅ Complete | High |
 | SM Randomizer (VARIA) | ✅ Yes | ❌ No | 🔴 Missing | Medium |
 | SM DASH | ✅ Yes | ❌ No | 🔴 Missing | Medium |
 | Z2R (Zelda 2) | ✅ Yes | ❌ No | 🔴 Missing | Low |

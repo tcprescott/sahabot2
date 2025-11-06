@@ -11,6 +11,16 @@ from .randomizer_service import RandomizerResult
 
 logger = logging.getLogger(__name__)
 
+# Default SMZ3 settings for seed generation
+DEFAULT_SMZ3_SETTINGS = {
+    'logic': 'normal',
+    'mode': 'normal',
+    'goal': 'defeatBoth',
+    'itemPlacement': 'major',
+    'swordLocation': 'randomized',
+    'morphLocation': 'original',
+}
+
 
 class SMZ3Service:
     """

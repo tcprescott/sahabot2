@@ -163,6 +163,12 @@ class DiscordBot(commands.Bot):
             logger.info("Loaded SM randomizer commands")
         except Exception as e:
             logger.error("Failed to load SM randomizer commands: %s", e, exc_info=True)
+        # Load SMZ3 randomizer cog
+        try:
+            await self.load_extension('discordbot.commands.smz3')
+            logger.info("Loaded SMZ3 commands")
+        except Exception as e:
+            logger.error("Failed to load SMZ3 commands: %s", e, exc_info=True)
         
         # Load mystery commands
         try:
