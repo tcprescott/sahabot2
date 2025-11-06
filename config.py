@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "sahabot2"
-    DB_PASSWORD: str
+    DB_PASSWORD: Optional[str] = None  # Required for MySQL, not needed for SQLite
     DB_NAME: str = "sahabot2"
 
     # Discord OAuth2 Configuration
@@ -83,8 +83,20 @@ class Settings(BaseSettings):
         Generate database URL for Tortoise ORM.
 
         Returns:
-            str: MySQL connection URL
+            str: Database connection URL (MySQL or SQLite for testing)
         """
+        # Use SQLite for testing environment or when DB_NAME is :memory:
+        if self.ENVIRONMENT.lower() == "testing" or self.DB_NAME == ":memory:":
+            if self.DB_NAME == ":memory:":
+                return "sqlite://:memory:"
+            else:
+                # Use file-based SQLite for testing
+                return f"sqlite://test_{self.DB_NAME}.db"
+        
+        # Use MySQL for development and production
+        # Validate password is provided for MySQL
+        if not self.DB_PASSWORD:
+            raise ValueError("DB_PASSWORD is required when using MySQL database")
         return f"mysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
@@ -93,8 +105,16 @@ class Settings(BaseSettings):
         Generate a safe database URL for logging (password masked).
 
         Returns:
-            str: MySQL connection URL with password masked
+            str: Database connection URL with password masked (MySQL or SQLite)
         """
+        # Use SQLite for testing environment or when DB_NAME is :memory:
+        if self.ENVIRONMENT.lower() == "testing" or self.DB_NAME == ":memory:":
+            if self.DB_NAME == ":memory:":
+                return "sqlite://:memory:"
+            else:
+                return f"sqlite://test_{self.DB_NAME}.db"
+        
+        # Use MySQL for development and production
         return f"mysql://{self.DB_USER}:***@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property

@@ -384,10 +384,36 @@ All API responses use JSON format with consistent schemas:
 
 ## Testing
 
+### Running Tests
+
 Run tests with pytest:
 ```bash
 poetry run pytest
 ```
+
+### Test Environment Setup
+
+For automated testing without MySQL or external services (ideal for CI/CD and GitHub Coding Agent):
+
+```bash
+# Quick setup with test environment
+poetry run python setup_test_env.py
+
+# Or manually
+cp .env.test .env
+poetry install
+poetry run pytest
+```
+
+The test environment uses:
+- **SQLite** instead of MySQL (no database server needed)
+- **Mock credentials** for Discord, RaceTime, Twitch (no OAuth apps needed)
+- **Disabled Discord bot** (no bot token needed)
+
+See [GITHUB_AGENT_TESTING.md](GITHUB_AGENT_TESTING.md) for detailed testing guide, especially for:
+- GitHub Coding Agent automated testing
+- CI/CD pipeline setup
+- Local development without external dependencies
 
 ## Security
 

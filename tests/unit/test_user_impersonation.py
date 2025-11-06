@@ -16,7 +16,7 @@ from nicegui import app
 class TestUserImpersonation:
     """Test user impersonation feature."""
 
-    async def test_superadmin_can_start_impersonation(self, test_db):
+    async def test_superadmin_can_start_impersonation(self, db):
         """Test that SUPERADMIN can start impersonation."""
         # Create users
         service = UserService()
@@ -47,7 +47,7 @@ class TestUserImpersonation:
         assert result.id == target_user.id
         assert result.discord_username == "target_user"
 
-    async def test_admin_cannot_impersonate(self, test_db):
+    async def test_admin_cannot_impersonate(self, db):
         """Test that ADMIN (non-SUPERADMIN) cannot impersonate."""
         service = UserService()
         
@@ -75,7 +75,7 @@ class TestUserImpersonation:
         # Should fail
         assert result is None
 
-    async def test_cannot_impersonate_self(self, test_db):
+    async def test_cannot_impersonate_self(self, db):
         """Test that users cannot impersonate themselves."""
         service = UserService()
         
@@ -96,7 +96,7 @@ class TestUserImpersonation:
         # Should fail
         assert result is None
 
-    async def test_cannot_impersonate_nonexistent_user(self, test_db):
+    async def test_cannot_impersonate_nonexistent_user(self, db):
         """Test that impersonating non-existent user fails."""
         service = UserService()
         
@@ -117,7 +117,7 @@ class TestUserImpersonation:
         # Should fail
         assert result is None
 
-    async def test_impersonation_audit_logging(self, test_db):
+    async def test_impersonation_audit_logging(self, db):
         """Test that impersonation creates audit log entries."""
         service = UserService()
         
