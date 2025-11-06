@@ -84,7 +84,7 @@ class TestTaskSchedulerService:
         assert TaskType.CUSTOM in TaskSchedulerService._task_handlers
         assert TaskSchedulerService._task_handlers[TaskType.CUSTOM] == dummy_handler
 
-    async def test_create_task_interval(self, db, sample_user):
+    async def test_create_task_interval(self, db, admin_user, sample_organization):
         """Test creating an interval-based task."""
         service = TaskSchedulerService()
 
@@ -93,8 +93,8 @@ class TestTaskSchedulerService:
 
         with patch.object(service.org_service, 'user_can_manage_tournaments', new=AsyncMock(return_value=True)):
             task = await service.create_task(
-                user=sample_user,
-                organization_id=1,
+                user=admin_user,
+                organization_id=sample_organization.id,
                 name="Test Task",
                 task_type=TaskType.CUSTOM,
                 schedule_type=ScheduleType.INTERVAL,

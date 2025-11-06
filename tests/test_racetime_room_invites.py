@@ -13,7 +13,7 @@ from application.services.tournaments.tournament_service import TournamentServic
 
 
 @pytest.mark.asyncio
-async def test_create_room_invites_linked_players():
+async def test_create_room_invites_linked_players(db, admin_user, sample_organization):
     """Test that room creation invites all players with linked RaceTime accounts."""
 
     # Create mock users
@@ -76,10 +76,9 @@ async def test_create_room_invites_linked_players():
 
     # Mock players relation
     mock_players = AsyncMock()
-    mock_players.all = AsyncMock(return_value=AsyncMock())
-    mock_players.all.return_value.prefetch_related = AsyncMock(
-        return_value=[match_player1, match_player2, match_player3]
-    )
+    mock_prefetch_result = AsyncMock()
+    mock_prefetch_result.all = AsyncMock(return_value=[match_player1, match_player2, match_player3])
+    mock_players.prefetch_related = MagicMock(return_value=mock_prefetch_result)
     mock_match.players = mock_players
 
     # Mock tournament
@@ -102,8 +101,8 @@ async def test_create_room_invites_linked_players():
 
     # Mock the service
     with patch('application.services.tournaments.tournament_service.Match') as MockMatch, \
-         patch('application.services.tournaments.tournament_service.RacetimeBot') as MockBot, \
-         patch('application.services.tournaments.tournament_service.aiohttp.ClientSession') as MockSession:
+         patch('racetime.client.RacetimeBot') as MockBot, \
+         patch('aiohttp.ClientSession') as MockSession:
 
         # Setup Match.filter mock
         mock_filter = AsyncMock()
@@ -133,16 +132,9 @@ async def test_create_room_invites_linked_players():
         service.org_service.user_can_manage_tournaments = AsyncMock(return_value=True)
 
         # Create the room
-        admin_user = User(
-            id=99,
-            discord_id=999999,
-            discord_username='Admin',
-            permission=Permission.ADMIN,
-        )
-
         result = await service.create_racetime_room(
             user=admin_user,
-            organization_id=1,
+            organization_id=sample_organization.id,
             match_id=1,
         )
 
@@ -161,7 +153,7 @@ async def test_create_room_invites_linked_players():
 
 
 @pytest.mark.asyncio
-async def test_create_room_handles_invite_failure():
+async def test_create_room_handles_invite_failure(db, admin_user, sample_organization):
     """Test that individual invite failures don't stop other invites."""
     # Create mock users
     user1 = User(
@@ -216,10 +208,9 @@ async def test_create_room_handles_invite_failure():
 
     # Mock players relation
     mock_players = AsyncMock()
-    mock_players.all = AsyncMock(return_value=AsyncMock())
-    mock_players.all.return_value.prefetch_related = AsyncMock(
-        return_value=[match_player1, match_player2]
-    )
+    mock_prefetch_result = AsyncMock()
+    mock_prefetch_result.all = AsyncMock(return_value=[match_player1, match_player2])
+    mock_players.prefetch_related = MagicMock(return_value=mock_prefetch_result)
     mock_match.players = mock_players
 
     # Mock tournament
@@ -242,8 +233,8 @@ async def test_create_room_handles_invite_failure():
 
     # Mock the service
     with patch('application.services.tournaments.tournament_service.Match') as MockMatch, \
-         patch('application.services.tournaments.tournament_service.RacetimeBot') as MockBot, \
-         patch('application.services.tournaments.tournament_service.aiohttp.ClientSession') as MockSession:
+         patch('racetime.client.RacetimeBot') as MockBot, \
+         patch('aiohttp.ClientSession') as MockSession:
 
         # Setup Match.filter mock
         mock_filter = AsyncMock()
@@ -274,16 +265,9 @@ async def test_create_room_handles_invite_failure():
         service.org_service.user_can_manage_tournaments = AsyncMock(return_value=True)
 
         # Create the room
-        admin_user = User(
-            id=99,
-            discord_id=999999,
-            discord_username='Admin',
-            permission=Permission.ADMIN,
-        )
-
         result = await service.create_racetime_room(
             user=admin_user,
-            organization_id=1,
+            organization_id=sample_organization.id,
             match_id=2,
         )
 

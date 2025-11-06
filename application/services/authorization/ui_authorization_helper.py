@@ -89,6 +89,36 @@ class UIAuthorizationHelper:
         
         permissions = UIPermissions()
         
+        # Check global admin permissions (SUPERADMIN and ADMIN bypass membership requirements)
+        from models import Permission
+        if user.permission >= Permission.ADMIN:
+            # Global admin - grant all permissions
+            permissions.is_organization_member = True
+            permissions.is_organization_admin = True
+            permissions.can_manage_tournaments = True
+            permissions.can_create_tournaments = True
+            permissions.can_update_tournaments = True
+            permissions.can_delete_tournaments = True
+            permissions.can_view_tournaments = True
+            permissions.can_manage_async_tournaments = True
+            permissions.can_review_async_races = True
+            permissions.can_manage_members = True
+            permissions.can_invite_members = True
+            permissions.can_remove_members = True
+            permissions.can_update_member_permissions = True
+            permissions.can_manage_organization = True
+            permissions.can_update_organization_settings = True
+            permissions.can_view_organization_settings = True
+            permissions.can_manage_scheduled_tasks = True
+            permissions.can_create_scheduled_tasks = True
+            permissions.can_execute_scheduled_tasks = True
+            permissions.can_manage_race_room_profiles = True
+            permissions.can_create_race_room_profiles = True
+            permissions.can_update_race_room_profiles = True
+            permissions.can_delete_race_room_profiles = True
+            permissions.can_manage_live_races = True
+            return permissions
+        
         # Check membership
         permissions.is_organization_member = await self._check_membership(user, organization_id)
         

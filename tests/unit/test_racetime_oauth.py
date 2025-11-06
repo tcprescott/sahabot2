@@ -277,41 +277,26 @@ class TestRacetimeAccountLinking:
 class TestAdminRacetimeFeatures:
     """Test cases for admin RaceTime account management."""
 
-    @patch('application.services.audit_service.AuditService')
-    @patch('application.services.user_service.AuthorizationService')
-    async def test_get_all_racetime_accounts_unauthorized(self, mock_auth_service_class, mock_audit_class):
+    async def test_get_all_racetime_accounts_unauthorized(self):
         """Test that unauthorized users get empty list."""
-        # Mock authorization service - return False for permission check
-        mock_auth = MagicMock()
-        mock_auth.can_access_admin_panel.return_value = False
-        mock_auth_service_class.return_value = mock_auth
-        
-        # Mock audit service
-        mock_audit = MagicMock()
-        mock_audit.log_action = AsyncMock()
-        mock_audit_class.return_value = mock_audit
-        
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
         mock_user.permission = Permission.USER
+        mock_user.has_permission = MagicMock(return_value=False)
 
         service = UserService()
         result = await service.get_all_racetime_accounts(admin_user=mock_user)
 
         assert result == []
+        mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
-    @patch('application.services.audit_service.AuditService')
-    @patch('application.services.user_service.AuthorizationService')
-    async def test_get_all_racetime_accounts_authorized(self, mock_auth_service_class, mock_audit_class):
+    @patch('application.services.core.audit_service.AuditService')
+    async def test_get_all_racetime_accounts_authorized(self, mock_audit_class):
         """Test that admin users can get all accounts."""
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
         mock_user.permission = Permission.ADMIN
-
-        # Mock authorization service
-        mock_auth = MagicMock()
-        mock_auth.can_access_admin_panel.return_value = True
-        mock_auth_service_class.return_value = mock_auth
+        mock_user.has_permission = MagicMock(return_value=True)
 
         # Mock audit service
         mock_audit = MagicMock()
@@ -329,29 +314,19 @@ class TestAdminRacetimeFeatures:
         )
 
         assert isinstance(result, list)
+        mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
         service.user_repository.get_users_with_racetime.assert_called_once_with(
             include_inactive=False,
             limit=10,
             offset=0
         )
 
-    @patch('application.services.audit_service.AuditService')
-    @patch('application.services.user_service.AuthorizationService')
-    async def test_search_racetime_accounts_unauthorized(self, mock_auth_service_class, mock_audit_class):
+    async def test_search_racetime_accounts_unauthorized(self):
         """Test that unauthorized users cannot search racetime accounts."""
-        # Mock authorization service - return False for permission check
-        mock_auth = MagicMock()
-        mock_auth.can_access_admin_panel.return_value = False
-        mock_auth_service_class.return_value = mock_auth
-        
-        # Mock audit service
-        mock_audit = MagicMock()
-        mock_audit.log_action = AsyncMock()
-        mock_audit_class.return_value = mock_audit
-        
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
         mock_user.permission = Permission.USER
+        mock_user.has_permission = MagicMock(return_value=False)
 
         service = UserService()
         result = await service.search_racetime_accounts(
@@ -360,19 +335,15 @@ class TestAdminRacetimeFeatures:
         )
 
         assert result == []
+        mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
-    @patch('application.services.audit_service.AuditService')
-    @patch('application.services.user_service.AuthorizationService')
-    async def test_get_racetime_link_statistics_authorized(self, mock_auth_service_class, mock_audit_class):
+    @patch('application.services.core.audit_service.AuditService')
+    async def test_get_racetime_link_statistics_authorized(self, mock_audit_class):
         """Test that admin users can get statistics."""
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
         mock_user.permission = Permission.ADMIN
-
-        # Mock authorization service
-        mock_auth = MagicMock()
-        mock_auth.can_access_admin_panel.return_value = True
-        mock_auth_service_class.return_value = mock_auth
+        mock_user.has_permission = MagicMock(return_value=True)
 
         # Mock audit service
         mock_audit = MagicMock()
@@ -390,14 +361,15 @@ class TestAdminRacetimeFeatures:
         assert result['linked_users'] == 42
         assert result['unlinked_users'] == 58
         assert result['link_percentage'] == 42.0
+        mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
-    @patch('application.services.audit_service.AuditService')
-    @patch('application.services.user_service.AuthorizationService')
-    async def test_admin_unlink_racetime_account_success(self, mock_auth_service_class, mock_audit_class):
+    @patch('application.services.core.audit_service.AuditService')
+    async def test_admin_unlink_racetime_account_success(self, mock_audit_class):
         """Test successful admin unlink."""
         mock_admin = MagicMock(spec=User)
         mock_admin.id = 1
         mock_admin.permission = Permission.ADMIN
+        mock_admin.has_permission = MagicMock(return_value=True)
 
         mock_target_user = MagicMock(spec=User)
         mock_target_user.id = 2
@@ -407,11 +379,6 @@ class TestAdminRacetimeFeatures:
         mock_target_user.racetime_refresh_token = "refresh"
         mock_target_user.racetime_token_expires_at = datetime.now(timezone.utc)
         mock_target_user.save = AsyncMock()
-
-        # Mock authorization service
-        mock_auth = MagicMock()
-        mock_auth.can_access_admin_panel.return_value = True
-        mock_auth_service_class.return_value = mock_auth
 
         # Mock audit service
         mock_audit = MagicMock()
@@ -430,25 +397,15 @@ class TestAdminRacetimeFeatures:
         assert result is not None
         assert result.racetime_id is None
         assert result.racetime_name is None
+        mock_admin.has_permission.assert_called_once_with(Permission.ADMIN)
         mock_target_user.save.assert_called_once()
 
-    @patch('application.services.audit_service.AuditService')
-    @patch('application.services.user_service.AuthorizationService')
-    async def test_admin_unlink_racetime_account_unauthorized(self, mock_auth_service_class, mock_audit_class):
+    async def test_admin_unlink_racetime_account_unauthorized(self):
         """Test that unauthorized users cannot admin unlink."""
-        # Mock authorization service - return False for permission check
-        mock_auth = MagicMock()
-        mock_auth.can_access_admin_panel.return_value = False
-        mock_auth_service_class.return_value = mock_auth
-        
-        # Mock audit service
-        mock_audit = MagicMock()
-        mock_audit.log_action = AsyncMock()
-        mock_audit_class.return_value = mock_audit
-        
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
         mock_user.permission = Permission.USER
+        mock_user.has_permission = MagicMock(return_value=False)
 
         service = UserService()
         result = await service.admin_unlink_racetime_account(
@@ -457,4 +414,5 @@ class TestAdminRacetimeFeatures:
         )
 
         assert result is None
+        mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 

@@ -84,7 +84,7 @@ class TestUserScopedAuthorization:
         
         # Subscribe
         from models import NotificationEventType, NotificationMethod
-        await service.subscribe(user, NotificationEventType.TOURNAMENT_CREATED, NotificationMethod.DISCORD)
+        await service.subscribe(user, NotificationEventType.TOURNAMENT_CREATED, NotificationMethod.DISCORD_DM)
         
         # Verify repository was called with user.id
         service.repository.get_user_subscriptions.assert_called_once()

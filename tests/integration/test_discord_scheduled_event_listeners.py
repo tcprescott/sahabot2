@@ -10,6 +10,22 @@ from datetime import datetime, timezone
 from application.events import EventBus, MatchScheduledEvent, MatchUpdatedEvent, MatchDeletedEvent
 from models import Tournament, Match, DiscordGuild, SYSTEM_USER_ID
 
+# Import listeners module to register event handlers
+import application.events.listeners  # noqa: F401
+
+
+@pytest.fixture(autouse=True)
+def ensure_listeners_registered():
+    """Ensure event listeners are registered before each test.
+    
+    This is needed because some unit tests call EventBus.clear_all(),
+    which removes all handlers including those registered by listeners module.
+    """
+    # Re-import to re-register decorators
+    import importlib
+    import application.events.listeners as listeners_module
+    importlib.reload(listeners_module)
+
 
 @pytest.fixture
 async def sample_tournament(db, sample_organization, sample_discord_guild):
@@ -66,7 +82,6 @@ class TestDiscordScheduledEventListeners:
             user_id=SYSTEM_USER_ID,
             organization_id=sample_organization.id,
             entity_id=match.id,
-            match_id=match.id,
             tournament_id=sample_tournament.id,
         ))
 
@@ -107,7 +122,6 @@ class TestDiscordScheduledEventListeners:
             user_id=SYSTEM_USER_ID,
             organization_id=sample_organization.id,
             entity_id=sample_match.id,
-            match_id=sample_match.id,
             tournament_id=sample_match.tournament_id,
             changed_fields=['scheduled_at'],
         ))
@@ -147,7 +161,6 @@ class TestDiscordScheduledEventListeners:
             user_id=SYSTEM_USER_ID,
             organization_id=sample_organization.id,
             entity_id=sample_match.id,
-            match_id=sample_match.id,
             tournament_id=sample_match.tournament_id,
         ))
 
@@ -192,7 +205,6 @@ class TestDiscordScheduledEventListeners:
             user_id=SYSTEM_USER_ID,
             organization_id=sample_organization.id,
             entity_id=match.id,
-            match_id=match.id,
             tournament_id=tournament.id,
         ))
 
@@ -226,8 +238,11 @@ class TestDiscordScheduledEventListeners:
             def get_guild_mock(guild_id):
                 mock_guild = MagicMock()
                 mock_guild.id = guild_id
+                # Use smaller event IDs to avoid SQLite INTEGER overflow
+                # Map guild_id to a unique but reasonable event ID
+                event_id = 1111111111 if guild_id == 987654321098765432 else 2222222222
                 mock_guild.create_scheduled_event = AsyncMock(
-                    return_value=MagicMock(id=int(f"{guild_id}111"))
+                    return_value=MagicMock(id=event_id)
                 )
                 return mock_guild
 
@@ -245,7 +260,6 @@ class TestDiscordScheduledEventListeners:
                 user_id=SYSTEM_USER_ID,
                 organization_id=sample_organization.id,
                 entity_id=match.id,
-                match_id=match.id,
                 tournament_id=sample_tournament.id,
             ))
 

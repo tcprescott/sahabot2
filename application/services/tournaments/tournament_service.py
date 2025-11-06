@@ -782,7 +782,7 @@ class TournamentService:
                 logger.info("Created RaceTime room %s for match %s", room_slug, match_id)
 
                 # Invite players to the room
-                players = await match.players.all().prefetch_related('user')
+                players = await match.players.prefetch_related('user').all()
                 invited_count = 0
                 skipped_count = 0
 

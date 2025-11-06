@@ -14,7 +14,7 @@ async def test_generate_and_verify_token_returns_user(sample_user):
 
 
 @pytest.mark.asyncio
-async def test_verify_invalid_token_returns_none():
+async def test_verify_invalid_token_returns_none(db):
     service = ApiTokenService()
     user = await service.verify_token("not-a-real-token")
     assert user is None

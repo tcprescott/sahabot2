@@ -17,7 +17,7 @@ async def test_get_current_user_with_valid_token(sample_user):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_with_invalid_token_raises():
+async def test_get_current_user_with_invalid_token_raises(db):
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="nope")
     with pytest.raises(HTTPException) as ei:
         await get_current_user(creds)

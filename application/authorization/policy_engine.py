@@ -111,8 +111,8 @@ class PolicyEngine:
                 matched_policies=[]
             )
         
-        # Step 2: Check global ADMIN bypass
-        if user.permission == Permission.ADMIN:
+        # Step 2: Check global ADMIN bypass (includes SUPERADMIN)
+        if user.permission >= Permission.ADMIN:
             logger.info(
                 "User %s granted access (ADMIN bypass) for action %s on resource %s",
                 user.id,

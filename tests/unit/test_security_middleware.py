@@ -50,7 +50,7 @@ def test_hsts_header_in_production(app_with_security):
     """Test that HSTS header is added in production."""
     client = TestClient(app_with_security)
 
-    with patch.object(settings, 'is_production', True):
+    with patch.object(settings, 'ENVIRONMENT', 'production'):
         response = client.get("/test")
         assert "Strict-Transport-Security" in response.headers
         assert "max-age=31536000" in response.headers["Strict-Transport-Security"]
@@ -61,7 +61,7 @@ def test_hsts_header_not_in_development(app_with_security):
     """Test that HSTS header is not added in development."""
     client = TestClient(app_with_security)
 
-    with patch.object(settings, 'is_production', False):
+    with patch.object(settings, 'ENVIRONMENT', 'development'):
         response = client.get("/test")
         assert "Strict-Transport-Security" not in response.headers
 
@@ -77,7 +77,7 @@ def test_https_redirect_in_production():
 
     client = TestClient(app, base_url="http://example.com")
 
-    with patch.object(settings, 'is_production', True):
+    with patch.object(settings, 'ENVIRONMENT', 'production'):
         response = client.get("/test", follow_redirects=False)
 
         # Should get a redirect
@@ -96,7 +96,7 @@ def test_https_not_redirected_in_development():
 
     client = TestClient(app, base_url="http://example.com")
 
-    with patch.object(settings, 'is_production', False):
+    with patch.object(settings, 'ENVIRONMENT', 'development'):
         response = client.get("/test")
 
         # Should get successful response
@@ -115,7 +115,7 @@ def test_https_redirect_respects_forwarded_proto():
 
     client = TestClient(app, base_url="http://example.com")
 
-    with patch.object(settings, 'is_production', True):
+    with patch.object(settings, 'ENVIRONMENT', 'production'):
         # Request with X-Forwarded-Proto: https should not redirect
         response = client.get(
             "/test",

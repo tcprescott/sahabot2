@@ -40,7 +40,7 @@ async def test_race_status_change_emits_event():
 
     try:
         # Create race handler with mock dependencies
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -95,7 +95,7 @@ async def test_entrant_status_change_emits_event():
 
     try:
         # Create race handler with mock dependencies
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -162,7 +162,7 @@ async def test_entrant_finish_includes_placement():
 
     try:
         # Create race handler with mock dependencies
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -223,7 +223,7 @@ async def test_entrant_join_emits_event():
         emitted_events.append(event)
 
     try:
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -277,7 +277,7 @@ async def test_entrant_leave_emits_event():
         emitted_events.append(event)
 
     try:
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -334,7 +334,7 @@ async def test_bot_invite_emits_event():
         # Mock websocket
         mock_ws = AsyncMock()
         
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -374,7 +374,7 @@ async def test_bot_joined_race_emits_event():
         emitted_events.append(event)
 
     try:
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -418,7 +418,7 @@ async def test_bot_created_race_emits_event():
         emitted_events.append(event)
 
     try:
-        handler = SahaRaceHandler(
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
             logger=AsyncMock(),
             conn=AsyncMock(),
             state={},
@@ -479,22 +479,20 @@ async def test_user_id_lookup_from_racetime_id():
             permission=Permission.USER,
         )
 
-        # Mock the repository to return our user for abc123, None for others
+        # Create handler first
+        handler = SahaRaceHandler(bot_instance=AsyncMock(), 
+            logger=AsyncMock(),
+            conn=AsyncMock(),
+            state={},
+        )
+
+        # Mock the repository instance's method to return our user for abc123, None for others
         async def mock_get_by_racetime_id(racetime_id: str):
             if racetime_id == 'abc123':
                 return mock_user
             return None
 
-        with patch('application.repositories.user_repository.UserRepository') as MockRepo:
-            mock_repo_instance = AsyncMock()
-            mock_repo_instance.get_by_racetime_id = mock_get_by_racetime_id
-            MockRepo.return_value = mock_repo_instance
-
-            handler = SahaRaceHandler(
-                logger=AsyncMock(),
-                conn=AsyncMock(),
-                state={},
-            )
+        with patch.object(handler._user_repository, 'get_by_racetime_id', side_effect=mock_get_by_racetime_id):
 
             # Test 1: Join event with linked user
             baseline_data = {
@@ -588,7 +586,7 @@ async def test_user_id_none_when_not_linked():
             mock_repo_instance.get_by_racetime_id = mock_get_by_racetime_id
             MockRepo.return_value = mock_repo_instance
 
-            handler = SahaRaceHandler(
+            handler = SahaRaceHandler(bot_instance=AsyncMock(), 
                 logger=AsyncMock(),
                 conn=AsyncMock(),
                 state={},

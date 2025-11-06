@@ -119,7 +119,7 @@ class TestDiscordEventFilter:
 
         # Mock Discord bot
         mock_bot = MagicMock()
-        with patch('application.services.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
             # Act
             result = await self.service.create_event_for_match(
                 user_id=1,
@@ -161,7 +161,7 @@ class TestDiscordEventFilter:
         )
         await sample_tournament.discord_event_guilds.add(discord_guild)
 
-        with patch('application.services.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
             # Act
             result = await self.service.create_event_for_match(
                 user_id=1,
@@ -194,7 +194,7 @@ class TestDiscordEventFilter:
 
         # Mock Discord bot
         mock_bot = MagicMock()
-        with patch('application.services.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
             # Act
             result = await self.service.update_event_for_match(
                 user_id=1,
@@ -238,7 +238,7 @@ class TestDiscordEventFilter:
         )
         await sample_tournament.discord_event_guilds.add(discord_guild)
 
-        with patch('application.services.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
             # Act
             stats = await self.service.sync_tournament_events(
                 user_id=1,
