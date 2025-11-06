@@ -36,12 +36,19 @@ SENTRY_PROFILES_SAMPLE_RATE=1.0
   - Recommended values: `development`, `staging`, `production`
 
 - **SENTRY_TRACES_SAMPLE_RATE** (Optional): Sample rate for performance monitoring (0.0 to 1.0)
-  - Default: `1.0` (100% of transactions)
-  - For high-traffic apps, use lower values like `0.1` (10%)
+  - Default: `0.1` (10% of transactions)
+  - Use `1.0` in development for full coverage
+  - For high-traffic production apps, use lower values like `0.05` (5%)
 
 - **SENTRY_PROFILES_SAMPLE_RATE** (Optional): Sample rate for profiling (0.0 to 1.0)
-  - Default: `1.0` (100% of transactions)
-  - For high-traffic apps, use lower values like `0.1` (10%)
+  - Default: `0.1` (10% of transactions)
+  - Use `1.0` in development for full coverage
+  - For high-traffic production apps, use lower values like `0.05` (5%)
+
+- **SENTRY_RELEASE** (Optional): Release version identifier for error grouping
+  - If not set, automatically uses git commit SHA if available
+  - Falls back to `sahabot2@0.1.0` if git is not available
+  - Format: `sahabot2@version` or `sahabot2@commit-sha`
 
 ## How It Works
 
@@ -104,13 +111,22 @@ async def on_command_error(self, ctx: commands.Context, error: commands.CommandE
 
 ### Test Endpoint
 
-A test endpoint is available at `/health/sentry-test` to verify Sentry is working:
+A test endpoint is available at `/health/sentry-test` to verify Sentry is working.
+
+**Note**: This endpoint is only available when `DEBUG=True` to prevent abuse in production.
 
 ```bash
+# Development (DEBUG=True)
 curl http://localhost:8080/health/sentry-test
+# Returns: 500 error that should appear in Sentry
+
+# Production (DEBUG=False)
+curl http://localhost:8080/health/sentry-test
+# Returns: 403 Forbidden
 ```
 
 This endpoint:
+- Only works in DEBUG mode
 - Intentionally raises an HTTP 500 error
 - Includes custom tags and context
 - Should appear in your Sentry dashboard within seconds
@@ -132,14 +148,16 @@ poetry run pytest tests/unit/test_sentry_integration.py -v
 SENTRY_DSN=  # Leave empty to disable
 SENTRY_ENVIRONMENT=development
 SENTRY_TRACES_SAMPLE_RATE=1.0  # 100% sampling for testing
+SENTRY_PROFILES_SAMPLE_RATE=1.0  # 100% profiling
 ```
 
 **Production:**
 ```bash
 SENTRY_DSN=https://your_key@sentry.io/your_project_id
 SENTRY_ENVIRONMENT=production
-SENTRY_TRACES_SAMPLE_RATE=0.1  # 10% sampling to reduce costs
-SENTRY_PROFILES_SAMPLE_RATE=0.1  # 10% profiling
+SENTRY_TRACES_SAMPLE_RATE=0.1  # 10% sampling to reduce costs (default)
+SENTRY_PROFILES_SAMPLE_RATE=0.1  # 10% profiling (default)
+SENTRY_RELEASE=sahabot2@v1.0.0  # Optional: explicit version
 ```
 
 ### Custom Context

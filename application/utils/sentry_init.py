@@ -5,6 +5,7 @@ This module provides Sentry error tracking and performance monitoring integratio
 """
 
 import logging
+import os
 import sentry_sdk
 from sentry_sdk.integrations.asyncio import AsyncioIntegration
 from sentry_sdk.integrations.fastapi import FastApiIntegration
@@ -12,6 +13,43 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 from config import settings
 
 logger = logging.getLogger(__name__)
+
+
+def _get_release_version() -> str:
+    """
+    Get the release version for Sentry.
+
+    Checks for version in the following order:
+    1. SENTRY_RELEASE environment variable
+    2. Git commit SHA (if .git directory exists)
+    3. Default version from pyproject.toml
+
+    Returns:
+        str: Release version string
+    """
+    # Check for explicit SENTRY_RELEASE environment variable
+    if os.environ.get('SENTRY_RELEASE'):
+        return os.environ['SENTRY_RELEASE']
+
+    # Try to get git commit SHA
+    try:
+        import subprocess
+        result = subprocess.run(
+            ['git', 'rev-parse', '--short', 'HEAD'],
+            capture_output=True,
+            text=True,
+            timeout=1,
+            cwd=os.path.dirname(os.path.abspath(__file__))
+        )
+        if result.returncode == 0:
+            commit_sha = result.stdout.strip()
+            if commit_sha:
+                return f"sahabot2@{commit_sha}"
+    except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+        pass
+
+    # Fallback to default version
+    return "sahabot2@0.1.0"
 
 
 def init_sentry() -> None:
@@ -54,8 +92,8 @@ def init_sentry() -> None:
                     event_level=logging.ERROR  # Send errors as events
                 ),
             ],
-            # Set release version if available
-            release=f"sahabot2@0.1.0",
+            # Set release version (git commit or default)
+            release=_get_release_version(),
             # Send default PII (user info)
             send_default_pii=True,
             # Attach stack traces to all messages
