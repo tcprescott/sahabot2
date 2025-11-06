@@ -82,6 +82,7 @@ class Match(Model):
     players: fields.ReverseRelation["MatchPlayers"]
     crew_members: fields.ReverseRelation["Crew"]
     seed: fields.ReverseRelation["MatchSeed"]
+    settings_submissions: fields.ReverseRelation["TournamentMatchSettings"]
 
 class MatchSeed(Model):
     """Game seed/ROM information for a match (1:1 with Match)."""
