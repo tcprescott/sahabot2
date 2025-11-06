@@ -8,34 +8,14 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
 from application.events import EventBus, MatchScheduledEvent, MatchUpdatedEvent, MatchDeletedEvent
-from models import Organization, Tournament, Match, DiscordGuild, SYSTEM_USER_ID
+from models import Tournament, Match, DiscordGuild, SYSTEM_USER_ID
 
 
 @pytest.fixture
-async def sample_org(db):
-    """Create a sample organization for testing."""
-    return await Organization.create(
-        name="Test Organization",
-        slug="test-org",
-    )
-
-
-@pytest.fixture
-async def sample_discord_guild(db, sample_org):
-    """Create a sample Discord guild for testing."""
-    return await DiscordGuild.create(
-        organization=sample_org,
-        guild_id=987654321098765432,
-        guild_name="Test Guild",
-        is_active=True,
-    )
-
-
-@pytest.fixture
-async def sample_tournament(db, sample_org, sample_discord_guild):
+async def sample_tournament(db, sample_organization, sample_discord_guild):
     """Create a sample tournament with events enabled."""
     tournament = await Tournament.create(
-        organization=sample_org,
+        organization=sample_organization,
         name="Test Tournament",
         is_active=True,
         tracker_enabled=True,
@@ -63,7 +43,7 @@ class TestDiscordScheduledEventListeners:
 
     @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_match_scheduled_event_creates_discord_event(
-        self, mock_get_bot, db, sample_org, sample_tournament, sample_discord_guild
+        self, mock_get_bot, db, sample_organization, sample_tournament, sample_discord_guild
     ):
         """Test that MatchScheduledEvent creates a Discord event."""
         # Mock Discord bot
@@ -84,7 +64,7 @@ class TestDiscordScheduledEventListeners:
         # Emit event
         await EventBus.emit(MatchScheduledEvent(
             user_id=SYSTEM_USER_ID,
-            organization_id=sample_org.id,
+            organization_id=sample_organization.id,
             entity_id=match.id,
             match_id=match.id,
             tournament_id=sample_tournament.id,
@@ -101,13 +81,13 @@ class TestDiscordScheduledEventListeners:
 
     @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_match_updated_event_updates_discord_event(
-        self, mock_get_bot, db, sample_org, sample_match, sample_discord_guild
+        self, mock_get_bot, db, sample_organization, sample_match, sample_discord_guild
     ):
         """Test that MatchUpdatedEvent updates Discord event."""
         # Create initial Discord event
         from models import DiscordScheduledEvent
         await DiscordScheduledEvent.create(
-            organization_id=sample_org.id,
+            organization_id=sample_organization.id,
             match_id=sample_match.id,
             scheduled_event_id=2222222222,
         )
@@ -125,7 +105,7 @@ class TestDiscordScheduledEventListeners:
         # Emit update event
         await EventBus.emit(MatchUpdatedEvent(
             user_id=SYSTEM_USER_ID,
-            organization_id=sample_org.id,
+            organization_id=sample_organization.id,
             entity_id=sample_match.id,
             match_id=sample_match.id,
             tournament_id=sample_match.tournament_id,
@@ -141,13 +121,13 @@ class TestDiscordScheduledEventListeners:
 
     @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_match_deleted_event_deletes_discord_event(
-        self, mock_get_bot, db, sample_org, sample_match, sample_discord_guild
+        self, mock_get_bot, db, sample_organization, sample_match, sample_discord_guild
     ):
         """Test that MatchDeletedEvent deletes Discord event."""
         # Create Discord event
         from models import DiscordScheduledEvent
         await DiscordScheduledEvent.create(
-            organization_id=sample_org.id,
+            organization_id=sample_organization.id,
             match_id=sample_match.id,
             scheduled_event_id=3333333333,
         )
@@ -165,7 +145,7 @@ class TestDiscordScheduledEventListeners:
         # Emit delete event
         await EventBus.emit(MatchDeletedEvent(
             user_id=SYSTEM_USER_ID,
-            organization_id=sample_org.id,
+            organization_id=sample_organization.id,
             entity_id=sample_match.id,
             match_id=sample_match.id,
             tournament_id=sample_match.tournament_id,
@@ -181,12 +161,12 @@ class TestDiscordScheduledEventListeners:
 
     @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
     async def test_event_not_created_when_disabled(
-        self, mock_get_bot, db, sample_org, sample_discord_guild
+        self, mock_get_bot, db, sample_organization, sample_discord_guild
     ):
         """Test that events are not created when disabled in tournament."""
         # Create tournament with events disabled
         tournament = await Tournament.create(
-            organization=sample_org,
+            organization=sample_organization,
             name="No Events Tournament",
             is_active=True,
             tracker_enabled=True,
@@ -210,7 +190,7 @@ class TestDiscordScheduledEventListeners:
         # Emit event
         await EventBus.emit(MatchScheduledEvent(
             user_id=SYSTEM_USER_ID,
-            organization_id=sample_org.id,
+            organization_id=sample_organization.id,
             entity_id=match.id,
             match_id=match.id,
             tournament_id=tournament.id,
@@ -226,12 +206,13 @@ class TestDiscordScheduledEventListeners:
         assert len(events) == 0
 
     async def test_multiple_guilds_creates_multiple_events(
-        self, db, sample_org, sample_tournament, sample_discord_guild
+        self, db, sample_user, sample_organization, sample_tournament, sample_discord_guild
     ):
         """Test that events are created in all configured guilds."""
         # Add second guild
         guild2 = await DiscordGuild.create(
-            organization=sample_org,
+            organization=sample_organization,
+            linked_by=sample_user,
             guild_id=111222333444555666,
             guild_name="Second Guild",
             is_active=True,
@@ -262,7 +243,7 @@ class TestDiscordScheduledEventListeners:
             # Emit event
             await EventBus.emit(MatchScheduledEvent(
                 user_id=SYSTEM_USER_ID,
-                organization_id=sample_org.id,
+                organization_id=sample_organization.id,
                 entity_id=match.id,
                 match_id=match.id,
                 tournament_id=sample_tournament.id,
