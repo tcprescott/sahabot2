@@ -12,7 +12,7 @@ import pytest
 class TestUserManagementWorkflow:
     """Test cases for user management workflows."""
     
-    async def test_create_and_retrieve_user(self, clean_db, mock_discord_user):
+    async def test_create_and_retrieve_user(self, db, discord_user_payload):
         """Test creating and retrieving a user."""
         # TODO: Implement test
         pass

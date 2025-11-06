@@ -85,19 +85,19 @@ def discord_user_payload():
 
 
 @pytest.fixture
-async def sample_user(request):
+async def sample_user(db, discord_user_payload):
     """
     Create a sample user in the database for testing.
     
     Args:
-        request: Pytest request object for accessing other fixtures
+        db: Database fixture (ensures DB is initialized)
+        discord_user_payload: Discord OAuth payload fixture
         
     Returns:
         Created user instance
     """
-    # Ensure DB is initialized and get discord payload without shadowing fixture names
-    _ = request.getfixturevalue('db')
-    payload = request.getfixturevalue('discord_user_payload')
+    # Use fixtures directly instead of request.getfixturevalue
+    payload = discord_user_payload
 
     from models.user import User, Permission
 
@@ -138,20 +138,19 @@ async def sample_organization(db):
 
 
 @pytest.fixture
-async def admin_user(request):
+async def admin_user(db, discord_user_payload):
     """
     Create an admin user in the database for testing.
     
     Args:
-        clean_db: Clean database fixture
-        mock_discord_user: Mock Discord user data
+        db: Database fixture (ensures DB is initialized)
+        discord_user_payload: Discord OAuth payload fixture
         
     Returns:
         Created admin user instance
     """
-    # Ensure DB is initialized and get discord payload without shadowing fixture names
-    _ = request.getfixturevalue('db')
-    payload = request.getfixturevalue('discord_user_payload')
+    # Use fixtures directly instead of request.getfixturevalue
+    payload = discord_user_payload
 
     from models.user import User, Permission
 
