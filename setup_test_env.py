@@ -12,7 +12,7 @@ Features:
 - Validates environment configuration
 
 Usage:
-    python setup_test_env.py [--skip-data] [--preset tiny|small|medium|large]
+    python setup_test_env.py [--skip-data] [--clear-data] [--preset tiny|small|medium|large]
 """
 
 import asyncio
@@ -21,6 +21,9 @@ import logging
 import os
 import sys
 from pathlib import Path
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Configure logging
 logging.basicConfig(
@@ -88,19 +91,17 @@ async def initialize_database():
         return False
 
 
-async def generate_mock_data(preset: str = "tiny"):
+async def generate_mock_data(preset: str = "tiny", clear_existing: bool = False):
     """
     Generate mock data for testing.
     
     Args:
         preset: Size preset for mock data generation (tiny, small, medium, large)
+        clear_existing: Whether to clear existing data before generating
     """
     logger.info("Generating mock data with preset: %s...", preset)
     
     try:
-        # Import and run the mock data generator
-        sys.path.insert(0, str(Path(__file__).parent))
-        
         from tools.generate_mock_data import MockDataGenerator, PRESETS
         from tortoise import Tortoise
         from config import settings
@@ -126,7 +127,7 @@ async def generate_mock_data(preset: str = "tiny"):
             num_tournaments=config['num_tournaments'],
             num_async_tournaments=config['num_async_tournaments'],
             num_matches_per_tournament=config['num_matches_per_tournament'],
-            clear_existing=False
+            clear_existing=clear_existing
         )
         await generator.generate_all()
         
@@ -190,6 +191,11 @@ async def main():
         help='Skip mock data generation'
     )
     parser.add_argument(
+        '--clear-data',
+        action='store_true',
+        help='Clear existing data before generating mock data (WARNING: destructive!)'
+    )
+    parser.add_argument(
         '--preset',
         choices=['tiny', 'small', 'medium', 'large'],
         default='tiny',
@@ -224,7 +230,7 @@ async def main():
     
     # Step 3: Generate mock data (unless skipped)
     if not args.skip_data:
-        if not await generate_mock_data(args.preset):
+        if not await generate_mock_data(args.preset, args.clear_data):
             logger.error("Failed to generate mock data")
             sys.exit(1)
     else:
@@ -241,7 +247,8 @@ async def main():
     logger.info("Next steps:")
     logger.info("  - Run tests: poetry run pytest")
     logger.info("  - Start dev server: ./start.sh dev")
-    logger.info("  - View database: sqlite3 test_:memory:.db")
+    if settings.DB_NAME != ":memory:":
+        logger.info("  - View database: sqlite3 test_%s.db", settings.DB_NAME)
     logger.info("")
 
 

@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     DB_HOST: str = "localhost"
     DB_PORT: int = 3306
     DB_USER: str = "sahabot2"
-    DB_PASSWORD: str = ""  # Optional for SQLite
+    DB_PASSWORD: Optional[str] = None  # Required for MySQL, not needed for SQLite
     DB_NAME: str = "sahabot2"
 
     # Discord OAuth2 Configuration
@@ -94,6 +94,9 @@ class Settings(BaseSettings):
                 return f"sqlite://test_{self.DB_NAME}.db"
         
         # Use MySQL for development and production
+        # Validate password is provided for MySQL
+        if not self.DB_PASSWORD:
+            raise ValueError("DB_PASSWORD is required when using MySQL database")
         return f"mysql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     @property
