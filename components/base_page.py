@@ -133,7 +133,6 @@ class BasePage:
             data-replays-session-sample-rate="{replays_session_sample_rate}"
             data-replays-on-error-sample-rate="{replays_on_error_sample_rate}"
         ></script>'''
-        
         ui.add_head_html(sentry_script)
 
     async def _show_query_param_notifications(self) -> None:
