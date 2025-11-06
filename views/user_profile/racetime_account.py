@@ -90,7 +90,7 @@ class RacetimeAccountView:
 
     async def _unlink_account(self) -> None:
         """Unlink the RaceTime account via service."""
-        from application.services.user_service import UserService
+        from application.services.core.user_service import UserService
         from application.repositories.user_repository import UserRepository
 
         try:

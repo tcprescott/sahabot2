@@ -3,7 +3,7 @@
 import logging
 from nicegui import ui
 from models import User
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 from components import Card
 from components.datetime_label import DateTimeLabel
 from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog

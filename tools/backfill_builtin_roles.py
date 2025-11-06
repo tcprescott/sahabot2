@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from tortoise import Tortoise
 from config import settings
 from models.organizations import Organization
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 
 logging.basicConfig(
     level=logging.INFO,

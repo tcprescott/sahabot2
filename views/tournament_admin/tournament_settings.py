@@ -124,7 +124,7 @@ class TournamentSettingsView:
             speedgaming_enabled: Whether SpeedGaming integration is enabled
             speedgaming_event_slug: SpeedGaming event slug
         """
-        from application.services.tournament_service import TournamentService
+        from application.services.tournaments.tournament_service import TournamentService
         from components.dialogs import ConfirmDialog
 
         # Validate SpeedGaming settings

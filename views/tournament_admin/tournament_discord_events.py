@@ -9,9 +9,9 @@ from nicegui import ui
 from models import User
 from models.organizations import Organization
 from models.async_tournament import AsyncTournament
-from application.services.tournament_service import TournamentService
-from application.services.discord_scheduled_event_service import DiscordScheduledEventService
-from application.services.discord_guild_service import DiscordGuildService
+from application.services.tournaments.tournament_service import TournamentService
+from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_guild_service import DiscordGuildService
 
 
 class TournamentDiscordEventsView:

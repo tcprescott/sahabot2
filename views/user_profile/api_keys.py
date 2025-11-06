@@ -11,7 +11,7 @@ from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from components.dialogs import CreateApiKeyDialog
-from application.services.api_token_service import ApiTokenService
+from application.services.security.api_token_service import ApiTokenService
 import logging
 
 logger = logging.getLogger(__name__)

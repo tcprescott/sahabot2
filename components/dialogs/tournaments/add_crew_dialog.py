@@ -10,8 +10,8 @@ from typing import Optional, Callable, Awaitable
 from nicegui import ui
 from models import User, Organization, CrewRole
 from models.match_schedule import Match
-from application.services.user_service import UserService
-from application.services.organization_service import OrganizationService
+from application.services.core.user_service import UserService
+from application.services.organizations.organization_service import OrganizationService
 from components.dialogs.common.base_dialog import BaseDialog
 import logging
 
@@ -154,7 +154,7 @@ class AddCrewDialog(BaseDialog):
         approved = self.approved_checkbox.value if self.approved_checkbox else True
 
         try:
-            from application.services.tournament_service import TournamentService
+            from application.services.tournaments.tournament_service import TournamentService
             tournament_service = TournamentService()
 
             # Add crew via admin method

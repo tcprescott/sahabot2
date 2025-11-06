@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
 from api.deps import get_current_user, require_permission
-from application.services.api_token_service import ApiTokenService
+from application.services.security.api_token_service import ApiTokenService
 from models.user import Permission
 
 

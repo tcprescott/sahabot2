@@ -1,6 +1,6 @@
 import pytest
 
-from application.services.rate_limit_service import RateLimitService
+from application.services.core.rate_limit_service import RateLimitService
 
 
 @pytest.mark.asyncio

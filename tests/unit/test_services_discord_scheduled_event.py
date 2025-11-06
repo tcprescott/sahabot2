@@ -7,7 +7,7 @@ Tests the business logic for Discord scheduled event operations.
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
-from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 from models import Organization, Tournament, Match, User, Permission, SYSTEM_USER_ID, DiscordGuild
 
 

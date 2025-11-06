@@ -6,7 +6,7 @@ Tests the business logic layer for User operations.
 
 import pytest
 from unittest.mock import MagicMock, AsyncMock, patch
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 
 
 @pytest.mark.unit

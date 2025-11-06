@@ -8,7 +8,7 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from models import User
 from models.user import Permission
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 from components.dialogs import UserEditDialog, UserAddDialog
 from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
 from components.datetime_label import DateTimeLabel

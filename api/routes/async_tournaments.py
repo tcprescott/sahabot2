@@ -13,7 +13,7 @@ from api.schemas.async_tournament import (
     UserBasicInfo,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 from models import User
 
 router = APIRouter(prefix="/async-tournaments", tags=["async-tournaments"])

@@ -8,8 +8,8 @@ Provides detailed async tournament management with dedicated views for different
 from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
-from application.services.organization_service import OrganizationService
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.organizations.organization_service import OrganizationService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 from views.tournaments import AsyncDashboardView
 
 

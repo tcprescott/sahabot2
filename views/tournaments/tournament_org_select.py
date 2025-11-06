@@ -8,7 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from components.card import Card
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 
 
 class TournamentOrgSelectView:

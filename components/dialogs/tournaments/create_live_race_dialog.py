@@ -185,7 +185,7 @@ class CreateLiveRaceDialog(BaseDialog):
                 return
 
             # Build request data
-            from application.services.async_live_race_service import AsyncLiveRaceService
+            from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
             from middleware.auth import DiscordAuthService
 
             service = AsyncLiveRaceService()

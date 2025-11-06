@@ -6,7 +6,7 @@ Public page for users to join organizations via invite links.
 
 from nicegui import ui
 from components import BasePage, Card
-from application.services.organization_invite_service import OrganizationInviteService
+from application.services.organizations.organization_invite_service import OrganizationInviteService
 
 
 def register():

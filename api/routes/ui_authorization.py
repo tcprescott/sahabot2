@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends
 
 from api.deps import get_current_user, enforce_rate_limit
 from models import User
-from application.services.ui_authorization_helper import UIAuthorizationHelper
+from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
 
 logger = logging.getLogger(__name__)
 

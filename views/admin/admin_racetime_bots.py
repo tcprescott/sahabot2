@@ -8,8 +8,8 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from models import User, RacetimeBot
-from application.services.racetime_bot_service import RacetimeBotService
-from application.services.organization_service import OrganizationService
+from application.services.racetime.racetime_bot_service import RacetimeBotService
+from application.services.organizations.organization_service import OrganizationService
 from components.dialogs import RacetimeBotEditDialog, RacetimeBotAddDialog, RacetimeBotOrganizationsDialog, ConfirmDialog
 import logging
 

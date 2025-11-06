@@ -13,7 +13,7 @@ import discord
 from models import Match, Tournament, DiscordScheduledEvent, SYSTEM_USER_ID, DiscordEventFilter
 from application.repositories.discord_scheduled_event_repository import DiscordScheduledEventRepository
 from application.repositories.tournament_repository import TournamentRepository
-from application.services.discord_guild_service import DiscordGuildService
+from application.services.discord.discord_guild_service import DiscordGuildService
 from discordbot.client import get_bot_instance
 
 logger = logging.getLogger(__name__)

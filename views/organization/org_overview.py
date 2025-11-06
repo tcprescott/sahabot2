@@ -22,9 +22,9 @@ class OrganizationOverviewView:
     async def render(self) -> None:
         """Render the organization overview."""
         # Import services
-        from application.services.organization_service import OrganizationService
-        from application.services.tournament_service import TournamentService
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.organizations.organization_service import OrganizationService
+        from application.services.tournaments.tournament_service import TournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
 
         org_service = OrganizationService()
         tournament_service = TournamentService()

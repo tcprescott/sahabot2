@@ -9,7 +9,7 @@ from typing import Optional, Dict, Any, List
 from dataclasses import dataclass, asdict
 
 from models import User
-from application.services.authorization_service_v2 import AuthorizationServiceV2
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
 
 logger = logging.getLogger(__name__)
 

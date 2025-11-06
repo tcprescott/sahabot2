@@ -13,11 +13,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from nicegui import app as nicegui_app, ui
 from config import settings
 from database import init_db, close_db
-from application.services.discord_service import DiscordService
-from application.services.racetime_service import RacetimeService
-from application.services.task_scheduler_service import TaskSchedulerService
-from application.services.task_handlers import register_task_handlers
-from application.services.notification_processor import start_notification_processor, stop_notification_processor
+from application.services.discord.discord_service import DiscordService
+from application.services.racetime.racetime_service import RacetimeService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_handlers import register_task_handlers
+from application.services.notifications.notification_processor import start_notification_processor, stop_notification_processor
 from middleware.security import SecurityHeadersMiddleware, HTTPSRedirectMiddleware
 from api import register_api
 import frontend

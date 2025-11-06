@@ -9,8 +9,8 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import RacetimeChatCommandDialog, ConfirmDialog
 from models import User, RacetimeChatCommand, RacetimeBot, CommandResponseType
-from application.services.racetime_chat_command_service import RacetimeChatCommandService
-from application.services.racetime_bot_service import RacetimeBotService
+from application.services.racetime.racetime_chat_command_service import RacetimeChatCommandService
+from application.services.racetime.racetime_bot_service import RacetimeBotService
 import logging
 
 logger = logging.getLogger(__name__)

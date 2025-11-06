@@ -8,7 +8,7 @@ from api.schemas.discord_scheduled_event import (
     SyncEventsResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 from models import User, Permission
 
 router = APIRouter(prefix="/discord-events", tags=["discord-events"])

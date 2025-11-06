@@ -13,7 +13,7 @@ from slugify import slugify
 
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class AsyncTournamentMainView(ui.View):
         service = AsyncTournamentService()
 
         # Check if user is in the organization
-        from application.services.organization_service import OrganizationService
+        from application.services.organizations.organization_service import OrganizationService
         org_service = OrganizationService()
         is_member = await org_service.is_member(user, tournament.organization_id)
 
@@ -193,7 +193,7 @@ class PoolSelectionView(ui.View):
 
         # Get a random eligible permalink from the selected pool
         import random
-        from application.services.async_tournament_service import MAX_POOL_IMBALANCE
+        from application.services.tournaments.async_tournament_service import MAX_POOL_IMBALANCE
 
         await self.selected_pool.fetch_related('permalinks')
         all_permalinks = list(self.selected_pool.permalinks)

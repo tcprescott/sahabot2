@@ -4,9 +4,9 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from database import init_db, close_db
-from application.services.task_scheduler_service import TaskSchedulerService
-from application.services.task_handlers import register_task_handlers
-from application.services.builtin_tasks import get_active_builtin_tasks
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_handlers import register_task_handlers
+from application.services.tasks.builtin_tasks import get_active_builtin_tasks
 
 logging.basicConfig(
     level=logging.INFO,

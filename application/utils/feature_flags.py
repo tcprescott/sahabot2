@@ -6,7 +6,7 @@ without needing to instantiate the service every time.
 """
 
 from typing import Optional
-from application.services.feature_flag_service import FeatureFlagService
+from application.services.organizations.feature_flag_service import FeatureFlagService
 from models import FeatureFlag
 
 

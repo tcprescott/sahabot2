@@ -10,7 +10,7 @@ from models import User
 from models.async_tournament import AsyncTournament
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 
 
 class AsyncPlayerHistoryView:
@@ -25,7 +25,7 @@ class AsyncPlayerHistoryView:
     async def render(self):
         """Render the player history view."""
         # Get player
-        from application.services.user_service import UserService
+        from application.services.core.user_service import UserService
         user_service = UserService()
         player = await user_service.get_user_by_id(self.player_id)
 

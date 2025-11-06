@@ -246,7 +246,7 @@ class RacetimeChatCommandDialog(BaseDialog):
 
         try:
             # Import service
-            from application.services.racetime_chat_command_service import RacetimeChatCommandService
+            from application.services.racetime.racetime_chat_command_service import RacetimeChatCommandService
             from middleware.auth import DiscordAuthService
             service = RacetimeChatCommandService()
             user = await DiscordAuthService.get_current_user()

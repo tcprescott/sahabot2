@@ -10,7 +10,7 @@ from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
 from models import User
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
-from application.services.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
 
 logger = logging.getLogger(__name__)
 

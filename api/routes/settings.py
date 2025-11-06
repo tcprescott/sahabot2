@@ -10,7 +10,7 @@ from api.schemas.setting import (
     OrganizationSettingUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.settings_service import SettingsService
+from application.services.core.settings_service import SettingsService
 from models import User, Permission
 
 router = APIRouter(prefix="/settings", tags=["settings"])
@@ -239,7 +239,7 @@ async def list_organization_settings(
         HTTPException: 403 if not authorized
     """
     # Check authorization via organization service
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -285,7 +285,7 @@ async def create_organization_setting(
     Raises:
         HTTPException: 403 if not authorized
     """
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -330,7 +330,7 @@ async def get_organization_setting(
     Raises:
         HTTPException: 403 if not authorized, 404 if not found
     """
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -371,7 +371,7 @@ async def update_organization_setting(
     Raises:
         HTTPException: 403 if not authorized, 404 if not found
     """
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -417,7 +417,7 @@ async def delete_organization_setting(
     Raises:
         HTTPException: 403 if not authorized
     """
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:

@@ -18,9 +18,9 @@ from components.dialogs import (
     OrganizationInviteDialog,
     ConfirmDialog,
 )
-from application.services.organization_service import OrganizationService
-from application.services.ui_authorization_helper import UIAuthorizationHelper
-from application.services.organization_invite_service import OrganizationInviteService
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
+from application.services.organizations.organization_invite_service import OrganizationInviteService
 from config import settings
 
 

@@ -15,7 +15,7 @@ from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.common import ViewYamlDialog
 from components.dialogs.organization import PresetEditorDialog
 from components.dialogs.common.tournament_dialogs import ConfirmDialog
-from application.services.randomizer_preset_service import RandomizerPresetService
+from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
 

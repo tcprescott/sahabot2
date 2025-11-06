@@ -7,7 +7,7 @@ Shows user's recently accessed tournaments.
 import logging
 from nicegui import ui
 from models import User
-from application.services.tournament_usage_service import TournamentUsageService
+from application.services.tournaments.tournament_usage_service import TournamentUsageService
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 

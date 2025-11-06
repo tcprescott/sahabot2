@@ -9,7 +9,7 @@ from api.schemas.invite import (
     OrganizationInviteUseResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.organization_invite_service import OrganizationInviteService
+from application.services.organizations.organization_invite_service import OrganizationInviteService
 from models import User
 
 router = APIRouter(prefix="/invites", tags=["invites"])
@@ -151,7 +151,7 @@ async def update_organization_invite(
     # This is a simplified approach - ideally we'd have a get_by_id method
     
     # Try each organization the user has access to
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     user_orgs = await org_service.list_user_memberships(current_user.id)
     
@@ -218,7 +218,7 @@ async def delete_organization_invite(
     service = OrganizationInviteService()
     
     # Get invite by ID across all organizations user has access to
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     user_orgs = await org_service.list_user_memberships(current_user.id)
     

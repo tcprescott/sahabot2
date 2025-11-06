@@ -7,10 +7,10 @@ Shows organization selector, then organization-scoped tournament views.
 from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
-from application.services.organization_service import OrganizationService
-from application.services.tournament_service import TournamentService
-from application.services.async_tournament_service import AsyncTournamentService
-from application.services.tournament_usage_service import TournamentUsageService
+from application.services.organizations.organization_service import OrganizationService
+from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.tournament_usage_service import TournamentUsageService
 from views.tournaments import (
     EventScheduleView,
     MyMatchesView,
@@ -384,7 +384,7 @@ def register():
         """Async tournament dashboard - player's own races."""
         base = BasePage.authenticated_page(title="Async Tournament")
 
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
         async def content(page: BasePage):
@@ -408,7 +408,7 @@ def register():
         """Async tournament leaderboard."""
         base = BasePage.authenticated_page(title="Async Tournament Leaderboard")
 
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
         async def content(page: BasePage):
@@ -434,7 +434,7 @@ def register():
         """Async tournament pools."""
         base = BasePage.authenticated_page(title="Async Tournament Pools")
 
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
         async def content(page: BasePage):
@@ -460,7 +460,7 @@ def register():
         """Async tournament player history."""
         base = BasePage.authenticated_page(title="Player History")
 
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
         async def content(page: BasePage):
@@ -485,7 +485,7 @@ def register():
         """Async tournament permalink view."""
         base = BasePage.authenticated_page(title="Permalink Races")
 
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
         async def content(page: BasePage):
@@ -511,7 +511,7 @@ def register():
         """Async tournament review queue - for reviewers only."""
         base = BasePage.authenticated_page(title="Race Review Queue")
 
-        from application.services.async_tournament_service import AsyncTournamentService
+        from application.services.tournaments.async_tournament_service import AsyncTournamentService
         async_service = AsyncTournamentService()
 
         async def content(page: BasePage):

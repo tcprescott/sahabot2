@@ -11,8 +11,8 @@ from typing import Optional, Dict, Any
 from urllib.parse import urlencode
 from config import settings
 from nicegui import app, ui
-from application.services.user_service import UserService
-from application.services.audit_service import AuditService
+from application.services.core.user_service import UserService
+from application.services.core.audit_service import AuditService
 from application.repositories.user_repository import UserRepository
 from models import User
 

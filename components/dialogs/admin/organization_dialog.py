@@ -9,7 +9,7 @@ from typing import Optional, Callable, Awaitable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
 from models import Organization
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 
 
 class OrganizationDialog(BaseDialog):

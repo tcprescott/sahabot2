@@ -10,7 +10,7 @@ import yaml
 from typing import Optional
 from models import User, RandomizerPreset, Permission
 from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
-from application.services.preset_namespace_service import PresetNamespaceService
+from application.services.randomizer.preset_namespace_service import PresetNamespaceService
 from application.events import EventBus, PresetCreatedEvent, PresetUpdatedEvent
 
 logger = logging.getLogger(__name__)

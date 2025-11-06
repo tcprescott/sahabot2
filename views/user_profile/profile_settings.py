@@ -9,7 +9,7 @@ import logging
 from nicegui import ui
 from models import User
 from components.card import Card
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 
 logger = logging.getLogger(__name__)
 

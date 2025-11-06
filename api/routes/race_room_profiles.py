@@ -11,7 +11,7 @@ from api.schemas.race_room_profile import (
     RaceRoomProfileResponse,
     RaceRoomProfileListResponse,
 )
-from application.services.race_room_profile_service import RaceRoomProfileService
+from application.services.racetime.race_room_profile_service import RaceRoomProfileService
 from models import User
 
 logger = logging.getLogger(__name__)

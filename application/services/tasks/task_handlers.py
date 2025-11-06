@@ -11,9 +11,9 @@ from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from models import SYSTEM_USER_ID
-from application.services.task_scheduler_service import TaskSchedulerService
-from application.services.async_tournament_service import AsyncTournamentService
-from application.services.async_live_race_service import AsyncLiveRaceService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
 from discordbot.client import get_bot_instance
 
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ async def handle_cleanup_tournament_usage(task: ScheduledTask) -> None:
     Args:
         task: ScheduledTask to execute
     """
-    from application.services.tournament_usage_service import TournamentUsageService
+    from application.services.tournaments.tournament_usage_service import TournamentUsageService
 
     logger.info("Starting tournament usage cleanup task: %s", task.name)
 
@@ -436,7 +436,7 @@ async def handle_speedgaming_import(task: ScheduledTask) -> None:
     Args:
         task: ScheduledTask to execute
     """
-    from application.services.speedgaming_etl_service import SpeedGamingETLService
+    from application.services.speedgaming.speedgaming_etl_service import SpeedGamingETLService
 
     logger.info("Starting SpeedGaming episode import task: %s", task.name)
 

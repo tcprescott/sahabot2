@@ -8,7 +8,7 @@ from api.schemas.scheduled_task import (
     ScheduledTaskUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
 from models import User
 
 router = APIRouter(prefix="/scheduled-tasks", tags=["scheduled-tasks"])

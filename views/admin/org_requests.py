@@ -11,7 +11,7 @@ from models import User, OrganizationRequest
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from components.dialogs.admin import ApproveOrgRequestDialog, RejectOrgRequestDialog
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class OrgRequestsView:
     async def _render_content(self) -> None:
         """Render the main content."""
         # Import organization request service
-        from application.services.organization_request_service import OrganizationRequestService
+        from application.services.organizations.organization_request_service import OrganizationRequestService
 
         request_service = OrganizationRequestService()
 

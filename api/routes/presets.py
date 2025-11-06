@@ -12,8 +12,8 @@ from api.schemas.preset import (
     RandomizerPresetUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.preset_namespace_service import PresetNamespaceService, NamespaceValidationError
-from application.services.randomizer_preset_service import RandomizerPresetService, PresetValidationError
+from application.services.randomizer.preset_namespace_service import PresetNamespaceService, NamespaceValidationError
+from application.services.randomizer.randomizer_preset_service import RandomizerPresetService, PresetValidationError
 from models import User
 
 router = APIRouter(prefix="/presets", tags=["presets"])

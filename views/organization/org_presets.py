@@ -12,7 +12,7 @@ from models import Organization, User
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 from components.dialogs.organization import PresetEditorDialog, ViewPresetDialog
-from application.services.randomizer_preset_service import RandomizerPresetService
+from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
 

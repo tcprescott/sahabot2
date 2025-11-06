@@ -14,9 +14,9 @@ from croniter import croniter
 from models import User
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from application.repositories.scheduled_task_repository import ScheduledTaskRepository
-from application.services.organization_service import OrganizationService
-from application.services.authorization_service_v2 import AuthorizationServiceV2
-from application.services.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
+from application.services.tasks.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks
 
 logger = logging.getLogger(__name__)
 
@@ -547,7 +547,7 @@ class TaskSchedulerService:
             return False
 
         # Find the built-in task
-        from application.services.builtin_tasks import get_all_builtin_tasks
+        from application.services.tasks.builtin_tasks import get_all_builtin_tasks
         builtin_tasks = get_all_builtin_tasks()
         task = next((t for t in builtin_tasks if t.task_id == task_id), None)
 

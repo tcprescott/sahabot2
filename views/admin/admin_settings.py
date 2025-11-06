@@ -10,7 +10,7 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
 from components.dialogs import GlobalSettingDialog
-from application.services.settings_service import SettingsService
+from application.services.core.settings_service import SettingsService
 
 
 class AdminSettingsView:

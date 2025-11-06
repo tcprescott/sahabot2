@@ -8,7 +8,7 @@ from api.schemas.racetime_bot import (
     RacetimeBotUpdate,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.racetime_bot_service import RacetimeBotService
+from application.services.racetime.racetime_bot_service import RacetimeBotService
 from models import User
 import logging
 

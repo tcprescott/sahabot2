@@ -10,8 +10,8 @@ from models import User, OrganizationRequest
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import LeaveOrganizationDialog, RequestOrganizationDialog
-from application.services.organization_service import OrganizationService
-from application.services.ui_authorization_helper import UIAuthorizationHelper
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
 import logging
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class UserOrganizationsView:
     async def _render_content(self) -> None:
         """Render the organizations list."""
         # Import the organization request service
-        from application.services.organization_request_service import OrganizationRequestService
+        from application.services.organizations.organization_request_service import OrganizationRequestService
 
         request_service = OrganizationRequestService()
 

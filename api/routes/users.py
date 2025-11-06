@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, Query
 from api.schemas.user import UserOut, UserListResponse
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 from models import User
 
 

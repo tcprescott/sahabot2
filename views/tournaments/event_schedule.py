@@ -14,8 +14,8 @@ from models.match_schedule import Match
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from components.dialogs import MatchSeedDialog, EditMatchDialog, CreateMatchDialog
-from application.services.tournament_service import TournamentService
-from application.services.organization_service import OrganizationService
+from application.services.tournaments.tournament_service import TournamentService
+from application.services.organizations.organization_service import OrganizationService
 from config import Settings
 
 settings = Settings()
@@ -760,8 +760,8 @@ class EventScheduleView:
                 # Load data async
                 async def load_data():
                     try:
-                        from application.services.stream_channel_service import StreamChannelService
-                        from application.services.organization_service import OrganizationService
+                        from application.services.tournaments.stream_channel_service import StreamChannelService
+                        from application.services.organizations.organization_service import OrganizationService
                         
                         stream_service = StreamChannelService()
                         streams = await stream_service.list_org_channels(self.user, self.organization_id)
@@ -792,7 +792,7 @@ class EventScheduleView:
             
             async def _handle_create(self):
                 from datetime import datetime
-                from application.services.tournament_service import TournamentService
+                from application.services.tournaments.tournament_service import TournamentService
                 
                 if not self._tournament_select or not self._tournament_select.value:
                     ui.notify('Please select a tournament', type='warning')

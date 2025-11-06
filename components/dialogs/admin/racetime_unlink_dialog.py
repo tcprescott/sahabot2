@@ -3,7 +3,7 @@
 from nicegui import ui
 from models import User
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 
 
 class RacetimeUnlinkDialog(BaseDialog):

@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from database import init_db, close_db
 from models import User, Organization, OrganizationMember, OrganizationRole, OrganizationMemberRole
-from application.services.ui_authorization_helper import UIAuthorizationHelper
+from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
 
 
 async def test_ui_auth_helper():

@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import Optional, Callable, Awaitable, Any
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.settings_service import SettingsService
+from application.services.core.settings_service import SettingsService
 
 
 class GlobalSettingDialog(BaseDialog):

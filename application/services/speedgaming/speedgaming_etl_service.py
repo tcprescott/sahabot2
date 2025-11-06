@@ -19,7 +19,7 @@ from models.match_schedule import (
 )
 from models.organizations import Organization
 from models.audit_log import AuditLog
-from application.services.speedgaming_service import (
+from application.services.speedgaming.speedgaming_service import (
     SpeedGamingService,
     SpeedGamingEpisode,
     SpeedGamingPlayer,

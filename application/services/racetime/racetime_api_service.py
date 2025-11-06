@@ -42,7 +42,7 @@ class RacetimeApiService:
             ValueError: If user has no linked account
             httpx.HTTPError: If token refresh fails
         """
-        from application.services.user_service import UserService
+        from application.services.core.user_service import UserService
 
         if not user.racetime_id or not user.racetime_access_token:
             raise ValueError("User has no linked RaceTime account")

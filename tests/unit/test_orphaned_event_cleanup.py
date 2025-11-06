@@ -7,7 +7,7 @@ Tests the cleanup logic for orphaned events (finished matches, disabled tourname
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
-from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 from application.repositories.discord_scheduled_event_repository import DiscordScheduledEventRepository
 from models import Organization, Tournament, Match, DiscordScheduledEvent, DiscordGuild, SYSTEM_USER_ID
 

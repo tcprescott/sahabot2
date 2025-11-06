@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 @EventBus.on(UserCreatedEvent, priority=EventPriority.HIGH)
 async def log_user_created(event: UserCreatedEvent) -> None:
     """Log user creation to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -73,7 +73,7 @@ async def log_user_created(event: UserCreatedEvent) -> None:
 @EventBus.on(UserPermissionChangedEvent, priority=EventPriority.HIGH)
 async def log_user_permission_changed(event: UserPermissionChangedEvent) -> None:
     """Log user permission changes to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -103,7 +103,7 @@ async def log_user_permission_changed(event: UserPermissionChangedEvent) -> None
 @EventBus.on(OrganizationCreatedEvent, priority=EventPriority.HIGH)
 async def log_organization_created(event: OrganizationCreatedEvent) -> None:
     """Log organization creation to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -127,7 +127,7 @@ async def log_organization_created(event: OrganizationCreatedEvent) -> None:
 @EventBus.on(OrganizationMemberAddedEvent, priority=EventPriority.HIGH)
 async def log_organization_member_added(event: OrganizationMemberAddedEvent) -> None:
     """Log member addition to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -155,7 +155,7 @@ async def log_organization_member_added(event: OrganizationMemberAddedEvent) -> 
 @EventBus.on(OrganizationMemberRemovedEvent, priority=EventPriority.HIGH)
 async def log_organization_member_removed(event: OrganizationMemberRemovedEvent) -> None:
     """Log member removal to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -184,7 +184,7 @@ async def log_organization_member_removed(event: OrganizationMemberRemovedEvent)
 @EventBus.on(TournamentCreatedEvent, priority=EventPriority.HIGH)
 async def log_tournament_created(event: TournamentCreatedEvent) -> None:
     """Log tournament creation to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -209,7 +209,7 @@ async def log_tournament_created(event: TournamentCreatedEvent) -> None:
 @EventBus.on(RaceSubmittedEvent, priority=EventPriority.HIGH)
 async def log_race_submitted(event: RaceSubmittedEvent) -> None:
     """Log race submission to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -239,7 +239,7 @@ async def log_race_submitted(event: RaceSubmittedEvent) -> None:
 @EventBus.on(RaceApprovedEvent, priority=EventPriority.HIGH)
 async def log_race_approved(event: RaceApprovedEvent) -> None:
     """Log race approval to audit log."""
-    from application.services.audit_service import AuditService
+    from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
 
     audit_service = AuditService()
@@ -310,7 +310,7 @@ async def log_race_approved(event: RaceApprovedEvent) -> None:
 @EventBus.on(MatchScheduledEvent, priority=EventPriority.NORMAL)
 async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
     """Queue notifications for match scheduled event."""
-    from application.services.notification_service import NotificationService
+    from application.services.notifications.notification_service import NotificationService
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
 
@@ -364,7 +364,7 @@ async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
 @EventBus.on(TournamentCreatedEvent, priority=EventPriority.NORMAL)
 async def notify_tournament_created(event: TournamentCreatedEvent) -> None:
     """Queue notifications for tournament created event."""
-    from application.services.notification_service import NotificationService
+    from application.services.notifications.notification_service import NotificationService
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -394,7 +394,7 @@ async def notify_tournament_created(event: TournamentCreatedEvent) -> None:
 @EventBus.on(InviteCreatedEvent, priority=EventPriority.NORMAL)
 async def notify_invite_created(event: InviteCreatedEvent) -> None:
     """Queue notifications for organization invite event."""
-    from application.services.notification_service import NotificationService
+    from application.services.notifications.notification_service import NotificationService
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
 
@@ -429,7 +429,7 @@ async def notify_invite_created(event: InviteCreatedEvent) -> None:
 @EventBus.on(CrewAddedEvent, priority=EventPriority.NORMAL)
 async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
     """Queue notifications when crew is added in auto-approved state (admin added)."""
-    from application.services.notification_service import NotificationService
+    from application.services.notifications.notification_service import NotificationService
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
     from models.match_schedule import Match
@@ -499,7 +499,7 @@ async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
 @EventBus.on(CrewApprovedEvent, priority=EventPriority.NORMAL)
 async def notify_crew_approved(event: CrewApprovedEvent) -> None:
     """Queue notifications when crew signup is approved."""
-    from application.services.notification_service import NotificationService
+    from application.services.notifications.notification_service import NotificationService
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
     from models.match_schedule import Match
@@ -565,7 +565,7 @@ async def notify_crew_approved(event: CrewApprovedEvent) -> None:
 @EventBus.on(CrewRemovedEvent, priority=EventPriority.NORMAL)
 async def notify_crew_removed(event: CrewRemovedEvent) -> None:
     """Queue notifications when crew is removed from a match."""
-    from application.services.notification_service import NotificationService
+    from application.services.notifications.notification_service import NotificationService
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
 
@@ -602,8 +602,8 @@ async def notify_crew_removed(event: CrewRemovedEvent) -> None:
 @EventBus.on(AsyncLiveRaceCreatedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
     """Queue notifications when a live race is scheduled."""
-    from application.services.notification_service import NotificationService
-    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.services.notifications.notification_service import NotificationService
+    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -648,8 +648,8 @@ async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
 @EventBus.on(AsyncLiveRaceRoomOpenedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> None:
     """Queue notifications when a live race room opens."""
-    from application.services.notification_service import NotificationService
-    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.services.notifications.notification_service import NotificationService
+    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
     from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
     from models.notification_subscription import NotificationEventType
 
@@ -703,8 +703,8 @@ async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> N
 @EventBus.on(AsyncLiveRaceStartedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
     """Queue notifications when a live race starts."""
-    from application.services.notification_service import NotificationService
-    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.services.notifications.notification_service import NotificationService
+    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
     from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
     from models.notification_subscription import NotificationEventType
 
@@ -758,8 +758,8 @@ async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
 @EventBus.on(AsyncLiveRaceFinishedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
     """Queue notifications when a live race finishes."""
-    from application.services.notification_service import NotificationService
-    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.services.notifications.notification_service import NotificationService
+    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
     from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
     from models.notification_subscription import NotificationEventType
 
@@ -813,8 +813,8 @@ async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
 @EventBus.on(AsyncLiveRaceCancelledEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None:
     """Queue notifications when a live race is cancelled."""
-    from application.services.notification_service import NotificationService
-    from application.services.async_live_race_service import AsyncLiveRaceService
+    from application.services.notifications.notification_service import NotificationService
+    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
     from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
     from models.notification_subscription import NotificationEventType
 
@@ -873,7 +873,7 @@ async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None
 @EventBus.on(MatchScheduledEvent, priority=EventPriority.NORMAL)
 async def create_discord_event_for_match(event: MatchScheduledEvent) -> None:
     """Create Discord scheduled event when a match is scheduled."""
-    from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 
     service = DiscordScheduledEventService()
     
@@ -891,7 +891,7 @@ async def create_discord_event_for_match(event: MatchScheduledEvent) -> None:
 @EventBus.on(MatchUpdatedEvent, priority=EventPriority.NORMAL)
 async def update_discord_event_for_match(event: MatchUpdatedEvent) -> None:
     """Update Discord scheduled event when match details change."""
-    from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 
     # Only update Discord event if relevant fields changed
     relevant_fields = {'scheduled_at', 'title', 'stream_channel_id', 'comment'}
@@ -917,7 +917,7 @@ async def update_discord_event_for_match(event: MatchUpdatedEvent) -> None:
 @EventBus.on(MatchDeletedEvent, priority=EventPriority.NORMAL)
 async def delete_discord_event_for_match(event: MatchDeletedEvent) -> None:
     """Delete Discord scheduled event when a match is deleted."""
-    from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 
     service = DiscordScheduledEventService()
     
@@ -935,7 +935,7 @@ async def delete_discord_event_for_match(event: MatchDeletedEvent) -> None:
 @EventBus.on(MatchCompletedEvent, priority=EventPriority.NORMAL)
 async def cleanup_discord_event_for_completed_match(event: MatchCompletedEvent) -> None:
     """Clean up Discord scheduled event when a match is completed."""
-    from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 
     service = DiscordScheduledEventService()
     

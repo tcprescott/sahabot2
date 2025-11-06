@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import Optional, Callable, Awaitable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.user_service import UserService
-from application.services.organization_service import OrganizationService
+from application.services.core.user_service import UserService
+from application.services.organizations.organization_service import OrganizationService
 from models import Organization, User, Tournament
 import logging
 
@@ -102,7 +102,7 @@ class RegisterPlayerDialog(BaseDialog):
         user_id = self.user_select.value
 
         try:
-            from application.services.tournament_service import TournamentService
+            from application.services.tournaments.tournament_service import TournamentService
             tournament_service = TournamentService()
 
             # Register the user via admin method

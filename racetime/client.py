@@ -38,7 +38,7 @@ from racetime_bot import Bot, RaceHandler, monitor_cmd
 from models import BotStatus, SYSTEM_USER_ID, User
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
-from application.services.racetime_chat_command_service import RacetimeChatCommandService
+from application.services.racetime.racetime_chat_command_service import RacetimeChatCommandService
 from application.events import (
     EventBus,
     RacetimeRaceStatusChangedEvent,
@@ -137,7 +137,7 @@ class SahaRaceHandler(RaceHandler):
         """
         try:
             # Use service to check if user is a match player (follows architectural layers)
-            from application.services.racetime_room_service import RacetimeRoomService
+            from application.services.racetime.racetime_room_service import RacetimeRoomService
 
             service = RacetimeRoomService()
             is_match_player, match_id = await service.is_player_on_match(

@@ -25,7 +25,7 @@ from views.admin import (
     ScheduledTasksView,
 )
 from views.home import overview
-from application.services.randomizer_preset_service import RandomizerPresetService
+from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
 
 
 def register():

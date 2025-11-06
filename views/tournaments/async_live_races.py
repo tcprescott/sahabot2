@@ -14,8 +14,8 @@ from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.tournaments import CreateLiveRaceDialog
 from components.dialogs.common import ConfirmDialog
-from application.services.async_live_race_service import AsyncLiveRaceService
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 import logging
 
 logger = logging.getLogger(__name__)
@@ -189,7 +189,7 @@ class AsyncLiveRacesView:
         await self.tournament.fetch_related('pools', 'permalinks')
 
         # Get race room profiles
-        from application.services.race_room_profile_service import RaceRoomProfileService
+        from application.services.racetime.race_room_profile_service import RaceRoomProfileService
         profile_service = RaceRoomProfileService()
         profiles = await profile_service.list_profiles(
             current_user=self.user,

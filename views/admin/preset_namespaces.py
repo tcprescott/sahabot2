@@ -11,7 +11,7 @@ from models import User, PresetNamespace
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import ViewNamespaceDialog, ConfirmDialog
-from application.services.preset_namespace_service import PresetNamespaceService
+from application.services.randomizer.preset_namespace_service import PresetNamespaceService
 
 logger = logging.getLogger(__name__)
 

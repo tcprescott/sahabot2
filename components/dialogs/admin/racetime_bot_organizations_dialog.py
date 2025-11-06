@@ -9,8 +9,8 @@ from __future__ import annotations
 from typing import Optional, Callable
 from nicegui import ui
 from models import User, RacetimeBot, Organization
-from application.services.racetime_bot_service import RacetimeBotService
-from application.services.organization_service import OrganizationService
+from application.services.racetime.racetime_bot_service import RacetimeBotService
+from application.services.organizations.organization_service import OrganizationService
 from components.dialogs.common.base_dialog import BaseDialog
 import logging
 

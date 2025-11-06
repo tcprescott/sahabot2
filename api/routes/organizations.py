@@ -14,7 +14,7 @@ from api.schemas.organization import (
     OrganizationMemberPermissionsUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 from models import User
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])

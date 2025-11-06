@@ -60,7 +60,7 @@ class RaceRoomProfileManagementView:
 
     async def _render_bots_card(self):
         """Render card showing RaceTime bots assigned to this organization."""
-        from application.services.racetime_bot_service import RacetimeBotService
+        from application.services.racetime.racetime_bot_service import RacetimeBotService
 
         bot_service = RacetimeBotService()
         bots = await bot_service.get_bots_for_organization(self.organization.id, self.user)
@@ -129,7 +129,7 @@ class RaceRoomProfileManagementView:
 
     async def _load_profiles(self):
         """Load profiles from the service."""
-        from application.services.race_room_profile_service import RaceRoomProfileService
+        from application.services.racetime.race_room_profile_service import RaceRoomProfileService
 
         service = RaceRoomProfileService()
         self.profiles = await service.list_profiles(self.user, self.organization.id)
@@ -251,7 +251,7 @@ class RaceRoomProfileManagementView:
         from components.dialogs.common.tournament_dialogs import ConfirmDialog
 
         async def confirm_delete():
-            from application.services.race_room_profile_service import RaceRoomProfileService
+            from application.services.racetime.race_room_profile_service import RaceRoomProfileService
 
             service = RaceRoomProfileService()
             success = await service.delete_profile(
@@ -275,7 +275,7 @@ class RaceRoomProfileManagementView:
 
     async def _set_default(self, profile):
         """Set a profile as the default."""
-        from application.services.race_room_profile_service import RaceRoomProfileService
+        from application.services.racetime.race_room_profile_service import RaceRoomProfileService
 
         service = RaceRoomProfileService()
         success = await service.set_default_profile(

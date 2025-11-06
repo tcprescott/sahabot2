@@ -49,7 +49,7 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
         await super().race_data(data)
 
         # Import here to avoid circular dependency
-        from application.services.async_live_race_service import AsyncLiveRaceService
+        from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
 
         race_status = data.get('status', {}).get('value')
         

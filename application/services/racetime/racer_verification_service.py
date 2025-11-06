@@ -14,9 +14,9 @@ from application.repositories.racer_verification_repository import (
     UserRacerVerificationRepository,
 )
 from application.repositories.organization_repository import OrganizationRepository
-from application.services.authorization_service_v2 import AuthorizationServiceV2
-from application.services.racetime_api_service import RacetimeApiService
-from application.services.audit_service import AuditService
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
+from application.services.racetime.racetime_api_service import RacetimeApiService
+from application.services.core.audit_service import AuditService
 from discordbot.client import get_bot_instance
 
 logger = logging.getLogger(__name__)

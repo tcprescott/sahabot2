@@ -8,7 +8,7 @@ from api.schemas.stream_channel import (
     StreamChannelUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.stream_channel_service import StreamChannelService
+from application.services.tournaments.stream_channel_service import StreamChannelService
 from models import User
 
 router = APIRouter(prefix="/stream-channels", tags=["stream-channels"])

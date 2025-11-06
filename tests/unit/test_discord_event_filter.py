@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import discord
 
 from models import Tournament, Match, DiscordEventFilter, StreamChannel, User
-from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 
 
 @pytest.fixture

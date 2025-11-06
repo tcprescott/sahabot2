@@ -7,7 +7,7 @@ import logging
 
 from api.deps import get_current_user
 from models import User
-from application.services.discord_guild_service import DiscordGuildService
+from application.services.discord.discord_guild_service import DiscordGuildService
 from config import settings
 
 logger = logging.getLogger(__name__)

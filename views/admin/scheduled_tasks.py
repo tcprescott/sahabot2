@@ -11,7 +11,7 @@ from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
 from components.datetime_label import DateTimeLabel
-from application.services.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
 from models.scheduled_task import TaskType, ScheduleType
 
 

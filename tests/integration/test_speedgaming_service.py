@@ -3,7 +3,7 @@ Tests for SpeedGaming API service.
 """
 
 from datetime import datetime, timezone
-from application.services.speedgaming_service import (
+from application.services.speedgaming.speedgaming_service import (
     SpeedGamingService,
     SpeedGamingPlayer,
     SpeedGamingCrewMember,

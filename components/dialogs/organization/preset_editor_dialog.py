@@ -183,7 +183,7 @@ settings:
             return False
 
         # Validate via service
-        from application.services.randomizer_preset_service import (
+        from application.services.randomizer.randomizer_preset_service import (
             RandomizerPresetService,
             PresetValidationError
         )
@@ -235,7 +235,7 @@ settings:
             return
 
         # Save via service
-        from application.services.randomizer_preset_service import (
+        from application.services.randomizer.randomizer_preset_service import (
             RandomizerPresetService,
             PresetValidationError
         )

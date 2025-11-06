@@ -11,7 +11,7 @@ from components.data_table import ResponsiveTable, TableColumn
 from components.card import Card
 from components.datetime_label import DateTimeLabel
 from components.dialogs import OrganizationDialog
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 
 
 class AdminOrganizationsView:

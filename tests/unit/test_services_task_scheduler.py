@@ -7,7 +7,7 @@ Tests the business logic for scheduled tasks.
 import pytest
 from datetime import datetime, timedelta, timezone
 from models.scheduled_task import TaskType, ScheduleType
-from application.services.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
 
 
 @pytest.mark.unit

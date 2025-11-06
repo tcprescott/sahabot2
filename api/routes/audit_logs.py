@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from api.schemas.audit_log import AuditLogOut, AuditLogListResponse
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.audit_service import AuditService
+from application.services.core.audit_service import AuditService
 from models import User, Permission
 
 router = APIRouter(prefix="/audit-logs", tags=["audit-logs"])
@@ -94,7 +94,7 @@ async def list_organization_audit_logs(
         HTTPException: 403 if not authorized
     """
     # Check authorization
-    from application.services.organization_service import OrganizationService
+    from application.services.organizations.organization_service import OrganizationService
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:

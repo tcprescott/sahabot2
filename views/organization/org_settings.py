@@ -10,8 +10,8 @@ from nicegui import ui
 from models import Organization
 from components.card import Card
 from components.dialogs import OrganizationDialog, OrgSettingDialog
-from application.services.organization_service import OrganizationService
-from application.services.settings_service import SettingsService
+from application.services.organizations.organization_service import OrganizationService
+from application.services.core.settings_service import SettingsService
 from components.data_table import ResponsiveTable, TableColumn
 
 

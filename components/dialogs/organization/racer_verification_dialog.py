@@ -3,8 +3,8 @@
 import logging
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.racer_verification_service import RacerVerificationService
-from application.services.discord_guild_service import DiscordGuildService
+from application.services.racetime.racer_verification_service import RacerVerificationService
+from application.services.discord.discord_guild_service import DiscordGuildService
 
 logger = logging.getLogger(__name__)
 

@@ -12,7 +12,7 @@ import re
 from models import User
 from models.organization_invite import OrganizationInvite
 from application.repositories.organization_invite_repository import OrganizationInviteRepository
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 from application.events import EventBus, InviteCreatedEvent, InviteAcceptedEvent
 
 logger = logging.getLogger(__name__)

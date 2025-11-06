@@ -7,7 +7,7 @@ Verifies that global and org-scoped subscriptions work correctly.
 import pytest
 from models import User
 from models.notification_subscription import NotificationEventType, NotificationMethod
-from application.services.notification_service import NotificationService
+from application.services.notifications.notification_service import NotificationService
 from application.repositories.notification_repository import NotificationRepository
 
 

@@ -3,8 +3,8 @@
 from typing import Callable, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from application.services.api_token_service import ApiTokenService
-from application.services.rate_limit_service import RateLimitService
+from application.services.security.api_token_service import ApiTokenService
+from application.services.core.rate_limit_service import RateLimitService
 from config import settings
 from models import User, Permission
 

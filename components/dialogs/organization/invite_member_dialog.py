@@ -6,8 +6,8 @@ from __future__ import annotations
 from typing import Optional, Callable, Awaitable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.organization_service import OrganizationService
-from application.services.user_service import UserService
+from application.services.organizations.organization_service import OrganizationService
+from application.services.core.user_service import UserService
 
 
 class InviteMemberDialog(BaseDialog):

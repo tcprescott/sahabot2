@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 from discordbot.async_tournament_views import AsyncTournamentMainView
 
 logger = logging.getLogger(__name__)

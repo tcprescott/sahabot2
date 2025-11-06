@@ -14,7 +14,7 @@ from components.card import Card
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.common import ViewYamlDialog
-from application.services.randomizer_preset_service import RandomizerPresetService
+from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
 
 logger = logging.getLogger(__name__)
 

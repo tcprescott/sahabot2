@@ -52,7 +52,7 @@ class MatchRaceHandler(SahaRaceHandler):
 
         # Import here to avoid circular dependency:
         # TournamentService imports Match model which could import handlers
-        from application.services.tournament_service import TournamentService
+        from application.services.tournaments.tournament_service import TournamentService
 
         # After parent processes, self.data contains the unwrapped race data
         race_status = self.data.get('status', {}).get('value') if self.data else None

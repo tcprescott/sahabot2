@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 from models import User
 
 logger = logging.getLogger(__name__)

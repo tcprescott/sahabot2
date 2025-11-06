@@ -10,8 +10,8 @@ from models import User
 from models.organizations import Organization
 from components.card import Card
 from components.dialogs.common import ConfirmDialog
-from application.services.discord_guild_service import DiscordGuildService
-from application.services.organization_service import OrganizationService
+from application.services.discord.discord_guild_service import DiscordGuildService
+from application.services.organizations.organization_service import OrganizationService
 import logging
 
 logger = logging.getLogger(__name__)

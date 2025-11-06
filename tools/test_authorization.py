@@ -22,7 +22,7 @@ from tortoise import Tortoise
 from config import settings
 from models import User, Permission
 from models.organizations import Organization
-from application.services.authorization_service_v2 import AuthorizationServiceV2
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
 
 logging.basicConfig(
     level=logging.INFO,

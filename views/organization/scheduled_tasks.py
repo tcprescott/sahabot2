@@ -10,7 +10,7 @@ from models import User, Organization
 from models.scheduled_task import TaskType, ScheduleType
 from components.card import Card
 from components.dialogs.common import ConfirmDialog
-from application.services.task_scheduler_service import TaskSchedulerService
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
 from datetime import datetime
 
 

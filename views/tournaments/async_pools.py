@@ -11,7 +11,7 @@ from models.async_tournament import AsyncTournament, AsyncTournamentPool
 from components.card import Card
 from components.dialogs.tournaments import PoolDialog, PermalinkDialog
 from components.dialogs.common import ConfirmDialog
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 import logging
 
 logger = logging.getLogger(__name__)

@@ -51,7 +51,7 @@ class TournamentRacetimeSettingsView:
 
     async def _render_bots_card(self):
         """Render card showing RaceTime bots assigned to this organization."""
-        from application.services.racetime_bot_service import RacetimeBotService
+        from application.services.racetime.racetime_bot_service import RacetimeBotService
         from components.data_table import ResponsiveTable, TableColumn
 
         bot_service = RacetimeBotService()
@@ -226,7 +226,7 @@ class TournamentRacetimeSettingsView:
 
     async def _load_profiles(self):
         """Load available race room profiles for the organization."""
-        from application.services.race_room_profile_service import RaceRoomProfileService
+        from application.services.racetime.race_room_profile_service import RaceRoomProfileService
 
         service = RaceRoomProfileService()
         self.profiles = await service.list_profiles(self.user, self.organization.id)
@@ -292,7 +292,7 @@ class TournamentRacetimeSettingsView:
             require_link: Whether to require RaceTime link
             default_goal: Default race goal text
         """
-        from application.services.tournament_service import TournamentService
+        from application.services.tournaments.tournament_service import TournamentService
 
         service = TournamentService()
         await service.update_tournament(

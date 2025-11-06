@@ -19,8 +19,8 @@ from models.async_tournament import (
     AsyncTournamentRace,
 )
 from application.repositories.async_tournament_repository import AsyncTournamentRepository
-from application.services.organization_service import OrganizationService
-from application.services.authorization_service_v2 import AuthorizationServiceV2
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
 from application.events import (
     EventBus,
     TournamentCreatedEvent,
@@ -206,7 +206,7 @@ class AsyncTournamentService:
         # Check Discord channel permissions if a channel is specified
         if discord_channel_id:
             try:
-                from application.services.discord_guild_service import DiscordGuildService
+                from application.services.discord.discord_guild_service import DiscordGuildService
                 discord_service = DiscordGuildService()
                 perm_check = await discord_service.check_async_tournament_channel_permissions(discord_channel_id)
                 
@@ -286,7 +286,7 @@ class AsyncTournamentService:
         # Check Discord channel permissions if channel is being updated
         if channel_changed and fields['discord_channel_id']:
             try:
-                from application.services.discord_guild_service import DiscordGuildService
+                from application.services.discord.discord_guild_service import DiscordGuildService
                 discord_service = DiscordGuildService()
                 perm_check = await discord_service.check_async_tournament_channel_permissions(fields['discord_channel_id'])
                 

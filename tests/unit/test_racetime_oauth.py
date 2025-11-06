@@ -7,7 +7,7 @@ Tests the RaceTime.gg OAuth2 flow and account linking functionality.
 import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock, AsyncMock, patch
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 from middleware.racetime_oauth import RacetimeOAuthService
 from models import User, Permission
 

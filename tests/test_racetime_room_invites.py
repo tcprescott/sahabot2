@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from models import User, Permission
 from models.match_schedule import Match, Tournament, MatchPlayers
-from application.services.tournament_service import TournamentService
+from application.services.tournaments.tournament_service import TournamentService
 
 
 @pytest.mark.asyncio

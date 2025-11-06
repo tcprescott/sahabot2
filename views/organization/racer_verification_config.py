@@ -9,8 +9,8 @@ import logging
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.organization.racer_verification_dialog import RacerVerificationDialog
-from application.services.racer_verification_service import RacerVerificationService
-from application.services.discord_guild_service import DiscordGuildService
+from application.services.racetime.racer_verification_service import RacerVerificationService
+from application.services.discord.discord_guild_service import DiscordGuildService
 
 logger = logging.getLogger(__name__)
 

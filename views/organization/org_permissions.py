@@ -9,7 +9,7 @@ from typing import Any
 from nicegui import ui
 from models import Organization
 from components.card import Card
-from application.services.organization_service import OrganizationService
+from application.services.organizations.organization_service import OrganizationService
 
 
 class OrganizationPermissionsView:

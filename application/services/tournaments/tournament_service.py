@@ -11,8 +11,8 @@ import logging
 from models import User, SYSTEM_USER_ID
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 from application.repositories.tournament_repository import TournamentRepository
-from application.services.organization_service import OrganizationService
-from application.services.authorization_service_v2 import AuthorizationServiceV2
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
 from application.events import (
     EventBus,
     CrewAddedEvent,

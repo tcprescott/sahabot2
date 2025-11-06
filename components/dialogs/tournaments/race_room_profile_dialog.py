@@ -191,7 +191,7 @@ class RaceRoomProfileDialog(BaseDialog):
 
     async def _save(self):
         """Save the profile."""
-        from application.services.race_room_profile_service import RaceRoomProfileService
+        from application.services.racetime.race_room_profile_service import RaceRoomProfileService
 
         # Validate
         if not self.name_input.value or not self.name_input.value.strip():

@@ -6,7 +6,7 @@ Tests the audit logging service.
 
 import pytest
 from unittest.mock import patch
-from application.services.audit_service import AuditService
+from application.services.core.audit_service import AuditService
 
 
 @pytest.mark.unit

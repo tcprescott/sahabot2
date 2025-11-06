@@ -16,7 +16,7 @@ import logging
 from datetime import datetime, timezone
 
 from models import Tournament, SYSTEM_USER_ID
-from application.services.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
 
 logger = logging.getLogger(__name__)
 

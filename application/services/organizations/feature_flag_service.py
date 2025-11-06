@@ -7,7 +7,7 @@ from typing import Optional
 
 from models import User, OrganizationFeatureFlag, Permission, FeatureFlag
 from application.repositories.feature_flag_repository import FeatureFlagRepository
-from application.services.audit_service import AuditService
+from application.services.core.audit_service import AuditService
 
 logger = logging.getLogger(__name__)
 

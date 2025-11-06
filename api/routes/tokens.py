@@ -8,7 +8,7 @@ from api.schemas.token import (
     ApiTokenCreateResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.api_token_service import ApiTokenService
+from application.services.security.api_token_service import ApiTokenService
 from models import User
 
 router = APIRouter(prefix="/tokens", tags=["tokens"])

@@ -11,7 +11,7 @@ from nicegui import ui, app
 from components import BasePage
 from middleware.racetime_oauth import RacetimeOAuthService
 from middleware.auth import DiscordAuthService
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 
 logger = logging.getLogger(__name__)
 

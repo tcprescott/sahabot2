@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Optional, Callable
 from nicegui import ui
 from models import Permission
-from application.services.user_service import UserService
+from application.services.core.user_service import UserService
 from components.dialogs.common.base_dialog import BaseDialog
 import logging
 

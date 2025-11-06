@@ -9,8 +9,8 @@ from __future__ import annotations
 from typing import Optional, Callable
 from nicegui import ui
 from models import User, Permission
-from application.services.user_service import UserService
-from application.services.audit_service import AuditService
+from application.services.core.user_service import UserService
+from application.services.core.audit_service import AuditService
 from components.dialogs.common.base_dialog import BaseDialog
 import logging
 

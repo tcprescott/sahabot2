@@ -11,7 +11,7 @@ import discord
 from models import User
 from models.notification_log import NotificationDeliveryStatus
 from models.notification_subscription import NotificationEventType
-from application.services.notification_handlers import (
+from application.services.notifications.handlers import (
     BaseNotificationHandler,
     DiscordNotificationHandler,
 )

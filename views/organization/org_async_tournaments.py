@@ -13,7 +13,7 @@ from models.discord_guild import DiscordGuild
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import AsyncTournamentDialog, ConfirmDialog
-from application.services.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import AsyncTournamentService
 from discordbot.client import get_bot_instance
 import logging
 
@@ -194,7 +194,7 @@ class OrganizationAsyncTournamentsView:
         
         # Check permissions via Discord API
         try:
-            from application.services.discord_guild_service import DiscordGuildService
+            from application.services.discord.discord_guild_service import DiscordGuildService
             from datetime import datetime, timezone
             
             discord_service = DiscordGuildService()

@@ -1,6 +1,6 @@
 import pytest
 
-from application.services.api_token_service import ApiTokenService
+from application.services.security.api_token_service import ApiTokenService
 
 
 @pytest.mark.asyncio

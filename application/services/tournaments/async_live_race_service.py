@@ -19,8 +19,8 @@ from models.async_tournament import (
 )
 from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
 from application.repositories.async_tournament_repository import AsyncTournamentRepository
-from application.services.organization_service import OrganizationService
-from application.services.authorization_service_v2 import AuthorizationServiceV2
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
 from application.events import (
     EventBus,
     AsyncLiveRaceCreatedEvent,
@@ -198,7 +198,7 @@ class AsyncLiveRaceService:
         room_open_time = live_race.scheduled_at - timedelta(minutes=30)
 
         # Import here to avoid circular dependency
-        from application.services.task_scheduler_service import TaskSchedulerService
+        from application.services.tasks.task_scheduler_service import TaskSchedulerService
         from models.scheduled_task import TaskType, ScheduleType
 
         task_service = TaskSchedulerService()

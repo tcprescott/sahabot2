@@ -7,7 +7,7 @@ user types and organization roles.
 
 import pytest
 from models import User, Permission, Organization, OrganizationMember, OrganizationMemberRole
-from application.services.ui_authorization_helper import UIAuthorizationHelper
+from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
 from application.repositories.organization_repository import OrganizationRepository
 from application.repositories.user_repository import UserRepository
 

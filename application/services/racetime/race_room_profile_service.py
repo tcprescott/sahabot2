@@ -9,8 +9,8 @@ from models import User, RaceRoomProfile
 from application.repositories.race_room_profile_repository import (
     RaceRoomProfileRepository,
 )
-from application.services.organization_service import OrganizationService
-from application.services.authorization_service_v2 import AuthorizationServiceV2
+from application.services.organizations.organization_service import OrganizationService
+from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
 from application.events import EventBus, PresetCreatedEvent, PresetUpdatedEvent
 
 logger = logging.getLogger(__name__)

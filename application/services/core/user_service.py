@@ -430,7 +430,7 @@ class UserService:
         await self.unlink_racetime_account(user)
 
         # Audit log
-        from application.services.audit_service import AuditService
+        from application.services.core.audit_service import AuditService
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
@@ -541,7 +541,7 @@ class UserService:
             return []
 
         # Audit log
-        from application.services.audit_service import AuditService
+        from application.services.core.audit_service import AuditService
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
@@ -579,7 +579,7 @@ class UserService:
             return []
 
         # Audit log
-        from application.services.audit_service import AuditService
+        from application.services.core.audit_service import AuditService
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
@@ -622,7 +622,7 @@ class UserService:
         }
 
         # Audit log
-        from application.services.audit_service import AuditService
+        from application.services.core.audit_service import AuditService
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,

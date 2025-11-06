@@ -14,8 +14,8 @@ import discord
 from models import User
 from models.discord_guild import DiscordGuild
 from application.repositories.discord_guild_repository import DiscordGuildRepository
-from application.services.organization_service import OrganizationService
-from application.services.discord_permissions_config import AsyncTournamentChannelPermissions
+from application.services.organizations.organization_service import OrganizationService
+from application.services.discord.discord_permissions_config import AsyncTournamentChannelPermissions
 from application.events import EventBus, DiscordGuildLinkedEvent, DiscordGuildUnlinkedEvent
 from config import settings
 

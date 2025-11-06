@@ -7,7 +7,7 @@ Handles the OAuth2 redirect after a user adds the bot to a Discord server.
 import logging
 from nicegui import ui
 from components import BasePage
-from application.services.discord_guild_service import DiscordGuildService
+from application.services.discord.discord_guild_service import DiscordGuildService
 from config import settings
 
 logger = logging.getLogger(__name__)

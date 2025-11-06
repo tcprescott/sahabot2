@@ -8,10 +8,10 @@ through various patterns (permission checks, membership checks, ownership checks
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from models import User, Permission
-from application.services.user_service import UserService
-from application.services.notification_service import NotificationService
-from application.services.preset_namespace_service import PresetNamespaceService
-from application.services.tournament_usage_service import TournamentUsageService
+from application.services.core.user_service import UserService
+from application.services.notifications.notification_service import NotificationService
+from application.services.randomizer.preset_namespace_service import PresetNamespaceService
+from application.services.tournaments.tournament_usage_service import TournamentUsageService
 
 
 @pytest.mark.unit
