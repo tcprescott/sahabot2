@@ -16,7 +16,8 @@ from pages import (
     racetime_oauth,
     twitch_oauth,
     discord_guild_callback,
-    privacy
+    privacy,
+    test
 )
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     'twitch_oauth',
     'discord_guild_callback',
     'privacy',
+    'test',
 ]

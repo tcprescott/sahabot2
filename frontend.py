@@ -22,7 +22,8 @@ from pages import (
     racetime_oauth,
     twitch_oauth,
     discord_guild_callback,
-    privacy
+    privacy,
+    test
 )
 
 logger = logging.getLogger(__name__)
@@ -82,5 +83,6 @@ def register_routes(fastapi_app: FastAPI = None):
     twitch_oauth.register()
     discord_guild_callback.register()
     privacy.register()
+    test.register()  # Only registers if DEBUG is enabled
 
     logger.info("Frontend routes registered")
