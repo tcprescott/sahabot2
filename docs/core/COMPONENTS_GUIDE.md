@@ -179,6 +179,152 @@ This change reinforces the core principles:
 
 **None!** The old approach still works, but new pages should use the `BasePage` template for consistency.
 
+## Additional Reusable Components
+
+### Badge Component
+
+The `Badge` component provides standardized badge UI elements for status indicators, permissions, and custom badges.
+
+**Usage:**
+```python
+from components.badge import Badge
+
+# Status badges
+Badge.status(user.is_active)
+Badge.status(tournament.is_active, "Open", "Closed")
+
+# Permission badges
+Badge.permission(user.permission)
+
+# Visibility badges
+Badge.visibility(preset.is_public)
+
+# Race status badges
+Badge.race_status(race.status)
+
+# Custom badges
+Badge.custom("Verified", "success")
+Badge.custom("Pending", "warning")
+
+# Enabled/disabled badges
+Badge.enabled(command.is_enabled)
+
+# Count badges
+Badge.count(5, "new")
+```
+
+**Benefits:**
+- Consistent badge styling across the application
+- Automatic color selection based on context
+- Reduces code duplication (56+ occurrences standardized)
+
+---
+
+### EmptyState Component
+
+The `EmptyState` component provides standardized empty state displays for lists, tables, and content areas.
+
+**Usage:**
+```python
+from components.empty_state import EmptyState
+
+# No results (filtered lists)
+if not filtered_items:
+    EmptyState.no_results()
+
+# No items (empty lists)
+if not users:
+    EmptyState.no_items(
+        item_name='users',
+        action_text='Add User',
+        action_callback=self._open_add_dialog
+    )
+
+# Custom empty state
+EmptyState.render(
+    icon='people',
+    title='No members yet',
+    message='Add members to get started',
+    action_text='Invite Member',
+    action_callback=self._open_invite_dialog,
+    in_card=True
+)
+
+# Loading state
+EmptyState.loading("Loading users...")
+
+# Error state
+EmptyState.error(
+    message="Failed to load users",
+    retry_callback=self._refresh
+)
+
+# Hidden content
+EmptyState.hidden()
+```
+
+**Benefits:**
+- Consistent empty state UX across the application
+- Standardized messaging and icons
+- Reduces code duplication (33+ occurrences standardized)
+
+---
+
+### StatCard Component
+
+The `StatCard` and `StatGrid` components provide standardized statistic displays for metrics and dashboards.
+
+**Usage:**
+```python
+from components.stat_card import StatCard, StatGrid, StatsSection
+
+# Single stat card
+StatCard.render("42", "Active Users", color="success")
+
+# Grid of stats
+stats = [
+    {'value': '42', 'label': 'Completed', 'color': 'success'},
+    {'value': '15', 'label': 'Forfeited', 'color': 'danger'},
+    {'value': '8', 'label': 'Active', 'color': 'info'},
+    {'value': '95.2', 'label': 'Total Score', 'color': 'success'},
+]
+StatGrid.render(stats, columns=4)
+
+# Complete stats section with card
+StatsSection.render(
+    title="Tournament Statistics",
+    description="Overview of tournament participation",
+    stats=stats,
+    columns=2
+)
+
+# Simple inline stats
+StatCard.simple("50", "Participants", color="primary")
+```
+
+**Benefits:**
+- Consistent statistics display across dashboards
+- Responsive grid layout (mobile-first)
+- Easy to add icons and colors
+- Simplifies complex stat rendering
+
+---
+
+## Component Usage Guidelines
+
+1. **Always prefer components over custom markup** - Use Badge, EmptyState, and StatCard instead of manually creating badges, empty states, or stat displays.
+
+2. **Import from components package** - All components are exported from `components/__init__.py`:
+   ```python
+   from components import Badge, EmptyState, StatCard, StatGrid
+   ```
+
+3. **Follow existing patterns** - Look at migrated views (e.g., `views/admin/admin_users.py`, `views/tournaments/async_dashboard.py`) for examples.
+
+4. **Document custom variants** - If you need a variant not covered by existing components, consider adding it to the component rather than creating custom markup.
+
+5. **Gradual migration** - Not all existing code needs to be migrated immediately. New features should use components, and old code can be migrated opportunistically.
+
 ## Next Steps
 
 Future enhancements could include:
@@ -187,3 +333,6 @@ Future enhancements could include:
 - Page footer component
 - Loading states and error boundaries
 - Custom navbar items per page
+- FilterBar component for search/filter controls
+- ActionRow component for standardized button layouts
+- Card enhancements (collapsible, with actions)
