@@ -6,7 +6,7 @@ user types and organization roles.
 """
 
 import pytest
-from models import User, Permission, Organization, OrganizationMember, OrganizationMemberRole
+from models import User, Permission, Organization, OrganizationMember, OrganizationMemberRole, OrganizationRole
 from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
 from application.repositories.organization_repository import OrganizationRepository
 from application.repositories.user_repository import UserRepository
@@ -86,14 +86,24 @@ class TestUIPermissions:
             user=user
         )
         
-        # Grant ADMIN permission
+        # Create Admin role for organization
+        admin_role = await OrganizationRole.create(
+            organization=organization,
+            name="Admin",
+            description="Organization administrator",
+            is_builtin=True,
+            is_locked=True
+        )
+        
+        # Grant ADMIN role to member
         await OrganizationMemberRole.create(
             member=member,
-            permission_name='ADMIN'
+            role=admin_role
         )
         
         yield user
         await member.delete()
+        await admin_role.delete()
         await user.delete()
 
     @pytest.fixture
@@ -111,14 +121,24 @@ class TestUIPermissions:
             user=user
         )
         
-        # Grant TOURNAMENT_MANAGER permission
+        # Create Tournament Manager role for organization
+        tournament_manager_role = await OrganizationRole.create(
+            organization=organization,
+            name="Tournament Manager",
+            description="Manage tournaments and matches",
+            is_builtin=True,
+            is_locked=True
+        )
+        
+        # Grant TOURNAMENT_MANAGER role to member
         await OrganizationMemberRole.create(
             member=member,
-            permission_name='TOURNAMENT_MANAGER'
+            role=tournament_manager_role
         )
         
         yield user
         await member.delete()
+        await tournament_manager_role.delete()
         await user.delete()
 
     @pytest.fixture
