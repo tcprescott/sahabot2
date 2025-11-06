@@ -5,7 +5,7 @@ Tests Sentry initialization and configuration.
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 from config import settings
 
 
