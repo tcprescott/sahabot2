@@ -5,11 +5,13 @@ SahaBot2 integrates with [Sentry.io](https://sentry.io) for error tracking and p
 ## Features
 
 - **Error Tracking**: Automatically captures and reports exceptions from both the web application and Discord bot
-- **Performance Monitoring**: Tracks transaction performance and identifies slow operations
+- **Frontend Monitoring**: Captures JavaScript errors and client-side issues in the browser
+- **Performance Monitoring**: Tracks transaction performance and identifies slow operations (backend and frontend)
 - **Profiling**: CPU profiling to identify performance bottlenecks
 - **Request Context**: Captures request details, user information, and custom context
 - **Breadcrumbs**: Logs leading up to errors for better debugging
 - **Release Tracking**: Associates errors with specific application versions
+- **Session Replay**: Optional recording of user sessions (disabled by default)
 
 ## Configuration
 
@@ -54,18 +56,20 @@ SENTRY_PROFILES_SAMPLE_RATE=1.0
 
 ### Initialization
 
-Sentry is initialized early in the application lifecycle in `main.py`:
+Sentry is initialized in two places:
 
-```python
-from application.utils.sentry_init import init_sentry
-init_sentry()
-```
+1. **Backend** - Early in the application lifecycle in `main.py`:
+   ```python
+   from application.utils.sentry_init import init_sentry
+   init_sentry()
+   ```
 
-This initialization:
-1. Checks if `SENTRY_DSN` is configured
-2. Sets up FastAPI, AsyncIO, and Logging integrations
-3. Configures sample rates for performance monitoring
-4. Gracefully skips if DSN is not provided
+2. **Frontend** - Loaded on every page via `BasePage._load_sentry_browser()`:
+   - Dynamically loads Sentry browser SDK from CDN
+   - Configures with same DSN and environment as backend
+   - Only loads if SENTRY_DSN is configured
+
+This provides full-stack error tracking and performance monitoring.
 
 ### Integrations
 
@@ -74,6 +78,16 @@ This initialization:
 - Automatically captures HTTP request errors
 - Tracks request performance as transactions
 - Includes request headers, body, and user information
+
+#### Browser/Frontend Integration
+
+- Captures JavaScript errors and unhandled promise rejections
+- Tracks client-side performance (page loads, user interactions)
+- Captures user interaction breadcrumbs (clicks, navigation)
+- Session replay (optional, disabled by default)
+- Automatically loaded on all pages via BasePage
+
+**Note**: Browser monitoring uses the same DSN and sample rates as backend monitoring. Frontend errors appear in Sentry with `platform: browser` and `framework: nicegui` tags.
 
 #### Discord Bot Integration
 
@@ -130,6 +144,28 @@ This endpoint:
 - Intentionally raises an HTTP 500 error
 - Includes custom tags and context
 - Should appear in your Sentry dashboard within seconds
+
+### Testing Browser Monitoring
+
+To test that frontend monitoring is working:
+
+1. **Open browser developer console** (F12)
+2. **Check for initialization message**:
+   ```
+   Sentry browser monitoring initialized {environment: "development", tracesSampleRate: 0.1}
+   ```
+
+3. **Trigger a test error in console**:
+   ```javascript
+   // This will be captured by Sentry
+   throw new Error("Test frontend error for Sentry");
+   ```
+
+4. **Check Sentry dashboard** - Error should appear within seconds with:
+   - `platform: browser` tag
+   - `framework: nicegui` tag
+   - Browser and device information
+   - User session context
 
 ### Unit Tests
 
@@ -263,8 +299,10 @@ Sentry captures error information including:
 
 ## Related Files
 
-- `application/utils/sentry_init.py` - Sentry initialization
+- `application/utils/sentry_init.py` - Backend Sentry initialization
+- `static/js/monitoring/sentry-browser.js` - Frontend Sentry initialization
+- `components/base_page.py` - Loads Sentry browser monitoring on all pages
 - `config.py` - Configuration settings
-- `main.py` - Application startup with Sentry init
+- `main.py` - Application startup with backend Sentry init
 - `discordbot/client.py` - Discord bot error handlers with Sentry
 - `tests/unit/test_sentry_integration.py` - Integration tests
