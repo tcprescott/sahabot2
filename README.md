@@ -7,6 +7,8 @@
 - 🎨 **Mobile-First Responsive Design** - Fully functional on all device sizes
 - 🔐 **Discord OAuth2 Authentication** - Secure login via Discord with automatic token refresh
 - 🏁 **RaceTime.gg Integration** - Link your RaceTime.gg account for race tracking
+- 📺 **Twitch Integration** - Link Twitch accounts for stream integration
+- 📊 **Sentry.io Integration** - Error tracking and performance monitoring (optional)
 - 🗄️ **Database-Driven Authorization** - Flexible permission system
 - 🏗️ **Clean Architecture** - Separation of concerns with service and repository layers
 - 💅 **External CSS** - No inline styling, human-friendly class names
@@ -100,7 +102,9 @@ sahabot2/
 
    - Go to [Discord Developer Portal](https://discord.com/developers/applications)
    - Create a new application
-   - Add OAuth2 redirect URL: `http://localhost:8080/auth/callback`
+   - Add OAuth2 redirect URL to match your `BASE_URL`: `{BASE_URL}/auth/callback`
+     - Development: `http://localhost:8080/auth/callback`
+     - Production: `https://yourdomain.com/auth/callback`
    - Copy Client ID and Client Secret to `.env`
 
 6. **Configure RaceTime.gg OAuth2 (Optional)**
@@ -108,15 +112,43 @@ sahabot2/
    For users to link their RaceTime.gg accounts:
    - Go to [RaceTime.gg Developer Portal](https://racetime.gg/account/dev)
    - Create a new OAuth2 application
-   - Set redirect URI to: `http://localhost:8080/api/racetime/link/callback`
+   - Set redirect URI to match your `BASE_URL`: `{BASE_URL}/racetime/link/callback`
+     - Development: `http://localhost:8080/racetime/link/callback`
+     - Production: `https://yourdomain.com/racetime/link/callback`
    - Copy Client ID and Client Secret to `.env`:
      ```env
      RACETIME_CLIENT_ID=your_client_id
      RACETIME_CLIENT_SECRET=your_client_secret
-     RACETIME_OAUTH_REDIRECT_URI=http://localhost:8080/api/racetime/link/callback
      ```
 
-7. **Initialize database migrations**
+7. **Configure Twitch OAuth2 (Optional)**
+
+   For users to link their Twitch accounts:
+   - Go to [Twitch Developer Console](https://dev.twitch.tv/console/apps)
+   - Create a new application
+   - Set OAuth redirect URL to match your `BASE_URL`: `{BASE_URL}/twitch/link/callback`
+     - Development: `http://localhost:8080/twitch/link/callback`
+     - Production: `https://yourdomain.com/twitch/link/callback`
+   - Copy Client ID and Client Secret to `.env`:
+     ```env
+     TWITCH_CLIENT_ID=your_twitch_client_id
+     TWITCH_CLIENT_SECRET=your_twitch_client_secret
+     ```
+
+8. **Configure Sentry.io (Optional)**
+
+   For error tracking and performance monitoring:
+   - Create a free account at [Sentry.io](https://sentry.io)
+   - Create a new project
+   - Copy the DSN to `.env`:
+     ```env
+     SENTRY_DSN=https://your_key@sentry.io/your_project_id
+     SENTRY_ENVIRONMENT=development
+     ```
+
+   See [docs/integrations/SENTRY.md](docs/integrations/SENTRY.md) for detailed configuration.
+
+9. **Initialize database migrations**
    ```bash
    poetry run aerich init-db
    ```
@@ -224,25 +256,66 @@ Configuration is managed through environment variables in `.env`:
 
 All configuration is loaded centrally via `config.py` using Pydantic Settings. Do not read environment variables directly in application code, and never hard-code secrets or tokens. Import values from `from config import settings` and use `settings.<FIELD>` instead.
 
-### Database
+### Required Settings
+
+#### Database
 - `DB_HOST` - Database host (default: localhost)
 - `DB_PORT` - Database port (default: 3306)
-- `DB_USER` - Database username
+- `DB_USER` - Database username (default: sahabot2)
 - `DB_PASSWORD` - Database password
-- `DB_NAME` - Database name
+- `DB_NAME` - Database name (default: sahabot2)
 
-### Discord OAuth2
+#### Discord OAuth2
 - `DISCORD_CLIENT_ID` - Discord application client ID
 - `DISCORD_CLIENT_SECRET` - Discord application client secret
-- `DISCORD_REDIRECT_URI` - OAuth2 redirect URI
+- `DISCORD_REDIRECT_URI` - OAuth2 redirect URI (default: http://localhost:8080/auth/callback)
 - `DISCORD_GUILD_ID` - Optional Discord guild ID
 
-### Application
+#### Discord Bot
+- `DISCORD_BOT_TOKEN` - Discord bot token
+- `DISCORD_BOT_ENABLED` - Enable/disable Discord bot (default: True)
+
+#### Application
 - `SECRET_KEY` - Secret key for session encryption
-- `ENVIRONMENT` - Environment (development/production)
-- `DEBUG` - Debug mode (True/False)
-- `HOST` - Server host
-- `PORT` - Server port
+- `ENVIRONMENT` - Environment (development/production, default: development)
+- `DEBUG` - Debug mode (True/False, default: True)
+- `BASE_URL` - Base URL for the application (default: http://localhost:8080)
+
+#### Server
+- `HOST` - Server host (default: 0.0.0.0)
+- `PORT` - Server port (default: 8080)
+
+### Optional Settings
+
+#### RaceTime.gg OAuth2 (User Account Linking)
+- `RACETIME_CLIENT_ID` - RaceTime.gg OAuth2 client ID
+- `RACETIME_CLIENT_SECRET` - RaceTime.gg OAuth2 client secret
+- `RACETIME_URL` - RaceTime.gg base URL (default: https://racetime.gg)
+
+**Note**: RaceTime bot configurations are now managed through the database and admin UI. The legacy `RACETIME_BOTS` environment variable is deprecated. See [RaceTime Bot Migration](docs/archive/migrations/RACETIME_BOT_MIGRATION.md) for details.
+
+#### Twitch OAuth2 (User Account Linking)
+- `TWITCH_CLIENT_ID` - Twitch OAuth2 client ID
+- `TWITCH_CLIENT_SECRET` - Twitch OAuth2 client secret
+
+See [docs/integrations/TWITCH_INTEGRATION.md](docs/integrations/TWITCH_INTEGRATION.md) for setup details.
+
+#### API Rate Limiting
+- `API_RATE_LIMIT_WINDOW_SECONDS` - Rate limit window in seconds (default: 60)
+- `API_DEFAULT_RATE_LIMIT_PER_MINUTE` - Default requests per minute (default: 60)
+
+#### Randomizer Configuration
+- `ALTTPR_BASEURL` - ALttPR base URL (default: https://alttpr.com)
+- `OOTR_API_KEY` - OoTR API key for seed generation (optional)
+
+#### Sentry.io (Error Tracking)
+- `SENTRY_DSN` - Sentry project DSN (optional, enables Sentry when set)
+- `SENTRY_ENVIRONMENT` - Environment name for error grouping (default: value of ENVIRONMENT)
+- `SENTRY_RELEASE` - Release version identifier (auto-detected from git if not set)
+- `SENTRY_TRACES_SAMPLE_RATE` - Performance monitoring sample rate 0.0-1.0 (default: 0.1)
+- `SENTRY_PROFILES_SAMPLE_RATE` - Profiling sample rate 0.0-1.0 (default: 0.1)
+
+See [docs/integrations/SENTRY.md](docs/integrations/SENTRY.md) for detailed configuration and best practices.
 
 ## API Documentation
 
