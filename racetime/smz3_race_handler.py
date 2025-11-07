@@ -2,11 +2,10 @@
 SMZ3-specific RaceTime.gg handler.
 
 This handler provides SMZ3-specific chat commands for RaceTime.gg races.
-Commands are defined in code and registered with the @monitor_cmd decorator.
+Commands are defined in code using the ex_ prefix convention.
 """
 
 import logging
-from racetime_bot import monitor_cmd
 from racetime.client import SahaRaceHandler
 from application.services.randomizer.smz3_service import SMZ3Service, DEFAULT_SMZ3_SETTINGS
 from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
@@ -24,7 +23,6 @@ class SMZ3RaceHandler(SahaRaceHandler):
     - !spoiler [preset] - Generate seed with spoiler log
     """
 
-    @monitor_cmd
     async def ex_race(self, args, message):
         """
         Generate an SMZ3 seed with optional preset.
@@ -85,7 +83,6 @@ class SMZ3RaceHandler(SahaRaceHandler):
             logger.error("Error generating SMZ3 seed: %s", e, exc_info=True)
             await self.send_message(f"Error generating seed: {str(e)}")
     
-    @monitor_cmd
     async def ex_preset(self, args, message):
         """
         Generate an SMZ3 seed using a specific preset.
@@ -99,7 +96,6 @@ class SMZ3RaceHandler(SahaRaceHandler):
         # Delegate to race command with preset argument
         await self.ex_race(args, message)
     
-    @monitor_cmd
     async def ex_spoiler(self, args, message):
         """
         Generate an SMZ3 seed with spoiler log access.
