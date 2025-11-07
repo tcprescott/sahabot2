@@ -3,6 +3,10 @@ name: "Copilot Setup Steps"
 # This workflow configures the development environment for GitHub Copilot coding agent.
 # It runs automatically when Copilot coding agent starts working on an issue or PR.
 # The agent will have access to the configured environment when it performs its tasks.
+#
+# Additional triggers (workflow_dispatch, push/PR on this file) are for testing purposes
+# and do NOT interfere with the agent's automatic execution. They allow validation of
+# changes to this workflow before the agent uses them.
 
 on:
   workflow_dispatch:
