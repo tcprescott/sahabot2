@@ -69,17 +69,6 @@ def register():
                         view = AsyncDashboardView(page.user, tournament)
                         await view.render()
 
-            async def load_chat_commands():
-                """Load chat commands management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        # Import here to avoid circular dependency
-                        from views.organization.org_async_tournament_chat_commands import AsyncTournamentRacetimeChatCommandsView
-                        view = AsyncTournamentRacetimeChatCommandsView(page.user, org, tournament)
-                        await view.render()
-
             async def load_settings():
                 """Load async tournament settings."""
                 container = page.get_dynamic_content_container()
@@ -93,7 +82,6 @@ def register():
 
             # Register loaders
             page.register_content_loader('overview', load_overview)
-            page.register_content_loader('chat-commands', load_chat_commands)
             page.register_content_loader('settings', load_settings)
 
             # Load initial content only if no view parameter was specified
@@ -105,7 +93,6 @@ def register():
             base.create_nav_link('Back to Organization', 'arrow_back', f'/orgs/{organization_id}/admin?view=async_tournaments'),
             base.create_separator(),
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
-            base.create_sidebar_item_with_loader('Chat Commands', 'chat', 'chat-commands'),
             base.create_sidebar_item_with_loader('Settings', 'tune', 'settings'),
         ]
 
