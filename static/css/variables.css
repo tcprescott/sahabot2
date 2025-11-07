@@ -9,7 +9,7 @@
     --seasalt:  #f8f8f8;  /* very light neutral */
     --purple-primary: #7c3aed;  /* primary purple */
     --purple-secondary: #9333ea;  /* darker secondary purple for better contrast */
-    --purple-accent: var(--purple-primary);  /* using primary for accent to ensure contrast */
+    --purple-accent: var(--white);  /* white accent for light mode */
 
     /* Semantic Color Mapping - Light Mode */
     --primary-color: var(--purple-primary);
