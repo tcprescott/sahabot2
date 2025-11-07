@@ -36,6 +36,11 @@ class RacetimeBot(Model):
     name = fields.CharField(max_length=255, description="Friendly name for this bot")
     description = fields.TextField(null=True, description="Optional description")
     is_active = fields.BooleanField(default=True, description="Whether this bot is enabled")
+    handler_class = fields.CharField(
+        max_length=255,
+        default='SahaRaceHandler',
+        description="Python class name for the race handler (e.g., 'ALTTPRRaceHandler', 'SMRaceHandler', 'SMZ3RaceHandler')"
+    )
     
     # Status tracking
     status = fields.IntEnumField(BotStatus, default=BotStatus.UNKNOWN, description="Current connection status")
