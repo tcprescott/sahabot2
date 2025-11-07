@@ -95,6 +95,18 @@ class SahaRaceHandler(RaceHandler):
             logger.warning("Error looking up user by racetime_id %s: %s", racetime_user_id, e)
             return None
 
+    def _extract_race_details(self) -> tuple[str, str, str]:
+        """
+        Extract race details from current race data.
+
+        Returns:
+            Tuple of (category, room_slug, room_name)
+        """
+        category = self.data.get('category', {}).get('slug', '') if self.data else ''
+        room_slug = self.data.get('name', '') if self.data else ''
+        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        return category, room_slug, room_name
+
     async def _handle_join_request(
         self,
         racetime_user_id: str,
@@ -577,9 +589,7 @@ class SahaRaceHandler(RaceHandler):
             user_id: The racetime.gg user ID to invite
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
         race_status = self.data.get('status', {}).get('value', '') if self.data else ''
 
         # Look up application user ID
@@ -608,9 +618,7 @@ class SahaRaceHandler(RaceHandler):
         when the bot force-starts a race.
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot force-starting race %s", room_slug)
@@ -637,9 +645,7 @@ class SahaRaceHandler(RaceHandler):
             user_id: The racetime.gg user ID to unready
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Look up application user ID
         app_user_id = await self._get_user_id_from_racetime_id(user_id)
@@ -670,9 +676,7 @@ class SahaRaceHandler(RaceHandler):
             user_id: The racetime.gg user ID to remove
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Look up application user ID
         app_user_id = await self._get_user_id_from_racetime_id(user_id)
@@ -700,9 +704,7 @@ class SahaRaceHandler(RaceHandler):
         when the bot cancels a race.
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot cancelling race %s", room_slug)
@@ -729,9 +731,7 @@ class SahaRaceHandler(RaceHandler):
             user_id: The racetime.gg user ID to add as monitor
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Look up application user ID
         app_user_id = await self._get_user_id_from_racetime_id(user_id)
@@ -762,9 +762,7 @@ class SahaRaceHandler(RaceHandler):
             user_id: The racetime.gg user ID to remove as monitor
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Look up application user ID
         app_user_id = await self._get_user_id_from_racetime_id(user_id)
@@ -795,9 +793,7 @@ class SahaRaceHandler(RaceHandler):
             message_id: The message ID (hash) to pin
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot pinning message %s in race %s", message_id, room_slug)
@@ -825,9 +821,7 @@ class SahaRaceHandler(RaceHandler):
             message_id: The message ID (hash) to unpin
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot unpinning message %s in race %s", message_id, room_slug)
@@ -857,9 +851,7 @@ class SahaRaceHandler(RaceHandler):
             prefix: If True, prefixes the info with bot name
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot setting race info for %s (overwrite=%s, prefix=%s)",
@@ -888,9 +880,7 @@ class SahaRaceHandler(RaceHandler):
             info: The bot info text to set
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot setting bot race info for %s", room_slug)
@@ -914,9 +904,7 @@ class SahaRaceHandler(RaceHandler):
         when the bot changes room to open.
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot setting race %s to open", room_slug)
@@ -940,9 +928,7 @@ class SahaRaceHandler(RaceHandler):
         when the bot changes room to invitational.
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
         logger.info("Bot setting race %s to invitational", room_slug)
