@@ -31,6 +31,7 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         Usage: !mystery <preset_name>
         """
         from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
+        from application.repositories.user_repository import UserRepository
         
         # Extract racetime user info
         user_data = message.get('user', {})
@@ -43,7 +44,8 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         # Look up application user (if racetime account is linked)
         user: Optional[User] = None
         try:
-            user = await self._user_repository.get_by_racetime_id(racetime_user_id)
+            user_repository = UserRepository()
+            user = await user_repository.get_by_racetime_id(racetime_user_id)
         except Exception as e:
             logger.warning(
                 "Error looking up user by racetime_id %s: %s", racetime_user_id, e
