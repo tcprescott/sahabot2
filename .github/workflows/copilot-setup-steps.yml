@@ -1,0 +1,71 @@
+name: "Copilot Setup Steps"
+
+# This workflow configures the development environment for GitHub Copilot coding agent.
+# It runs automatically when Copilot coding agent starts working on an issue or PR.
+# The agent will have access to the configured environment when it performs its tasks.
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+      
+      - name: Install Poetry
+        run: |
+          pip3 install poetry
+          poetry --version
+      
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+      
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --no-ansi
+          poetry show
+      
+      - name: Set up test environment
+        run: |
+          poetry run python setup_test_env.py --preset tiny --skip-data
+          echo "Test environment configured successfully"
+      
+      - name: Verify environment
+        run: |
+          poetry run python --version
+          poetry run python -c "import nicegui; print(f'NiceGUI version: {nicegui.__version__}')"
+          poetry run python -c "import tortoise; print(f'Tortoise ORM installed')"
+          poetry run python -c "import fastapi; print(f'FastAPI installed')"
+          echo "Environment verification complete"
+      
+      - name: Display environment info
+        run: |
+          echo "Python environment ready for Copilot coding agent"
+          echo "- Python 3.12 installed"
+          echo "- Poetry package manager configured"
+          echo "- All dependencies installed"
+          echo "- Test environment configured with SQLite"
+          echo "- Ready for development tasks"

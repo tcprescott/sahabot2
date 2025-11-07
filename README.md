@@ -415,6 +415,11 @@ See [GITHUB_AGENT_TESTING.md](GITHUB_AGENT_TESTING.md) for detailed testing guid
 - CI/CD pipeline setup
 - Local development without external dependencies
 
+See [docs/operations/COPILOT_AGENT_ENVIRONMENT.md](docs/operations/COPILOT_AGENT_ENVIRONMENT.md) for:
+- GitHub Copilot coding agent environment configuration
+- Custom agent profiles and instructions
+- Development workflow with Copilot agent
+
 ## Security
 
 This application implements comprehensive security best practices. See [SECURITY.md](SECURITY.md) for details on:

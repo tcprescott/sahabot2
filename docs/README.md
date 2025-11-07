@@ -39,6 +39,7 @@ Backend systems and architecture:
 
 Deployment, configuration, and troubleshooting:
 
+- **[Copilot Agent Environment](operations/COPILOT_AGENT_ENVIRONMENT.md)** - GitHub Copilot coding agent environment setup
 - **[Environment Variables Reference](reference/ENVIRONMENT_VARIABLES.md)** - Complete configuration reference
 - **[Authorization Migration Guide](operations/AUTHORIZATION_MIGRATION.md)** - Migrating from AuthorizationService to policy framework
 - **[Service Reorganization](operations/SERVICE_REORGANIZATION.md)** - Service layer domain-driven reorganization (November 2025)
