@@ -230,12 +230,6 @@
     padding-bottom: 8px;
 }
 
-/* When label is floating, reduce input top padding */
-.q-field--float .q-field__native,
-.q-field--float .q-field__input {
-    padding-top: 24px;
-}
-
 /* Textarea */
 textarea.q-field__native,
 textarea.q-field__input {
