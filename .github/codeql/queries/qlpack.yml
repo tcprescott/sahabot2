@@ -1,0 +1,4 @@
+name: sahabot2/anti-patterns
+version: 1.0.0
+libraryPathDependencies:
+  - codeql/python-all
