@@ -128,13 +128,11 @@ class SMZ3RaceHandler(SahaRaceHandler):
                 except Exception as e:
                     logger.error("Error loading preset %s: %s", preset_name, e)
             
-            # Generate seed with spoiler key
-            spoiler_key = "spoiler"  # Simple spoiler key
+            # Generate seed with spoilers (don't pass spoiler_key - not supported by service)
             result = await smz3_service.generate(
                 settings=settings,
                 tournament=False,  # Non-tournament mode for spoilers
-                spoilers=True,
-                spoiler_key=spoiler_key
+                spoilers=True
             )
             
             # Format response

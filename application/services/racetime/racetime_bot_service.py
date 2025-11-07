@@ -90,7 +90,7 @@ class RacetimeBotService:
         name: str,
         description: Optional[str],
         is_active: bool,
-        handler_class: str,
+        handler_class: str = 'SahaRaceHandler',
         current_user: User,
     ) -> Optional[RacetimeBot]:
         """

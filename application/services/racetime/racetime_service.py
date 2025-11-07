@@ -60,20 +60,20 @@ class RacetimeService:
 
         logger.info("Starting %d racetime bot(s)", len(cfgs))
 
-        for category, client_id, client_secret, bot_id, handler_class in cfgs:
+        for category, client_id, client_secret, bot_id, handler_class_name in cfgs:
             try:
                 await start_racetime_bot(
                     category, 
                     client_id, 
                     client_secret, 
                     bot_id=bot_id,
-                    handler_class_name=handler_class
+                    handler_class_name=handler_class_name
                 )
                 logger.info(
                     "Racetime bot started for category: %s (bot_id=%s, handler=%s)", 
                     category, 
                     bot_id,
-                    handler_class
+                    handler_class_name
                 )
                 started += 1
             except Exception as e:
