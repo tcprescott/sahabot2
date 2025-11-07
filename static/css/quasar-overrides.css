@@ -152,9 +152,9 @@
 }
 
 /* ==================== INPUT ==================== */
-/* 
- * Clean input styling that works with Quasar's default filled/standard style
- * Provides clear borders without breaking label behavior
+/*
+ * Input styling that properly integrates with Quasar's field structure
+ * Fixes label and highlight box alignment issues
  */
 
 /* Field container - spacing between fields */
@@ -162,11 +162,13 @@
     margin-bottom: var(--spacing-md);
 }
 
-/* Add border to all field types for visibility */
+/* Field control - add border with proper padding for label clearance */
 .q-field__control {
     background-color: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-sm);
+    padding-top: 8px; /* Space for floating label */
+    min-height: 56px; /* Standard Quasar field height */
 }
 
 /* Focused state - blue border */
@@ -179,25 +181,53 @@
     border-color: var(--error-color);
 }
 
-/* Hide Quasar's default bottom border (we're using our custom border) */
-.q-field__control:before,
-.q-field__control:after {
-    display: none;
+/*
+ * Quasar uses :before for bottom border and :after for focus highlight
+ * Instead of hiding them, we integrate them with our custom styling
+ */
+
+/* Bottom border - keep but make it part of our border design */
+.q-field__control:before {
+    border-bottom: none; /* Remove default bottom border since we have full border */
 }
 
-/* Label color */
+/* Focus highlight - customize the color to match our theme */
+.q-field__control:after {
+    height: 100%;
+    top: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    border: 2px solid transparent;
+    transition: border-color 0.36s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Show highlight border on focus */
+.q-field--focused .q-field__control:after {
+    border-color: var(--primary-color);
+    opacity: 0.3;
+}
+
+/* Label positioning and color */
 .q-field__label {
     color: var(--text-secondary);
+    top: 18px; /* Adjust for our padding-top */
+}
+
+/* Float label up with proper positioning */
+.q-field--float .q-field__label {
+    transform: translateY(-40%) scale(0.75);
 }
 
 .q-field--focused .q-field__label {
     color: var(--primary-color);
 }
 
-/* Input text color */
+/* Input text color and positioning */
 .q-field__native,
 .q-field__input {
     color: var(--text-primary);
+    padding-top: 24px; /* Space for floated label */
+    padding-bottom: 8px;
 }
 
 /* Textarea */
@@ -205,6 +235,7 @@ textarea.q-field__native,
 textarea.q-field__input {
     min-height: 100px;
     resize: vertical;
+    padding-top: 24px;
 }
 
 /* Hint/error text */
@@ -214,6 +245,11 @@ textarea.q-field__input {
 
 .q-field--error .q-field__bottom {
     color: var(--error-color);
+}
+
+/* Control container - ensure proper spacing */
+.q-field__control-container {
+    padding-top: 0;
 }
 
 /* ==================== BUTTON ==================== */
