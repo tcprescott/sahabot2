@@ -137,7 +137,7 @@ class AsyncLiveRacesView:
         status_variants = {
             'scheduled': 'info',
             'pending': 'warning',
-            'in_progress': 'info',
+            'in_progress': 'primary',
             'finished': 'success',
             'cancelled': 'danger',
         }
