@@ -190,14 +190,14 @@ class AdminRacetimeBotsView:
                     icon='edit',
                     on_click=lambda b=bot: self._open_edit_bot(b.id)
                 ).props('flat round dense size=sm').tooltip('Edit Bot')
-                
+
                 # Restart button (only for active bots)
                 if bot.is_active:
                     ui.button(
                         icon='refresh',
                         on_click=lambda b=bot: self._restart_bot(b.id)
                     ).props('flat round dense size=sm color=primary').tooltip('Restart Bot')
-                
+
                 ui.button(
                     icon='groups',
                     on_click=lambda b=bot: self._open_manage_organizations(b.id)

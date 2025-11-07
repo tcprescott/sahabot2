@@ -143,7 +143,7 @@ class AsyncLiveRacesView:
         }
         variant = status_variants.get(race.status, 'default')
         text = race.status.replace('_', ' ').title()
-        
+
         with ui.element('div'):
             Badge.custom(text, variant)
 

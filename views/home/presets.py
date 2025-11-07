@@ -71,12 +71,12 @@ class PresetsView:
                 with ui.element('div'):
                     ui.label('Browse randomizer presets from your namespace, global presets, and other public namespaces.')
                     ui.label('Use filters below to show only your namespace or explore all public presets.').classes('text-sm text-secondary')
-                
+
                 # Create preset button
                 async def create_preset():
                     """Open dialog to create a new preset."""
                     from components.dialogs.organization.preset_editor_dialog import PresetEditorDialog
-                    
+
                     dialog = PresetEditorDialog(
                         user=self.user,
                         on_save=self._refresh
