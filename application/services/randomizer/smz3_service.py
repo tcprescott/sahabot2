@@ -28,6 +28,12 @@ class SMZ3Service:
 
     Generates seeds for Super Metroid and A Link to the Past combo randomizer
     via the samus.link API.
+
+    Security Note:
+    The baseurl parameter is NOT exposed via API endpoints and is only
+    used internally with trusted default values. If this parameter were to
+    be exposed to user input in the future, URL validation must be added
+    to prevent SSRF attacks. See application/utils/url_validator.py.
     """
 
     def __init__(self):
@@ -48,6 +54,9 @@ class SMZ3Service:
         Args:
             settings: Dictionary of randomizer settings
             baseurl: Base URL for the API (default: https://samus.link)
+                WARNING: This parameter should NEVER be exposed to user input without
+                proper URL validation to prevent SSRF attacks. Currently only used
+                with trusted default values.
             tournament: Whether this is a tournament/race seed (default: True)
             spoilers: Whether to generate spoiler log (default: False)
             spoiler_key: Optional key for spoiler log access

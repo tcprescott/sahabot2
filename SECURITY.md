@@ -91,15 +91,32 @@ All responses include the following security headers:
 #### Data Validation
 - **ORM Protection**: Tortoise ORM with parameterized queries prevents SQL injection
 - **Input Validation**: Pydantic schemas validate all API inputs
+- **URL Validation**: Comprehensive URL validation prevents XSS and SSRF attacks
+  - Blocks dangerous URL schemes (javascript:, data:, file:, vbscript:, gopher:)
+  - Blocks private/internal IP addresses (127.0.0.1, 192.168.x.x, 10.x.x.x, localhost)
+  - Supports IPv4 and IPv6 address validation
+  - Enforces maximum URL length (2048 characters)
+  - See `application/utils/url_validator.py` for implementation
 - **Type Safety**: Full type hints throughout codebase
 - **No Raw SQL**: All database access through ORM, no raw SQL execution
 
 ### Application Security
 
+#### SSRF Prevention
+- **Randomizer Services**: External API URLs are only accepted from trusted configuration
+  - `baseurl` parameters in randomizer services (ALTTPR, SMZ3) are NOT exposed via API
+  - Internal use only with validated configuration values
+  - If future changes expose these parameters, URL validation MUST be applied
+  - See security notes in `application/services/randomizer/alttpr_service.py`
+- **User-Provided URLs**: All user-provided URLs validated using `url_validator.py`
+  - Stream URLs, VOD URLs, and other user-supplied URLs are validated
+  - Applied at Pydantic schema level for API requests
+
 #### Rate Limiting
 - **API Endpoints**: Per-user rate limiting with sliding window (60 requests/60 seconds)
 - **Customizable Limits**: Per-user limits can be adjusted by administrators
 - **429 Response**: Rate limit exceeded returns HTTP 429 with Retry-After header
+- **OAuth Endpoints**: Protected by Discord's own rate limiting mechanisms
 
 #### Session Management
 - **Session Encryption**: Sessions encrypted with `SECRET_KEY`
@@ -208,17 +225,24 @@ The default CSP is configured to work with NiceGUI, which requires `unsafe-inlin
 ### Development Security Notes
 
 **CORS in Development**:
-The application uses `allow_origins=["*"]` in development mode for convenience. This can expose the application to cross-origin attacks during development.
-
-**For more secure development**:
+The application uses explicit allowed origins in development mode instead of wildcards:
 ```python
-# In main.py, use specific origins instead of wildcard:
-allowed_origins = [
-    settings.BASE_URL,
-    "http://localhost:8080",
-    "http://localhost:3000",
-] if settings.DEBUG else [settings.BASE_URL]
+# In main.py - explicit origins for security even in development:
+if settings.DEBUG:
+    allowed_origins = [
+        settings.BASE_URL,
+        "http://localhost:8080",
+        "http://localhost:8000",
+        "http://localhost:3000",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8000",
+        "http://127.0.0.1:3000",
+    ]
+else:
+    allowed_origins = [settings.BASE_URL]
 ```
+
+This prevents cross-origin attacks even during local development while still allowing common development ports.
 
 ## Security Best Practices
 

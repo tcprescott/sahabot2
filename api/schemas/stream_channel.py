@@ -1,8 +1,9 @@
 """API schemas for stream channels."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
+from application.utils.url_validator import validate_url
 
 
 class StreamChannelOut(BaseModel):
@@ -33,6 +34,20 @@ class StreamChannelCreateRequest(BaseModel):
     stream_url: Optional[str] = Field(None, max_length=500, description="Stream URL (e.g., Twitch channel)")
     is_active: bool = Field(True, description="Whether channel is active")
 
+    @field_validator('stream_url')
+    @classmethod
+    def validate_stream_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate stream URL to prevent XSS and SSRF attacks."""
+        if v is None or v.strip() == '':
+            return None
+
+        v = v.strip()  # Strip before validation
+        is_valid, error_msg = validate_url(v, allowed_schemes=['http', 'https'], block_private_ips=True)
+        if not is_valid:
+            raise ValueError(f"Invalid stream URL: {error_msg}")
+
+        return v
+
 
 class StreamChannelUpdateRequest(BaseModel):
     """Schema for updating a stream channel."""
@@ -40,3 +55,17 @@ class StreamChannelUpdateRequest(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100, description="Updated channel name")
     stream_url: Optional[str] = Field(None, max_length=500, description="Updated stream URL")
     is_active: Optional[bool] = Field(None, description="Updated active status")
+
+    @field_validator('stream_url')
+    @classmethod
+    def validate_stream_url(cls, v: Optional[str]) -> Optional[str]:
+        """Validate stream URL to prevent XSS and SSRF attacks."""
+        if v is None or v.strip() == '':
+            return None
+
+        v = v.strip()  # Strip before validation
+        is_valid, error_msg = validate_url(v, allowed_schemes=['http', 'https'], block_private_ips=True)
+        if not is_valid:
+            raise ValueError(f"Invalid stream URL: {error_msg}")
+
+        return v

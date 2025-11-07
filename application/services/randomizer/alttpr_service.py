@@ -18,6 +18,12 @@ class ALTTPRService:
     Service for A Link to the Past Randomizer.
 
     Generates seeds for ALTTPR via the official API at alttpr.com.
+
+    Security Note:
+    The baseurl parameter is NOT exposed via API endpoints and is only
+    used internally with trusted configuration values. If this parameter
+    were to be exposed to user input in the future, URL validation must
+    be added to prevent SSRF attacks. See application/utils/url_validator.py.
     """
 
     def __init__(self):
@@ -39,6 +45,9 @@ class ALTTPRService:
         Args:
             settings_dict: Dictionary of randomizer settings
             baseurl: Base URL for the API (default: from config or https://alttpr.com)
+                WARNING: This parameter should NEVER be exposed to user input without
+                proper URL validation to prevent SSRF attacks. Currently only used
+                with trusted configuration values.
             endpoint: API endpoint to use (default: /api/randomizer)
             tournament: Whether this is a tournament seed (default: True)
             spoilers: Spoiler level ('on', 'off', 'generate') (default: 'off')
