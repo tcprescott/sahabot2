@@ -1,0 +1,31 @@
+name: "SahaBot2 CodeQL Config"
+
+# Disable default queries and use only our custom queries
+disable-default-queries: false
+
+queries:
+  - name: Anti-pattern checks
+    uses: ./.github/codeql/queries/
+
+# Paths to exclude from analysis
+paths-ignore:
+  - migrations/**
+  - tests/**
+  - tools/**
+  - '**/test_*.py'
+  - '**/*_test.py'
+  - setup_test_env.py
+  - demo_*.py
+  - check_*.py
+
+# Paths to explicitly include
+paths:
+  - api/**
+  - application/**
+  - components/**
+  - discordbot/**
+  - middleware/**
+  - models/**
+  - pages/**
+  - racetime/**
+  - views/**
