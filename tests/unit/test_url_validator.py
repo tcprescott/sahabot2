@@ -1,6 +1,5 @@
 """Tests for URL validation utilities."""
 
-import pytest
 from application.utils.url_validator import (
     validate_url,
     sanitize_url,
