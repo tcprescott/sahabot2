@@ -27,10 +27,6 @@ class AvianartService:
     POLL_INTERVAL_SECONDS = 5
     MAX_POLL_ATTEMPTS = 24  # 24 attempts * 5 seconds = 2 minutes max
 
-    def __init__(self):
-        """Initialize the Avianart service."""
-        pass
-
     async def generate(
         self,
         preset: str,
@@ -104,8 +100,18 @@ class AvianartService:
                 )
 
         # Extract file select code from spoiler
-        file_select_code = self._extract_file_select_code(result)
-        version = result['response']['spoiler']['meta'].get('version', 'unknown')
+        try:
+            file_select_code = self._extract_file_select_code(result)
+        except (KeyError, TypeError) as e:
+            logger.error("Failed to extract file select code from result: %s", str(e))
+            raise ValueError(f"Invalid API response: missing required data in result") from e
+
+        try:
+            version = result['response']['spoiler']['meta'].get('version', 'unknown')
+        except (KeyError, TypeError):
+            logger.warning("Failed to extract version from result, using 'unknown'")
+            version = 'unknown'
+
         url = f"{self.BASE_URL}/perm/{hash_id}"
 
         logger.info("Generated Avianart seed %s (version %s)", hash_id, version)
@@ -135,8 +141,20 @@ class AvianartService:
 
         Returns:
             List of 5 file select code items
+
+        Raises:
+            KeyError: If required keys are missing from result
+            TypeError: If result structure is invalid
         """
-        file_select_code_str = result['response']['spoiler']['meta']['hash']
+        try:
+            file_select_code_str = result['response']['spoiler']['meta']['hash']
+        except KeyError as e:
+            logger.error("Missing required key in API response: %s", str(e))
+            raise KeyError(f"API response missing required field: {e}") from e
+        except TypeError as e:
+            logger.error("Invalid API response structure: %s", str(e))
+            raise TypeError("API response has invalid structure") from e
+
         code = list(file_select_code_str.split(', '))
 
         # Map Avianart names to standard SahasrahBot names

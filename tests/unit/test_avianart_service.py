@@ -248,3 +248,23 @@ class TestAvianartService:
 
         # Should map Bomb->Bombs, Pearl->Moon Pearl, Key->Big Key
         assert code == ['Bow', 'Bombs', 'Hookshot', 'Moon Pearl', 'Big Key']
+
+    def test_extract_file_select_code_missing_key(self, service):
+        """Test extraction with missing required key."""
+        result = {
+            'response': {
+                'spoiler': {}  # Missing 'meta' key
+            }
+        }
+
+        with pytest.raises(KeyError):
+            service._extract_file_select_code(result)
+
+    def test_extract_file_select_code_invalid_structure(self, service):
+        """Test extraction with invalid structure."""
+        result = {
+            'response': None  # Invalid structure
+        }
+
+        with pytest.raises(TypeError):
+            service._extract_file_select_code(result)
