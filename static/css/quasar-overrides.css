@@ -380,6 +380,7 @@ textarea.q-field__input {
 
 /* Center the thumb vertically within the track */
 .q-switch__thumb {
+    position: absolute; /* Ensure absolute positioning (defensive) */
     top: 50%;
     transform: translateY(-50%);
 }
