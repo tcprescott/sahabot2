@@ -166,7 +166,7 @@
 .action-btn:hover {
     background-color: var(--primary-color);
     border-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 /* Empty state */

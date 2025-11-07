@@ -13,7 +13,7 @@
 
 .btn-primary {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .btn-primary:hover {
@@ -22,13 +22,13 @@
 
 .btn-secondary {
     background-color: var(--secondary-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 
 .btn-danger {
     background-color: var(--error-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .btn-full-width {
@@ -102,37 +102,37 @@ body:not(.body--dark):not(.q-dark) .card-body {
 
 .badge-admin {
     background-color: var(--error-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .badge-moderator {
     background-color: var(--warning-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .badge-user {
     background-color: var(--text-secondary);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .badge-success {
     background-color: var(--success-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .badge-danger {
     background-color: var(--error-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .badge-warning {
     background-color: var(--warning-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .badge-info {
     background-color: var(--info-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 /* ==================== ICONS ==================== */
@@ -151,8 +151,8 @@ body:not(.body--dark):not(.q-dark) .card-body {
 
 /* ==================== MOTD BANNER ==================== */
 .motd-banner {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: var(--white);
     padding: 1rem;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     transition: opacity 0.3s ease;
@@ -160,11 +160,11 @@ body:not(.body--dark):not(.q-dark) .card-body {
 }
 
 .motd-banner .q-btn {
-    color: white;
+    color: var(--white);
 }
 
 .motd-banner a {
-    color: #ffffff;
+    color: var(--white);
     text-decoration: underline;
 }
 
@@ -174,8 +174,8 @@ body:not(.body--dark):not(.q-dark) .card-body {
 
 /* MOTD Preview in Dialog */
 .motd-preview {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: var(--white);
     padding: 0.75rem;
     border-radius: var(--radius-md);
 }

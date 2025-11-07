@@ -259,7 +259,7 @@ textarea.q-field__input {
 
 .q-btn--standard:not(.btn-primary):not(.btn-success):not(.btn-secondary):not(.btn-danger) {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 .q-btn--outline:not(.btn-primary):not(.btn-success):not(.btn-secondary):not(.btn-danger) {
@@ -273,7 +273,7 @@ textarea.q-field__input {
 .q-chip.bg-positive {
     background: var(--success-color) !important;
     background-color: var(--success-color) !important;
-    color: #ffffff !important;
+    color: var(--white) !important;
 }
 
 .text-positive {
@@ -301,7 +301,7 @@ textarea.q-field__input {
 .body--dark .q-item.q-manual-focusable--focused,
 .q-dark .q-item--active,
 .q-dark .q-item.q-manual-focusable--focused {
-    background-color: rgba(230, 214, 90, 0.1); /* subtle old-gold tint */
+    background-color: rgba(167, 139, 250, 0.1); /* subtle purple tint using primary dark color */
 }
 
 /* CHECKBOX section removed - already defined above at line 63 */
@@ -341,9 +341,9 @@ textarea.q-field__input {
 /* Dark mode tooltip - more contrast */
 .body--dark .q-tooltip,
 .q-dark .q-tooltip {
-    background-color: #2a2a2a;
+    background-color: var(--surface-dark-1);
     color: var(--text-primary);
-    border-color: #3a3a3a;
+    border-color: var(--surface-dark-2);
 }
 
 /* ==================== CHIP ==================== */
@@ -354,7 +354,7 @@ textarea.q-field__input {
 
 .body--dark .q-chip,
 .q-dark .q-chip {
-    background-color: #2a2a2a;
+    background-color: var(--surface-dark-1);
 }
 
 /* ==================== PAGINATION ==================== */
@@ -368,7 +368,7 @@ textarea.q-field__input {
 
 .q-pagination__content .q-btn--unelevated {
     background-color: var(--primary-color);
-    color: #ffffff;
+    color: var(--white);
 }
 
 /* ==================== SWITCH ==================== */

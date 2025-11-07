@@ -1,30 +1,34 @@
 /* CSS Variables - Color Palette and Design Tokens */
 
 :root {
+    /* Base Colors */
+    --white: #ffffff;
+    --black-text: #000000;
+
     /* Official Color Palette - Light Mode */
     --seasalt:  #f8f8f8;  /* very light neutral */
-    --old-gold: #d0c040;  /* primary */
-    --olive:    #988818;  /* secondary */
-    --olive-2:  #7c6f13;  /* strong accent */
-    --black:    #000000;  /* text/borders */
+    --purple-primary: #7c3aed;  /* primary purple */
+    --purple-secondary: #9333ea;  /* darker secondary purple for better contrast */
+    --purple-accent: var(--white);  /* white accent for light mode */
 
     /* Semantic Color Mapping - Light Mode */
-    --primary-color: var(--old-gold);
-    --primary-hover: #b3a333; /* slightly darker old-gold for hover */
-    --secondary-color: var(--olive);
+    --primary-color: var(--purple-primary);
+    --primary-hover: #6d28d9; /* darker purple for hover */
+    --secondary-color: var(--purple-secondary);
     --background-color: var(--seasalt);
-    --surface-color: #ffffff;
-    --text-primary: var(--black);
+    --surface-color: var(--white);
+    --text-primary: var(--black-text);
     --text-secondary: #333333;
     --text-tertiary: #666666;  /* muted text for less important info */
-    --accent-color: var(--olive-2);
+    --accent-color: var(--purple-accent);
     --border-color: #dddddd;
+    --navbar-bg: #f3e8ff;  /* light purple for navbar */
 
     /* Status Colors */
-    --error-color: #d9534f;
-    --warning-color: var(--olive-2);
-    --success-color: #2ea44f;
-    --info-color: var(--olive);
+    --error-color: #dc2626;
+    --warning-color: #d97706;
+    --success-color: #059669;
+    --info-color: var(--purple-secondary);
 
     /* Spacing - Mobile first, adjusted for desktop */
     --spacing-xs: 0.25rem;
@@ -50,30 +54,34 @@
 /* Dark Mode Color Overrides */
 .body--dark,
 .q-dark {
+    /* Dark mode surface variations */
+    --surface-dark-1: #2a2a2a;
+    --surface-dark-2: #3a3a3a;
+
     /* Official Color Palette - Dark Mode */
     --seasalt:  #f2f2f2;  /* light text */
-    --old-gold: #e6d65a;  /* lighter for dark backgrounds */
-    --olive:    #c0b339;  /* lighter secondary */
-    --olive-2:  #b3952f;  /* lighter strong accent */
-    --black:    #0f0f0f;  /* dark background/surfaces */
+    --purple-primary: #a78bfa;  /* lighter purple for dark backgrounds */
+    --purple-secondary: #7c3aed;  /* vibrant purple for better contrast */
+    --purple-accent: #9333ea;  /* medium purple accent */
 
     /* Semantic Color Mapping - Dark Mode */
-    --primary-color: var(--old-gold);
-    --primary-hover: #f0e07a;
-    --secondary-color: var(--olive);
-    --background-color: var(--black);
+    --primary-color: var(--purple-primary);
+    --primary-hover: #c4b5fd;
+    --secondary-color: var(--purple-secondary);
+    --background-color: #0f0f0f;
     --surface-color: #161616;
     --text-primary: var(--seasalt);
     --text-secondary: #cfcfcf;
     --text-tertiary: #999999;  /* muted text for less important info */
-    --accent-color: var(--olive-2);
+    --accent-color: var(--purple-accent);
     --border-color: #2a2a2a;
+    --navbar-bg: #1a0f2e;  /* very dark purple for navbar */
 
     /* Status Colors - Dark Mode */
-    --error-color: #ff6b6b;
-    --warning-color: var(--olive-2);
-    --success-color: #3ddc84;
-    --info-color: var(--olive);
+    --error-color: #f87171;
+    --warning-color: #fbbf24;
+    --success-color: #10b981;
+    --info-color: var(--purple-secondary);
 
     /* Shadows - Dark Mode */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
