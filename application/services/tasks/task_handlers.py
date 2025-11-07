@@ -584,7 +584,7 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
                     async with httpx.AsyncClient() as client:
                         resp = await client.get(url)
                         resp.raise_for_status()
-                        data = resp.json()
+                        data = await resp.json()
 
                 races = data.get('races', [])
                 scanned_count += len(races)
@@ -598,14 +598,9 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
                         if race_status not in enabled_statuses:
                             continue
 
-                        # Check if bot should handle this race (delegates to bot's logic)
-                        # Note: should_handle() always returns False in our implementation
-                        # because we disable automatic polling. Here we force join.
-                        should_handle = bot.should_handle(race_data)
-
-                        # Since should_handle() returns False by design (disabled polling),
-                        # we always attempt to join races in enabled_statuses.
-                        # The bot's handler configuration will determine actual handling.
+                        # Note: We force join because should_handle() always returns False
+                        # by design (automatic polling is disabled).
+                        # The bot's handler configuration determines actual handling.
 
                         # Check if we're already handling this race
                         if hasattr(bot, 'handlers') and race_name in bot.handlers:
