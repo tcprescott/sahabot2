@@ -14,7 +14,6 @@ from views.tournament_admin import (
     TournamentOverviewView,
     TournamentPlayersView,
     TournamentRacetimeSettingsView,
-    TournamentRacetimeChatCommandsView,
     TournamentDiscordEventsView,
     TournamentSettingsView,
 )
@@ -99,15 +98,6 @@ def register():
                         view = TournamentDiscordEventsView(page.user, org, tournament)
                         await view.render()
 
-            async def load_chat_commands():
-                """Load chat commands."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentRacetimeChatCommandsView(page.user, org, tournament)
-                        await view.render()
-
             async def load_settings():
                 """Load tournament settings."""
                 container = page.get_dynamic_content_container()
@@ -132,7 +122,6 @@ def register():
             page.register_content_loader('players', load_players)
             page.register_content_loader('racetime', load_racetime)
             page.register_content_loader('discord-events', load_discord_events)
-            page.register_content_loader('chat-commands', load_chat_commands)
             page.register_content_loader('settings', load_settings)
             page.register_content_loader('management', load_management)
 
@@ -149,7 +138,6 @@ def register():
             base.create_sidebar_item_with_loader('Registrations', 'how_to_reg', 'management'),
             base.create_sidebar_item_with_loader('RaceTime Settings', 'settings', 'racetime'),
             base.create_sidebar_item_with_loader('Discord Events', 'event_available', 'discord-events'),
-            base.create_sidebar_item_with_loader('Chat Commands', 'chat', 'chat-commands'),
             base.create_sidebar_item_with_loader('Settings', 'tune', 'settings'),
         ]
 
