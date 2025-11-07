@@ -359,34 +359,40 @@ class ScheduledTasksView:
             # Toggle button
             is_active = task_info.get('is_active', False)
             
-            # Create a proper async handler for the toggle
-            async def handle_toggle():
-                await self._toggle_builtin_task(task_info)
+            # Use factory functions to avoid closure issues
+            def make_toggle_handler(task):
+                async def handler():
+                    await self._toggle_builtin_task(task)
+                return handler
             
             ui.button(
                 'Disable' if is_active else 'Enable',
                 icon='pause_circle' if is_active else 'play_circle',
-                on_click=handle_toggle
+                on_click=make_toggle_handler(task_info)
             ).classes('btn').props(f'color={"warning" if is_active else "positive"} size=sm')
             
             # Only show Run Now for active tasks
             if is_active:
-                async def handle_run_now():
-                    await self._execute_builtin_task_now(task_info)
+                def make_run_now_handler(task):
+                    async def handler():
+                        await self._execute_builtin_task_now(task)
+                    return handler
                 
                 ui.button(
                     'Run Now',
                     icon='play_arrow',
-                    on_click=handle_run_now
+                    on_click=make_run_now_handler(task_info)
                 ).classes('btn').props('color=primary size=sm')
             
-            async def handle_details():
-                await self._view_task_details(task_info)
+            def make_details_handler(task):
+                async def handler():
+                    await self._view_task_details(task)
+                return handler
             
             ui.button(
                 'Details',
                 icon='info',
-                on_click=handle_details
+                on_click=make_details_handler(task_info)
             ).classes('btn').props('size=sm')
 
     async def _render_content(self) -> None:
