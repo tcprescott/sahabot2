@@ -34,7 +34,7 @@ import asyncio
 import logging
 from typing import Optional
 import aiohttp
-from racetime_bot import Bot, RaceHandler, monitor_cmd
+from racetime_bot import Bot, RaceHandler
 from models import BotStatus, SYSTEM_USER_ID, User
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
@@ -156,7 +156,6 @@ class SahaRaceHandler(RaceHandler):
                 exc_info=True
             )
 
-    @monitor_cmd
     async def ex_test(self, _args, _message):
         """
         Test command for the racetime bot.
@@ -165,7 +164,6 @@ class SahaRaceHandler(RaceHandler):
         """
         await self.send_message("Racetime bot test command received!")
 
-    @monitor_cmd
     async def ex_help(self, _args, _message):
         """
         Show available commands.
@@ -181,7 +179,6 @@ class SahaRaceHandler(RaceHandler):
             "!entrants (list entrants by status)"
         )
     
-    @monitor_cmd
     async def ex_status(self, _args, _message):
         """
         Show current race status and entrant count.
@@ -209,7 +206,6 @@ class SahaRaceHandler(RaceHandler):
         
         await self.send_message(f'Race Status: {status_text} | Entrants: {entrant_count}')
     
-    @monitor_cmd
     async def ex_race(self, _args, _message):
         """
         Show race goal and info.
@@ -228,7 +224,6 @@ class SahaRaceHandler(RaceHandler):
         else:
             await self.send_message(f'Goal: {goal_name}')
     
-    @monitor_cmd
     async def ex_time(self, _args, message):
         """
         Show your finish time or race time if still running.
@@ -278,7 +273,6 @@ class SahaRaceHandler(RaceHandler):
         
         await self.send_message("Race hasn't started yet.")
     
-    @monitor_cmd
     async def ex_entrants(self, _args, _message):
         """
         List all entrants grouped by status.

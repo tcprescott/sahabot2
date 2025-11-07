@@ -2,12 +2,11 @@
 ALTTPR-specific RaceTime.gg handler.
 
 This handler provides ALTTPR-specific chat commands for RaceTime.gg races.
-Commands are defined in code and registered with the @monitor_cmd decorator.
+Commands are defined in code using the ex_ prefix convention.
 """
 
 import logging
 from typing import Optional
-from racetime_bot import monitor_cmd
 from racetime.client import SahaRaceHandler
 from models import User
 
@@ -23,7 +22,6 @@ class ALTTPRRaceHandler(SahaRaceHandler):
     - !custommystery - Information about custom mystery
     """
 
-    @monitor_cmd
     async def ex_mystery(self, args, message):
         """
         Generate a mystery seed from a named mystery preset.
@@ -93,7 +91,6 @@ class ALTTPRRaceHandler(SahaRaceHandler):
             logger.exception("Unexpected error generating mystery seed")
             await self.send_message(f"An error occurred generating mystery seed: {str(e)}")
     
-    @monitor_cmd
     async def ex_custommystery(self, args, message):
         """
         Information about custom mystery weights.

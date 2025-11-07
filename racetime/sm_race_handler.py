@@ -2,11 +2,10 @@
 Super Metroid RaceTime.gg handler.
 
 This handler provides Super Metroid-specific chat commands for RaceTime.gg races.
-Commands are defined in code and registered with the @monitor_cmd decorator.
+Commands are defined in code using the ex_ prefix convention.
 """
 
 import logging
-from racetime_bot import monitor_cmd
 from racetime.client import SahaRaceHandler
 from application.services.randomizer.sm_service import SMService
 from application.services.randomizer.sm_defaults import get_varia_settings, get_dash_settings
@@ -25,7 +24,6 @@ class SMRaceHandler(SahaRaceHandler):
     - !multiworld [preset] [players] - Generate multiworld seed
     """
 
-    @monitor_cmd
     async def ex_varia(self, args, message):
         """
         Generate a VARIA seed with optional preset.
@@ -55,7 +53,6 @@ class SMRaceHandler(SahaRaceHandler):
             logger.error("Failed to generate VARIA seed: %s", str(e))
             await self.send_message(f"Failed to generate VARIA seed: {str(e)}")
     
-    @monitor_cmd
     async def ex_dash(self, args, message):
         """
         Generate a DASH seed with optional preset.
@@ -85,7 +82,6 @@ class SMRaceHandler(SahaRaceHandler):
             logger.error("Failed to generate DASH seed: %s", str(e))
             await self.send_message(f"Failed to generate DASH seed: {str(e)}")
     
-    @monitor_cmd
     async def ex_total(self, args, message):
         """
         Generate a DASH seed with full randomization (area + major/minor).
@@ -120,7 +116,6 @@ class SMRaceHandler(SahaRaceHandler):
             logger.error("Failed to generate total seed: %s", str(e))
             await self.send_message(f"Failed to generate total seed: {str(e)}")
     
-    @monitor_cmd
     async def ex_multiworld(self, args, message):
         """
         Generate a multiworld seed for team races.
