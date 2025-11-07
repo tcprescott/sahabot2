@@ -279,6 +279,15 @@ class TaskSchedulerService:
         logger.info("Loaded %s builtin task overrides", len(cls._builtin_task_overrides))
 
     @classmethod
+    def clear_builtin_task_overrides_cache(cls) -> None:
+        """
+        Clear the builtin task overrides cache.
+        
+        This is primarily for testing purposes to simulate a fresh start.
+        """
+        cls._builtin_task_overrides = {}
+
+    @classmethod
     def get_effective_active_status(cls, task_id: str, default_is_active: bool) -> bool:
         """
         Get the effective active status for a builtin task.

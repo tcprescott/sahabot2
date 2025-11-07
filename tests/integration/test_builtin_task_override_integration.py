@@ -49,7 +49,7 @@ class TestBuiltinTaskOverrideIntegration:
         assert effective is False  # Override applied
         
         # Simulate restart by clearing cache and reloading
-        TaskSchedulerService._builtin_task_overrides = {}
+        TaskSchedulerService.clear_builtin_task_overrides_cache()
         await TaskSchedulerService.reload_builtin_task_overrides()
         
         # Override should persist after reload

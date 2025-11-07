@@ -4,7 +4,7 @@ Builtin Task Override repository for SahaBot2.
 This module provides data access layer for builtin task overrides.
 """
 from __future__ import annotations
-from typing import Optional
+from typing import Optional, List, Dict
 from models.builtin_task_override import BuiltinTaskOverride
 
 
@@ -95,7 +95,7 @@ class BuiltinTaskOverrideRepository:
             return True
         return False
 
-    async def list_all(self) -> list[BuiltinTaskOverride]:
+    async def list_all(self) -> List[BuiltinTaskOverride]:
         """
         Get all builtin task overrides.
 
@@ -104,7 +104,7 @@ class BuiltinTaskOverrideRepository:
         """
         return await BuiltinTaskOverride.all()
 
-    async def get_overrides_dict(self) -> dict[str, bool]:
+    async def get_overrides_dict(self) -> Dict[str, bool]:
         """
         Get all overrides as a dictionary mapping task_id to is_active.
 

@@ -103,13 +103,13 @@ class TestBuiltinTaskOverride:
         assert overrides_dict['task_3'] is True
 
     @pytest.mark.asyncio
-    async def test_effective_active_status_with_override(self):
+    async def test_effective_active_status_with_override(self, db, admin_user):
         """Test that effective active status respects database override."""
-        # Set up a mock override
-        TaskSchedulerService._builtin_task_overrides = {
-            'test_task': False
-        }
-
+        service = TaskSchedulerService()
+        
+        # Create an override in the database
+        await service.set_builtin_task_active(admin_user, 'test_task', False)
+        
         # Check effective status
         effective = TaskSchedulerService.get_effective_active_status('test_task', True)
 
@@ -119,8 +119,8 @@ class TestBuiltinTaskOverride:
     @pytest.mark.asyncio
     async def test_effective_active_status_without_override(self):
         """Test that effective active status falls back to default without override."""
-        # Clear overrides
-        TaskSchedulerService._builtin_task_overrides = {}
+        # Clear cache to simulate no override
+        TaskSchedulerService.clear_builtin_task_overrides_cache()
 
         # Check effective status
         effective = TaskSchedulerService.get_effective_active_status('test_task', True)
@@ -168,14 +168,10 @@ class TestBuiltinTaskOverride:
         await repo.create(task_id='reload_task_1', is_active=False)
         await repo.create(task_id='reload_task_2', is_active=True)
 
-        # Clear cache
-        TaskSchedulerService._builtin_task_overrides = {}
-
-        # Reload
+        # Clear cache and reload
+        TaskSchedulerService.clear_builtin_task_overrides_cache()
         await TaskSchedulerService.reload_builtin_task_overrides()
 
-        # Verify cache is populated
-        assert 'reload_task_1' in TaskSchedulerService._builtin_task_overrides
-        assert 'reload_task_2' in TaskSchedulerService._builtin_task_overrides
-        assert TaskSchedulerService._builtin_task_overrides['reload_task_1'] is False
-        assert TaskSchedulerService._builtin_task_overrides['reload_task_2'] is True
+        # Verify effective status reflects database values
+        assert TaskSchedulerService.get_effective_active_status('reload_task_1', True) is False
+        assert TaskSchedulerService.get_effective_active_status('reload_task_2', False) is True
