@@ -39,12 +39,12 @@ class BaseDialog:
         """
         self.dialog = ui.dialog()
         with self.dialog:
-            with ui.element('div').classes(f'card {max_width}'):
+            with ui.element('div').classes(f'card {max_width}').props('role="dialog" aria-modal="true"'):
                 # Header
                 with ui.element('div').classes('card-header'):
                     with ui.row().classes('items-center gap-sm'):
-                        ui.icon(icon).classes('icon-medium')
-                        ui.label(title).classes('text-xl text-bold')
+                        ui.icon(icon).classes('icon-medium').props('aria-hidden="true"')
+                        ui.element('h2').classes('text-xl text-bold').add_slot('default', title)
 
                 # Body container - subclasses will populate
                 with ui.element('div').classes('card-body'):
@@ -156,4 +156,4 @@ class BaseDialog:
         Args:
             text: Section title text
         """
-        ui.label(text).classes('font-bold text-lg')
+        ui.element('h3').classes('font-bold text-lg').add_slot('default', text)

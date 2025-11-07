@@ -39,15 +39,15 @@ class UserMenu:
         await DiscordAuthService.clear_current_user()
         ui.notify('Logged out successfully', type='positive')
         ui.navigate.to('/')
-    
+
     async def _handle_stop_impersonation(self) -> None:
         """Handle stopping impersonation."""
         from application.services.core.user_service import UserService
-        
+
         # Get original and impersonated users
         original_user = await DiscordAuthService.get_original_user()
         impersonated_user = self.user
-        
+
         if original_user and impersonated_user:
             # Log the stop via service
             user_service = UserService()
@@ -56,10 +56,10 @@ class UserMenu:
                 impersonated_user=impersonated_user,
                 ip_address=None
             )
-        
+
         # Clear impersonation from session
         await DiscordAuthService.stop_impersonation()
-        
+
         ui.notify('Stopped impersonation', type='info')
         ui.navigate.to('/')
 
@@ -86,7 +86,7 @@ class UserMenu:
         def toggle_dark_mode():
             """Toggle dark mode using the external DarkMode API."""
             ui.run_javascript('window.DarkMode.toggle()')
-        
+
         items = [
             {
                 'name': 'Toggle Dark Mode',
@@ -98,14 +98,14 @@ class UserMenu:
         if self.user:
             # Check if impersonation is active
             is_impersonating = DiscordAuthService.is_impersonating()
-            
+
             # Authenticated user items
             items.extend([
                 {
                     'separator': True
                 }
             ])
-            
+
             # Add stop impersonation option if active
             if is_impersonating:
                 items.append({
@@ -116,7 +116,7 @@ class UserMenu:
                 items.append({
                     'separator': True
                 })
-            
+
             items.extend([
                 {
                     'name': 'My Profile',
@@ -168,13 +168,13 @@ class UserMenu:
 
         if avatar_url:
             # Use Discord avatar
-            with ui.button().props('flat round').classes('header-menu-button'):
-                ui.image(avatar_url).classes('w-8 h-8 rounded-full')
+            with ui.button().props('flat round aria-label="Open user menu"').classes('header-menu-button'):
+                ui.image(avatar_url).classes('w-8 h-8 rounded-full').props('alt="User avatar"')
                 with ui.menu():
                     self._render_menu_items()
         else:
             # Use generic account_circle icon
-            with ui.button(icon='account_circle').props('flat round').classes('header-menu-button'):
+            with ui.button(icon='account_circle').props('flat round aria-label="Open user menu"').classes('header-menu-button'):
                 with ui.menu():
                     self._render_menu_items()
 
