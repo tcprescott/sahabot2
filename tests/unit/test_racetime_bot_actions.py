@@ -8,7 +8,7 @@ Tests that the bot action wrapper methods properly:
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, MagicMock, patch
 from racetime.client import SahaRaceHandler
 from application.events import EventBus, RacetimeBotActionEvent
 from models import SYSTEM_USER_ID
