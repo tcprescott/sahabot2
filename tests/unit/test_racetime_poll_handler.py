@@ -7,8 +7,15 @@ and joins them based on configuration.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from application.services.tasks.task_handlers import handle_racetime_poll_open_rooms
+from application.services.tasks.task_handlers import handle_racetime_poll_open_rooms, register_task_handlers
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
+
+
+@pytest.fixture(autouse=True)
+def ensure_handlers_registered():
+    """Ensure task handlers are registered before each test."""
+    register_task_handlers()
+    yield
 
 
 @pytest.mark.asyncio
