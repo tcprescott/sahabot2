@@ -1,24 +1,28 @@
 /* CSS Variables - Color Palette and Design Tokens */
 
 :root {
+    /* Base Colors */
+    --white: #ffffff;
+    --black-text: #000000;
+
     /* Official Color Palette - Light Mode */
     --seasalt:  #f8f8f8;  /* very light neutral */
     --purple-primary: #7c3aed;  /* primary purple */
     --purple-secondary: #9333ea;  /* darker secondary purple for better contrast */
     --purple-accent: #7c3aed;  /* using primary for accent to ensure contrast */
-    --black:    #000000;  /* text/borders */
 
     /* Semantic Color Mapping - Light Mode */
     --primary-color: var(--purple-primary);
     --primary-hover: #6d28d9; /* darker purple for hover */
     --secondary-color: var(--purple-secondary);
     --background-color: var(--seasalt);
-    --surface-color: #ffffff;
-    --text-primary: var(--black);
+    --surface-color: var(--white);
+    --text-primary: var(--black-text);
     --text-secondary: #333333;
     --text-tertiary: #666666;  /* muted text for less important info */
     --accent-color: var(--purple-accent);
     --border-color: #dddddd;
+    --navbar-bg: #f3e8ff;  /* light purple for navbar */
 
     /* Status Colors */
     --error-color: #dc2626;
@@ -50,24 +54,28 @@
 /* Dark Mode Color Overrides */
 .body--dark,
 .q-dark {
+    /* Dark mode surface variations */
+    --surface-dark-1: #2a2a2a;
+    --surface-dark-2: #3a3a3a;
+
     /* Official Color Palette - Dark Mode */
     --seasalt:  #f2f2f2;  /* light text */
     --purple-primary: #a78bfa;  /* lighter purple for dark backgrounds */
     --purple-secondary: #7c3aed;  /* vibrant purple for better contrast */
     --purple-accent: #9333ea;  /* medium purple accent */
-    --black:    #0f0f0f;  /* dark background/surfaces */
 
     /* Semantic Color Mapping - Dark Mode */
     --primary-color: var(--purple-primary);
     --primary-hover: #c4b5fd;
     --secondary-color: var(--purple-secondary);
-    --background-color: var(--black);
+    --background-color: #0f0f0f;
     --surface-color: #161616;
     --text-primary: var(--seasalt);
     --text-secondary: #cfcfcf;
     --text-tertiary: #999999;  /* muted text for less important info */
     --accent-color: var(--purple-accent);
     --border-color: #2a2a2a;
+    --navbar-bg: #1a0f2e;  /* very dark purple for navbar */
 
     /* Status Colors - Dark Mode */
     --error-color: #f87171;
