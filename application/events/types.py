@@ -650,6 +650,24 @@ class RacetimeBotCreatedRaceEvent(EntityEvent):
     priority: EventPriority = EventPriority.HIGH
 
 
+@dataclass(frozen=True)
+class RacetimeBotActionEvent(EntityEvent):
+    """
+    Emitted when the bot performs an action on a RaceTime.gg race room.
+    
+    This is a generic event for bot actions like force_start, cancel_race,
+    pin_message, set_raceinfo, etc.
+    """
+    entity_type: str = field(default="RacetimeRace", init=False)
+    category: str = ""  # e.g., "alttpr"
+    room_slug: str = ""  # e.g., "alttpr/cool-doge-1234"
+    room_name: str = ""  # e.g., "cool-doge-1234"
+    action_type: str = ""  # Action performed (e.g., "force_start", "cancel_race")
+    target_user_id: Optional[str] = None  # Target racetime user ID (for user-specific actions)
+    details: Optional[str] = None  # Additional action details
+    priority: EventPriority = EventPriority.NORMAL
+
+
 # ============================================================================
 # Scheduled Task Events
 # ============================================================================
