@@ -184,7 +184,42 @@ To modify a built-in task:
 
 ### Disabling Built-in Tasks
 
-To temporarily disable a built-in task:
+Built-in tasks can be disabled in two ways:
+
+#### Option 1: Database Override (Recommended - Persists Across Restarts)
+
+**Via Admin UI:**
+1. Navigate to Admin → Scheduled Tasks
+2. Find the built-in task in the "Built-in Tasks" section
+3. Click the "Disable" button
+4. The task will be disabled immediately and remain disabled after restarts
+
+**Via Service:**
+```python
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
+
+service = TaskSchedulerService()
+
+# Disable a built-in task (requires admin user)
+await service.set_builtin_task_active(
+    user=admin_user,
+    task_id='cleanup_tournament_usage',
+    is_active=False
+)
+
+# Re-enable it
+await service.set_builtin_task_active(
+    user=admin_user,
+    task_id='cleanup_tournament_usage',
+    is_active=True
+)
+```
+
+Database overrides are stored in the `builtin_task_overrides` table and persist across application restarts. When an override exists, it takes precedence over the `is_active` value defined in code.
+
+#### Option 2: Code Change (Temporary - Resets on Code Update)
+
+To disable in code (not recommended for production):
 ```python
 'my_task_id': BuiltInTask(
     # ... other parameters ...
@@ -192,8 +227,12 @@ To temporarily disable a built-in task:
 ),
 ```
 
+**Note:** Code-based disabling is reset whenever the code is updated or deployed. Use database overrides for persistent changes.
+
+### Removing Built-in Tasks
+
 To permanently remove a built-in task:
-1. Remove it from the `BUILTIN_TASKS` dictionary
+1. Remove it from the `BUILTIN_TASKS` dictionary in `application/services/builtin_tasks.py`
 2. Restart the application
 
 ## Database Tasks vs Built-in Tasks
@@ -256,32 +295,129 @@ task = await service.create_task(
 
 ### Authorization
 
-| Action | Organization Task | Global Task |
-|--------|------------------|-------------|
-| **Create** | Tournament manager | Superadmin only |
-| **View** | Tournament manager | Superadmin only |
-| **Update** | Tournament manager | Superadmin only |
-| **Delete** | Tournament manager | Superadmin only |
-| **Execute** | Automatic | Automatic |
+| Action | Organization Task | Global Task | Built-in Task Override |
+|--------|------------------|-------------|------------------------|
+| **Create** | Tournament manager | Superadmin only | N/A |
+| **View** | Tournament manager | Superadmin only | Admin |
+| **Update** | Tournament manager | Superadmin only | N/A |
+| **Delete** | Tournament manager | Superadmin only | N/A |
+| **Toggle Active** | N/A | N/A | Admin |
+| **Execute** | Automatic | Automatic | Automatic (if active) |
+
+## Built-in Task Overrides
+
+### Overview
+
+Built-in task overrides allow administrators to disable built-in tasks without modifying code. Overrides are stored in the `builtin_task_overrides` database table and persist across application restarts.
+
+### How Overrides Work
+
+1. **Default Behavior**: By default, a built-in task's active status is determined by its `is_active` value in `builtin_tasks.py`
+2. **Override Created**: When an admin disables/enables a task via UI or API, an override is created in the database
+3. **Override Applied**: The scheduler checks for overrides before running tasks
+4. **Precedence**: Database override takes precedence over code-defined `is_active` value
+5. **Cache**: Overrides are cached in memory for performance and reloaded at scheduler startup
+
+### Database Schema
+
+```sql
+CREATE TABLE builtin_task_overrides (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    task_id VARCHAR(255) UNIQUE NOT NULL,
+    is_active BOOL NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+```
+
+### Managing Overrides
+
+**Via Service:**
+```python
+from application.services.tasks.task_scheduler_service import TaskSchedulerService
+
+service = TaskSchedulerService()
+
+# Set active status (creates or updates override)
+await service.set_builtin_task_active(
+    user=admin_user,
+    task_id='cleanup_tournament_usage',
+    is_active=False  # Disable the task
+)
+
+# Check effective active status
+effective_status = TaskSchedulerService.get_effective_active_status(
+    task_id='cleanup_tournament_usage',
+    default_is_active=True  # From code definition
+)
+# Returns False if override exists with is_active=False
+# Returns True if no override exists
+
+# Reload overrides from database (e.g., after external changes)
+await TaskSchedulerService.reload_builtin_task_overrides()
+```
+
+**Via Repository:**
+```python
+from application.repositories.builtin_task_override_repository import BuiltinTaskOverrideRepository
+
+repo = BuiltinTaskOverrideRepository()
+
+# Create override
+override = await repo.create(task_id='my_task', is_active=False)
+
+# Get override
+override = await repo.get_by_task_id('my_task')
+
+# Update or create
+override = await repo.set_active('my_task', True)
+
+# Get all as dict
+overrides = await repo.get_overrides_dict()
+# Returns: {'task_1': True, 'task_2': False, ...}
+
+# Delete override (task reverts to code-defined is_active)
+await repo.delete('my_task')
+```
+
+### Lifecycle
+
+1. **Startup**: Scheduler loads all overrides from database into memory cache
+2. **Runtime**: Scheduler checks cache for overrides when determining if task should run
+3. **Toggle**: Admin toggles task via UI/API, override saved to database and updated in cache
+4. **Restart**: Overrides persist in database and are reloaded into cache
+
+### Use Cases
+
+- **Temporarily disable problematic task** without deploying code changes
+- **Enable/disable tasks per environment** (dev vs prod) without code changes
+- **Quick response to incidents** - disable task immediately without waiting for deployment
+- **Testing** - disable tasks during system maintenance or testing
+- **Gradual rollout** - disable new tasks by default in code, enable via override after verification
 
 ## Task Execution
 
 ### Execution Flow
 
 1. **Scheduler loop** runs every 10 seconds
-2. **Checks database tasks** due to run
-3. **Checks built-in tasks** due to run
-4. **Executes tasks** in background (async)
-5. **Updates state** (database tasks only)
-6. **Logs results** for monitoring
+2. **Load overrides** (at startup - cached in memory)
+3. **Checks database tasks** due to run
+4. **Checks built-in tasks** due to run
+   - Applies database overrides to determine effective `is_active` status
+   - Only executes tasks where effective status is `True`
+5. **Executes tasks** in background (async)
+6. **Updates state** (database tasks only)
+7. **Logs results** for monitoring
 
 ### Built-in Task Execution
 
 For built-in tasks:
+- **Active status** determined by database override if exists, otherwise code-defined `is_active`
 - Last run time tracked in memory (`_builtin_tasks_last_run`)
-- No database updates (since not stored in database)
+- No database updates for execution state (since not stored in database)
 - Next run calculated from schedule definition
-- State lost on application restart (tasks will run as if never executed)
+- Execution state lost on application restart (tasks will run as if never executed)
+- **Overrides persist** across restarts (stored in database)
 
 ### Pseudo-Task Object
 
