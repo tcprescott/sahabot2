@@ -15,7 +15,7 @@ This implementation adds support for the Avianart door randomizer (Hi, I'm Cody'
 ## Files Changed/Created
 
 ### New Files
-1. **`application/services/randomizer/avianart_service.py`** (164 lines)
+1. **`application/services/randomizer/avianart_service.py`** (177 lines)
    - Core service for Avianart API integration
    - Implements async polling for seed generation
    - File select code extraction and normalization
@@ -26,9 +26,10 @@ This implementation adds support for the Avianart door randomizer (Hi, I'm Cody'
    - Tests success, failures, timeouts, edge cases
    - Mock-based testing without API calls
 
-3. **`tests/unit/test_avianart_handler.py`** (219 lines)
-   - 6 unit tests for RaceTime command
+3. **`tests/unit/test_avianart_handler.py`** (166 lines)
+   - 5 unit tests for RaceTime command
    - Tests all error conditions and user scenarios
+   - Tests ex_avianart method on ALTTPRRaceHandler
 
 4. **`tools/test_avianart_manual.py`** (161 lines)
    - Manual integration test script
@@ -43,9 +44,9 @@ This implementation adds support for the Avianart door randomizer (Hi, I'm Cody'
 2. **`application/services/randomizer/__init__.py`**
    - Added AvianartService export
 
-3. **`racetime/command_handlers.py`**
-   - Added handle_avianart() function
-   - Registered in BUILTIN_HANDLERS
+3. **`racetime/alttpr_handler.py`**
+   - Added ex_avianart() method to ALTTPRRaceHandler
+   - Integrated into ALTTPR race handler following ex_ command pattern
 
 ## Key Features
 
@@ -59,11 +60,12 @@ This implementation adds support for the Avianart door randomizer (Hi, I'm Cody'
 
 ### !avianart Command
 - **Usage**: `!avianart <preset_name>`
-- **Integration**: Works in RaceTime.gg race rooms
-- **No Auth Required**: Can be used by any race participant
+- **Integration**: Works in ALTTPR RaceTime.gg race rooms via ALTTPRRaceHandler
+- **No Auth Required**: Can be used by any race participant (unlike !mystery)
 - **Race Mode**: Always generates race seeds (race=True)
 - **Response Format**: URL, file select code, and version info
 - **Error Handling**: Graceful error messages for all failure modes
+- **Implementation**: ex_avianart method using the ex_ prefix convention
 
 ## API Details
 
@@ -91,7 +93,7 @@ Maps Avianart names to SahasrahBot standard names:
 
 ## Testing
 
-### Unit Tests (16 tests total)
+### Unit Tests (15 tests total)
 - **Service Tests (10)**:
   - Successful generation
   - Missing preset error
@@ -101,20 +103,18 @@ Maps Avianart names to SahasrahBot standard names:
   - Code extraction (basic, mapped, mixed)
   - Missing/invalid response data
 
-- **Handler Tests (6)**:
+- **Handler Tests (5)**:
   - Successful command
   - Missing arguments
   - ValueError handling
   - TimeoutError handling
   - Generic exception handling
-  - No-auth usage
 
 ### Test Results
 ```
-✓ 16 Avianart tests passing
-✓ 268 total unit tests passing
+✓ 15 Avianart tests passing
+✓ All unit tests passing
 ✓ 0 CodeQL security alerts
-✓ Manual integration test passing
 ```
 
 ## Usage Examples
@@ -140,13 +140,14 @@ service = RandomizerService().get_randomizer('avianart')
 result = await service.generate(preset='open', race=True)
 ```
 
-### RaceTime.gg Command
+### RaceTime.gg Command (in ALTTPR race rooms)
 ```
 !avianart open
 ```
 
 Response:
 ```
+Generating Avianart seed, please wait. If nothing happens after a minute, contact support.
 Avianart seed generated! https://avianart.games/perm/ABC123 | 
 Code: Bow/Bombs/Hookshot/Mushroom/Lamp | Version: 1.0.0
 ```
@@ -171,21 +172,32 @@ Code: Bow/Bombs/Hookshot/Mushroom/Lamp | Version: 1.0.0
 5. **File Select Code**: Maintains compatibility with original SahasrahBot format
 6. **Polling Strategy**: 5-second intervals, max 2 minutes (24 attempts)
 7. **Error Handling**: Comprehensive validation to prevent KeyError/TypeError
+8. **Command Pattern**: Uses ex_ prefix method on ALTTPRRaceHandler (not separate command_handlers module)
+9. **ALTTPR Handler Integration**: Command available in ALTTPR race rooms via ALTTPRRaceHandler
 
 ## Migration from Original SahasrahBot
 
 If migrating from the original SahasrahBot:
 - Avianart functionality is now a first-class randomizer
 - No need to set `avianart=True` flag on ALTTPR generation
-- Use `!avianart <preset>` command instead of flag-based generation
+- Use `!avianart <preset>` command in ALTTPR race rooms
 - File select codes maintain the same format and mapping
+- Command is integrated into ALTTPRRaceHandler, not a separate handler
+
+## Command Integration Pattern
+
+RaceTime.gg commands in SahaBot2 follow the `ex_` method pattern:
+- Commands are methods on handler classes (e.g., ALTTPRRaceHandler)
+- Method names use `ex_` prefix (e.g., `ex_avianart`, `ex_mystery`, `ex_vt`)
+- The racetime-bot library automatically routes `!command` to `ex_command` methods
+- No separate command_handlers module needed (commands are defined in handler classes)
 
 ## Future Enhancements (Not Implemented)
 
 - Database preset storage (currently not supported per requirements)
 - Spoiler log support (Avianart API doesn't currently support)
 - Custom preset YAML upload via web UI
-- Discord bot integration (prefix commands vs RaceTime commands)
+- Adding !avianart to other race handler classes (SMZ3, SM, etc.)
 
 ## References
 
@@ -193,3 +205,4 @@ If migrating from the original SahasrahBot:
 - **Original SahasrahBot**: https://github.com/tcprescott/sahasrahbot
 - **SahaBot2 Architecture**: See `docs/ARCHITECTURE.md`
 - **SahaBot2 Patterns**: See `docs/PATTERNS.md`
+- **RaceTime Integration**: See `racetime/client.py` and handler classes
