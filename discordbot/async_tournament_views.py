@@ -419,9 +419,11 @@ class RaceInProgressView(ui.View):
             item.disabled = True
         await interaction.followup.edit_message(message_id=interaction.message.id, view=self)
 
+        # Send completion message with submission view
         await interaction.followup.send(
             f"Your finish time of **{race.elapsed_time_formatted}** has been recorded. Thank you for playing!\n\n"
-            f"You may submit additional information (VOD, notes) via the web interface."
+            f"You may submit additional information using the buttons below:",
+            view=RaceCompletedView()
         )
 
     @ui.button(
@@ -512,3 +514,146 @@ class ForfeitConfirmView(ui.View):
         for item in self.children:
             item.disabled = True
         await interaction.edit_original_response(view=self)
+
+
+class RaceCompletedView(ui.View):
+    """View for completed races with submission options."""
+
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @ui.button(
+        label="Submit VOD & Notes",
+        style=discord.ButtonStyle.green,
+        emoji="🗒️",
+        custom_id="async_race:submit_vod"
+    )
+    async def submit_vod(self, interaction: discord.Interaction, button: ui.Button):
+        """Open modal to submit VOD and notes."""
+        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user')
+
+        if not race:
+            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            return
+
+        if race.user.discord_id != interaction.user.id:
+            await interaction.response.send_message("Only the race participant can submit.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(SubmitVODModal())
+
+    @ui.button(
+        label="Flag for Review",
+        style=discord.ButtonStyle.blurple,
+        emoji="🚩",
+        custom_id="async_race:flag_review"
+    )
+    async def flag_review(self, interaction: discord.Interaction, button: ui.Button):
+        """Open modal to flag run for review."""
+        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user')
+
+        if not race:
+            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            return
+
+        if race.user.discord_id != interaction.user.id:
+            await interaction.response.send_message("Only the race participant can flag.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(FlagForReviewModal())
+
+
+class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
+    """Modal for submitting VOD URL and runner notes."""
+
+    runner_vod_url = ui.TextInput(
+        label="VOD URL",
+        placeholder="https://www.twitch.tv/videos/...",
+        style=discord.TextStyle.short,
+        required=False
+    )
+
+    runner_notes = ui.TextInput(
+        label="Runner Notes/Comments",
+        placeholder="Add any notes or comments about your run...",
+        style=discord.TextStyle.long,
+        required=False,
+        max_length=2000
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle modal submission."""
+        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user', 'tournament')
+
+        if not race:
+            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            return
+
+        # Update race submission via service
+        service = AsyncTournamentService()
+        updated_race = await service.update_race_submission(
+            user=race.user,
+            organization_id=race.tournament.organization_id,
+            race_id=race.id,
+            runner_vod_url=self.runner_vod_url.value if self.runner_vod_url.value else None,
+            runner_notes=self.runner_notes.value if self.runner_notes.value else None,
+        )
+
+        if not updated_race:
+            await interaction.response.send_message("Failed to update submission.", ephemeral=True)
+            return
+
+        # Build response message
+        response_parts = ["**Submission updated successfully!**\n"]
+
+        if self.runner_vod_url.value:
+            response_parts.append(f"**VOD URL:**\n{self.runner_vod_url.value}\n")
+
+        if self.runner_notes.value:
+            response_parts.append(f"**Notes:**\n{self.runner_notes.value}")
+
+        await interaction.response.send_message(
+            "\n".join(response_parts),
+            ephemeral=False
+        )
+
+
+class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
+    """Modal for flagging a run for review with reason."""
+
+    review_request_reason = ui.TextInput(
+        label="Reason for Review",
+        placeholder="Please explain why you want this run reviewed...",
+        style=discord.TextStyle.long,
+        required=True,
+        max_length=2000
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        """Handle modal submission."""
+        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user', 'tournament')
+
+        if not race:
+            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            return
+
+        # Update race to flag for review
+        service = AsyncTournamentService()
+        updated_race = await service.update_race_submission(
+            user=race.user,
+            organization_id=race.tournament.organization_id,
+            race_id=race.id,
+            review_requested_by_user=True,
+            review_request_reason=self.review_request_reason.value,
+        )
+
+        if not updated_race:
+            await interaction.response.send_message("Failed to flag run for review.", ephemeral=True)
+            return
+
+        await interaction.response.send_message(
+            f"✅ **Run flagged for review**\n\n"
+            f"**Reason:**\n{self.review_request_reason.value}\n\n"
+            f"A reviewer will look at your run and may contact you if they need more information.",
+            ephemeral=False
+        )

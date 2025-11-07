@@ -114,6 +114,8 @@ class AsyncTournamentRaceReviewOut(BaseModel):
     reviewed_by: Optional[UserBasicInfo] = Field(None, description="Reviewer information")
     reviewed_at: Optional[datetime] = Field(None, description="Review timestamp")
     reviewer_notes: Optional[str] = Field(None, description="Reviewer notes")
+    review_requested_by_user: bool = Field(..., description="True if user flagged for review")
+    review_request_reason: Optional[str] = Field(None, description="User's reason for requesting review")
     thread_open_time: Optional[datetime] = Field(None, description="Thread open time")
     created_at: datetime = Field(..., description="Race creation timestamp")
 
@@ -134,3 +136,12 @@ class AsyncTournamentRaceReviewUpdateRequest(BaseModel):
     review_status: str = Field(..., pattern="^(pending|accepted|rejected)$", description="Review status")
     reviewer_notes: Optional[str] = Field(None, max_length=10000, description="Reviewer notes")
     elapsed_time_seconds: Optional[int] = Field(None, ge=0, description="Optional elapsed time override in seconds")
+
+
+class AsyncTournamentRaceUpdateRequest(BaseModel):
+    """Request schema for users to update their own race submission."""
+
+    runner_vod_url: Optional[str] = Field(None, max_length=500, description="Runner's VOD URL")
+    runner_notes: Optional[str] = Field(None, max_length=10000, description="Runner's notes/comments")
+    review_requested_by_user: Optional[bool] = Field(None, description="Flag run for review")
+    review_request_reason: Optional[str] = Field(None, max_length=5000, description="Reason for requesting review")
