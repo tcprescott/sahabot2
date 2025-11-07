@@ -10,6 +10,7 @@ from nicegui import ui
 from models import User, OrganizationRequest
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
+from components.badge import Badge
 from components.dialogs.admin import ApproveOrgRequestDialog, RejectOrgRequestDialog
 from application.services.organizations.organization_service import OrganizationService
 
@@ -122,11 +123,9 @@ class OrgRequestsView:
 
                     async def render_status_cell(request):
                         if request.is_approved:
-                            with ui.element('span').classes('badge badge-success'):
-                                ui.label('Approved')
+                            Badge.custom('Approved', 'success')
                         else:
-                            with ui.element('span').classes('badge badge-danger'):
-                                ui.label('Rejected')
+                            Badge.custom('Rejected', 'danger')
 
                     async def render_reviewed_by_cell(request):
                         if request.reviewed_by:

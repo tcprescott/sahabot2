@@ -7,6 +7,7 @@ Provides interface for managing RaceTime bot configurations and organization ass
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
+from components.empty_state import EmptyState
 from models import User, RacetimeBot
 from application.services.racetime.racetime_bot_service import RacetimeBotService
 from application.services.organizations.organization_service import OrganizationService
@@ -106,11 +107,12 @@ class AdminRacetimeBotsView:
     async def _render_table(self):
         """Render the bots table."""
         if not self.bots:
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-body'):
-                    with ui.row().classes('items-center gap-2 text-secondary'):
-                        ui.icon('info')
-                        ui.label('No RaceTime bots found. Click "Add Bot" to create one.')
+            EmptyState.no_items(
+                item_name='RaceTime bots',
+                message='Click "Add Bot" to create one',
+                icon='smart_toy',
+                in_card=True
+            )
             return
 
         # Prepare rows with organization counts

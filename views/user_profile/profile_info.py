@@ -8,6 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from components.card import Card
+from components.badge import Badge
 from components.datetime_label import DateTimeLabel
 
 
@@ -48,16 +49,14 @@ class ProfileInfoView:
                     ui.icon('security').classes('text-secondary')
                     with ui.column().classes('flex-1'):
                         ui.label('Permission Level').classes('text-sm text-secondary')
-                        ui.label(self.user.permission.name).classes('font-bold badge badge-info')
+                        Badge.permission(self.user.permission)
 
                 # Account Status
                 with ui.row().classes('items-center'):
                     ui.icon('verified' if self.user.is_active else 'block').classes('text-secondary')
                     with ui.column().classes('flex-1'):
                         ui.label('Account Status').classes('text-sm text-secondary')
-                        status_badge = 'badge-success' if self.user.is_active else 'badge-danger'
-                        status_text = 'Active' if self.user.is_active else 'Inactive'
-                        ui.label(status_text).classes(f'badge {status_badge}')
+                        Badge.status(self.user.is_active)
 
                 # Member Since
                 with ui.row().classes('items-center'):

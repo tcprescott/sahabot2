@@ -10,6 +10,8 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentLiveRace
 from components.card import Card
+from components.badge import Badge
+from components.empty_state import EmptyState
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.tournaments import CreateLiveRaceDialog
@@ -100,9 +102,12 @@ class AsyncLiveRacesView:
                 races = all_races
 
             if not races:
-                with ui.element('div').classes('text-center mt-4'):
-                    ui.icon('event_busy').classes('text-secondary icon-large')
-                    ui.label('No live races found').classes('text-secondary')
+                EmptyState.no_items(
+                    item_name='live races',
+                    message='No live races match your filters',
+                    icon='event_busy',
+                    in_card=False
+                )
                 return
 
             # Render races table
@@ -129,17 +134,18 @@ class AsyncLiveRacesView:
 
     def _render_status_badge(self, race: AsyncTournamentLiveRace):
         """Render status badge."""
-        status_colors = {
+        status_variants = {
             'scheduled': 'info',
             'pending': 'warning',
-            'in_progress': 'primary',
-            'finished': 'positive',
-            'cancelled': 'negative',
+            'in_progress': 'info',
+            'finished': 'success',
+            'cancelled': 'danger',
         }
-        color = status_colors.get(race.status, 'secondary')
+        variant = status_variants.get(race.status, 'default')
+        text = race.status.replace('_', ' ').title()
         
         with ui.element('div'):
-            ui.badge(race.status.replace('_', ' ').title(), color=color)
+            Badge.custom(text, variant)
 
     def _render_scheduled(self, race: AsyncTournamentLiveRace):
         """Render scheduled datetime."""

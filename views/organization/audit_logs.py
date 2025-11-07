@@ -6,6 +6,7 @@ Provides an interface for viewing audit logs scoped to a specific organization.
 
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
+from components.empty_state import EmptyState
 from models import User, Organization
 from application.services.core.audit_service import AuditService
 from components.datetime_label import DateTimeLabel
@@ -100,9 +101,12 @@ class OrganizationAuditLogsView:
     async def _render_table(self):
         """Render the audit logs table."""
         if not self.audit_logs:
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-body text-center'):
-                    ui.label('No audit logs found').classes('text-secondary')
+            EmptyState.no_items(
+                item_name='audit logs',
+                message='No audit logs match your filters',
+                icon='history',
+                in_card=True
+            )
             return
 
         columns = [

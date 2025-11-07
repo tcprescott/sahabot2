@@ -11,6 +11,7 @@ from nicegui import ui
 from models import User
 from models.user import Permission
 from components.card import Card
+from components.empty_state import EmptyState
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.common import ViewYamlDialog
@@ -143,11 +144,12 @@ class PresetsView:
 
                 if not presets:
                     # Empty state
-                    with ui.element('div').classes('card'):
-                        with ui.element('div').classes('card-body text-center py-8'):
-                            ui.icon('code', size='64px').classes('text-secondary')
-                            ui.label('No presets found').classes('text-xl text-secondary mt-2')
-                            ui.label('Create your first preset to get started! Each user has their own preset namespace.').classes('text-sm text-secondary')
+                    EmptyState.no_items(
+                        item_name='presets',
+                        message='Create your first preset to get started! Each user has their own preset namespace.',
+                        icon='code',
+                        in_card=True
+                    )
                 else:
                     # Presets table
                     with ui.element('div').classes('card'):
