@@ -276,6 +276,31 @@ cat > migrations/models/44_*.py << 'EOF'
 EOF
 ```
 
+### 15. CodeQL Security and Quality Checks
+- **Automated scanning** - CodeQL runs on every PR and push to detect anti-patterns
+- **Custom queries** - We have CodeQL queries for all major anti-patterns in this guide
+- **Add queries for new anti-patterns** - When adding new "don't" rules, create a CodeQL query
+- **Query location** - `.github/codeql/queries/` directory
+- **Documentation** - Update `.github/codeql/README.md` when adding queries
+
+**CodeQL queries detect**:
+- `print()` in application code
+- F-strings in logging statements
+- `datetime.utcnow()` usage
+- Direct ORM access from UI/API routes
+- Inline imports (imports inside functions)
+- Deprecated `AuthorizationService` usage
+- `None` user_id in event emissions
+- `UIAuthorizationHelper` in service layer
+
+**When adding new anti-patterns**:
+1. Add to "Common Pitfalls to Avoid" section
+2. Create CodeQL query in `.github/codeql/queries/`
+3. Update `.github/codeql/README.md` with query documentation
+4. Test query if possible before committing
+
+**See**: [`.github/codeql/README.md`](./codeql/README.md) for query documentation and examples
+
 ## Essential Patterns
 
 ### Page Structure with BasePage
@@ -525,6 +550,8 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - New page → Create corresponding subdirectory in `views/`
 
 ## Common Pitfalls to Avoid
+
+**Note**: Many of these anti-patterns are automatically detected by CodeQL queries. See [`.github/codeql/README.md`](./codeql/README.md) for details.
 
 **❌ Don't:**
 - Use `.style()` for inline CSS

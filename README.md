@@ -426,8 +426,11 @@ This application implements comprehensive security best practices. See [SECURITY
 - 🔑 Cryptographically secure token generation
 - 📝 Audit logging without sensitive data exposure
 - 🚨 Vulnerability reporting process
+- 🔍 Automated CodeQL security scanning with custom anti-pattern queries
 
 **Security Scan Results**: CodeQL - 0 alerts ✅
+
+**CodeQL Analysis**: Automated scanning runs on every PR/push with 8+ custom queries detecting anti-patterns and security issues. See [`.github/codeql/README.md`](.github/codeql/README.md) for details.
 
 To report a security vulnerability, please see our [Security Policy](SECURITY.md).
 
