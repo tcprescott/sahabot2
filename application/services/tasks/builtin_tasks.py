@@ -149,6 +149,20 @@ BUILTIN_TASKS: Dict[str, BuiltInTask] = {
         is_active=True,
     ),
 
+    'racetime_poll_open_rooms': BuiltInTask(
+        task_id='racetime_poll_open_rooms',
+        name='RaceTime - Poll Open Race Rooms',
+        description='Scans RaceTime.gg for open race rooms and creates handlers based on bot default handler configuration',
+        task_type=TaskType.RACETIME_POLL_OPEN_ROOMS,
+        schedule_type=ScheduleType.INTERVAL,
+        is_global=True,
+        interval_seconds=60,  # Check every minute
+        task_config={
+            'enabled_statuses': ['open', 'invitational'],  # Race statuses to join
+        },
+        is_active=True,
+    ),
+
     # Example of a disabled built-in task
     'example_builtin_log': BuiltInTask(
         task_id='example_builtin_log',

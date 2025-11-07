@@ -7,6 +7,7 @@ when a task of that type is due to run.
 """
 import logging
 import discord
+import httpx
 from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
@@ -15,6 +16,7 @@ from application.services.tasks.task_scheduler_service import TaskSchedulerServi
 from application.services.tournaments.async_tournament_service import AsyncTournamentService
 from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
 from discordbot.client import get_bot_instance
+from racetime.client import get_all_racetime_bot_instances
 
 logger = logging.getLogger(__name__)
 
@@ -529,6 +531,122 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
         raise
 
 
+async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
+    """
+    Handler for polling RaceTime.gg for open race rooms and joining them.
+
+    This task scans active RaceTime.gg categories for open race rooms and creates
+    handlers based on the bot's default handler configuration. This replaces the
+    library's built-in refresh_races() functionality with our own scheduler-based
+    approach.
+
+    Expected task_config:
+    {
+        "enabled_statuses": ["open", "invitational"],  # Race statuses to join
+    }
+
+    Args:
+        task: ScheduledTask to execute
+    """
+    logger.info("Starting RaceTime race room polling task: %s", task.name)
+
+    # Extract configuration
+    config = task.task_config or {}
+    enabled_statuses = config.get('enabled_statuses', ['open', 'invitational'])
+
+    try:
+        # Get all running bot instances
+        bot_instances = get_all_racetime_bot_instances()
+
+        if not bot_instances:
+            logger.debug("No RaceTime bots running, skipping polling")
+            return
+
+        joined_count = 0
+        scanned_count = 0
+
+        for category, bot in bot_instances.items():
+            logger.debug("Polling category: %s", category)
+
+            try:
+                # Fetch race list for this category using bot's HTTP methods
+                # RaceTime.gg API endpoint: /{category}/races/data
+                # Note: category is validated by bot initialization and comes from database
+                url = bot.http_uri(f'/{category}/races/data')
+
+                # Use bot's HTTP session if available, otherwise create temporary one
+                if bot.http and not bot.http.closed:
+                    async with bot.http.get(url, ssl=bot.ssl_context) as resp:
+                        resp.raise_for_status()
+                        data = await resp.json()
+                else:
+                    # Fallback to creating a temporary session
+                    async with httpx.AsyncClient() as client:
+                        resp = await client.get(url)
+                        resp.raise_for_status()
+                        data = await resp.json()
+
+                races = data.get('races', [])
+                scanned_count += len(races)
+
+                for race_data in races:
+                    try:
+                        race_name = race_data.get('name', '')
+                        race_status = race_data.get('status', {}).get('value', '')
+
+                        # Skip if not in enabled statuses
+                        if race_status not in enabled_statuses:
+                            continue
+
+                        # Note: We force join because should_handle() always returns False
+                        # by design (automatic polling is disabled).
+                        # The bot's handler configuration determines actual handling.
+
+                        # Check if we're already handling this race
+                        # Bot.handlers is a dict created by the racetime-bot library
+                        if hasattr(bot, 'handlers') and race_name in getattr(bot, 'handlers', {}):
+                            logger.debug("Already handling race %s, skipping", race_name)
+                            continue
+
+                        # Join the race room with force=True to bypass should_handle()
+                        logger.info("Joining race room: %s (status: %s)", race_name, race_status)
+                        handler = await bot.join_race_room(race_name, force=True)
+
+                        if handler:
+                            joined_count += 1
+                            logger.info("Successfully joined and created handler for race %s", race_name)
+                        else:
+                            logger.warning("Failed to create handler for race %s", race_name)
+
+                    except Exception as e:
+                        logger.error(
+                            "Error processing race %s in category %s: %s",
+                            race_data.get('name', 'unknown'),
+                            category,
+                            e
+                        )
+                        # Continue with next race
+
+            except Exception as e:
+                logger.error(
+                    "Error polling category %s: %s",
+                    category,
+                    e,
+                    exc_info=True
+                )
+                # Continue with next category
+
+        logger.info(
+            "Completed RaceTime race room polling: scanned %s races, joined %s rooms",
+            scanned_count,
+            joined_count
+        )
+
+    except Exception as e:
+        logger.error("Error during RaceTime race room polling: %s", e, exc_info=True)
+        raise
+
+
 def register_task_handlers() -> None:
     """
     Register all task handlers with the TaskSchedulerService.
@@ -545,5 +663,6 @@ def register_task_handlers() -> None:
     TaskSchedulerService.register_task_handler(TaskType.ASYNC_LIVE_RACE_OPEN, handle_async_live_race_open)
     TaskSchedulerService.register_task_handler(TaskType.SPEEDGAMING_IMPORT, handle_speedgaming_import)
     TaskSchedulerService.register_task_handler(TaskType.CLEANUP_PLACEHOLDER_USERS, handle_cleanup_placeholder_users)
+    TaskSchedulerService.register_task_handler(TaskType.RACETIME_POLL_OPEN_ROOMS, handle_racetime_poll_open_rooms)
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")
