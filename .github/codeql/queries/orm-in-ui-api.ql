@@ -25,19 +25,20 @@ predicate isUIOrAPIFile(File f) {
  * Check if a call is an ORM query operation
  */
 predicate isORMQuery(Call call) {
-  exists(Attribute attr |
+  exists(Attribute attr, Name model |
     call.getFunc() = attr and
+    attr.getObject() = model and
+    // Common ORM query methods
     attr.getName() in [
       "get", "filter", "all", "create", "update", "delete",
       "get_or_none", "first", "exists", "count",
       "update_or_create", "bulk_create", "bulk_update",
-      "select_related", "prefetch_related"
+      "select_related", "prefetch_related", "values", "values_list"
     ] and
-    // Check if it's called on a model class or queryset
-    exists(Name model |
-      attr.getObject() = model and
-      not model.getId() in ["self", "cls", "super"]
-    )
+    // Exclude common false positives
+    not model.getId() in ["self", "cls", "super", "dict", "list", "set", "str"] and
+    // The model name should look like a model class (starts with uppercase)
+    model.getId().regexpMatch("[A-Z][A-Za-z0-9_]*")
   )
 }
 

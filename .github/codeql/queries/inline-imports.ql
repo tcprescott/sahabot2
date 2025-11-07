@@ -22,7 +22,7 @@ predicate isInlineImport(Import imp) {
 /**
  * Check if an import from is inside a function (not at module level)
  */
-predicate isInlineImportFrom(ImportStar imp) {
+predicate isInlineImportFrom(ImportExpr imp) {
   exists(Function f | imp.getScope() = f)
 }
 

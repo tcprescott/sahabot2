@@ -20,7 +20,18 @@ predicate isLoggingCall(Call call) {
   exists(Attribute attr |
     call.getFunc() = attr and
     attr.getName() in ["debug", "info", "warning", "error", "critical", "exception"] and
-    exists(Name logger | attr.getObject() = logger and logger.getId().matches("%logger%"))
+    (
+      // Instance logger (logger.info, log.debug, etc.)
+      exists(Name logger | 
+        attr.getObject() = logger and 
+        (logger.getId().matches("%log%") or logger.getId().matches("%LOG%"))
+      ) or
+      // Module-level logging (logging.info, logging.debug, etc.)
+      exists(Name logging_module |
+        attr.getObject() = logging_module and
+        logging_module.getId() = "logging"
+      )
+    )
   )
 }
 
