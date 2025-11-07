@@ -168,13 +168,13 @@ class UserMenu:
 
         if avatar_url:
             # Use Discord avatar
-            with ui.button().props('flat round').classes('header-menu-button'):
-                ui.image(avatar_url).classes('w-8 h-8 rounded-full')
+            with ui.button().props('flat round aria-label="Open user menu"').classes('header-menu-button'):
+                ui.image(avatar_url).classes('w-8 h-8 rounded-full').props('alt="User avatar"')
                 with ui.menu():
                     self._render_menu_items()
         else:
             # Use generic account_circle icon
-            with ui.button(icon='account_circle').props('flat round').classes('header-menu-button'):
+            with ui.button(icon='account_circle').props('flat round aria-label="Open user menu"').classes('header-menu-button'):
                 with ui.menu():
                     self._render_menu_items()
 

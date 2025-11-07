@@ -30,17 +30,17 @@ class Sidebar:
             Tuple of (sidebar_container, backdrop_element)
         """
         # Backdrop for mobile (hidden on desktop via CSS) - start hidden by default
-        self._backdrop = ui.element('div').classes('sidebar-backdrop hidden')
+        self._backdrop = ui.element('div').classes('sidebar-backdrop hidden').props('role="presentation"')
         self._backdrop.on('click', self.toggle_callback)
 
         # Sidebar container - starts closed on mobile, CSS controls desktop state
-        self._container = ui.element('div').classes('sidebar-flyout sidebar-closed')
+        self._container = ui.element('div').classes('sidebar-flyout sidebar-closed').props('role="navigation" aria-label="Main navigation"')
         with self._container:
             # Sidebar header
             with ui.element('div').classes('sidebar-header'):
                 ui.label('Navigation').classes('sidebar-title')
                 # Close button (hidden on desktop via CSS)
-                ui.button(icon='close', on_click=self.toggle_callback).props('flat round dense').classes('sidebar-close-btn')
+                ui.button(icon='close', on_click=self.toggle_callback).props('flat round dense aria-label="Close navigation menu"').classes('sidebar-close-btn')
 
             # Sidebar items
             with ui.element('div').classes('sidebar-items'):

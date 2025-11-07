@@ -67,20 +67,20 @@ class ResponsiveTable:
         The cells will include `data-label` attributes for mobile grid layout.
         """
         classes = f"data-table {self.table_classes}".strip()
-        with ui.element('table').classes(classes):
+        with ui.element('table').classes(classes).props('role="table"'):
             # Header
-            with ui.element('thead'):
-                with ui.element('tr'):
+            with ui.element('thead').props('role="rowgroup"'):
+                with ui.element('tr').props('role="row"'):
                     for col in self.columns:
-                        with ui.element('th').classes(col.header_classes):
+                        with ui.element('th').classes(col.header_classes).props('role="columnheader" scope="col"'):
                             ui.label(col.label)
 
             # Body
-            with ui.element('tbody'):
+            with ui.element('tbody').props('role="rowgroup"'):
                 for row in self.rows:
-                    with ui.element('tr'):
+                    with ui.element('tr').props('role="row"'):
                         for col in self.columns:
-                            with ui.element('td').props(f'data-label="{col.label}"').classes(col.cell_classes):
+                            with ui.element('td').props(f'data-label="{col.label}" role="cell"').classes(col.cell_classes):
                                 if col.cell_render is not None:
                                     result = col.cell_render(row)
                                     if inspect.iscoroutine(result):

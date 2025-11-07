@@ -484,6 +484,10 @@ class BasePage:
         # Load current user
         await self._load_user()
 
+        # Add skip navigation link for keyboard accessibility
+        with ui.element('a').classes('skip-nav').props('href="#main-content"'):
+            ui.label('Skip to main content')
+
         # Render header
         self._render_header()
 
@@ -505,7 +509,7 @@ class BasePage:
                 self.initial_view = await self._get_view_from_query()
                 
                 # Create a dynamic content container that can be cleared/reloaded
-                self._content_container = ui.element('div').classes('page-container')
+                self._content_container = ui.element('div').classes('page-container').props('id="main-content"')
                 with self._content_container:
                     self._dynamic_content_container = ui.column().classes('full-width')
                     with self._dynamic_content_container:
@@ -525,7 +529,7 @@ class BasePage:
                 await self._show_query_param_notifications()
             else:
                 # Standard static content
-                self._content_container = ui.element('div').classes('page-container')
+                self._content_container = ui.element('div').classes('page-container').props('id="main-content"')
                 with self._content_container:
                     await content(self)
                     # Footer at the bottom of the page container

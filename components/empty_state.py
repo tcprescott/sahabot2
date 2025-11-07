@@ -52,7 +52,7 @@ class EmptyState:
         container_classes = f'text-center py-8 {classes}'
 
         def render_content():
-            ui.icon(icon).classes('text-secondary icon-large')
+            ui.icon(icon).classes('text-secondary icon-large').props('aria-hidden="true"')
             ui.label(title).classes('text-secondary text-lg mt-4')
             if message:
                 ui.label(message).classes('text-secondary mt-2')
@@ -148,8 +148,9 @@ class EmptyState:
         container_classes = 'text-center py-8'
 
         def render_content():
-            ui.spinner(size='lg')
-            ui.label(message).classes('text-secondary mt-4')
+            with ui.element('div').props('role="status" aria-live="polite"'):
+                ui.spinner(size='lg')
+                ui.label(message).classes('text-secondary mt-4')
 
         if in_card:
             with ui.element('div').classes('card'):

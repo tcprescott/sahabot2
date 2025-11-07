@@ -53,11 +53,11 @@ class MOTDBanner:
         # if MOTD editing permissions are ever expanded to non-admin users.
 
         # Create banner container with initial visibility controlled by JavaScript
-        with ui.element('div').props(f'id="{banner_id}"').classes('w-full motd-banner'):
+        with ui.element('div').props(f'id="{banner_id}" role="alert" aria-live="polite"').classes('w-full motd-banner'):
             with ui.row().classes('items-center justify-between w-full gap-4'):
                 # Icon and message
                 with ui.row().classes('items-center gap-3 flex-1'):
-                    ui.icon('campaign').classes('text-2xl')
+                    ui.icon('campaign').classes('text-2xl').props('aria-hidden="true"')
                     with ui.element('div').classes('flex-1'):
                         ui.html(motd_text).classes('text-base')
 
@@ -65,7 +65,7 @@ class MOTDBanner:
                 ui.button(
                     icon='close',
                     on_click=None  # Will be handled by JavaScript
-                ).props(f'flat round dense id="{banner_id}-dismiss-btn"')
+                ).props(f'flat round dense id="{banner_id}-dismiss-btn" aria-label="Dismiss message"')
 
         # Add JavaScript to handle banner visibility and dismissal
         # Note: motd_updated is server-generated timestamp, but we escape it for safety

@@ -14,8 +14,8 @@ class Header:
             with ui.row().classes('header-container'):
                 # Left side: Hamburger menu, logo and app name
                 with ui.row().classes('header-left gap-md'):
-                    ui.button(icon='menu', on_click=self.toggle_sidebar).props('flat round').classes('header-hamburger')
-                    with ui.link(target='/').classes('header-brand-link'):
+                    ui.button(icon='menu', on_click=self.toggle_sidebar).props('flat round aria-label="Open navigation menu"').classes('header-hamburger')
+                    with ui.link(target='/').classes('header-brand-link').props('aria-label="Go to home page"'):
                         ui.icon('smart_toy', size='lg').classes('header-logo')
                         ui.label('SahasrahBot').classes('header-brand')
                 # Right side: User info and menu
