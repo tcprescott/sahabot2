@@ -650,4 +650,15 @@ class RacetimeBotCreatedRaceEvent(EntityEvent):
     priority: EventPriority = EventPriority.HIGH
 
 
+# ============================================================================
+# Scheduled Task Events
+# ============================================================================
+
+@dataclass(frozen=True)
+class BuiltinTaskOverrideUpdatedEvent(EntityEvent):
+    """Emitted when a builtin task's override is created or updated."""
+    entity_type: str = field(default="BuiltinTaskOverride", init=False)
+    task_id: str = ""
+    is_active: bool = False
+    previous_is_active: Optional[bool] = None  # None if newly created
 

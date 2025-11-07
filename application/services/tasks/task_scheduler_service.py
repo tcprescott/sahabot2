@@ -14,9 +14,11 @@ from croniter import croniter
 from models import User
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from application.repositories.scheduled_task_repository import ScheduledTaskRepository
+from application.repositories.builtin_task_override_repository import BuiltinTaskOverrideRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
-from application.services.tasks.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks
+from application.services.tasks.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks, get_builtin_task
+from application.events import EventBus, BuiltinTaskOverrideUpdatedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -35,9 +37,11 @@ class TaskSchedulerService:
     _task_handlers: Dict[TaskType, Callable] = {}
     _builtin_tasks_last_run: Dict[str, datetime] = {}  # Track last run time for built-in tasks
     _builtin_tasks_status: Dict[str, Dict] = {}  # Track status of built-in tasks (last_status, last_error, next_run)
+    _builtin_task_overrides: Dict[str, bool] = {}  # Cache of builtin task overrides (task_id -> is_active)
 
     def __init__(self) -> None:
         self.repo = ScheduledTaskRepository()
+        self.override_repo = BuiltinTaskOverrideRepository()
         self.org_service = OrganizationService()
         self.auth = AuthorizationServiceV2()
 
@@ -264,6 +268,103 @@ class TaskSchedulerService:
         return result
 
     @classmethod
+    async def reload_builtin_task_overrides(cls) -> None:
+        """
+        Reload builtin task overrides from database into memory cache.
+        
+        This should be called at startup and after any override changes.
+        """
+        repo = BuiltinTaskOverrideRepository()
+        cls._builtin_task_overrides = await repo.get_overrides_dict()
+        logger.info("Loaded %s builtin task overrides", len(cls._builtin_task_overrides))
+
+    @classmethod
+    def clear_builtin_task_overrides_cache(cls) -> None:
+        """
+        Clear the builtin task overrides cache.
+        
+        This is primarily for testing purposes to simulate a fresh start.
+        """
+        cls._builtin_task_overrides = {}
+
+    @classmethod
+    def get_effective_active_status(cls, task_id: str, default_is_active: bool) -> bool:
+        """
+        Get the effective active status for a builtin task.
+        
+        Checks if there's a database override; if not, returns the default from code.
+        
+        Args:
+            task_id: The built-in task identifier
+            default_is_active: The is_active value defined in code
+            
+        Returns:
+            The effective is_active status (override if exists, otherwise default)
+        """
+        if task_id in cls._builtin_task_overrides:
+            return cls._builtin_task_overrides[task_id]
+        return default_is_active
+
+    async def set_builtin_task_active(
+        self,
+        user: Optional[User],
+        task_id: str,
+        is_active: bool
+    ) -> bool:
+        """
+        Set the active status for a builtin task (requires admin permission).
+        
+        Args:
+            user: User setting the status (must be admin)
+            task_id: The built-in task identifier
+            is_active: Whether the task should be active
+            
+        Returns:
+            True if successful, False if unauthorized or task not found
+        """
+        # Require admin permission for builtin task management
+        if not user or not user.is_admin():
+            logger.warning(
+                "Unauthorized set_builtin_task_active by user %s",
+                getattr(user, 'id', None)
+            )
+            return False
+        
+        # Verify the task exists
+        task = get_builtin_task(task_id)
+        if not task:
+            logger.warning("Builtin task %s not found", task_id)
+            return False
+        
+        # Get previous status for event
+        previous_is_active = self.__class__._builtin_task_overrides.get(task_id)
+        
+        # Save to database
+        await self.override_repo.set_active(task_id, is_active)
+        
+        # Update memory cache
+        self.__class__._builtin_task_overrides[task_id] = is_active
+        
+        logger.info(
+            "Builtin task %s active status set to %s by user %s",
+            task_id,
+            is_active,
+            user.id
+        )
+        
+        # Emit event for audit logging
+        await EventBus.emit(BuiltinTaskOverrideUpdatedEvent(
+            user_id=user.id,
+            organization_id=None,  # Builtin tasks are global
+            entity_id=task_id,
+            task_id=task_id,
+            is_active=is_active,
+            previous_is_active=previous_is_active,
+        ))
+        
+        return True
+
+    @classmethod
     def get_builtin_tasks_with_status(cls, active_only: bool = False) -> List[Dict]:
         """
         Get all builtin tasks with their current status information.
@@ -274,14 +375,19 @@ class TaskSchedulerService:
         Returns:
             List of dicts containing builtin task info and status
         """
-        if active_only:
-            builtin_tasks = get_active_builtin_tasks()
-        else:
-            builtin_tasks = get_all_builtin_tasks()
+        # Get all builtin tasks first
+        builtin_tasks = get_all_builtin_tasks()
         
         result = []
         
         for task in builtin_tasks:
+            # Get effective is_active status (check override, fallback to code default)
+            effective_is_active = cls.get_effective_active_status(task.task_id, task.is_active)
+            
+            # Filter by active status if requested
+            if active_only and not effective_is_active:
+                continue
+            
             status_info = cls._builtin_tasks_status.get(task.task_id, {})
             last_run = cls._builtin_tasks_last_run.get(task.task_id)
             
@@ -303,7 +409,7 @@ class TaskSchedulerService:
                 'schedule_type': task.schedule_type,
                 'interval_seconds': task.interval_seconds,
                 'cron_expression': task.cron_expression,
-                'is_active': task.is_active,
+                'is_active': effective_is_active,  # Use effective status (with override applied)
                 'last_run_at': last_run,
                 'last_status': status_info.get('last_status'),
                 'last_error': status_info.get('last_error'),
@@ -555,7 +661,9 @@ class TaskSchedulerService:
             logger.warning("Built-in task %s not found", task_id)
             return False
 
-        if not task.is_active:
+        # Check effective active status (with override applied)
+        effective_is_active = cls.get_effective_active_status(task.task_id, task.is_active)
+        if not effective_is_active:
             logger.warning("Built-in task %s is not active", task_id)
             return False
 
@@ -580,6 +688,9 @@ class TaskSchedulerService:
         if cls._is_running:
             logger.warning("Task scheduler already running")
             return
+
+        # Load builtin task overrides from database
+        await cls.reload_builtin_task_overrides()
 
         cls._is_running = True
         cls._runner_task = asyncio.create_task(cls._run_scheduler())
@@ -627,9 +738,11 @@ class TaskSchedulerService:
                     asyncio.create_task(cls._execute_task(task))
 
                 # Check built-in tasks
-                builtin_tasks = get_active_builtin_tasks()
+                builtin_tasks = get_all_builtin_tasks()
                 for builtin in builtin_tasks:
-                    if cls._should_run_builtin_task(builtin, now):
+                    # Check effective active status (with override applied)
+                    effective_is_active = cls.get_effective_active_status(builtin.task_id, builtin.is_active)
+                    if effective_is_active and cls._should_run_builtin_task(builtin, now):
                         # Execute built-in task in background
                         asyncio.create_task(cls._execute_builtin_task(builtin, now))
 

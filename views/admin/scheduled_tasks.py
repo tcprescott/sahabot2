@@ -334,20 +334,65 @@ class ScheduledTasksView:
         
         dialog.open()
 
+    async def _toggle_builtin_task(self, task_info: dict) -> None:
+        """Toggle the active status of a builtin task."""
+        task_id = task_info['task_id']
+        current_status = task_info['is_active']
+        new_status = not current_status
+
+        success = await self.service.set_builtin_task_active(
+            self.user,
+            task_id,
+            new_status
+        )
+
+        if success:
+            action = "enabled" if new_status else "disabled"
+            ui.notify(f'Built-in task "{task_info["name"]}" {action}', type='positive')
+            await self._refresh()
+        else:
+            ui.notify('Failed to toggle task status - check permissions', type='negative')
+
     def _render_actions(self, task_info: dict) -> None:
         """Render action buttons for built-in tasks."""
         with ui.element('div').classes('flex gap-2'):
+            # Toggle button
+            is_active = task_info.get('is_active', False)
+            
+            # Use factory functions to avoid closure issues
+            def make_toggle_handler(task):
+                async def handler():
+                    await self._toggle_builtin_task(task)
+                return handler
+            
+            ui.button(
+                'Disable' if is_active else 'Enable',
+                icon='pause_circle' if is_active else 'play_circle',
+                on_click=make_toggle_handler(task_info)
+            ).classes('btn').props(f'color={"warning" if is_active else "positive"} size=sm')
+            
             # Only show Run Now for active tasks
-            if task_info.get('is_active', False):
+            if is_active:
+                def make_run_now_handler(task):
+                    async def handler():
+                        await self._execute_builtin_task_now(task)
+                    return handler
+                
                 ui.button(
                     'Run Now',
-                    icon='play_circle',
-                    on_click=lambda t=task_info: self._execute_builtin_task_now(t)
+                    icon='play_arrow',
+                    on_click=make_run_now_handler(task_info)
                 ).classes('btn').props('color=primary size=sm')
+            
+            def make_details_handler(task):
+                async def handler():
+                    await self._view_task_details(task)
+                return handler
+            
             ui.button(
                 'Details',
                 icon='info',
-                on_click=lambda t=task_info: self._view_task_details(t)
+                on_click=make_details_handler(task_info)
             ).classes('btn').props('size=sm')
 
     async def _render_content(self) -> None:
