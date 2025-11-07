@@ -68,7 +68,7 @@ def _get_command_service() -> RacetimeChatCommandService:
         all_handlers = get_all_handlers()
         for handler_name, handler_func in all_handlers.items():
             _command_service.register_handler(handler_name, handler_func)
-        logger.info("Initialized racetime command service with %d built-in handlers", len(BUILTIN_HANDLERS))
+        logger.info("Initialized racetime command service with %d built-in handlers", len(all_handlers))
 
         # Register SMZ3 handlers
         from racetime.smz3_handler import SMZ3_HANDLERS

@@ -5,7 +5,8 @@ Tests the complete Twitch account linking workflow.
 """
 
 import pytest
-from unittest.mock import patch, AsyncMock
+from datetime import datetime, timezone
+from unittest.mock import patch, AsyncMock, Mock
 from middleware.twitch_oauth import TwitchOAuthService
 from application.services.core.user_service import UserService
 from models import User
@@ -190,14 +191,26 @@ class TestTwitchOAuth2Flow:
             refresh_token='refresh_token'
         )
 
-        # Mock token refresh
+        # Mock token refresh - mock the httpx response
         mock_new_token_data = {
             'access_token': 'new_access_token',
             'refresh_token': 'new_refresh_token',
             'expires_in': 14400
         }
 
-        with patch.object(service, 'refresh_access_token', AsyncMock(return_value=mock_new_token_data)):
+        # Create a mock response - json() is SYNC in httpx, not async
+        from unittest.mock import Mock
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.json = Mock(return_value=mock_new_token_data)  # Sync method
+
+        # Mock httpx.AsyncClient context manager and post method
+        mock_client = AsyncMock()
+        mock_client.post = AsyncMock(return_value=mock_response)
+        mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+        mock_client.__aexit__ = AsyncMock(return_value=None)
+
+        with patch('httpx.AsyncClient', return_value=mock_client):
             refreshed_user = await user_service.refresh_twitch_token(linked_user)
 
             # Verify tokens were updated

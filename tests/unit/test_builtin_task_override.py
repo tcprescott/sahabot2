@@ -107,11 +107,11 @@ class TestBuiltinTaskOverride:
         """Test that effective active status respects database override."""
         service = TaskSchedulerService()
         
-        # Create an override in the database
-        await service.set_builtin_task_active(admin_user, 'test_task', False)
+        # Create an override in the database (using an actual builtin task)
+        await service.set_builtin_task_active(admin_user, 'cleanup_tournament_usage', False)
         
         # Check effective status
-        effective = TaskSchedulerService.get_effective_active_status('test_task', True)
+        effective = TaskSchedulerService.get_effective_active_status('cleanup_tournament_usage', True)
 
         # Should use override (False) instead of default (True)
         assert effective is False
@@ -122,8 +122,8 @@ class TestBuiltinTaskOverride:
         # Clear cache to simulate no override
         TaskSchedulerService.clear_builtin_task_overrides_cache()
 
-        # Check effective status
-        effective = TaskSchedulerService.get_effective_active_status('test_task', True)
+        # Check effective status (using a real builtin task)
+        effective = TaskSchedulerService.get_effective_active_status('cleanup_tournament_usage', True)
 
         # Should use default (True) since no override exists
         assert effective is True
