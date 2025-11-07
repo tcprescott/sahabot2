@@ -192,6 +192,9 @@ async def handle_mystery(
 
     Generates a mystery seed from a named mystery preset.
 
+    Public presets can be accessed by anyone (no authentication required).
+    Private presets require authentication and ownership.
+
     Args:
         _command: Command configuration
         _args: Command arguments (preset name)
@@ -207,16 +210,13 @@ async def handle_mystery(
     if not _args:
         return "Usage: !mystery <preset_name>"
 
-    if not _user:
-        return "You must be authenticated to generate mystery seeds."
-
     preset_name = _args[0]
 
     try:
         service = ALTTPRMysteryService()
         result, description = await service.generate_from_preset_name(
             mystery_preset_name=preset_name,
-            user_id=_user.id,
+            user_id=_user.id if _user else None,
             tournament=True,
             spoilers='off'
         )

@@ -226,7 +226,7 @@ class ALTTPRMysteryService:
     async def generate_from_preset_name(
         self,
         mystery_preset_name: str,
-        user_id: int,
+        user_id: Optional[int] = None,
         tournament: bool = True,
         spoilers: str = "off",
         allow_quickswap: bool = False
@@ -236,7 +236,7 @@ class ALTTPRMysteryService:
 
         Args:
             mystery_preset_name: Name of the mystery preset
-            user_id: User ID requesting the preset
+            user_id: Optional user ID requesting the preset (required only for private presets)
             tournament: Whether this is a tournament seed
             spoilers: Spoiler level
             allow_quickswap: Allow quickswap
@@ -246,7 +246,7 @@ class ALTTPRMysteryService:
 
         Raises:
             ValueError: If preset is not found
-            PermissionError: If user cannot access preset
+            PermissionError: If user cannot access preset (preset is private and user is not authenticated/authorized)
         """
         from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
 
@@ -263,12 +263,21 @@ class ALTTPRMysteryService:
             raise ValueError(f"Mystery preset '{mystery_preset_name}' not found")
 
         # Check if user can access preset
-        if not preset.is_public and preset.user_id != user_id:
-            logger.warning(
-                "User %s attempted to access private mystery preset %s owned by %s",
-                user_id, mystery_preset_name, preset.user_id
-            )
-            raise PermissionError(f"Not authorized to access preset '{mystery_preset_name}'")
+        # Public presets can be accessed by anyone (even unauthenticated)
+        # Private presets require authentication and ownership
+        if not preset.is_public:
+            if user_id is None:
+                logger.warning(
+                    "Unauthenticated user attempted to access private mystery preset %s",
+                    mystery_preset_name
+                )
+                raise PermissionError(f"Preset '{mystery_preset_name}' is private. Authentication required.")
+            if preset.user_id != user_id:
+                logger.warning(
+                    "User %s attempted to access private mystery preset %s owned by %s",
+                    user_id, mystery_preset_name, preset.user_id
+                )
+                raise PermissionError(f"Not authorized to access preset '{mystery_preset_name}'")
 
         # Check if this is a mystery preset
         preset_type = preset.settings.get('preset_type', 'standard')

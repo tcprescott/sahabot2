@@ -30,6 +30,9 @@ class MysteryCommands(commands.Cog):
         """
         Generate an ALTTPR mystery seed from a named preset.
 
+        Public presets can be accessed by anyone (no authentication required).
+        Private presets require authentication and ownership.
+
         Args:
             interaction: Discord interaction
             preset_name: Name of the mystery preset
@@ -40,22 +43,15 @@ class MysteryCommands(commands.Cog):
             from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
             from models import User
 
-            # Get user from database
+            # Get user from database (optional for public presets)
             user = await User.get_or_none(discord_id=str(interaction.user.id))
-
-            if not user:
-                await interaction.followup.send(
-                    "You must authenticate with the bot first. "
-                    "Visit the web interface to authenticate.",
-                    ephemeral=True
-                )
-                return
+            user_id = user.id if user else None
 
             # Generate mystery seed
             service = ALTTPRMysteryService()
             result, description = await service.generate_from_preset_name(
                 mystery_preset_name=preset_name,
-                user_id=user.id,
+                user_id=user_id,
                 tournament=True,
                 spoilers='off'
             )
