@@ -370,3 +370,17 @@ textarea.q-field__input {
     background-color: var(--primary-color);
     color: #ffffff;
 }
+
+/* ==================== SWITCH ==================== */
+/* Fix for track and knob (thumb) vertical alignment */
+/* Ensure track is relatively positioned for absolute thumb positioning */
+.q-switch__track {
+    position: relative;
+}
+
+/* Center the thumb vertically within the track */
+.q-switch__thumb {
+    position: absolute; /* Defensive: ensure absolute positioning is set */
+    top: 50%;
+    transform: translateY(-50%);
+}
