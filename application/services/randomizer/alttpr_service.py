@@ -94,7 +94,8 @@ class ALTTPRService:
         user_id: int,
         tournament: bool = True,
         spoilers: str = "off",
-        allow_quickswap: bool = False
+        allow_quickswap: bool = False,
+        endpoint: str = "/api/randomizer"
     ) -> RandomizerResult:
         """
         Generate an ALTTPR seed from a preset.
@@ -105,6 +106,7 @@ class ALTTPRService:
             tournament: Whether this is a tournament seed (default: True)
             spoilers: Spoiler level ('on', 'off', 'generate') (default: 'off')
             allow_quickswap: Allow quickswap (default: False)
+            endpoint: API endpoint to use (default: /api/randomizer)
 
         Returns:
             RandomizerResult: The generated seed information
@@ -144,6 +146,7 @@ class ALTTPRService:
             settings_dict=settings_dict,
             tournament=tournament,
             spoilers=spoilers,
-            allow_quickswap=allow_quickswap
+            allow_quickswap=allow_quickswap,
+            endpoint=endpoint
         )
 
