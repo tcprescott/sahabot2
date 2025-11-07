@@ -11,6 +11,7 @@ import httpx
 from models import User
 from models.async_tournament import AsyncTournament
 from components.card import Card
+from components.empty_state import EmptyState
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.tournaments import RaceReviewDialog
 
@@ -127,7 +128,11 @@ class AsyncReviewQueueView:
 
         with self.race_list_container:
             if not self.races:
-                ui.label('No races found matching the filters').classes('text-secondary p-4')
+                EmptyState.no_results(
+                    title='No races found',
+                    message='Try adjusting your filters to see more results',
+                    in_card=False
+                )
                 return
 
             # Define columns for the responsive table

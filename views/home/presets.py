@@ -11,6 +11,7 @@ from nicegui import ui
 from models import User
 from models.user import Permission
 from components.card import Card
+from components.empty_state import EmptyState
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.common import ViewYamlDialog
@@ -70,12 +71,12 @@ class PresetsView:
                 with ui.element('div'):
                     ui.label('Browse randomizer presets from your namespace, global presets, and other public namespaces.')
                     ui.label('Use filters below to show only your namespace or explore all public presets.').classes('text-sm text-secondary')
-                
+
                 # Create preset button
                 async def create_preset():
                     """Open dialog to create a new preset."""
                     from components.dialogs.organization.preset_editor_dialog import PresetEditorDialog
-                    
+
                     dialog = PresetEditorDialog(
                         user=self.user,
                         on_save=self._refresh
@@ -143,11 +144,12 @@ class PresetsView:
 
                 if not presets:
                     # Empty state
-                    with ui.element('div').classes('card'):
-                        with ui.element('div').classes('card-body text-center py-8'):
-                            ui.icon('code', size='64px').classes('text-secondary')
-                            ui.label('No presets found').classes('text-xl text-secondary mt-2')
-                            ui.label('Create your first preset to get started! Each user has their own preset namespace.').classes('text-sm text-secondary')
+                    EmptyState.no_items(
+                        item_name='presets',
+                        message='Create your first preset to get started! Each user has their own preset namespace.',
+                        icon='code',
+                        in_card=True
+                    )
                 else:
                     # Presets table
                     with ui.element('div').classes('card'):

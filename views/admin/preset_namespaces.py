@@ -9,6 +9,7 @@ import logging
 from nicegui import ui
 from models import User, PresetNamespace
 from components.card import Card
+from components.empty_state import EmptyState
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import ViewNamespaceDialog, ConfirmDialog
 from application.services.randomizer.preset_namespace_service import PresetNamespaceService
@@ -60,10 +61,12 @@ class PresetNamespacesView:
 
                 if not namespaces:
                     # Empty state
-                    with ui.element('div').classes('text-center mt-8 mb-8'):
-                        ui.icon('folder', size='64px').classes('text-secondary')
-                        ui.label('No namespaces found').classes('text-xl text-secondary mt-2')
-                        ui.label('Namespaces are created automatically when users create their first preset.').classes('text-sm text-secondary')
+                    EmptyState.no_items(
+                        item_name='namespaces',
+                        message='Namespaces are created automatically when users create their first preset.',
+                        icon='folder',
+                        in_card=False
+                    )
                 else:
                     # Namespaces table
                     with ui.element('div').classes('mt-4'):

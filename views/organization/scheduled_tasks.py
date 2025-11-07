@@ -9,6 +9,7 @@ from nicegui import ui
 from models import User, Organization
 from models.scheduled_task import TaskType, ScheduleType
 from components.card import Card
+from components.badge import Badge
 from components.dialogs.common import ConfirmDialog
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
 from datetime import datetime
@@ -67,10 +68,7 @@ class OrganizationScheduledTasksView:
                         with ui.row().classes('items-center gap-2'):
                             ui.label(task.name).classes('text-lg font-bold')
                             # Status badge
-                            if task.is_active:
-                                ui.badge('Active', color='positive')
-                            else:
-                                ui.badge('Inactive', color='negative')
+                            Badge.status(task.is_active)
 
                         if task.description:
                             ui.label(task.description).classes('text-sm text-secondary')

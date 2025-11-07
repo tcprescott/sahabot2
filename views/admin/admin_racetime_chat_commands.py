@@ -7,6 +7,8 @@ across all racetime rooms managed by a specific bot instance.
 
 from nicegui import ui
 from components.data_table import ResponsiveTable, TableColumn
+from components.badge import Badge
+from components.empty_state import EmptyState
 from components.dialogs import RacetimeChatCommandDialog, ConfirmDialog
 from models import User, RacetimeChatCommand, RacetimeBot, CommandResponseType
 from application.services.racetime.racetime_chat_command_service import RacetimeChatCommandService
@@ -135,11 +137,12 @@ class AdminRacetimeChatCommandsView:
 
         if not commands:
             with self.table_container:
-                with ui.element('div').classes('card'):
-                    with ui.element('div').classes('card-body text-center'):
-                        ui.icon('chat').classes('icon-large text-secondary')
-                        ui.label('No commands found').classes('text-secondary')
-                        ui.label('Add a command to get started').classes('text-sm text-secondary')
+                EmptyState.no_items(
+                    item_name='commands',
+                    message='Add a command to get started',
+                    icon='chat',
+                    in_card=True
+                )
             return
 
         with self.table_container:
@@ -177,15 +180,12 @@ class AdminRacetimeChatCommandsView:
                     def render_cooldown(row):
                         cooldown = row['cooldown_seconds']
                         if cooldown > 0:
-                            ui.label(f'{cooldown}s').classes('badge badge-info')
+                            Badge.custom(f'{cooldown}s', 'info')
                         else:
                             ui.label('None').classes('text-secondary text-sm')
 
                     def render_status(row):
-                        if row['is_enabled']:
-                            ui.label('Enabled').classes('badge badge-success')
-                        else:
-                            ui.label('Disabled').classes('badge badge-warning')
+                        Badge.enabled(row['is_enabled'])
 
                     def render_actions(row):
                         with ui.row().classes('gap-1'):
