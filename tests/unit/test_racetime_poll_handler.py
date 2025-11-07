@@ -1,5 +1,5 @@
 """
-Test for RaceTime race room polling task handler.
+Tests for RaceTime race room polling task handler.
 
 This test verifies that the handler correctly polls for open race rooms
 and joins them based on configuration.
