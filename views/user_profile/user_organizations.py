@@ -8,6 +8,8 @@ from __future__ import annotations
 from nicegui import ui
 from models import User, OrganizationRequest
 from components.card import Card
+from components.badge import Badge
+from components.empty_state import EmptyState
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import LeaveOrganizationDialog, RequestOrganizationDialog
 from application.services.organizations.organization_service import OrganizationService
@@ -77,8 +79,7 @@ class UserOrganizationsView:
                                         if request.description:
                                             ui.label(request.description).classes('text-sm text-secondary')
                                         ui.label(f'Requested: {request.requested_at.strftime("%Y-%m-%d %H:%M")}').classes('text-xs text-secondary')
-                                    with ui.element('span').classes('badge badge-warning'):
-                                        ui.label('Pending Review')
+                                    Badge.custom('Pending Review', 'warning')
 
         with Card.create(title='My Organizations'):
             # Add request button at the top
@@ -92,10 +93,12 @@ class UserOrganizationsView:
             ).classes('btn mb-4').props('color=primary')
 
             if not memberships:
-                with ui.element('div').classes('text-center mt-4'):
-                    ui.icon('business').classes('text-secondary icon-large')
-                    ui.label('Not a member of any organizations').classes('text-secondary')
-                    ui.label('Request a new organization or wait for an invitation').classes('text-secondary text-sm')
+                EmptyState.no_items(
+                    item_name='organizations',
+                    message='Request a new organization or wait for an invitation',
+                    icon='business',
+                    in_card=False
+                )
             else:
                 def render_name(m):
                     return ui.label(m.organization.name).classes('font-bold')
@@ -109,7 +112,7 @@ class UserOrganizationsView:
                         perm_names = [p.permission_name for p in perms]
                         with ui.element('div').classes('flex gap-1 flex-wrap'):
                             for name in perm_names:
-                                ui.element('span').classes('badge badge-info').text = name
+                                Badge.custom(name, 'info')
                     else:
                         ui.label('Member').classes('text-secondary')
 

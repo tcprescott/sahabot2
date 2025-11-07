@@ -10,6 +10,7 @@ import logging
 from nicegui import ui
 from models import Organization, User
 from components.card import Card
+from components.empty_state import EmptyState
 from components.datetime_label import DateTimeLabel
 from components.dialogs.organization import PresetEditorDialog, ViewPresetDialog
 from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
@@ -140,10 +141,12 @@ class OrgPresetsView:
 
                 if not presets:
                     # Empty state
-                    with ui.element('div').classes('text-center mt-8 mb-8'):
-                        ui.icon('code', size='64px').classes('text-secondary')
-                        ui.label('No presets found').classes('text-xl text-secondary mt-2')
-                        ui.label('Create your first preset to get started!').classes('text-sm text-secondary')
+                    EmptyState.no_items(
+                        item_name='presets',
+                        message='Create your first preset to get started!',
+                        icon='code',
+                        in_card=False
+                    )
                 else:
                     # Presets grid
                     with ui.element('div').classes('grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4'):
