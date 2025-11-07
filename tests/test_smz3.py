@@ -8,12 +8,7 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from application.services.randomizer.smz3_service import SMZ3Service
 from application.services.randomizer.randomizer_service import RandomizerResult
-from racetime.smz3_handler import (
-    handle_smz3_race,
-    handle_smz3_preset,
-    handle_smz3_spoiler,
-)
-from models import RacetimeChatCommand
+from racetime.smz3_race_handler import SMZ3RaceHandler
 
 
 @pytest.mark.asyncio
@@ -91,15 +86,19 @@ async def test_smz3_service_generate_with_spoiler():
 @pytest.mark.asyncio
 async def test_handle_smz3_race_default():
     """Test !race command with default settings."""
-    command = RacetimeChatCommand()
-    command.command = 'race'
-
-    race_data = {
+    # Create a mock handler with necessary methods
+    handler = MagicMock()
+    handler.send_message = AsyncMock()
+    handler.data = {
+        'status': {'value': 'open'},
         'goal': {'name': 'Beat the games'}
     }
 
+    # Bind the actual ex_race method to our mock
+    handler.ex_race = SMZ3RaceHandler.ex_race.__get__(handler, SMZ3RaceHandler)
+
     # Mock the SMZ3 service
-    with patch('racetime.smz3_handler.SMZ3Service') as mock_service_class:
+    with patch('racetime.smz3_race_handler.SMZ3Service') as mock_service_class:
         mock_service = MagicMock()
         mock_result = RandomizerResult(
             url='https://samus.link/seed/test-123',
@@ -111,32 +110,35 @@ async def test_handle_smz3_race_default():
         mock_service_class.return_value = mock_service
 
         # Mock preset service
-        with patch('racetime.smz3_handler.RandomizerPresetService'):
-            response = await handle_smz3_race(
-                command,
-                [],  # No args (default settings)
-                'test-user-id',
-                race_data,
-                None
-            )
+        with patch('racetime.smz3_race_handler.RandomizerPresetService'):
+            # Call the handler method
+            await handler.ex_race([], None)
 
-            assert 'https://samus.link/seed/test-123' in response
-            assert 'Beat the games' in response
+            # Verify send_message was called with expected content
+            handler.send_message.assert_called_once()
+            sent_message = handler.send_message.call_args[0][0]
+            assert 'https://samus.link/seed/test-123' in sent_message
+            assert 'Beat the games' in sent_message
 
 
 @pytest.mark.asyncio
 async def test_handle_smz3_preset():
     """Test !preset command with specified preset."""
-    command = RacetimeChatCommand()
-    command.command = 'preset'
-
-    race_data = {
+    # Create a mock handler with necessary methods
+    handler = MagicMock()
+    handler.send_message = AsyncMock()
+    handler.data = {
+        'status': {'value': 'open'},
         'goal': {'name': 'Beat the games'}
     }
 
+    # Bind the actual ex_preset method to our mock
+    handler.ex_preset = SMZ3RaceHandler.ex_preset.__get__(handler, SMZ3RaceHandler)
+    handler.ex_race = SMZ3RaceHandler.ex_race.__get__(handler, SMZ3RaceHandler)
+
     # Mock services
-    with patch('racetime.smz3_handler.SMZ3Service') as mock_service_class, \
-         patch('racetime.smz3_handler.RandomizerPresetService') as mock_preset_class:
+    with patch('racetime.smz3_race_handler.SMZ3Service') as mock_service_class, \
+         patch('racetime.smz3_race_handler.RandomizerPresetService') as mock_preset_class:
 
         # Mock SMZ3 service
         mock_service = MagicMock()
@@ -156,31 +158,33 @@ async def test_handle_smz3_preset():
         mock_preset_service.get_preset_by_name = AsyncMock(return_value=mock_preset)
         mock_preset_class.return_value = mock_preset_service
 
-        response = await handle_smz3_preset(
-            command,
-            ['hard-mode'],  # Preset name
-            'test-user-id',
-            race_data,
-            None
-        )
+        # Call the handler method
+        await handler.ex_preset(['hard-mode'], None)
 
-        assert 'https://samus.link/seed/test-456' in response
-        assert 'Preset: hard-mode' in response
+        # Verify send_message was called with expected content
+        handler.send_message.assert_called_once()
+        sent_message = handler.send_message.call_args[0][0]
+        assert 'https://samus.link/seed/test-456' in sent_message
+        assert 'Preset: hard-mode' in sent_message
 
 
 @pytest.mark.asyncio
 async def test_handle_smz3_spoiler():
     """Test !spoiler command."""
-    command = RacetimeChatCommand()
-    command.command = 'spoiler'
-
-    race_data = {
+    # Create a mock handler with necessary methods
+    handler = MagicMock()
+    handler.send_message = AsyncMock()
+    handler.data = {
+        'status': {'value': 'open'},
         'goal': {'name': 'Beat the games'}
     }
 
+    # Bind the actual ex_spoiler method to our mock
+    handler.ex_spoiler = SMZ3RaceHandler.ex_spoiler.__get__(handler, SMZ3RaceHandler)
+
     # Mock services
-    with patch('racetime.smz3_handler.SMZ3Service') as mock_service_class, \
-         patch('racetime.smz3_handler.RandomizerPresetService'):
+    with patch('racetime.smz3_race_handler.SMZ3Service') as mock_service_class, \
+         patch('racetime.smz3_race_handler.RandomizerPresetService'):
 
         # Mock SMZ3 service with spoiler
         mock_service = MagicMock()
@@ -194,17 +198,15 @@ async def test_handle_smz3_spoiler():
         mock_service.generate = AsyncMock(return_value=mock_result)
         mock_service_class.return_value = mock_service
 
-        response = await handle_smz3_spoiler(
-            command,
-            [],  # No args
-            'test-user-id',
-            race_data,
-            None
-        )
+        # Call the handler method
+        await handler.ex_spoiler([], None)
 
-        assert 'https://samus.link/seed/test-789' in response
-        assert 'Spoiler:' in response
-        assert 'spoiler' in response
+        # Verify send_message was called with expected content
+        handler.send_message.assert_called_once()
+        sent_message = handler.send_message.call_args[0][0]
+        assert 'https://samus.link/seed/test-789' in sent_message
+        assert 'Spoiler' in sent_message
+        assert 'spoiler' in sent_message
 
 
 @pytest.mark.asyncio

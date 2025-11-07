@@ -90,8 +90,8 @@ class RacetimeBotService:
         name: str,
         description: Optional[str],
         is_active: bool,
-        handler_class: str = 'SahaRaceHandler',
         current_user: User,
+        handler_class: str = 'SahaRaceHandler',
     ) -> Optional[RacetimeBot]:
         """
         Create a new RaceTime bot.
