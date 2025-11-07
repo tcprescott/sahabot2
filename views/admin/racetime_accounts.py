@@ -5,6 +5,7 @@ from nicegui import ui
 from models import User
 from application.services.core.user_service import UserService
 from components import Card
+from components.empty_state import EmptyState
 from components.datetime_label import DateTimeLabel
 from components.dialogs.admin.racetime_unlink_dialog import RacetimeUnlinkDialog
 
@@ -94,8 +95,12 @@ class RacetimeAccountsView:
     async def _render_accounts(self):
         """Render accounts list."""
         if not self.accounts:
-            with Card.create():
-                ui.label('No linked accounts found').classes('text-center text-gray-600')
+            EmptyState.no_items(
+                item_name='linked accounts',
+                message='No RaceTime accounts are linked',
+                icon='link_off',
+                in_card=True
+            )
             return
 
         with ui.element('div').classes('w-full gap-2'):
