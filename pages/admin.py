@@ -18,7 +18,6 @@ from views.admin import (
     AdminOrganizationsView,
     AdminSettingsView,
     AdminRacetimeBotsView,
-    AdminRacetimeChatCommandsView,
     PresetsView,
     PresetNamespacesView,
     OrgRequestsView,
@@ -61,7 +60,6 @@ def register():
             page.register_content_loader('organizations', page.create_instance_view_loader(lambda: AdminOrganizationsView(page.user)))
             page.register_content_loader('org-requests', page.create_instance_view_loader(lambda: OrgRequestsView(page.user)))
             page.register_content_loader('racetime-bots', page.create_instance_view_loader(lambda: AdminRacetimeBotsView(page.user)))
-            page.register_content_loader('racetime-chat-commands', page.create_instance_view_loader(lambda: AdminRacetimeChatCommandsView(page.user)))
             page.register_content_loader('presets', page.create_instance_view_loader(lambda: PresetsView(page.user, RandomizerPresetService())))
             page.register_content_loader('namespaces', page.create_instance_view_loader(lambda: PresetNamespacesView(page.user)))
             page.register_content_loader('scheduled-tasks', page.create_instance_view_loader(lambda: ScheduledTasksView(page.user)))
@@ -82,7 +80,6 @@ def register():
             base.create_sidebar_item_with_loader('Organizations', 'domain', 'organizations'),
             base.create_sidebar_item_with_loader('Org Requests', 'pending_actions', 'org-requests'),
             base.create_sidebar_item_with_loader('RaceTime Bots', 'smart_toy', 'racetime-bots'),
-            base.create_sidebar_item_with_loader('Chat Commands', 'chat', 'racetime-chat-commands'),
             base.create_sidebar_item_with_loader('Presets', 'code', 'presets'),
             base.create_sidebar_item_with_loader('Namespaces', 'folder', 'namespaces'),
             base.create_sidebar_item_with_loader('Scheduled Tasks', 'schedule', 'scheduled-tasks'),
