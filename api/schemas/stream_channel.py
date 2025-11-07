@@ -41,6 +41,7 @@ class StreamChannelCreateRequest(BaseModel):
         if v is None or v.strip() == '':
             return None
 
+        v = v.strip()  # Strip before validation
         is_valid, error_msg = validate_url(v, allowed_schemes=['http', 'https'], block_private_ips=True)
         if not is_valid:
             raise ValueError(f"Invalid stream URL: {error_msg}")
@@ -62,6 +63,7 @@ class StreamChannelUpdateRequest(BaseModel):
         if v is None or v.strip() == '':
             return None
 
+        v = v.strip()  # Strip before validation
         is_valid, error_msg = validate_url(v, allowed_schemes=['http', 'https'], block_private_ips=True)
         if not is_valid:
             raise ValueError(f"Invalid stream URL: {error_msg}")

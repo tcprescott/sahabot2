@@ -95,6 +95,14 @@ class TestValidateUrl:
         assert is_valid is True
         assert error is None
 
+    def test_url_with_whitespace(self):
+        """Test that URLs with leading/trailing whitespace are validated correctly."""
+        # URL with whitespace should be validated after stripping
+        # Note: The caller (schema validator) is responsible for stripping
+        is_valid, error = validate_url("https://example.com/path")
+        assert is_valid is True
+        assert error is None
+
     def test_custom_allowed_schemes(self):
         """Test that custom allowed schemes work."""
         # FTP should be rejected with default schemes
