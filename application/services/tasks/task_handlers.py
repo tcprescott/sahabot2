@@ -7,6 +7,7 @@ when a task of that type is due to run.
 """
 import logging
 import discord
+import httpx
 from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
@@ -15,6 +16,7 @@ from application.services.tasks.task_scheduler_service import TaskSchedulerServi
 from application.services.tournaments.async_tournament_service import AsyncTournamentService
 from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
 from discordbot.client import get_bot_instance
+from racetime.client import get_all_racetime_bot_instances
 
 logger = logging.getLogger(__name__)
 
@@ -546,9 +548,6 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
     Args:
         task: ScheduledTask to execute
     """
-    from racetime.client import get_all_racetime_bot_instances
-    import httpx
-
     logger.info("Starting RaceTime race room polling task: %s", task.name)
 
     # Extract configuration
@@ -572,6 +571,7 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
             try:
                 # Fetch race list for this category using bot's HTTP methods
                 # RaceTime.gg API endpoint: /{category}/races/data
+                # Note: category is validated by bot initialization and comes from database
                 url = bot.http_uri(f'/{category}/races/data')
 
                 # Use bot's HTTP session if available, otherwise create temporary one
@@ -603,7 +603,8 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
                         # The bot's handler configuration determines actual handling.
 
                         # Check if we're already handling this race
-                        if hasattr(bot, 'handlers') and race_name in bot.handlers:
+                        # Bot.handlers is a dict created by the racetime-bot library
+                        if hasattr(bot, 'handlers') and race_name in getattr(bot, 'handlers', {}):
                             logger.debug("Already handling race %s, skipping", race_name)
                             continue
 
