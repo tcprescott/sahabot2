@@ -173,7 +173,7 @@ After testing:
 
 ## Known Limitations
 
-1. No migration file included - user must run `aerich migrate` to generate it
+1. Migration file must be generated via `aerich migrate` (never manually created) - see IMPLEMENTATION_SUMMARY.md for details
 2. No automated tests - manual testing required
 3. Discord bot must be restarted to load new persistent views
 4. Review queue doesn't support sorting by flag status (future enhancement)

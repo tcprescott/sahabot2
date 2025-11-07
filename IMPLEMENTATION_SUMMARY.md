@@ -13,6 +13,9 @@ Added two new fields to `AsyncTournamentRace`:
 - `review_request_reason` (TextField): Stores user's reason for review request
 
 **Migration Required:**
+
+> **Important:** Never manually create migration files. Always use `poetry run aerich migrate --name ...` to generate the migration file. Aerich migration files contain special tracking metadata (`models_state` constant); manual creation breaks Aerich's tracking system and will cause migration errors. You may review and edit the SQL in the generated file if needed, but **do not** change the file structure or create files by hand.
+
 ```bash
 poetry run aerich migrate --name "add_review_flag_fields_to_async_races"
 poetry run aerich upgrade

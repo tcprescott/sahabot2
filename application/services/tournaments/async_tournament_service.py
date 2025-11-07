@@ -1076,6 +1076,39 @@ class AsyncTournamentService:
 
         return updated_race
 
+    async def get_race_by_thread_id(
+        self,
+        user: Optional[User],
+        discord_thread_id: int
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Get a race by Discord thread ID.
+
+        Validates that the user is the race participant.
+
+        Args:
+            user: User making the request
+            discord_thread_id: Discord thread ID
+
+        Returns:
+            Race if found and user is participant, None otherwise
+        """
+        if not user:
+            logger.warning("Unauthenticated race lookup by thread_id %s", discord_thread_id)
+            return None
+
+        # Get race from repository
+        race = await self.repo.get_race_by_thread_id(discord_thread_id)
+        if not race:
+            return None
+
+        # Verify user is the race participant
+        if race.user_id != user.id:
+            logger.warning("User %s attempted to access race %s owned by user %s", user.id, race.id, race.user_id)
+            return None
+
+        return race
+
     async def update_race_submission(
         self,
         user: Optional[User],
@@ -1162,6 +1195,17 @@ class AsyncTournamentService:
                 details=f"Race {race_id} submission updated: {action_desc}",
                 user_id=user.id,
             )
+
+            # Emit event for race submission update
+            event = RaceSubmittedEvent(
+                entity_id=race_id,
+                user_id=user.id,
+                organization_id=organization_id,
+                tournament_id=updated_race.tournament_id,
+                racer_user_id=updated_race.user_id,
+            )
+            await EventBus.emit(event)
+            logger.debug("Emitted RaceSubmittedEvent for race %s", race_id)
 
             logger.info("User %s updated race %s submission: %s", user.id, race_id, action_desc)
 

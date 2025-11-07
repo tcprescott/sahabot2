@@ -625,13 +625,6 @@ async def update_race_submission(
     """
     service = AsyncTournamentService()
     
-    # Validate that if flagging for review, reason is provided
-    if data.review_requested_by_user and not data.review_request_reason:
-        raise HTTPException(
-            status_code=422,
-            detail="Review request reason is required when flagging a run for review"
-        )
-    
     race = await service.update_race_submission(
         user=current_user,
         organization_id=organization_id,

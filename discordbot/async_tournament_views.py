@@ -530,14 +530,18 @@ class RaceCompletedView(ui.View):
     )
     async def submit_vod(self, interaction: discord.Interaction, button: ui.Button):
         """Open modal to submit VOD and notes."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user')
-
-        if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+        # Get user from database
+        user = await User.get_or_none(discord_id=interaction.user.id)
+        if not user:
+            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
             return
 
-        if race.user.discord_id != interaction.user.id:
-            await interaction.response.send_message("Only the race participant can submit.", ephemeral=True)
+        # Get race via service (validates user is participant)
+        service = AsyncTournamentService()
+        race = await service.get_race_by_thread_id(user, interaction.channel.id)
+
+        if not race:
+            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
             return
 
         await interaction.response.send_modal(SubmitVODModal())
@@ -550,14 +554,18 @@ class RaceCompletedView(ui.View):
     )
     async def flag_review(self, interaction: discord.Interaction, button: ui.Button):
         """Open modal to flag run for review."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user')
-
-        if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+        # Get user from database
+        user = await User.get_or_none(discord_id=interaction.user.id)
+        if not user:
+            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
             return
 
-        if race.user.discord_id != interaction.user.id:
-            await interaction.response.send_message("Only the race participant can flag.", ephemeral=True)
+        # Get race via service (validates user is participant)
+        service = AsyncTournamentService()
+        race = await service.get_race_by_thread_id(user, interaction.channel.id)
+
+        if not race:
+            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
             return
 
         await interaction.response.send_modal(FlagForReviewModal())
@@ -578,21 +586,28 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
         placeholder="Add any notes or comments about your run...",
         style=discord.TextStyle.long,
         required=False,
-        max_length=2000
+        max_length=10000
     )
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle modal submission."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user', 'tournament')
+        # Get user from database
+        user = await User.get_or_none(discord_id=interaction.user.id)
+        if not user:
+            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
+            return
+
+        # Get race via service (validates user is participant)
+        service = AsyncTournamentService()
+        race = await service.get_race_by_thread_id(user, interaction.channel.id)
 
         if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
             return
 
         # Update race submission via service
-        service = AsyncTournamentService()
         updated_race = await service.update_race_submission(
-            user=race.user,
+            user=user,
             organization_id=race.tournament.organization_id,
             race_id=race.id,
             runner_vod_url=self.runner_vod_url.value if self.runner_vod_url.value else None,
@@ -626,21 +641,28 @@ class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
         placeholder="Please explain why you want this run reviewed...",
         style=discord.TextStyle.long,
         required=True,
-        max_length=2000
+        max_length=5000
     )
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handle modal submission."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user', 'tournament')
+        # Get user from database
+        user = await User.get_or_none(discord_id=interaction.user.id)
+        if not user:
+            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
+            return
+
+        # Get race via service (validates user is participant)
+        service = AsyncTournamentService()
+        race = await service.get_race_by_thread_id(user, interaction.channel.id)
 
         if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
             return
 
         # Update race to flag for review
-        service = AsyncTournamentService()
         updated_race = await service.update_race_submission(
-            user=race.user,
+            user=user,
             organization_id=race.tournament.organization_id,
             race_id=race.id,
             review_requested_by_user=True,
