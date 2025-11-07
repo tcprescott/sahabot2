@@ -22,7 +22,7 @@ from components.motd_banner import MOTDBanner
 def get_css_version() -> str:
     """
     Get CSS cache-busting version based on main.css content hash.
-    
+
     Returns:
         Version string (MD5 hash of main.css content, first 8 chars)
     """
@@ -30,11 +30,11 @@ def get_css_version() -> str:
         css_file = Path(__file__).parent.parent / 'static' / 'css' / 'main.css'
         if not css_file.exists():
             return '1'
-        
+
         # Calculate MD5 hash of file content
         content = css_file.read_bytes()
         hash_digest = hashlib.md5(content).hexdigest()
-        
+
         # Return first 8 characters of hash (sufficient for cache busting)
         return hash_digest[:8]
     except Exception:
@@ -45,10 +45,10 @@ def get_css_version() -> str:
 def get_js_version(filename: str) -> str:
     """
     Get JavaScript cache-busting version based on file content hash.
-    
+
     Args:
         filename: Relative path to JS file from static/js/ directory
-        
+
     Returns:
         Version string (MD5 hash of file content, first 8 chars)
     """
@@ -56,11 +56,11 @@ def get_js_version(filename: str) -> str:
         js_file = Path(__file__).parent.parent / 'static' / 'js' / filename
         if not js_file.exists():
             return '1'
-        
+
         # Calculate MD5 hash of file content
         content = js_file.read_bytes()
         hash_digest = hashlib.md5(content).hexdigest()
-        
+
         # Return first 8 characters of hash (sufficient for cache busting)
         return hash_digest[:8]
     except Exception:
@@ -129,7 +129,7 @@ class BasePage:
         # to expose in frontend code. Security is enforced via Sentry's rate limiting,
         # allowed origins/domains configuration, and project settings.
         js_version = get_js_version('monitoring/sentry-browser.js')
-        sentry_script = f'''<script 
+        sentry_script = f'''<script
             src="/static/js/monitoring/sentry-browser.js?v={js_version}"
             data-sentry-dsn="{settings.SENTRY_DSN}"
             data-sentry-environment="{environment}"
@@ -143,20 +143,20 @@ class BasePage:
         """Display notifications based on query parameters (success, error, message)."""
         # Get query parameters from URL using URLManager
         params = await ui.run_javascript('return window.URLManager.getParams();')
-        
+
         if not params:
             return
-        
+
         # Show success notification
         if params.get('success'):
             message = params['success'].replace('_', ' ').title()
             ui.notify(message, type='positive', timeout=5000)
-        
+
         # Show error notification
         if params.get('error'):
             message = params['error'].replace('_', ' ').title()
             ui.notify(message, type='negative', timeout=5000)
-        
+
         # Show info message
         if params.get('message'):
             message = params['message'].replace('_', ' ').title()
@@ -165,7 +165,7 @@ class BasePage:
     async def _get_view_from_query(self) -> Optional[str]:
         """
         Get the view parameter from URL query string.
-        
+
         Returns:
             The view key from the query parameter if it exists, None otherwise
         """
@@ -190,17 +190,17 @@ class BasePage:
         """Render the header using the Header component."""
         header = Header(self.user, self._toggle_sidebar)
         header.render()
-    
+
     async def _render_impersonation_banner(self) -> None:
         """Render an impersonation warning banner if currently impersonating."""
         if not DiscordAuthService.is_impersonating():
             return
-        
+
         # Get original user
         original_user = await DiscordAuthService.get_original_user()
         if not original_user or not self.user:
             return
-        
+
         # Create warning banner
         with ui.element('div').classes('w-full').style(
             'background-color: #ff9800; '
@@ -216,7 +216,7 @@ class BasePage:
                     f'IMPERSONATING: {self.user.discord_username} '
                     f'(Logged in as: {original_user.discord_username})'
                 ).classes('text-base')
-                
+
                 # Stop impersonation button
                 async def stop_impersonation():
                     from application.services.core.user_service import UserService
@@ -229,7 +229,7 @@ class BasePage:
                     await DiscordAuthService.stop_impersonation()
                     ui.notify('Stopped impersonation', type='info')
                     ui.navigate.to('/')
-                
+
                 ui.button(
                     'Stop Impersonation',
                     icon='close',
@@ -321,16 +321,16 @@ class BasePage:
     def get_dynamic_content_container(self):
         """
         Get the dynamic content container for content switching.
-        
+
         Returns:
             The dynamic content container element
         """
         return self._dynamic_content_container
-    
+
     def register_content_loader(self, key: str, loader: Callable[[], Awaitable[None]]) -> None:
         """
         Register a content loader function for dynamic content switching.
-        
+
         Args:
             key: Unique identifier for this content loader
             loader: Async function that loads content into the dynamic container
@@ -341,25 +341,25 @@ class BasePage:
             # Update URL query parameter to reflect current view using URLManager
             ui.run_javascript(f"window.URLManager.setParam('view', '{key}');")
             await loader()
-        
+
         self._content_loaders[key] = wrapped_loader
-    
+
     def create_sidebar_item_with_loader(self, label: str, icon: str, loader_key: str) -> dict:
         """
         Create a sidebar item that loads dynamic content.
-        
+
         Args:
             label: Display label for the sidebar item
             icon: Material icon name
             loader_key: Key for the registered content loader
-            
+
         Returns:
             Sidebar item dictionary
         """
         def action():
             if loader_key in self._content_loaders:
                 ui.timer(0, self._content_loaders[loader_key], once=True)
-        
+
         return {'label': label, 'icon': icon, 'action': action}
 
     def create_nav_link(self, label: str, icon: str, to: str) -> dict:
@@ -443,7 +443,7 @@ class BasePage:
                     await result
 
         return loader
-    
+
     async def render(
         self,
         content: Optional[Callable[[BasePage], Awaitable[None]]] = None,
@@ -473,7 +473,7 @@ class BasePage:
             'utils/clipboard.js',     # Clipboard operations
             'utils/window-utils.js',  # Window operations
         ]
-        
+
         for module in js_modules:
             js_version = get_js_version(module)
             ui.add_head_html(f'<script src="/static/js/{module}?v={js_version}"></script>')
@@ -510,7 +510,7 @@ class BasePage:
                 # Check for view parameter BEFORE rendering content
                 # Store it so pages can check if they should skip default rendering
                 self.initial_view = await self._get_view_from_query()
-                
+
                 # Create a dynamic content container that can be cleared/reloaded
                 self._content_container = ui.element('div').classes('page-container').props('id="main-content"')
                 with self._content_container:
@@ -521,13 +521,13 @@ class BasePage:
                         await content(self)
                     # Footer at the bottom of the page container
                     Footer.render()
-                
+
                 # If there was a view parameter and it's now registered, load it
                 # (verify it's valid after loaders are registered)
                 if self.initial_view and self.initial_view in self._content_loaders:
                     # Load the view from query parameter
                     await self._content_loaders[self.initial_view]()
-                
+
                 # Show any notifications from query parameters
                 await self._show_query_param_notifications()
             else:
@@ -537,7 +537,7 @@ class BasePage:
                     await content(self)
                     # Footer at the bottom of the page container
                     Footer.render()
-                
+
                 # Show any notifications from query parameters
                 await self._show_query_param_notifications()
 
