@@ -7,7 +7,6 @@ Avianart API (Hi, I'm Cody's door randomizer generator).
 
 import logging
 import asyncio
-from typing import Optional
 import httpx
 from .randomizer_service import RandomizerResult
 
