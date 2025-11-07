@@ -7,6 +7,7 @@ Tests the ex_avianart method that processes !avianart commands in race rooms.
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from application.services.randomizer.randomizer_service import RandomizerResult
+from racetime.alttpr_handler import ALTTPRRaceHandler
 
 
 class TestAvianartCommand:
@@ -15,9 +16,6 @@ class TestAvianartCommand:
     @pytest.fixture
     def mock_handler(self):
         """Create a mock handler with just the method we're testing."""
-        # Import the actual method we're testing
-        from racetime.alttpr_handler import ALTTPRRaceHandler
-        
         # Create a mock object with send_message method
         handler = MagicMock()
         handler.send_message = AsyncMock()
@@ -26,10 +24,10 @@ class TestAvianartCommand:
             'goal': {'name': 'Test Race'},
             'entrants': []
         }
-        
+
         # Bind the actual ex_avianart method to our mock
         handler.ex_avianart = ALTTPRRaceHandler.ex_avianart.__get__(handler, ALTTPRRaceHandler)
-        
+
         return handler
 
     @pytest.fixture
