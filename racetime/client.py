@@ -38,7 +38,6 @@ from racetime_bot import Bot, RaceHandler, monitor_cmd
 from models import BotStatus, SYSTEM_USER_ID, User
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
-from application.services.racetime.racetime_chat_command_service import RacetimeChatCommandService
 from application.events import (
     EventBus,
     RacetimeRaceStatusChangedEvent,
@@ -53,29 +52,6 @@ from config import settings
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
-# Global command service instance (shared across all handlers)
-_command_service: Optional[RacetimeChatCommandService] = None
-
-
-def _get_command_service() -> RacetimeChatCommandService:
-    """Get or create the global command service instance."""
-    global _command_service # pylint: disable=global-statement
-    if _command_service is None:
-        _command_service = RacetimeChatCommandService()
-        # Register all built-in handlers including SM handlers
-        from racetime.command_handlers import get_all_handlers
-        all_handlers = get_all_handlers()
-        for handler_name, handler_func in all_handlers.items():
-            _command_service.register_handler(handler_name, handler_func)
-        logger.info("Initialized racetime command service with %d built-in handlers", len(all_handlers))
-
-        # Register SMZ3 handlers
-        from racetime.smz3_handler import SMZ3_HANDLERS
-        for handler_name, handler_func in SMZ3_HANDLERS.items():
-            _command_service.register_handler(handler_name, handler_func)
-        logger.info("Registered %d SMZ3 handlers", len(SMZ3_HANDLERS))
-    return _command_service
 
 
 class SahaRaceHandler(RaceHandler):
@@ -100,13 +76,6 @@ class SahaRaceHandler(RaceHandler):
         self._bot_created_room: bool = False
         # Repository for user lookups
         self._user_repository = UserRepository()
-        # Chat command service (use global instance)
-        self._command_service = _get_command_service()
-        # Bot ID for command lookups
-        self._bot_id: Optional[int] = None
-        # Tournament/async tournament IDs (determined from race data)
-        self._tournament_id: Optional[int] = None
-        self._async_tournament_id: Optional[int] = None
 
     async def _get_user_id_from_racetime_id(self, racetime_user_id: str) -> Optional[int]:
         """
@@ -195,6 +164,172 @@ class SahaRaceHandler(RaceHandler):
         Usage: !test
         """
         await self.send_message("Racetime bot test command received!")
+
+    @monitor_cmd
+    async def ex_help(self, _args, _message):
+        """
+        Show available commands.
+        
+        Usage: !help
+        """
+        await self.send_message(
+            "Available commands: "
+            "!help (show this message), "
+            "!status (race status), "
+            "!race (race info), "
+            "!time (your finish time), "
+            "!entrants (list entrants by status)"
+        )
+    
+    @monitor_cmd
+    async def ex_status(self, _args, _message):
+        """
+        Show current race status and entrant count.
+        
+        Usage: !status
+        """
+        if not self.data:
+            await self.send_message("Race data not available yet.")
+            return
+        
+        status_value = self.data.get('status', {}).get('value', 'unknown')
+        entrants = self.data.get('entrants', [])
+        entrant_count = len(entrants)
+        
+        # Map status values to human-readable text
+        status_text_map = {
+            'open': 'Open',
+            'invitational': 'Invitational',
+            'pending': 'Pending',
+            'in_progress': 'In Progress',
+            'finished': 'Finished',
+            'cancelled': 'Cancelled',
+        }
+        status_text = status_text_map.get(status_value, status_value.replace('_', ' ').title())
+        
+        await self.send_message(f'Race Status: {status_text} | Entrants: {entrant_count}')
+    
+    @monitor_cmd
+    async def ex_race(self, _args, _message):
+        """
+        Show race goal and info.
+        
+        Usage: !race
+        """
+        if not self.data:
+            await self.send_message("Race data not available yet.")
+            return
+        
+        goal_name = self.data.get('goal', {}).get('name', 'No goal set')
+        info_text = self.data.get('info', '')
+        
+        if info_text:
+            await self.send_message(f'Goal: {goal_name} | Info: {info_text}')
+        else:
+            await self.send_message(f'Goal: {goal_name}')
+    
+    @monitor_cmd
+    async def ex_time(self, _args, message):
+        """
+        Show your finish time or race time if still running.
+        
+        Usage: !time
+        """
+        if not self.data:
+            await self.send_message("Race data not available yet.")
+            return
+        
+        # Extract racetime user ID
+        user_data = message.get('user', {})
+        racetime_user_id = user_data.get('id', '')
+        
+        if not racetime_user_id:
+            await self.send_message("Unable to identify user.")
+            return
+        
+        entrants = self.data.get('entrants', [])
+        
+        # Find the user in entrants
+        user_entrant = None
+        for entrant in entrants:
+            if entrant.get('user', {}).get('id') == racetime_user_id:
+                user_entrant = entrant
+                break
+        
+        if not user_entrant:
+            await self.send_message("You are not in this race.")
+            return
+        
+        # Check if user has finished
+        finish_time = user_entrant.get('finish_time')
+        if finish_time:
+            # Format finish time (it's a timedelta in ISO format)
+            await self.send_message(f"Your finish time: {finish_time}")
+            return
+        
+        # User hasn't finished yet - show race time
+        status_value = self.data.get('status', {}).get('value', '')
+        if status_value == 'in_progress':
+            # Race is in progress
+            started_at = self.data.get('started_at')
+            if started_at:
+                await self.send_message("Race is in progress. You haven't finished yet.")
+                return
+        
+        await self.send_message("Race hasn't started yet.")
+    
+    @monitor_cmd
+    async def ex_entrants(self, _args, _message):
+        """
+        List all entrants grouped by status.
+        
+        Usage: !entrants
+        """
+        if not self.data:
+            await self.send_message("Race data not available yet.")
+            return
+        
+        entrants = self.data.get('entrants', [])
+        
+        if not entrants:
+            await self.send_message("No entrants in this race.")
+            return
+        
+        # Group by status
+        ready = []
+        not_ready = []
+        finished = []
+        dnf = []
+        
+        for entrant in entrants:
+            username = entrant.get('user', {}).get('name', 'Unknown')
+            status_value = entrant.get('status', {}).get('value', '')
+            
+            if status_value == 'ready':
+                ready.append(username)
+            elif status_value == 'not_ready':
+                not_ready.append(username)
+            elif status_value == 'done':
+                finished.append(username)
+            elif status_value == 'dnf':
+                dnf.append(username)
+        
+        # Build response
+        parts = []
+        if ready:
+            parts.append(f"Ready ({len(ready)}): {', '.join(ready)}")
+        if not_ready:
+            parts.append(f"Not Ready ({len(not_ready)}): {', '.join(not_ready)}")
+        if finished:
+            parts.append(f"Finished ({len(finished)}): {', '.join(finished)}")
+        if dnf:
+            parts.append(f"DNF ({len(dnf)}): {', '.join(dnf)}")
+        
+        if not parts:
+            await self.send_message(f"Total entrants: {len(entrants)}")
+            return
+        
+        await self.send_message(" | ".join(parts))
 
     async def begin(self):
         """
@@ -436,70 +571,6 @@ class SahaRaceHandler(RaceHandler):
         # Call parent implementation to update self.data
         await super().race_data(data)
 
-    async def chat_message(self, message):
-        """
-        Called when a chat message is received in the race room.
-
-        Handles custom ! commands defined in the database.
-
-        Args:
-            message: Message data from racetime.gg
-        """
-        # Extract message details
-        message_text = message.get('message', '').strip()
-        user_data = message.get('user', {})
-        racetime_user_id = user_data.get('id', '')
-        racetime_user_name = user_data.get('name', '')
-
-        # Check if message is a command (starts with !)
-        if not message_text.startswith('!'):
-            return
-
-        # Parse command and arguments
-        parts = message_text[1:].split(maxsplit=1)
-        if not parts:
-            return
-
-        command_name = parts[0].lower()
-        args = parts[1].split() if len(parts) > 1 else []
-
-        logger.debug(
-            "Received command !%s from %s (%s) with args: %s",
-            command_name,
-            racetime_user_name,
-            racetime_user_id,
-            args,
-        )
-
-        # Look up application user (if racetime account is linked)
-        user: Optional[User] = None
-        try:
-            user = await self._user_repository.get_by_racetime_id(racetime_user_id)
-        except Exception as e:
-            logger.warning(
-                "Error looking up user by racetime_id %s: %s", racetime_user_id, e
-            )
-
-        # Execute command
-        try:
-            response = await self._command_service.execute_command(
-                command_name=command_name,
-                args=args,
-                racetime_user_id=racetime_user_id,
-                race_data=self.data if self.data else {},
-                bot_id=self._bot_id,
-                tournament_id=self._tournament_id,
-                async_tournament_id=self._async_tournament_id,
-                user=user,
-            )
-
-            if response:
-                await self.send_message(response)
-        except Exception as e:
-            logger.error(
-                "Error executing command !%s: %s", command_name, e, exc_info=True
-            )
-
     async def invite_user(self, user_id: str):
         """
         Invite a user to the race.
@@ -549,7 +620,14 @@ class RacetimeBot(Bot):
     # Determine if TLS/SSL should be used based on URL scheme
     racetime_secure = settings.RACETIME_URL.startswith('https://')
 
-    def __init__(self, category_slug: str, client_id: str, client_secret: str, bot_id: Optional[int] = None):
+    def __init__(
+        self,
+        category_slug: str,
+        client_id: str,
+        client_secret: str,
+        bot_id: Optional[int] = None,
+        handler_class_name: str = 'SahaRaceHandler'
+    ):
         """
         Initialize the racetime bot with configuration.
 
@@ -558,12 +636,14 @@ class RacetimeBot(Bot):
             client_id: OAuth2 client ID for this category
             client_secret: OAuth2 client secret for this category
             bot_id: Optional database ID for status tracking
+            handler_class_name: Name of the handler class to use (e.g., 'ALTTPRRaceHandler')
         """
         logger.info(
-            "Initializing racetime bot with category=%s, client_id=%s, client_secret=%s... (host: %s, secure: %s)",
+            "Initializing racetime bot with category=%s, client_id=%s, client_secret=%s..., handler=%s (host: %s, secure: %s)",
             category_slug,
             client_id,
             client_secret[:10] + "..." if len(client_secret) > 10 else "***",
+            handler_class_name,
             self.racetime_host,
             self.racetime_secure
         )
@@ -585,14 +665,16 @@ class RacetimeBot(Bot):
             raise
         self.category_slug = category_slug
         self.bot_id = bot_id
+        self.handler_class_name = handler_class_name
 
         # Create our own aiohttp session for efficient connection pooling
         # (The base Bot class uses aiohttp.request() directly without a session)
         self.http: Optional[aiohttp.ClientSession] = None
 
         logger.info(
-            "Racetime bot initialized successfully for category: %s",
-            category_slug
+            "Racetime bot initialized successfully for category: %s with handler: %s",
+            category_slug,
+            handler_class_name
         )
 
     def should_handle(self, race_data: dict) -> bool:
@@ -619,12 +701,47 @@ class RacetimeBot(Bot):
         """
         Return the handler class to use for race rooms.
 
-        Override of Bot.get_handler_class() to use our custom handler.
+        Override of Bot.get_handler_class() to use our configured handler.
+        
+        The handler class is determined by the handler_class_name set during initialization.
+        Supported handlers:
+        - SahaRaceHandler (default - base handler with common commands)
+        - ALTTPRRaceHandler (ALTTPR-specific commands)
+        - SMRaceHandler (Super Metroid-specific commands)
+        - SMZ3RaceHandler (SMZ3-specific commands)
+        - MatchRaceHandler (tournament match handler)
+        - AsyncLiveRaceHandler (async tournament live race handler)
 
         Returns:
-            SahaRaceHandler class
+            Handler class to use for race rooms
         """
-        return SahaRaceHandler
+        # Map handler names to classes
+        from racetime.alttpr_handler import ALTTPRRaceHandler
+        from racetime.sm_race_handler import SMRaceHandler
+        from racetime.smz3_race_handler import SMZ3RaceHandler
+        from racetime.match_race_handler import MatchRaceHandler
+        from racetime.live_race_handler import AsyncLiveRaceHandler
+        
+        handler_map = {
+            'SahaRaceHandler': SahaRaceHandler,
+            'ALTTPRRaceHandler': ALTTPRRaceHandler,
+            'SMRaceHandler': SMRaceHandler,
+            'SMZ3RaceHandler': SMZ3RaceHandler,
+            'MatchRaceHandler': MatchRaceHandler,
+            'AsyncLiveRaceHandler': AsyncLiveRaceHandler,
+        }
+        
+        handler_class = handler_map.get(self.handler_class_name)
+        
+        if not handler_class:
+            logger.warning(
+                "Unknown handler class %s, falling back to SahaRaceHandler",
+                self.handler_class_name
+            )
+            return SahaRaceHandler
+        
+        logger.debug("Using handler class: %s", self.handler_class_name)
+        return handler_class
 
     async def join_race_room(self, race_name: str, force: bool = False) -> Optional[SahaRaceHandler]:
         """
@@ -845,6 +962,7 @@ async def start_racetime_bot(
     client_id: str,
     client_secret: str,
     bot_id: Optional[int] = None,
+    handler_class_name: str = 'SahaRaceHandler',
     max_retries: int = 5,
     initial_backoff: float = 5.0,
 ) -> RacetimeBot:
@@ -859,6 +977,7 @@ async def start_racetime_bot(
         client_id: OAuth2 client ID for this category
         client_secret: OAuth2 client secret for this category
         bot_id: Optional database ID for status tracking
+        handler_class_name: Name of the handler class to use (default: 'SahaRaceHandler')
         max_retries: Maximum number of retry attempts (default: 5)
         initial_backoff: Initial backoff delay in seconds (default: 5.0)
 
@@ -869,9 +988,10 @@ async def start_racetime_bot(
         Exception: If bot initialization or starting fails
     """
     logger.info(
-        "Starting racetime bot for category: %s (bot_id=%s)",
+        "Starting racetime bot for category: %s (bot_id=%s, handler=%s)",
         category,
-        bot_id
+        bot_id,
+        handler_class_name
     )
 
     try:
@@ -881,6 +1001,7 @@ async def start_racetime_bot(
             client_id=client_id,
             client_secret=client_secret,
             bot_id=bot_id,
+            handler_class_name=handler_class_name,
         )
 
         # Store the bot instance
