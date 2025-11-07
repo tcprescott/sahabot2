@@ -26,8 +26,8 @@
 
     /* Status Colors */
     --error-color: #dc2626;
-    --warning-color: #d97706;
-    --success-color: #059669;
+    --warning-color: #ad5d06;
+    --success-color: #2c7b46;
     --info-color: var(--purple-secondary);
 
     /* Spacing - Mobile first, adjusted for desktop */
