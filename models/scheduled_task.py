@@ -25,6 +25,7 @@ class TaskType(IntEnum):
     ASYNC_LIVE_RACE_OPEN = 6  # Open a RaceTime.gg room for a scheduled live race
     SPEEDGAMING_IMPORT = 7  # Import SpeedGaming episodes into matches
     CLEANUP_PLACEHOLDER_USERS = 8  # Clean up abandoned placeholder users
+    RACETIME_POLL_OPEN_ROOMS = 9  # Poll RaceTime.gg for open race rooms and join them
     CUSTOM = 99  # Custom task type
 
 
