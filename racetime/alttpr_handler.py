@@ -267,6 +267,11 @@ class ALTTPRRaceHandler(SahaRaceHandler):
 
         Args:
             preset_name: Name of the Avianart preset to use
+
+        Note:
+            This command does NOT require user authentication (unlike !mystery, !vt, !vtspoiler).
+            Avianart uses API preset names directly without database lookup, so any race
+            participant can use it. This is intentional per the design requirements.
         """
         from application.services.randomizer.avianart_service import AvianartService
 
