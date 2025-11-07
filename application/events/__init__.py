@@ -96,6 +96,7 @@ from application.events.types import (
     RacetimeEntrantInvitedEvent,
     RacetimeBotJoinedRaceEvent,
     RacetimeBotCreatedRaceEvent,
+    RacetimeBotActionEvent,
     # Scheduled Task events
     BuiltinTaskOverrideUpdatedEvent,
 )
@@ -174,6 +175,7 @@ __all__ = [
     "RacetimeEntrantInvitedEvent",
     "RacetimeBotJoinedRaceEvent",
     "RacetimeBotCreatedRaceEvent",
+    "RacetimeBotActionEvent",
     # Scheduled Task events
     "BuiltinTaskOverrideUpdatedEvent",
 ]

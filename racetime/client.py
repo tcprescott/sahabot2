@@ -35,7 +35,7 @@ import logging
 from typing import Optional
 import aiohttp
 from racetime_bot import Bot, RaceHandler
-from models import BotStatus, SYSTEM_USER_ID, User
+from models import BotStatus, SYSTEM_USER_ID
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
 from application.events import (
@@ -47,6 +47,7 @@ from application.events import (
     RacetimeEntrantInvitedEvent,
     RacetimeBotJoinedRaceEvent,
     RacetimeBotCreatedRaceEvent,
+    RacetimeBotActionEvent,
 )
 from config import settings
 
@@ -93,6 +94,18 @@ class SahaRaceHandler(RaceHandler):
         except Exception as e:
             logger.warning("Error looking up user by racetime_id %s: %s", racetime_user_id, e)
             return None
+
+    def _extract_race_details(self) -> tuple[str, str, str]:
+        """
+        Extract race details from current race data.
+
+        Returns:
+            Tuple of (category, room_slug, room_name)
+        """
+        category = self.data.get('category', {}).get('slug', '') if self.data else ''
+        room_slug = self.data.get('name', '') if self.data else ''
+        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        return category, room_slug, room_name
 
     async def _handle_join_request(
         self,
@@ -576,9 +589,7 @@ class SahaRaceHandler(RaceHandler):
             user_id: The racetime.gg user ID to invite
         """
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category, room_slug, room_name = self._extract_race_details()
         race_status = self.data.get('status', {}).get('value', '') if self.data else ''
 
         # Look up application user ID
@@ -598,6 +609,340 @@ class SahaRaceHandler(RaceHandler):
 
         # Call parent implementation to send the actual invite
         await super().invite_user(user_id)
+
+    async def force_start(self):
+        """
+        Force start the race.
+
+        Overrides the base RaceHandler.force_start() to emit an event
+        when the bot force-starts a race.
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot force-starting race %s", room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=room_slug,
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="force_start",
+        ))
+
+        # Call parent implementation
+        await super().force_start()
+
+    async def force_unready(self, user_id: str):
+        """
+        Force unready an entrant.
+
+        Overrides the base RaceHandler.force_unready() to emit an event
+        when the bot force-unreadies an entrant.
+
+        Args:
+            user_id: The racetime.gg user ID to unready
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Look up application user ID
+        app_user_id = await self._get_user_id_from_racetime_id(user_id)
+
+        # Emit action event
+        logger.info("Bot force-unreadying user %s in race %s", user_id, room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=app_user_id,  # Application user ID (None if not linked)
+            entity_id=f"{room_slug}/{user_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="force_unready",
+            target_user_id=user_id,
+        ))
+
+        # Call parent implementation
+        await super().force_unready(user_id)
+
+    async def remove_entrant(self, user_id: str):
+        """
+        Remove an entrant from the race.
+
+        Overrides the base RaceHandler.remove_entrant() to emit an event
+        when the bot removes an entrant.
+
+        Args:
+            user_id: The racetime.gg user ID to remove
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Look up application user ID
+        app_user_id = await self._get_user_id_from_racetime_id(user_id)
+
+        # Emit action event
+        logger.info("Bot removing entrant %s from race %s", user_id, room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=app_user_id,  # Application user ID (None if not linked)
+            entity_id=f"{room_slug}/{user_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="remove_entrant",
+            target_user_id=user_id,
+        ))
+
+        # Call parent implementation
+        await super().remove_entrant(user_id)
+
+    async def cancel_race(self):
+        """
+        Cancel the race.
+
+        Overrides the base RaceHandler.cancel_race() to emit an event
+        when the bot cancels a race.
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot cancelling race %s", room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=room_slug,
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="cancel_race",
+        ))
+
+        # Call parent implementation
+        await super().cancel_race()
+
+    async def add_monitor(self, user_id: str):
+        """
+        Add a user as a race monitor.
+
+        Overrides the base RaceHandler.add_monitor() to emit an event
+        when the bot adds a monitor.
+
+        Args:
+            user_id: The racetime.gg user ID to add as monitor
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Look up application user ID
+        app_user_id = await self._get_user_id_from_racetime_id(user_id)
+
+        # Emit action event
+        logger.info("Bot adding monitor %s to race %s", user_id, room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=app_user_id,  # Application user ID (None if not linked)
+            entity_id=f"{room_slug}/{user_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="add_monitor",
+            target_user_id=user_id,
+        ))
+
+        # Call parent implementation
+        await super().add_monitor(user_id)
+
+    async def remove_monitor(self, user_id: str):
+        """
+        Remove a user as a race monitor.
+
+        Overrides the base RaceHandler.remove_monitor() to emit an event
+        when the bot removes a monitor.
+
+        Args:
+            user_id: The racetime.gg user ID to remove as monitor
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Look up application user ID
+        app_user_id = await self._get_user_id_from_racetime_id(user_id)
+
+        # Emit action event
+        logger.info("Bot removing monitor %s from race %s", user_id, room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=app_user_id,  # Application user ID (None if not linked)
+            entity_id=f"{room_slug}/{user_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="remove_monitor",
+            target_user_id=user_id,
+        ))
+
+        # Call parent implementation
+        await super().remove_monitor(user_id)
+
+    async def pin_message(self, message_id: str):
+        """
+        Pin a chat message.
+
+        Overrides the base RaceHandler.pin_message() to emit an event
+        when the bot pins a message.
+
+        Args:
+            message_id: The message ID (hash) to pin
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot pinning message %s in race %s", message_id, room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=f"{room_slug}/message/{message_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="pin_message",
+            details=message_id,
+        ))
+
+        # Call parent implementation
+        await super().pin_message(message_id)
+
+    async def unpin_message(self, message_id: str):
+        """
+        Unpin a chat message.
+
+        Overrides the base RaceHandler.unpin_message() to emit an event
+        when the bot unpins a message.
+
+        Args:
+            message_id: The message ID (hash) to unpin
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot unpinning message %s in race %s", message_id, room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=f"{room_slug}/message/{message_id}",
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="unpin_message",
+            details=message_id,
+        ))
+
+        # Call parent implementation
+        await super().unpin_message(message_id)
+
+    async def set_raceinfo(self, info: str, overwrite: bool = False, prefix: bool = True):
+        """
+        Set the race info_user field.
+
+        Overrides the base RaceHandler.set_raceinfo() to emit an event
+        when the bot sets race info.
+
+        Args:
+            info: The info text to set
+            overwrite: If True, replaces existing info. If False, appends.
+            prefix: If True, prefixes the info with bot name
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot setting race info for %s (overwrite=%s, prefix=%s)",
+                   room_slug, overwrite, prefix)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=room_slug,
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="set_raceinfo",
+            details=f"overwrite={overwrite}, prefix={prefix}",
+        ))
+
+        # Call parent implementation
+        await super().set_raceinfo(info, overwrite=overwrite, prefix=prefix)
+
+    async def set_bot_raceinfo(self, info: str):
+        """
+        Set the race info_bot field.
+
+        Overrides the base RaceHandler.set_bot_raceinfo() to emit an event
+        when the bot sets race bot info.
+
+        Args:
+            info: The bot info text to set
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot setting bot race info for %s", room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=room_slug,
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="set_bot_raceinfo",
+        ))
+
+        # Call parent implementation
+        await super().set_bot_raceinfo(info)
+
+    async def set_open(self):
+        """
+        Set the race room to open state.
+
+        Overrides the base RaceHandler.set_open() to emit an event
+        when the bot changes room to open.
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot setting race %s to open", room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=room_slug,
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="set_open",
+        ))
+
+        # Call parent implementation
+        await super().set_open()
+
+    async def set_invitational(self):
+        """
+        Set the race room to invitational state.
+
+        Overrides the base RaceHandler.set_invitational() to emit an event
+        when the bot changes room to invitational.
+        """
+        # Extract race details
+        category, room_slug, room_name = self._extract_race_details()
+
+        # Emit action event
+        logger.info("Bot setting race %s to invitational", room_slug)
+        await EventBus.emit(RacetimeBotActionEvent(
+            user_id=SYSTEM_USER_ID,
+            entity_id=room_slug,
+            category=category,
+            room_slug=room_slug,
+            room_name=room_name,
+            action_type="set_invitational",
+        ))
+
+        # Call parent implementation
+        await super().set_invitational()
 
 
 class RacetimeBot(Bot):

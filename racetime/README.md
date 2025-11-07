@@ -88,9 +88,38 @@ Handlers are registered with the `RacetimeChatCommandService` and executed dynam
 
 ### Key Methods
 
+#### Lifecycle Methods
 - `begin()` - Called when handler is created (initial setup)
 - `end()` - Called when handler is torn down (cleanup)
 - `race_data()` - Called whenever race data is updated
+
+#### Race Management Actions
+All race management methods emit events for audit trail and logging:
+- `force_start()` - Force start the race
+- `cancel_race()` - Cancel the race
+- `set_open()` - Set room to open state (anyone can join)
+- `set_invitational()` - Set room to invitational state (invite-only)
+
+#### Entrant Management Actions
+- `invite_user(user_id)` - Invite a user to the race
+- `accept_request(user_id)` - Accept a join request (inherited from base)
+- `force_unready(user_id)` - Force unready an entrant
+- `remove_entrant(user_id)` - Remove an entrant from the race
+
+#### Monitor Management Actions
+- `add_monitor(user_id)` - Add a user as race monitor
+- `remove_monitor(user_id)` - Remove a user as race monitor
+
+#### Message Management Actions
+- `send_message(message, actions=None, pinned=False, direct_to=None)` - Send a chat message (inherited from base)
+- `pin_message(message_id)` - Pin a chat message
+- `unpin_message(message_id)` - Unpin a chat message
+
+#### Race Info Actions
+- `set_raceinfo(info, overwrite=False, prefix=True)` - Set the race info_user field
+- `set_bot_raceinfo(info)` - Set the race info_bot field
+
+**Note**: All overridden methods (marked above without "inherited from base") emit `RacetimeBotActionEvent` for audit trail and observability.
 
 ### Commands
 
