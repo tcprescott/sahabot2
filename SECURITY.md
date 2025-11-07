@@ -124,6 +124,23 @@ All responses include the following security headers:
 - **Async/Await**: Modern async patterns throughout (prevents blocking attacks)
 - **Type Safety**: Comprehensive type hints catch type-related bugs
 
+#### Automated Code Analysis
+- **CodeQL Scanning**: Automated security and quality analysis on every PR and push
+- **Custom Anti-Pattern Queries**: 8+ custom CodeQL queries detect violations of coding standards
+- **Weekly Scans**: Scheduled CodeQL analysis every Sunday
+- **Security Alerts**: Results available in GitHub Security tab
+- **Enforced Standards**: Automatically detects:
+  - Use of `print()` in application code (should use logging)
+  - F-strings in logging statements (should use lazy formatting)
+  - Deprecated `datetime.utcnow()` (should use timezone-aware datetime)
+  - Direct ORM access from UI/API routes (should use services)
+  - Inline imports (should be at module level)
+  - Deprecated authorization patterns
+  - Invalid event emissions
+  - Architecture violations
+
+See [`.github/codeql/README.md`](.github/codeql/README.md) for complete query documentation.
+
 ### Infrastructure Security
 
 #### Environment Variables
