@@ -30,6 +30,7 @@ from models.async_tournament import (
     AsyncTournamentAuditLog,
 )
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
+from models.builtin_task_override import BuiltinTaskOverride
 from models.tournament_usage import TournamentUsage
 from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
@@ -82,6 +83,7 @@ __all__ = [
     'ScheduledTask',
     'TaskType',
     'ScheduleType',
+    'BuiltinTaskOverride',
     'TournamentUsage',
     'RandomizerPreset',
     'PresetNamespace',

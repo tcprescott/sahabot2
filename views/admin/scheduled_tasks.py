@@ -334,16 +334,44 @@ class ScheduledTasksView:
         
         dialog.open()
 
+    async def _toggle_builtin_task(self, task_info: dict) -> None:
+        """Toggle the active status of a builtin task."""
+        task_id = task_info['task_id']
+        current_status = task_info['is_active']
+        new_status = not current_status
+
+        success = await self.service.set_builtin_task_active(
+            self.user,
+            task_id,
+            new_status
+        )
+
+        if success:
+            action = "enabled" if new_status else "disabled"
+            ui.notify(f'Built-in task "{task_info["name"]}" {action}', type='positive')
+            await self._refresh()
+        else:
+            ui.notify('Failed to toggle task status - check permissions', type='negative')
+
     def _render_actions(self, task_info: dict) -> None:
         """Render action buttons for built-in tasks."""
         with ui.element('div').classes('flex gap-2'):
+            # Toggle button
+            is_active = task_info.get('is_active', False)
+            ui.button(
+                'Disable' if is_active else 'Enable',
+                icon='pause_circle' if is_active else 'play_circle',
+                on_click=lambda t=task_info: self._toggle_builtin_task(t)
+            ).classes('btn').props(f'color={"warning" if is_active else "positive"} size=sm')
+            
             # Only show Run Now for active tasks
-            if task_info.get('is_active', False):
+            if is_active:
                 ui.button(
                     'Run Now',
-                    icon='play_circle',
+                    icon='play_arrow',
                     on_click=lambda t=task_info: self._execute_builtin_task_now(t)
                 ).classes('btn').props('color=primary size=sm')
+            
             ui.button(
                 'Details',
                 icon='info',
