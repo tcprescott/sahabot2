@@ -17,6 +17,7 @@ from .sm_service import SMService
 from .smz3_service import SMZ3Service
 from .ctjets_service import CTJetsService
 from .bingosync_service import BingosyncService
+from .avianart_service import AvianartService
 
 __all__ = [
     'RandomizerService',
@@ -31,4 +32,5 @@ __all__ = [
     'SMZ3Service',
     'CTJetsService',
     'BingosyncService',
+    'AvianartService',
 ]
