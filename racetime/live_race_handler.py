@@ -22,17 +22,21 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
 
     def __init__(
         self,
+        bot_instance,
         live_race_id: int,
+        *args,
         **kwargs,
     ):
         """
         Initialize live race handler.
 
         Args:
+            bot_instance: The RacetimeBot instance
             live_race_id: ID of the AsyncTournamentLiveRace
-            **kwargs: Arguments for parent RaceHandler
+            *args: Arguments for parent RaceHandler
+            **kwargs: Keyword arguments for parent RaceHandler
         """
-        super().__init__(**kwargs)
+        super().__init__(bot_instance, *args, **kwargs)
         self.live_race_id = live_race_id
         self._race_started = False
         self._race_finished = False
