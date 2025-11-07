@@ -462,8 +462,8 @@ class BasePage:
         css_version = get_css_version()
         ui.add_head_html(f'<link rel="stylesheet" href="/static/css/main.css?v={css_version}">')
 
-        # Set HTML language attribute for accessibility
-        ui.add_head_html('<script>document.documentElement.lang = "en";</script>')
+        # Set HTML language attribute for accessibility (executed immediately in head)
+        ui.add_head_html('<script>if(document.documentElement)document.documentElement.lang="en";</script>')
 
         # Load JavaScript modules with cache busting
         # Core modules must load in <head> and run immediately to prevent flash
