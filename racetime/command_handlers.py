@@ -272,6 +272,59 @@ async def handle_custommystery(
     )
 
 
+async def handle_avianart(
+    _command: RacetimeChatCommand,
+    _args: list[str],
+    _racetime_user_id: str,
+    _race_data: dict,
+    _user: Optional[User],
+) -> str:
+    """
+    Handle the !avianart command.
+
+    Generates an Avianart door randomizer seed for racing.
+
+    Args:
+        _command: Command configuration
+        _args: Command arguments (preset name)
+        _racetime_user_id: RaceTime.gg user ID
+        _race_data: Race data
+        _user: Authenticated user (if any)
+
+    Returns:
+        Response message with seed URL or error
+    """
+    from application.services.randomizer.avianart_service import AvianartService
+
+    if not _args:
+        return "Usage: !avianart <preset_name>"
+
+    preset_name = _args[0]
+
+    try:
+        service = AvianartService()
+        result = await service.generate(
+            preset=preset_name,
+            race=True
+        )
+
+        # Extract file select code for display
+        file_select_code = result.metadata.get('file_select_code', [])
+        code_text = '/'.join(file_select_code) if file_select_code else result.hash_id
+
+        return f"Avianart seed generated! {result.url} | Code: {code_text} | Version: {result.metadata.get('version', 'unknown')}"
+
+    except ValueError as e:
+        logger.error("Avianart generation error: %s", str(e))
+        return f"Error: {str(e)}"
+    except TimeoutError as e:
+        logger.error("Avianart generation timeout: %s", str(e))
+        return "Error: Seed generation timed out. Please try again."
+    except Exception as e:
+        logger.exception("Unexpected error generating Avianart seed")
+        return f"An error occurred generating Avianart seed: {str(e)}"
+
+
 # Registry of all built-in handlers
 BUILTIN_HANDLERS = {
     'handle_help': handle_help,
@@ -281,6 +334,7 @@ BUILTIN_HANDLERS = {
     'handle_entrants': handle_entrants,
     'handle_mystery': handle_mystery,
     'handle_custommystery': handle_custommystery,
+    'handle_avianart': handle_avianart,
 }
 
 

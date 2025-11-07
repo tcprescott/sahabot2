@@ -93,6 +93,9 @@ class RandomizerService:
         elif name == 'bingosync' or name == 'bingo':
             from .bingosync_service import BingosyncService
             return BingosyncService()
+        elif name == 'avianart':
+            from .avianart_service import AvianartService
+            return AvianartService()
         else:
             raise ValueError(f"Unknown randomizer: {name}")
 
@@ -103,4 +106,4 @@ class RandomizerService:
         Returns:
             list[str]: List of randomizer names
         """
-        return ['alttpr', 'aosr', 'z1r', 'ootr', 'ffr', 'smb3r', 'sm', 'smz3', 'ctjets', 'bingosync']
+        return ['alttpr', 'aosr', 'z1r', 'ootr', 'ffr', 'smb3r', 'sm', 'smz3', 'ctjets', 'bingosync', 'avianart']
