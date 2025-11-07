@@ -61,9 +61,7 @@ from components.dialogs.user_profile import (
 )
 
 # Racetime dialogs
-from components.dialogs.racetime import (
-    RacetimeChatCommandDialog,
-)
+# (No racetime dialogs currently)
 
 __all__ = [
     # Common
@@ -105,6 +103,4 @@ __all__ = [
     'EditPermissionDialog',
     'ManagePermissionsDialog',
     'RequestOrganizationDialog',
-    # Racetime
-    'RacetimeChatCommandDialog',
 ]

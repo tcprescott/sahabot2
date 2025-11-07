@@ -36,7 +36,6 @@ from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
 from models.preset_namespace_permission import PresetNamespacePermission
 from models.racetime_bot import RacetimeBot, RacetimeBotOrganization, BotStatus
-from models.racetime_chat_command import RacetimeChatCommand, CommandScope, CommandResponseType
 from models.race_room_profile import RaceRoomProfile
 from models.racer_verification import RacerVerification, UserRacerVerification
 from models.notification_subscription import NotificationSubscription, NotificationMethod, NotificationEventType
@@ -91,9 +90,6 @@ __all__ = [
     'RacetimeBot',
     'RacetimeBotOrganization',
     'BotStatus',
-    'RacetimeChatCommand',
-    'CommandScope',
-    'CommandResponseType',
     'RaceRoomProfile',
     'RacerVerification',
     'UserRacerVerification',
