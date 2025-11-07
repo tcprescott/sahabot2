@@ -1,41 +1,46 @@
 """
-Unit tests for Avianart RaceTime.gg command handler.
+Unit tests for Avianart RaceTime.gg command in ALTTPR handler.
 
-Tests the handle_avianart function that processes !avianart commands in race rooms.
+Tests the ex_avianart method that processes !avianart commands in race rooms.
 """
 
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from racetime.command_handlers import handle_avianart
 from application.services.randomizer.randomizer_service import RandomizerResult
 
 
-class TestAvianartCommandHandler:
-    """Test suite for Avianart command handler."""
+class TestAvianartCommand:
+    """Test suite for Avianart command in ALTTPR handler."""
 
     @pytest.fixture
-    def mock_command(self):
-        """Mock RacetimeChatCommand."""
-        command = MagicMock()
-        command.command = 'avianart'
-        return command
-
-    @pytest.fixture
-    def mock_race_data(self):
-        """Mock race data."""
-        return {
+    def mock_handler(self):
+        """Create a mock handler with just the method we're testing."""
+        # Import the actual method we're testing
+        from racetime.alttpr_handler import ALTTPRRaceHandler
+        
+        # Create a mock object with send_message method
+        handler = MagicMock()
+        handler.send_message = AsyncMock()
+        handler.data = {
             'status': {'value': 'open'},
             'goal': {'name': 'Test Race'},
             'entrants': []
         }
+        
+        # Bind the actual ex_avianart method to our mock
+        handler.ex_avianart = ALTTPRRaceHandler.ex_avianart.__get__(handler, ALTTPRRaceHandler)
+        
+        return handler
 
     @pytest.fixture
-    def mock_user(self):
-        """Mock user."""
-        user = MagicMock()
-        user.id = 123
-        user.discord_username = 'TestUser'
-        return user
+    def mock_message(self):
+        """Mock message data."""
+        return {
+            'user': {
+                'id': 'test_user_123',
+                'name': 'TestUser'
+            }
+        }
 
     @pytest.fixture
     def mock_result(self):
@@ -54,11 +59,10 @@ class TestAvianartCommandHandler:
         )
 
     @pytest.mark.asyncio
-    async def test_handle_avianart_success(
+    async def test_ex_avianart_success(
         self,
-        mock_command,
-        mock_race_data,
-        mock_user,
+        mock_handler,
+        mock_message,
         mock_result
     ):
         """Test successful Avianart seed generation."""
@@ -67,13 +71,7 @@ class TestAvianartCommandHandler:
             mock_service.generate.return_value = mock_result
             mock_service_class.return_value = mock_service
 
-            response = await handle_avianart(
-                _command=mock_command,
-                _args=['test-preset'],
-                _racetime_user_id='test_user_123',
-                _race_data=mock_race_data,
-                _user=mock_user
-            )
+            await mock_handler.ex_avianart(['test-preset'], mock_message)
 
             # Verify service was called correctly
             mock_service.generate.assert_called_once_with(
@@ -81,35 +79,36 @@ class TestAvianartCommandHandler:
                 race=True
             )
 
-            # Verify response includes URL and code
-            assert 'https://avianart.games/perm/test_hash' in response
-            assert 'Bow/Bombs/Hookshot/Mushroom/Lamp' in response
-            assert '1.0.0' in response
+            # Verify messages were sent
+            assert mock_handler.send_message.call_count == 2
+            calls = [call[0][0] for call in mock_handler.send_message.call_args_list]
+            
+            # First message is "Generating..."
+            assert 'Generating' in calls[0]
+            
+            # Second message has URL and code
+            assert 'https://avianart.games/perm/test_hash' in calls[1]
+            assert 'Bow/Bombs/Hookshot/Mushroom/Lamp' in calls[1]
+            assert '1.0.0' in calls[1]
 
     @pytest.mark.asyncio
-    async def test_handle_avianart_no_args(
+    async def test_ex_avianart_no_args(
         self,
-        mock_command,
-        mock_race_data,
-        mock_user
+        mock_handler,
+        mock_message
     ):
         """Test !avianart without preset name."""
-        response = await handle_avianart(
-            _command=mock_command,
-            _args=[],
-            _racetime_user_id='test_user_123',
-            _race_data=mock_race_data,
-            _user=mock_user
-        )
+        await mock_handler.ex_avianart([], mock_message)
 
-        assert 'Usage: !avianart <preset_name>' in response
+        mock_handler.send_message.assert_called_once()
+        call_arg = mock_handler.send_message.call_args[0][0]
+        assert 'Usage: !avianart <preset_name>' in call_arg
 
     @pytest.mark.asyncio
-    async def test_handle_avianart_value_error(
+    async def test_ex_avianart_value_error(
         self,
-        mock_command,
-        mock_race_data,
-        mock_user
+        mock_handler,
+        mock_message
     ):
         """Test handling of ValueError (invalid preset)."""
         with patch('application.services.randomizer.avianart_service.AvianartService') as mock_service_class:
@@ -117,22 +116,18 @@ class TestAvianartCommandHandler:
             mock_service.generate.side_effect = ValueError("Invalid preset configuration")
             mock_service_class.return_value = mock_service
 
-            response = await handle_avianart(
-                _command=mock_command,
-                _args=['invalid-preset'],
-                _racetime_user_id='test_user_123',
-                _race_data=mock_race_data,
-                _user=mock_user
-            )
+            await mock_handler.ex_avianart(['invalid-preset'], mock_message)
 
-            assert 'Error: Invalid preset configuration' in response
+            # Should send "Generating..." then error message
+            assert mock_handler.send_message.call_count == 2
+            error_msg = mock_handler.send_message.call_args[0][0]
+            assert 'Error: Invalid preset configuration' in error_msg
 
     @pytest.mark.asyncio
-    async def test_handle_avianart_timeout(
+    async def test_ex_avianart_timeout(
         self,
-        mock_command,
-        mock_race_data,
-        mock_user
+        mock_handler,
+        mock_message
     ):
         """Test handling of TimeoutError."""
         with patch('application.services.randomizer.avianart_service.AvianartService') as mock_service_class:
@@ -140,22 +135,18 @@ class TestAvianartCommandHandler:
             mock_service.generate.side_effect = TimeoutError("Generation timed out")
             mock_service_class.return_value = mock_service
 
-            response = await handle_avianart(
-                _command=mock_command,
-                _args=['test-preset'],
-                _racetime_user_id='test_user_123',
-                _race_data=mock_race_data,
-                _user=mock_user
-            )
+            await mock_handler.ex_avianart(['test-preset'], mock_message)
 
-            assert 'Seed generation timed out' in response
+            # Should send "Generating..." then timeout message
+            assert mock_handler.send_message.call_count == 2
+            error_msg = mock_handler.send_message.call_args[0][0]
+            assert 'timed out' in error_msg.lower()
 
     @pytest.mark.asyncio
-    async def test_handle_avianart_generic_exception(
+    async def test_ex_avianart_generic_exception(
         self,
-        mock_command,
-        mock_race_data,
-        mock_user
+        mock_handler,
+        mock_message
     ):
         """Test handling of generic exceptions."""
         with patch('application.services.randomizer.avianart_service.AvianartService') as mock_service_class:
@@ -163,37 +154,10 @@ class TestAvianartCommandHandler:
             mock_service.generate.side_effect = Exception("Unexpected error")
             mock_service_class.return_value = mock_service
 
-            response = await handle_avianart(
-                _command=mock_command,
-                _args=['test-preset'],
-                _racetime_user_id='test_user_123',
-                _race_data=mock_race_data,
-                _user=mock_user
-            )
+            await mock_handler.ex_avianart(['test-preset'], mock_message)
 
-            assert 'An error occurred' in response
-            assert 'Unexpected error' in response
-
-    @pytest.mark.asyncio
-    async def test_handle_avianart_without_user(
-        self,
-        mock_command,
-        mock_race_data,
-        mock_result
-    ):
-        """Test !avianart command without authenticated user."""
-        with patch('application.services.randomizer.avianart_service.AvianartService') as mock_service_class:
-            mock_service = AsyncMock()
-            mock_service.generate.return_value = mock_result
-            mock_service_class.return_value = mock_service
-
-            # Should still work without user (unlike !mystery which requires auth)
-            response = await handle_avianart(
-                _command=mock_command,
-                _args=['test-preset'],
-                _racetime_user_id='test_user_123',
-                _race_data=mock_race_data,
-                _user=None
-            )
-
-            assert 'https://avianart.games/perm/test_hash' in response
+            # Should send "Generating..." then error message
+            assert mock_handler.send_message.call_count == 2
+            error_msg = mock_handler.send_message.call_args[0][0]
+            assert 'An error occurred' in error_msg
+            assert 'Unexpected error' in error_msg

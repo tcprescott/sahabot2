@@ -22,6 +22,7 @@ class ALTTPRRaceHandler(SahaRaceHandler):
     - !custommystery - Information about custom mystery
     - !vt <preset> [branch] - Generate ALTTPR seed from preset
     - !vtspoiler <preset> [studytime] - Generate ALTTPR seed with spoiler log
+    - !avianart <preset> - Generate Avianart door randomizer seed
     """
 
     async def ex_mystery(self, args, message):
@@ -257,3 +258,51 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         except Exception as e:
             logger.exception("Unexpected error generating seed")
             await self.send_message(f"An error occurred generating seed: {str(e)}")
+
+    async def ex_avianart(self, args, message):
+        """
+        Generate an Avianart door randomizer seed.
+        
+        Usage: !avianart <preset_name>
+        
+        Args:
+            preset_name: Name of the Avianart preset to use
+        """
+        from application.services.randomizer.avianart_service import AvianartService
+        
+        if not args:
+            await self.send_message("Usage: !avianart <preset_name>")
+            return
+        
+        preset_name = args[0]
+        
+        await self.send_message("Generating Avianart seed, please wait. If nothing happens after a minute, contact support.")
+        
+        try:
+            service = AvianartService()
+            result = await service.generate(
+                preset=preset_name,
+                race=True
+            )
+            
+            # Extract file select code and format it
+            file_select_code = result.metadata.get('file_select_code', [])
+            code_str = '/'.join(file_select_code)
+            
+            # Extract version
+            version = result.metadata.get('version', 'unknown')
+            
+            await self.send_message(
+                f"Avianart seed generated! {result.url} | "
+                f"Code: {code_str} | Version: {version}"
+            )
+            
+        except ValueError as e:
+            logger.error("Avianart preset error: %s", str(e))
+            await self.send_message(f"Error: {str(e)}")
+        except TimeoutError as e:
+            logger.error("Avianart timeout: %s", str(e))
+            await self.send_message("Seed generation timed out. Please try again or contact support.")
+        except Exception as e:
+            logger.exception("Unexpected error generating Avianart seed")
+            await self.send_message(f"An error occurred generating Avianart seed: {str(e)}")
