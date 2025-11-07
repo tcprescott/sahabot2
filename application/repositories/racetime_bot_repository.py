@@ -64,6 +64,7 @@ class RacetimeBotRepository:
         name: str,
         description: Optional[str] = None,
         is_active: bool = True,
+        handler_class: str = 'SahaRaceHandler',
     ) -> RacetimeBot:
         """
         Create a new RaceTime bot.
@@ -75,6 +76,7 @@ class RacetimeBotRepository:
             name: Friendly name for the bot
             description: Optional description
             is_active: Whether the bot is active
+            handler_class: Handler class name (default: 'SahaRaceHandler')
 
         Returns:
             Created RaceTime bot
@@ -86,8 +88,14 @@ class RacetimeBotRepository:
             name=name,
             description=description,
             is_active=is_active,
+            handler_class=handler_class,
         )
-        logger.info("Created RaceTime bot: %s (category: %s)", name, category)
+        logger.info(
+            "Created RaceTime bot: %s (category: %s, handler: %s)", 
+            name, 
+            category,
+            handler_class
+        )
         return bot
 
     async def update_bot(

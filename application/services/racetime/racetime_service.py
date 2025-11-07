@@ -45,11 +45,14 @@ class RacetimeService:
         # Load configs from database if not provided
         if configs is None:
             bots = await RacetimeBot.filter(is_active=True).all()
-            # Build configs with bot_id included
-            cfgs = [(bot.category, bot.client_id, bot.client_secret, bot.id) for bot in bots]
+            # Build configs with bot_id and handler_class included
+            cfgs = [
+                (bot.category, bot.client_id, bot.client_secret, bot.id, bot.handler_class) 
+                for bot in bots
+            ]
         else:
-            # Legacy mode: configs without bot_id
-            cfgs = [(cat, cid, csec, None) for cat, cid, csec in configs]
+            # Legacy mode: configs without bot_id or handler_class
+            cfgs = [(cat, cid, csec, None, 'SahaRaceHandler') for cat, cid, csec in configs]
 
         if not cfgs:
             logger.info("No racetime bots configured")
@@ -57,10 +60,21 @@ class RacetimeService:
 
         logger.info("Starting %d racetime bot(s)", len(cfgs))
 
-        for category, client_id, client_secret, bot_id in cfgs:
+        for category, client_id, client_secret, bot_id, handler_class in cfgs:
             try:
-                await start_racetime_bot(category, client_id, client_secret, bot_id=bot_id)
-                logger.info("Racetime bot started for category: %s (bot_id=%s)", category, bot_id)
+                await start_racetime_bot(
+                    category, 
+                    client_id, 
+                    client_secret, 
+                    bot_id=bot_id,
+                    handler_class_name=handler_class
+                )
+                logger.info(
+                    "Racetime bot started for category: %s (bot_id=%s, handler=%s)", 
+                    category, 
+                    bot_id,
+                    handler_class
+                )
                 started += 1
             except Exception as e:
                 logger.error(
