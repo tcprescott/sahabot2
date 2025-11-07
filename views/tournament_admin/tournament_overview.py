@@ -276,17 +276,27 @@ class TournamentOverviewView:
                                     with ui.element('td'):
                                         DateTimeLabel.create(placeholder.created_at, format_type='relative')
 
-                                    # Roles (show if player or crew in this tournament)
-                                    with ui.element('td'):
-                                        roles = []
-                                        # Check if player (via match_players relation)
-                                        if hasattr(placeholder, 'match_players'):
-                                            roles.append('Player')
-                                        # Check if crew (via crew_memberships relation)
-                                        if hasattr(placeholder, 'crew_memberships'):
-                                            roles.append('Crew')
+                    # Role column
+                    with ui.element('td'):
+                        # Use role metadata from repository if available
+                        if hasattr(placeholder, '_placeholder_roles'):
+                            roles = placeholder._placeholder_roles
+                        else:
+                            # Fallback: determine roles from prefetched data
+                            roles = []
+                            if hasattr(placeholder, 'match_players'):
+                                try:
+                                    match_players = await placeholder.match_players.all()
+                                    if match_players:
+                                        roles.append('Player')
+                                except:
+                                    pass
+                            if hasattr(placeholder, 'crew_memberships'):
+                                try:
+                                    crew_memberships = await placeholder.crew_memberships.all()
+                                    if crew_memberships:
+                                        roles.append('Crew')
+                                except:
+                                    pass
 
-                                        if roles:
-                                            ui.label(', '.join(roles)).classes('text-sm')
-                                        else:
-                                            ui.label('Unknown').classes('text-sm text-secondary')
+                        ui.label(', '.join(roles) if roles else '—')

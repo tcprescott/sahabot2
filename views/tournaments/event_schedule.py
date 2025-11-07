@@ -6,6 +6,7 @@ Shows upcoming matches and events for the organization.
 
 from __future__ import annotations
 import logging
+import json
 from typing import Optional
 from nicegui import ui
 from models import Organization, User, CrewRole
@@ -37,6 +38,7 @@ class EventScheduleView:
         self.can_manage_tournaments = False  # Set during render
         self.can_edit_matches = False  # Set during render (moderator or tournament admin)
         self.can_approve_crew = False  # Set during render (admin, tournament manager, or moderator)
+        self._filters_loaded = False  # Track if we've loaded filters from localStorage
 
     def _get_match_state(self, match: Match) -> str:
         """Get the state of a match."""
@@ -73,12 +75,73 @@ class EventScheduleView:
     async def _on_filter_change(self, new_states) -> None:
         """Handle filter state change."""
         self.filter_states = new_states if new_states else []
+        # Save to localStorage
+        await self._save_filters()
         await self._refresh()
 
     async def _on_tournament_filter_change(self, selected_ids) -> None:
         """Handle tournament filter change."""
         self.selected_tournaments = selected_ids if selected_ids else []
+        # Save to localStorage
+        await self._save_filters()
         await self._refresh()
+
+    async def _load_filters(self) -> None:
+        """Load filters from server-side storage."""
+        if self._filters_loaded:
+            return
+        
+        try:
+            from nicegui import app
+            
+            # Use NiceGUI's server-side storage (session-based, persists across page loads)
+            storage_key = f'event_schedule_filters_{self.organization.id}'
+            
+            # Check if we have storage available
+            if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
+                saved_filters = app.storage.user.get(storage_key)
+                
+                if saved_filters and isinstance(saved_filters, dict):
+                    # Apply loaded filters
+                    if 'states' in saved_filters and saved_filters['states']:
+                        self.filter_states = saved_filters['states']
+                        logger.info("Loaded status filters: %s", self.filter_states)
+                    if 'tournaments' in saved_filters and saved_filters['tournaments']:
+                        self.selected_tournaments = saved_filters['tournaments']
+                        logger.info("Loaded tournament filters: %s", self.selected_tournaments)
+                    
+                    logger.info("Successfully loaded event schedule filters from user storage for org %s", self.organization.id)
+                else:
+                    logger.info("No saved filters found in user storage, using defaults: states=%s, tournaments=%s", 
+                               self.filter_states, self.selected_tournaments)
+            else:
+                logger.info("User storage not available, using defaults")
+            
+            self._filters_loaded = True
+        except Exception as e:
+            logger.warning("Could not load event schedule filters from user storage: %s", e)
+            # Continue with default filters
+            self._filters_loaded = True
+
+    async def _save_filters(self) -> None:
+        """Save filters to server-side storage."""
+        try:
+            from nicegui import app
+            
+            storage_key = f'event_schedule_filters_{self.organization.id}'
+            filters = {
+                'states': self.filter_states,
+                'tournaments': self.selected_tournaments
+            }
+            
+            # Use NiceGUI's server-side storage (session-based, persists across page loads)
+            if hasattr(app, 'storage') and hasattr(app.storage, 'user'):
+                app.storage.user[storage_key] = filters
+                logger.info("Saved event schedule filters to user storage: %s", filters)
+            else:
+                logger.warning("User storage not available for saving filters")
+        except Exception as e:
+            logger.warning("Could not save event schedule filters to user storage: %s", e)
 
     async def _refresh(self) -> None:
         """Refresh the view by clearing and re-rendering."""
@@ -179,7 +242,7 @@ class EventScheduleView:
                             
                             # Show SpeedGaming badge if imported from SpeedGaming
                             if hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id:
-                                ui.badge('SpeedGaming').classes('badge-info')
+                                ui.badge('SpeedGaming').classes('badge-info').tooltip('Managed by SpeedGaming (read-only)')
 
                     def render_scheduled_time(match: Match):
                         if match.scheduled_at:
@@ -341,12 +404,8 @@ class EventScheduleView:
                         else:
                             ui.label('—').classes('text-secondary')
 
-                        # Show info for SpeedGaming matches instead of buttons
-                        if is_speedgaming:
-                            with ui.row().classes('items-center gap-1'):
-                                ui.icon('info', size='sm').classes('text-info')
-                                ui.label('Managed by SpeedGaming').classes('text-xs text-secondary')
-                        else:
+                        # For SpeedGaming matches, don't show buttons (managed externally)
+                        if not is_speedgaming:
                             # Admin add commentator button (for admins/tournament managers)
                             if self.can_approve_crew:
                                 ui.button(
@@ -409,12 +468,8 @@ class EventScheduleView:
                         else:
                             ui.label('—').classes('text-secondary')
 
-                        # Show info for SpeedGaming matches instead of buttons
-                        if is_speedgaming:
-                            with ui.row().classes('items-center gap-1'):
-                                ui.icon('info', size='sm').classes('text-info')
-                                ui.label('Managed by SpeedGaming').classes('text-xs text-secondary')
-                        elif tracker_enabled:
+                        # For SpeedGaming matches, don't show buttons (managed externally)
+                        if not is_speedgaming and tracker_enabled:
                             # Admin add tracker button (for admins/tournament managers)
                             if self.can_approve_crew:
                                 ui.button(
@@ -433,8 +488,8 @@ class EventScheduleView:
                                     icon='add_circle',
                                     on_click=lambda m=match: signup_crew(m.id, CrewRole.TRACKER)
                                 ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Sign up as tracker')
-                        else:
-                            # Show disabled button with tooltip explaining why
+                        elif not is_speedgaming:
+                            # Show disabled button with tooltip explaining why (only for non-SpeedGaming matches)
                             ui.button(
                                 icon='block',
                                 on_click=None
@@ -623,10 +678,8 @@ class EventScheduleView:
                     is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
                     
                     if is_speedgaming:
-                        # Show info message for SpeedGaming matches
-                        with ui.row().classes('items-center gap-1'):
-                            ui.icon('info', size='sm').classes('text-info')
-                            ui.label('SpeedGaming').classes('text-xs text-secondary').tooltip('Schedule managed by SpeedGaming (read-only)')
+                        # For SpeedGaming matches, show nothing (badge in Match column is enough)
+                        ui.label('—').classes('text-secondary')
                     elif self.can_edit_matches:
                         with ui.row().classes('gap-1'):
                             ui.button(
@@ -872,6 +925,12 @@ class EventScheduleView:
 
     async def render(self) -> None:
         """Render the event schedule view."""
+        # Create container first
         self.container = ui.column().classes('w-full')
+        
+        # Load saved filters from client storage BEFORE rendering content
+        await self._load_filters()
+        
+        # Now render with loaded filter values
         with self.container:
             await self._render_content()

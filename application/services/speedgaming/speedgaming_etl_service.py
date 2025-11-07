@@ -902,9 +902,33 @@ class SpeedGamingETLService:
             speedgaming_episode_id=episode.id
         )
 
+        # If match is already finished, skip it (don't touch completed matches)
+        if existing_match and existing_match.finished_at is not None:
+            logger.debug(
+                "Match %s (episode %s) is already finished, skipping update",
+                existing_match.id,
+                episode.id
+            )
+            return existing_match
+
         # Get organization ID from tournament
         await tournament.fetch_related('organization')
         organization_id = tournament.organization_id
+
+        # Check if match should be auto-finished (more than 4 hours in the past)
+        current_time = datetime.now(timezone.utc)
+        if existing_match and existing_match.scheduled_at:
+            time_since_scheduled = current_time - existing_match.scheduled_at
+            # 4 hours = 14400 seconds
+            if time_since_scheduled.total_seconds() > 14400:
+                logger.info(
+                    "Match %s (episode %s) is more than 4 hours past scheduled time, auto-finishing",
+                    existing_match.id,
+                    episode.id
+                )
+                existing_match.finished_at = current_time
+                await existing_match.save()
+                return existing_match
 
         # Collect all players from match1 and match2
         all_players: List[SpeedGamingPlayer] = []

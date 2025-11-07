@@ -302,18 +302,27 @@ class UserRepository:
             crew_memberships__match_id__in=match_ids
         ).distinct().prefetch_related('crew_memberships__match')
 
-        # Combine and deduplicate
+        # Combine and deduplicate, tracking roles
         all_placeholder_ids = set()
         all_placeholders = []
 
         for user in player_placeholders:
             if user.id not in all_placeholder_ids:
                 all_placeholder_ids.add(user.id)
+                # Tag user with role info for UI display
+                user._placeholder_roles = ['Player']
                 all_placeholders.append(user)
 
         for user in crew_placeholders:
             if user.id not in all_placeholder_ids:
                 all_placeholder_ids.add(user.id)
+                # Tag user with role info for UI display
+                user._placeholder_roles = ['Crew']
                 all_placeholders.append(user)
+            else:
+                # User is in both lists - add Crew to existing roles
+                existing_user = next(u for u in all_placeholders if u.id == user.id)
+                if 'Crew' not in existing_user._placeholder_roles:
+                    existing_user._placeholder_roles.append('Crew')
 
         return all_placeholders

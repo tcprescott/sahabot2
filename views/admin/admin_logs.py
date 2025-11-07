@@ -144,8 +144,15 @@ class AdminLogsView:
 
         # Auto-scroll to bottom if enabled
         if self.auto_scroll and self.scroll_area:
-            # Use external JavaScript function for scrolling
-            await ui.run_javascript(f'window.LogViewer.scrollToBottom({self.scroll_area.id})')
+            # Use external JavaScript function for scrolling (if available)
+            try:
+                await ui.run_javascript(
+                    f'window.LogViewer && window.LogViewer.scrollToBottom({self.scroll_area.id})',
+                    timeout=0.5
+                )
+            except (TimeoutError, Exception):
+                # Ignore errors - element or script may not be ready yet
+                pass
 
     def _render_log_record(self, record: LogRecord):
         """
@@ -248,6 +255,16 @@ class AdminLogsView:
         filename = f'sahabot2_logs_{timestamp}.txt'
 
         # Trigger download using external JavaScript function
-        await ui.run_javascript(f'window.LogViewer.downloadAsFile({repr(content)}, {repr(filename)})')
-
-        ui.notify('Logs downloaded', type='positive')
+        try:
+            success = await ui.run_javascript(
+                f'window.LogViewer && window.LogViewer.downloadAsFile({repr(content)}, {repr(filename)})',
+                timeout=3.0
+            )
+            if success:
+                ui.notify('Logs downloaded', type='positive')
+            else:
+                ui.notify('Download failed - JavaScript not loaded yet, please refresh', type='warning')
+        except TimeoutError:
+            ui.notify('Download timed out - please try again', type='negative')
+        except Exception as e:
+            ui.notify(f'Download error: {str(e)}', type='negative')

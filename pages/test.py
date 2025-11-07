@@ -142,7 +142,7 @@ def register():
                     ui.toggle(['Left', 'Center', 'Right'], value='Center')
 
                     ui.label('Color Picker').classes('font-bold mb-2 mt-4')
-                    ui.color_picker(label='Choose color', value='#3b82f6')
+                    ui.color_picker(value='#3b82f6')
 
                     ui.label('Date Input').classes('font-bold mb-2 mt-4')
                     ui.date(value=datetime.now(timezone.utc).strftime('%Y-%m-%d')).classes('w-full')

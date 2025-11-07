@@ -6,7 +6,7 @@ This service handles API calls to SpeedGaming.org for fetching episode and event
 
 import httpx
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
@@ -230,7 +230,7 @@ class SpeedGamingService:
         Raises:
             httpx.HTTPError: If API request fails
         """
-        url = f"{self.base_url}/episode/{episode_id}/"  # Trailing slash required by SpeedGaming API
+        url = f"{self.base_url}/episode/?id={episode_id}"
 
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
@@ -260,25 +260,35 @@ class SpeedGamingService:
     async def get_upcoming_episodes_by_event(
         self,
         event_slug: str,
-        limit: int = 100
+        from_datetime: Optional[datetime] = None,
+        to_datetime: Optional[datetime] = None
     ) -> List[SpeedGamingEpisode]:
         """
-        Fetch upcoming episodes for a specific event.
+        Fetch episodes for a specific event within a date range.
 
         Args:
             event_slug: SpeedGaming event slug (e.g., "alttprleague")
-            limit: Maximum number of episodes to fetch
+            from_datetime: Start of date range (defaults to 2 hours ago)
+            to_datetime: End of date range (defaults to 7 days from now)
 
         Returns:
-            List of upcoming SpeedGamingEpisode objects
+            List of SpeedGamingEpisode objects within date range
 
         Raises:
             httpx.HTTPError: If API request fails
         """
+        # Default to 2 hours ago to 7 days from now
+        now = datetime.now(timezone.utc)
+        if from_datetime is None:
+            from_datetime = now - timedelta(hours=2)
+        if to_datetime is None:
+            to_datetime = now + timedelta(days=7)
+
         url = f"{self.base_url}/schedule/"  # Trailing slash required by SpeedGaming API
         params = {
             "event": event_slug,
-            "limit": limit,
+            "from": from_datetime.isoformat(),
+            "to": to_datetime.isoformat(),
         }
 
         try:
@@ -302,7 +312,13 @@ class SpeedGamingService:
                     episodes_data = data.get("episodes", [])
 
                 episodes = [SpeedGamingEpisode.from_dict(ep) for ep in episodes_data]
-                logger.info("Fetched %s upcoming episodes for event '%s'", len(episodes), event_slug)
+                logger.info(
+                    "Fetched %s episodes for event '%s' from %s to %s",
+                    len(episodes),
+                    event_slug,
+                    from_datetime.isoformat(),
+                    to_datetime.isoformat()
+                )
                 return episodes
 
         except httpx.HTTPError as e:
