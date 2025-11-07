@@ -7,6 +7,7 @@ This module tests that:
 """
 
 import pytest
+from unittest.mock import AsyncMock, MagicMock
 from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
 from models.randomizer_preset import RandomizerPreset
 from models.user import User, Permission
@@ -77,17 +78,23 @@ class TestMysteryPresetAuthentication:
             is_public=False
         )
 
-    @pytest.mark.asyncio
-    async def test_public_preset_no_auth(self, db, public_preset):
-        """Test that public presets can be accessed without authentication."""
-        service = ALTTPRMysteryService()
-        
-        # Mock the alttpr_service.generate to avoid actual API calls
-        from unittest.mock import AsyncMock, MagicMock
+    @pytest.fixture
+    def mock_alttpr_service(self):
+        """Create a mock ALTTPR service for testing without API calls."""
         mock_result = MagicMock()
         mock_result.url = "https://alttpr.com/test"
         mock_result.hash_id = "TESTHASH"
-        service.alttpr_service.generate = AsyncMock(return_value=mock_result)
+        return AsyncMock(return_value=mock_result)
+
+    def _setup_service_mock(self, service, mock_generate):
+        """Helper to set up service mock."""
+        service.alttpr_service.generate = mock_generate
+
+    @pytest.mark.asyncio
+    async def test_public_preset_no_auth(self, db, public_preset, mock_alttpr_service):
+        """Test that public presets can be accessed without authentication."""
+        service = ALTTPRMysteryService()
+        self._setup_service_mock(service, mock_alttpr_service)
         
         # Should succeed without user_id for public preset
         result, description = await service.generate_from_preset_name(
@@ -101,16 +108,10 @@ class TestMysteryPresetAuthentication:
         assert 'preset' in description
 
     @pytest.mark.asyncio
-    async def test_public_preset_with_auth(self, db, public_preset, other_user):
+    async def test_public_preset_with_auth(self, db, public_preset, other_user, mock_alttpr_service):
         """Test that public presets can be accessed with authentication by any user."""
         service = ALTTPRMysteryService()
-        
-        # Mock the alttpr_service.generate
-        from unittest.mock import AsyncMock, MagicMock
-        mock_result = MagicMock()
-        mock_result.url = "https://alttpr.com/test"
-        mock_result.hash_id = "TESTHASH"
-        service.alttpr_service.generate = AsyncMock(return_value=mock_result)
+        self._setup_service_mock(service, mock_alttpr_service)
         
         # Should succeed with user_id (even though it's not the owner)
         result, description = await service.generate_from_preset_name(
@@ -152,16 +153,10 @@ class TestMysteryPresetAuthentication:
             )
 
     @pytest.mark.asyncio
-    async def test_private_preset_owner(self, db, private_preset, owner_user):
+    async def test_private_preset_owner(self, db, private_preset, owner_user, mock_alttpr_service):
         """Test that private presets can be accessed by their owner."""
         service = ALTTPRMysteryService()
-        
-        # Mock the alttpr_service.generate
-        from unittest.mock import AsyncMock, MagicMock
-        mock_result = MagicMock()
-        mock_result.url = "https://alttpr.com/test"
-        mock_result.hash_id = "TESTHASH"
-        service.alttpr_service.generate = AsyncMock(return_value=mock_result)
+        self._setup_service_mock(service, mock_alttpr_service)
         
         # Should succeed with owner's user_id
         result, description = await service.generate_from_preset_name(
