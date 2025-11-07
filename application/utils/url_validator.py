@@ -132,12 +132,7 @@ def validate_url(
                     logger.warning("Blocked URL with localhost hostname: %s", url)
                     return False, "URLs with localhost/internal hostnames are not allowed"
 
-                # Check for IP address in hostname (e.g., 127.0.0.1.example.com)
-                # This prevents DNS rebinding attacks
-                if any(part.replace('.', '').replace(':', '').isdigit() for part in hostname.split('.')):
-                    # Contains numeric parts that might be IPs
-                    pass  # Allow for now, could be a legitimate domain with numbers
-
+# (Removed ineffective DNS rebinding check)
     except Exception as e:
         logger.error("Error parsing URL %s: %s", url, e)
         return False, "Failed to parse URL"
