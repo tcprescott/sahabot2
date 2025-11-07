@@ -8,7 +8,6 @@ and joins them based on configuration.
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from application.services.tasks.task_handlers import handle_racetime_poll_open_rooms, register_task_handlers
-from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 
 
 @pytest.fixture(autouse=True)
