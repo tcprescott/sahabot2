@@ -33,12 +33,14 @@ class EventScheduleView:
         self.service = TournamentService()
         self.org_service = OrganizationService()
         self.container = None
+        self.matches_container = None  # Separate container for just the matches table
         self.filter_states = ['pending', 'scheduled', 'checked_in']  # Default: show pending, scheduled, checked_in
         self.selected_tournaments = []  # List of selected tournament IDs
         self.can_manage_tournaments = False  # Set during render
         self.can_edit_matches = False  # Set during render (moderator or tournament admin)
         self.can_approve_crew = False  # Set during render (admin, tournament manager, or moderator)
         self._filters_loaded = False  # Track if we've loaded filters from localStorage
+        self.all_matches = []  # Cache all matches to avoid re-fetching on filter change
 
     def _get_match_state(self, match: Match) -> str:
         """Get the state of a match."""
@@ -75,16 +77,18 @@ class EventScheduleView:
     async def _on_filter_change(self, new_states) -> None:
         """Handle filter state change."""
         self.filter_states = new_states if new_states else []
-        # Save to localStorage
+        # Save to storage
         await self._save_filters()
-        await self._refresh()
+        # Update only the matches table, not the entire page
+        await self._refresh_matches()
 
     async def _on_tournament_filter_change(self, selected_ids) -> None:
         """Handle tournament filter change."""
         self.selected_tournaments = selected_ids if selected_ids else []
-        # Save to localStorage
+        # Save to storage
         await self._save_filters()
-        await self._refresh()
+        # Update only the matches table, not the entire page
+        await self._refresh_matches()
 
     async def _load_filters(self) -> None:
         """Load filters from server-side storage."""
@@ -150,6 +154,13 @@ class EventScheduleView:
             with self.container:
                 await self._render_content()
 
+    async def _refresh_matches(self) -> None:
+        """Refresh only the matches table without reloading the entire page."""
+        if self.matches_container:
+            self.matches_container.clear()
+            with self.matches_container:
+                await self._render_matches_table()
+
     async def _render_content(self) -> None:
         """Render the actual content."""
         # Check if user can manage tournaments
@@ -168,8 +179,8 @@ class EventScheduleView:
             self.user, self.organization.id
         )
 
-        # Get all matches for this organization's tournaments via service
-        all_matches = await self.service.list_org_matches(self.organization.id)
+        # Get all matches for this organization's tournaments via service (cache for filter updates)
+        self.all_matches = await self.service.list_org_matches(self.organization.id)
 
         # Get all tournaments for filter
         all_tournaments = await self.service.list_all_org_tournaments(self.organization.id)
@@ -205,15 +216,22 @@ class EventScheduleView:
                         on_change=lambda e: self._on_tournament_filter_change(e.value)
                     ).classes('min-w-[200px]').props('use-chips')
 
+        # Container for matches table (will be updated when filters change)
+        self.matches_container = ui.column().classes('w-full')
+        with self.matches_container:
+            await self._render_matches_table()
+
+    async def _render_matches_table(self) -> None:
+        """Render just the matches table (called when filters change)."""
         # Apply filter
-        matches = self._filter_matches(all_matches)
+        matches = self._filter_matches(self.all_matches)
 
         # Custom card with header action button
         with ui.element('div').classes('card'):
             # Card header with create match button
             with ui.element('div').classes('card-header'):
                 with ui.row().classes('items-center justify-between w-full'):
-                    ui.label(f'Event Schedule - {self.organization.name} ({len(matches)}/{len(all_matches)})').classes('text-xl font-bold')
+                    ui.label(f'Event Schedule - {self.organization.name} ({len(matches)}/{len(self.all_matches)})').classes('text-xl font-bold')
                     # Show "Create Match" button for tournament admins and admins
                     if self.can_manage_tournaments or self.user.has_permission(Permission.ADMIN):
                         ui.button(
