@@ -90,6 +90,7 @@ class RacetimeBotService:
         name: str,
         description: Optional[str],
         is_active: bool,
+        handler_class: str,
         current_user: User,
     ) -> Optional[RacetimeBot]:
         """
@@ -104,6 +105,7 @@ class RacetimeBotService:
             name: Friendly name
             description: Optional description
             is_active: Whether bot is active
+            handler_class: Handler class name (e.g., 'ALTTPRRaceHandler')
             current_user: Current user
 
         Returns:
@@ -132,6 +134,7 @@ class RacetimeBotService:
             name=name,
             description=description,
             is_active=is_active,
+            handler_class=handler_class,
         )
 
         # Emit event
@@ -218,7 +221,8 @@ class RacetimeBotService:
                         bot.category,
                         bot.client_id,
                         bot.client_secret,
-                        bot_id=bot.id
+                        bot_id=bot.id,
+                        handler_class_name=bot.handler_class
                     )
                 except Exception as e:
                     logger.error("Failed to start bot %s: %s", bot.category, e, exc_info=True)
@@ -325,7 +329,8 @@ class RacetimeBotService:
                 bot.category,
                 bot.client_id,
                 bot.client_secret,
-                bot_id=bot.id
+                bot_id=bot.id,
+                handler_class_name=bot.handler_class
             )
 
             logger.info("Successfully restarted bot %s", bot.category)
