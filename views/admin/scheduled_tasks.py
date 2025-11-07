@@ -358,24 +358,35 @@ class ScheduledTasksView:
         with ui.element('div').classes('flex gap-2'):
             # Toggle button
             is_active = task_info.get('is_active', False)
+            
+            # Create a proper async handler for the toggle
+            async def handle_toggle():
+                await self._toggle_builtin_task(task_info)
+            
             ui.button(
                 'Disable' if is_active else 'Enable',
                 icon='pause_circle' if is_active else 'play_circle',
-                on_click=lambda t=task_info: self._toggle_builtin_task(t)
+                on_click=handle_toggle
             ).classes('btn').props(f'color={"warning" if is_active else "positive"} size=sm')
             
             # Only show Run Now for active tasks
             if is_active:
+                async def handle_run_now():
+                    await self._execute_builtin_task_now(task_info)
+                
                 ui.button(
                     'Run Now',
                     icon='play_arrow',
-                    on_click=lambda t=task_info: self._execute_builtin_task_now(t)
+                    on_click=handle_run_now
                 ).classes('btn').props('color=primary size=sm')
+            
+            async def handle_details():
+                await self._view_task_details(task_info)
             
             ui.button(
                 'Details',
                 icon='info',
-                on_click=lambda t=task_info: self._view_task_details(t)
+                on_click=handle_details
             ).classes('btn').props('size=sm')
 
     async def _render_content(self) -> None:

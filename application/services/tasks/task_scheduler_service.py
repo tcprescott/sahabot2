@@ -17,7 +17,8 @@ from application.repositories.scheduled_task_repository import ScheduledTaskRepo
 from application.repositories.builtin_task_override_repository import BuiltinTaskOverrideRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
-from application.services.tasks.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks
+from application.services.tasks.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks, get_builtin_task
+from application.events import EventBus, BuiltinTaskOverrideUpdatedEvent
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +274,6 @@ class TaskSchedulerService:
         
         This should be called at startup and after any override changes.
         """
-        from application.repositories.builtin_task_override_repository import BuiltinTaskOverrideRepository
         repo = BuiltinTaskOverrideRepository()
         cls._builtin_task_overrides = await repo.get_overrides_dict()
         logger.info("Loaded %s builtin task overrides", len(cls._builtin_task_overrides))
@@ -331,11 +331,13 @@ class TaskSchedulerService:
             return False
         
         # Verify the task exists
-        from application.services.tasks.builtin_tasks import get_builtin_task
         task = get_builtin_task(task_id)
         if not task:
             logger.warning("Builtin task %s not found", task_id)
             return False
+        
+        # Get previous status for event
+        previous_is_active = self.__class__._builtin_task_overrides.get(task_id)
         
         # Save to database
         await self.override_repo.set_active(task_id, is_active)
@@ -349,6 +351,16 @@ class TaskSchedulerService:
             is_active,
             user.id
         )
+        
+        # Emit event for audit logging
+        await EventBus.emit(BuiltinTaskOverrideUpdatedEvent(
+            user_id=user.id,
+            organization_id=None,  # Builtin tasks are global
+            entity_id=task_id,
+            task_id=task_id,
+            is_active=is_active,
+            previous_is_active=previous_is_active,
+        ))
         
         return True
 

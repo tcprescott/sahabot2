@@ -107,7 +107,6 @@ class TestBuiltinTaskOverrideIntegration:
         # So a disabled task won't run even if _should_run_builtin_task returns True
         
         # This is verified by the service layer check in execute_builtin_task_now
-        now = datetime.now(timezone.utc)
         can_execute = await TaskSchedulerService.execute_builtin_task_now(
             admin_user,
             'async_tournament_timeout_pending'
