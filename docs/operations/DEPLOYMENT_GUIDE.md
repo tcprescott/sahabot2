@@ -313,6 +313,8 @@ sudo journalctl -u sahabot2-staging -f
 
 ### 6. Configure Nginx Reverse Proxy
 
+> **Note**: A comprehensive sample Nginx configuration is available in the repository root as [`nginx.conf.sample`](../../nginx.conf.sample). The configuration below is a simplified version for staging. For production deployment with all features (rate limiting, security headers, static file serving, etc.), see the sample configuration file or the production configuration in section 8 below.
+
 **File**: `/etc/nginx/sites-available/staging.sahabot2`
 
 ```nginx
@@ -542,6 +544,8 @@ sudo journalctl -u sahabot2 -f
 ```
 
 ### 8. Production Nginx Configuration
+
+> **Note**: A comprehensive, production-ready sample Nginx configuration is available in the repository root as [`nginx.conf.sample`](../../nginx.conf.sample). This sample includes all recommended settings for production deployment including WebSocket support, rate limiting, security headers, static file serving, gzip compression, and more. You can copy this file directly to your server and customize it for your domain.
 
 **File**: `/etc/nginx/sites-available/sahabot2`
 
@@ -828,6 +832,8 @@ sudo systemctl daemon-reload
 ---
 
 ## Reverse Proxy Setup
+
+> **Quick Start**: A comprehensive sample Nginx configuration file is available at [`nginx.conf.sample`](../../nginx.conf.sample) in the repository root. This file includes all the settings mentioned in this section and more. Copy it to `/etc/nginx/sites-available/` and customize for your domain.
 
 ### Nginx Configuration Tips
 

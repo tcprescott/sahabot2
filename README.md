@@ -420,6 +420,37 @@ See [docs/operations/COPILOT_AGENT_ENVIRONMENT.md](docs/operations/COPILOT_AGENT
 - Custom agent profiles and instructions
 - Development workflow with Copilot agent
 
+## Deployment
+
+For production deployment with Nginx reverse proxy, SSL/TLS, and systemd service management:
+
+- 📋 **[Deployment Guide](docs/operations/DEPLOYMENT_GUIDE.md)** - Complete deployment guide for staging and production
+- 🔧 **[nginx.conf.sample](nginx.conf.sample)** - Production-ready Nginx configuration with:
+  - WebSocket support (required for NiceGUI)
+  - SSL/TLS configuration
+  - Rate limiting
+  - Security headers
+  - Static file serving
+  - Gzip compression
+
+Quick start for Nginx setup:
+```bash
+# Copy sample configuration
+sudo cp nginx.conf.sample /etc/nginx/sites-available/sahabot2
+
+# Edit with your domain and certificate paths
+sudo nano /etc/nginx/sites-available/sahabot2
+
+# Enable site
+sudo ln -s /etc/nginx/sites-available/sahabot2 /etc/nginx/sites-enabled/
+
+# Test and reload
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+See the [Deployment Guide](docs/operations/DEPLOYMENT_GUIDE.md) for complete setup instructions including database, systemd service, SSL certificates, and monitoring.
+
 ## Security
 
 This application implements comprehensive security best practices. See [SECURITY.md](SECURITY.md) for details on:
