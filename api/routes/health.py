@@ -1,40 +1,103 @@
 """Health check endpoints."""
 
-from fastapi import APIRouter, HTTPException
-from api.schemas.common import HealthResponse
+import logging
+from fastapi import APIRouter, HTTPException, Query
+from api.schemas.common import HealthResponse, ServiceStatus
+from config import settings
+from tortoise import Tortoise
 import sentry_sdk
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["health"])
+
+
+async def check_database_health() -> ServiceStatus:
+    """
+    Check database connectivity.
+
+    Returns:
+        ServiceStatus: Database health status
+    """
+    try:
+        # Try to get a connection and execute a simple query
+        conn = Tortoise.get_connection("default")
+        await conn.execute_query("SELECT 1")
+        return ServiceStatus(status="ok", message="Database connection healthy")
+    except Exception as e:
+        logger.error("Database health check failed: %s", e)
+        return ServiceStatus(status="error", message=f"Database connection failed: {str(e)}")
 
 
 @router.get(
     "/health",
     response_model=HealthResponse,
     summary="Health Check",
-    description="Returns the health status and version of the API service.",
+    description="Returns the health status and version of the API service. Requires a secret query parameter for authentication.",
     responses={
         200: {
             "description": "Service is healthy",
             "content": {
                 "application/json": {
-                    "example": {"status": "ok", "version": "0.1.0"}
+                    "example": {
+                        "status": "ok",
+                        "version": "0.1.0",
+                        "services": {
+                            "database": {
+                                "status": "ok",
+                                "message": "Database connection healthy"
+                            }
+                        }
+                    }
                 }
             },
+        },
+        401: {
+            "description": "Unauthorized - Invalid or missing secret"
         }
     },
 )
-async def health() -> HealthResponse:
+async def health(
+    secret: str = Query(..., description="Health check secret for authentication")
+) -> HealthResponse:
     """
     Check API service health.
 
     This endpoint can be used for monitoring and load balancer health checks.
-    No authentication required.
+    Requires a secret query parameter for authentication.
+
+    Args:
+        secret: Health check secret (configured via HEALTH_CHECK_SECRET env var)
 
     Returns:
-        HealthResponse: Status and version information
+        HealthResponse: Status and version information with service health details
+
+    Raises:
+        HTTPException: 401 if secret is invalid
     """
-    return HealthResponse(status="ok", version="0.1.0")
+    # Validate secret
+    if secret != settings.HEALTH_CHECK_SECRET:
+        logger.warning("Health check attempted with invalid secret")
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid health check secret"
+        )
+
+    # Check database health
+    db_status = await check_database_health()
+
+    # Determine overall status
+    overall_status = "ok"
+    if db_status.status == "error":
+        overall_status = "degraded"
+
+    return HealthResponse(
+        status=overall_status,
+        version="0.1.0",
+        services={
+            "database": db_status
+        }
+    )
 
 
 @router.get(

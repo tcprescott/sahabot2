@@ -57,6 +57,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     BASE_URL: str = "http://localhost:8080"  # Base URL for the application
+    HEALTH_CHECK_SECRET: str  # Secret for authenticating health check endpoint
 
     # Server Configuration
     HOST: str = "0.0.0.0"
