@@ -58,6 +58,21 @@ class AsyncTournamentMainView(ui.View):
             )
             return
 
+        # Check if RaceTime.gg account is required and linked
+        if tournament.require_racetime_for_async_runs:
+            if not user.racetime_id:
+                # Get base URL from config
+                from config import settings
+                profile_url = f"{settings.BASE_URL}/profile?view=racetime"
+                await interaction.response.send_message(
+                    f"⚠️ **RaceTime.gg Account Required**\n\n"
+                    f"This tournament requires you to link your RaceTime.gg account before starting async runs.\n\n"
+                    f"Please visit your profile page to link your account:\n{profile_url}\n\n"
+                    f"After linking, you'll be able to start async runs.",
+                    ephemeral=True
+                )
+                return
+
         # Get service
         service = AsyncTournamentService()
 
