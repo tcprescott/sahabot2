@@ -1,0 +1,23 @@
+# SahaBot2 Translation Template
+# Copyright (C) 2025 SahaBot2
+# This file is distributed under the same license as the SahaBot2 package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SahaBot2 0.1.0\n"
+"POT-Creation-Date: 2025-11-08 12:00+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# This is a template file (.pot) that serves as the basis for
+# creating language-specific translation files (.po).
+#
+# To create a new language:
+# 1. Copy this file to locales/<lang>/LC_MESSAGES/messages.po
+# 2. Update the header information above
+# 3. Translate the msgstr entries
+# 4. Compile to .mo using: msgfmt messages.po -o messages.mo

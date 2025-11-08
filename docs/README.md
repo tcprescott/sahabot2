@@ -22,6 +22,7 @@ Essential guides for UI, backend, and architecture development:
 - **[Dialog Action Row Pattern](core/DIALOG_ACTION_ROW_PATTERN.md)** - Dialog button layout pattern
 - **[JavaScript Guidelines](core/JAVASCRIPT_GUIDELINES.md)** - JavaScript organization and patterns
 - **[Repository Pattern Guide](core/REPOSITORIES_PATTERN.md)** - Data access layer patterns and examples
+- **[I18N Guide](core/I18N_GUIDE.md)** - Internationalization and translation system
 
 ### ⚙️ System Documentation
 

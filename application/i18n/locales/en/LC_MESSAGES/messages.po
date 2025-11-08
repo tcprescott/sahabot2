@@ -1,0 +1,152 @@
+# English translations for SahaBot2
+# Copyright (C) 2025 SahaBot2
+# This file is distributed under the same license as the SahaBot2 package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: SahaBot2 0.1.0\n"
+"POT-Creation-Date: 2025-11-08 12:00+0000\n"
+"PO-Revision-Date: 2025-11-08 12:00+0000\n"
+"Last-Translator: SahaBot2 Team\n"
+"Language: en\n"
+"Language-Team: English\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# Note: For English, msgstr values are the same as msgid values
+# since English is the source language. This file serves as a
+# template and fallback for the translation system.
+
+# Common UI elements
+msgid "Welcome to SahaBot2"
+msgstr "Welcome to SahaBot2"
+
+msgid "Home"
+msgstr "Home"
+
+msgid "Admin"
+msgstr "Admin"
+
+msgid "Settings"
+msgstr "Settings"
+
+msgid "Profile"
+msgstr "Profile"
+
+msgid "Logout"
+msgstr "Logout"
+
+msgid "Login with Discord"
+msgstr "Login with Discord"
+
+msgid "Save"
+msgstr "Save"
+
+msgid "Cancel"
+msgstr "Cancel"
+
+msgid "Delete"
+msgstr "Delete"
+
+msgid "Edit"
+msgstr "Edit"
+
+msgid "Create"
+msgstr "Create"
+
+msgid "Close"
+msgstr "Close"
+
+msgid "Submit"
+msgstr "Submit"
+
+msgid "Search"
+msgstr "Search"
+
+msgid "Filter"
+msgstr "Filter"
+
+msgid "Back"
+msgstr "Back"
+
+msgid "Next"
+msgstr "Next"
+
+msgid "Previous"
+msgstr "Previous"
+
+msgid "Loading..."
+msgstr "Loading..."
+
+msgid "No data available"
+msgstr "No data available"
+
+msgid "Error"
+msgstr "Error"
+
+msgid "Success"
+msgstr "Success"
+
+msgid "Warning"
+msgstr "Warning"
+
+msgid "Information"
+msgstr "Information"
+
+# Header and Navigation
+msgid "SahasrahBot"
+msgstr "SahasrahBot"
+
+msgid "Open navigation menu"
+msgstr "Open navigation menu"
+
+msgid "Go to home page"
+msgstr "Go to home page"
+
+# User menu
+msgid "User Menu"
+msgstr "User Menu"
+
+msgid "View Profile"
+msgstr "View Profile"
+
+msgid "Sign Out"
+msgstr "Sign Out"
+
+# Permissions
+msgid "Permission Level"
+msgstr "Permission Level"
+
+msgid "Active Account"
+msgstr "Active Account"
+
+# Common messages
+msgid "You do not have permission to view this page"
+msgstr "You do not have permission to view this page"
+
+msgid "Page not found"
+msgstr "Page not found"
+
+msgid "An error occurred"
+msgstr "An error occurred"
+
+msgid "Operation completed successfully"
+msgstr "Operation completed successfully"
+
+msgid "Please try again"
+msgstr "Please try again"
+
+# Footer
+msgid "Privacy Policy"
+msgstr "Privacy Policy"
+
+msgid "Terms of Service"
+msgstr "Terms of Service"
+
+msgid "Documentation"
+msgstr "Documentation"
+
+msgid "Support"
+msgstr "Support"
