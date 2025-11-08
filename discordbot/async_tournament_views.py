@@ -14,6 +14,8 @@ from slugify import slugify
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from application.services.tournaments.async_tournament_service import AsyncTournamentService
+from application.services.organizations.organization_service import OrganizationService
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +63,6 @@ class AsyncTournamentMainView(ui.View):
         # Check if RaceTime.gg account is required and linked
         if tournament.require_racetime_for_async_runs:
             if not user.racetime_id:
-                # Get base URL from config
-                from config import settings
                 profile_url = f"{settings.BASE_URL}/profile?view=racetime"
                 await interaction.response.send_message(
                     f"⚠️ **RaceTime.gg Account Required**\n\n"
@@ -77,7 +77,6 @@ class AsyncTournamentMainView(ui.View):
         service = AsyncTournamentService()
 
         # Check if user is in the organization
-        from application.services.organizations.organization_service import OrganizationService
         org_service = OrganizationService()
         is_member = await org_service.is_member(user, tournament.organization_id)
 

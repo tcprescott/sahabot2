@@ -43,6 +43,7 @@ class AsyncTournamentDialog(BaseDialog):
         self.description_input: Optional[ui.textarea] = None
         self.is_active_switch: Optional[ui.switch] = None
         self.hide_results_switch: Optional[ui.switch] = None
+        self.require_racetime_switch: Optional[ui.switch] = None
         self.runs_per_pool_input: Optional[ui.number] = None
         self.discord_channel_select: Optional[ui.select] = None
         self.manual_channel_input: Optional[ui.input] = None
@@ -109,6 +110,13 @@ class AsyncTournamentDialog(BaseDialog):
                     value=self.tournament.hide_results if self.tournament else False
                 )
                 ui.label('Hide run information from other players until the tournament ends').classes('text-sm text-secondary')
+
+            with ui.element('div'):
+                self.require_racetime_switch = ui.checkbox(
+                    text='Require RaceTime.gg Account',
+                    value=self.tournament.require_racetime_for_async_runs if self.tournament else False
+                )
+                ui.label('Players must link their RaceTime.gg account before starting async runs').classes('text-sm text-secondary')
 
         ui.separator().classes('my-4')
 
@@ -200,6 +208,7 @@ class AsyncTournamentDialog(BaseDialog):
             'description': self.description_input.value.strip() if self.description_input and self.description_input.value else None,
             'is_active': bool(self.is_active_switch.value) if self.is_active_switch else True,
             'hide_results': bool(self.hide_results_switch.value) if self.hide_results_switch else False,
+            'require_racetime_for_async_runs': bool(self.require_racetime_switch.value) if self.require_racetime_switch else False,
             'runs_per_pool': int(self.runs_per_pool_input.value),
             'discord_channel_id': discord_channel_id,
         }

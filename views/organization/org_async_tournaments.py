@@ -95,6 +95,7 @@ class OrganizationAsyncTournamentsView:
                 hide_results=data.get('hide_results', False),
                 discord_channel_id=data.get('discord_channel_id'),
                 runs_per_pool=data.get('runs_per_pool', 1),
+                require_racetime_for_async_runs=data.get('require_racetime_for_async_runs', False),
             )
             if tournament:
                 ui.notify('Async tournament created successfully', type='positive')
