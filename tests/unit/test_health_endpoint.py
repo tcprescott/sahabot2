@@ -16,7 +16,7 @@ def client():
 @pytest.fixture
 def mock_settings():
     """Mock settings with a test health check secret."""
-    with patch('api.routes.health.settings') as mock:
+    with patch("api.routes.health.settings") as mock:
         mock.HEALTH_CHECK_SECRET = "test-secret-123"
         yield mock
 
@@ -24,8 +24,12 @@ def mock_settings():
 @pytest.mark.asyncio
 async def test_health_endpoint_with_valid_secret(db, mock_settings):
     """Test health endpoint returns ok with valid secret."""
-    with patch('api.routes.health.check_database_health', new_callable=AsyncMock) as mock_db_check:
-        mock_db_check.return_value = ServiceStatus(status="ok", message="Database connection healthy")
+    with patch(
+        "api.routes.health.check_database_health", new_callable=AsyncMock
+    ) as mock_db_check:
+        mock_db_check.return_value = ServiceStatus(
+            status="ok", message="Database connection healthy"
+        )
 
         client = TestClient(app)
         response = client.get("/api/health?secret=test-secret-123")
@@ -63,10 +67,11 @@ async def test_health_endpoint_without_secret(db, mock_settings):
 @pytest.mark.asyncio
 async def test_health_endpoint_with_database_error(db, mock_settings):
     """Test health endpoint returns degraded status when database fails."""
-    with patch('api.routes.health.check_database_health', new_callable=AsyncMock) as mock_db_check:
+    with patch(
+        "api.routes.health.check_database_health", new_callable=AsyncMock
+    ) as mock_db_check:
         mock_db_check.return_value = ServiceStatus(
-            status="error",
-            message="Database connection failed: Connection refused"
+            status="error", message="Database connection failed: Connection refused"
         )
 
         client = TestClient(app)
@@ -95,8 +100,10 @@ async def test_check_database_health_failure():
     """Test database health check fails with invalid connection."""
     from api.routes.health import check_database_health
 
-    with patch('api.routes.health.Tortoise.get_connection') as mock_conn:
-        mock_conn.return_value.execute_query = AsyncMock(side_effect=Exception("Connection failed"))
+    with patch("api.routes.health.Tortoise.get_connection") as mock_conn:
+        mock_conn.return_value.execute_query = AsyncMock(
+            side_effect=Exception("Connection failed")
+        )
 
         result = await check_database_health()
 

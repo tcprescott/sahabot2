@@ -26,7 +26,9 @@ async def check_database_health() -> ServiceStatus:
         return ServiceStatus(status="ok", message="Database connection healthy")
     except Exception as e:
         logger.error("Database health check failed: %s", e)
-        return ServiceStatus(status="error", message=f"Database connection failed: {str(e)}")
+        return ServiceStatus(
+            status="error", message=f"Database connection failed: {str(e)}"
+        )
 
 
 @router.get(
@@ -45,16 +47,14 @@ async def check_database_health() -> ServiceStatus:
                         "services": {
                             "database": {
                                 "status": "ok",
-                                "message": "Database connection healthy"
+                                "message": "Database connection healthy",
                             }
-                        }
+                        },
                     }
                 }
             },
         },
-        401: {
-            "description": "Unauthorized - Invalid or missing secret"
-        }
+        401: {"description": "Unauthorized - Invalid or missing secret"},
     },
 )
 async def health(
@@ -78,10 +78,7 @@ async def health(
     # Validate secret
     if secret != settings.HEALTH_CHECK_SECRET:
         logger.warning("Health check attempted with invalid secret")
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid health check secret"
-        )
+        raise HTTPException(status_code=401, detail="Invalid health check secret")
 
     # Check database health
     db_status = await check_database_health()
@@ -92,11 +89,7 @@ async def health(
         overall_status = "degraded"
 
     return HealthResponse(
-        status=overall_status,
-        version="0.1.0",
-        services={
-            "database": db_status
-        }
+        status=overall_status, version="0.1.0", services={"database": db_status}
     )
 
 
@@ -105,12 +98,8 @@ async def health(
     summary="Sentry Test Endpoint (Development Only)",
     description="Test endpoint to verify Sentry error tracking is working. Intentionally raises an exception. Only available in DEBUG mode.",
     responses={
-        403: {
-            "description": "Forbidden - Only available in development mode"
-        },
-        500: {
-            "description": "Intentional test error captured by Sentry"
-        }
+        403: {"description": "Forbidden - Only available in development mode"},
+        500: {"description": "Intentional test error captured by Sentry"},
     },
 )
 async def sentry_test():
@@ -126,22 +115,26 @@ async def sentry_test():
     """
     # Only allow in DEBUG mode
     from config import settings
+
     if not settings.DEBUG:
         raise HTTPException(
             status_code=403,
-            detail="Sentry test endpoint is only available in development mode"
+            detail="Sentry test endpoint is only available in development mode",
         )
 
     # Add custom context to the error
     with sentry_sdk.push_scope() as scope:
         scope.set_tag("test_endpoint", "sentry_test")
-        scope.set_context("test_info", {
-            "purpose": "Testing Sentry integration",
-            "expected": "This error should appear in Sentry"
-        })
+        scope.set_context(
+            "test_info",
+            {
+                "purpose": "Testing Sentry integration",
+                "expected": "This error should appear in Sentry",
+            },
+        )
 
         # Raise an intentional error
         raise HTTPException(
             status_code=500,
-            detail="This is a test error to verify Sentry integration is working"
+            detail="This is a test error to verify Sentry integration is working",
         )
