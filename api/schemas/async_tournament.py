@@ -15,6 +15,7 @@ class AsyncTournamentOut(BaseModel):
     is_active: bool = Field(..., description="Whether the tournament is active")
     discord_channel_id: Optional[int] = Field(None, description="Discord channel ID for race creation")
     runs_per_pool: int = Field(..., description="Number of runs allowed per pool")
+    require_racetime_for_async_runs: bool = Field(..., description="Require RaceTime.gg account for async runs")
     created_at: datetime = Field(..., description="Tournament creation timestamp")
     updated_at: datetime = Field(..., description="Tournament last update timestamp")
 
@@ -44,6 +45,7 @@ class AsyncTournamentCreateRequest(BaseModel):
     is_active: bool = Field(True, description="Whether the tournament is active")
     discord_channel_id: Optional[int] = Field(None, description="Discord channel ID for race creation")
     runs_per_pool: int = Field(1, ge=1, le=10, description="Number of runs allowed per pool")
+    require_racetime_for_async_runs: bool = Field(False, description="Require RaceTime.gg account for async runs")
 
 
 class AsyncTournamentUpdateRequest(BaseModel):
@@ -54,6 +56,7 @@ class AsyncTournamentUpdateRequest(BaseModel):
     is_active: Optional[bool] = Field(None, description="Whether the tournament is active")
     discord_channel_id: Optional[int] = Field(None, description="Discord channel ID for race creation")
     runs_per_pool: Optional[int] = Field(None, ge=1, le=10, description="Number of runs allowed per pool")
+    require_racetime_for_async_runs: Optional[bool] = Field(None, description="Require RaceTime.gg account for async runs")
 
 
 class AsyncTournamentPoolOut(BaseModel):
