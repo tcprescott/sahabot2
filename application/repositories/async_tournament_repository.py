@@ -290,6 +290,16 @@ class AsyncTournamentRepository:
 
         return race
 
+    async def get_race_by_thread_id(
+        self,
+        discord_thread_id: int
+    ) -> Optional[AsyncTournamentRace]:
+        """Get a race by Discord thread ID."""
+        race = await AsyncTournamentRace.get_or_none(
+            discord_thread_id=discord_thread_id
+        ).prefetch_related('user', 'tournament')
+        return race
+
     async def create_race(
         self,
         tournament_id: int,
@@ -330,6 +340,11 @@ class AsyncTournamentRepository:
 
         await race.save()
         logger.info("Updated race %s", race_id)
+
+        # Refetch with all related fields to avoid N+1 queries
+        race = await AsyncTournamentRace.get(id=race_id).prefetch_related(
+            'user', 'reviewed_by', 'permalink__pool', 'tournament'
+        )
         return race
 
     # Audit log methods

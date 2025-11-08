@@ -142,7 +142,7 @@ class AsyncReviewQueueView:
                 TableColumn(label='Pool', key='pool'),
                 TableColumn(label='Time', key='time'),
                 TableColumn(label='Status', key='status'),
-                TableColumn(label='Review', key='review_status'),
+                TableColumn(label='Review', key='review_status_display'),
                 TableColumn(label='Reviewer', key='reviewed_by'),
                 TableColumn(
                     label='Actions',
@@ -156,14 +156,20 @@ class AsyncReviewQueueView:
             # Transform races into table rows
             rows = []
             for race in self.races:
+                # Build review status display with flag indicator
+                review_status_text = race['review_status'].title()
+                if race.get('review_requested_by_user') and race['review_status'] == 'pending':
+                    review_status_text = f"🚩 {review_status_text} (User Flagged)"
+
                 rows.append({
                     'id': race['id'],
                     'player': race['user']['discord_username'],
                     'pool': race.get('pool_name', 'N/A'),
                     'time': race['elapsed_time_formatted'],
                     'status': race['status'].title(),
-                    'review_status': race['review_status'].title(),
+                    'review_status_display': review_status_text,
                     'reviewed_by': race['reviewed_by']['discord_username'] if race.get('reviewed_by') else 'None',
+                    'flagged': race.get('review_requested_by_user', False)  # For potential future styling
                 })
 
             # Render the responsive table

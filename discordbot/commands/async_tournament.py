@@ -39,9 +39,10 @@ class AsyncTournamentCommands(commands.Cog):
         """Add persistent views when bot is ready."""
         if not self._views_added:
             self.bot.add_view(AsyncTournamentMainView())
-            from discordbot.async_tournament_views import RaceReadyView, RaceInProgressView
+            from discordbot.async_tournament_views import RaceReadyView, RaceInProgressView, RaceCompletedView
             self.bot.add_view(RaceReadyView())
             self.bot.add_view(RaceInProgressView())
+            self.bot.add_view(RaceCompletedView())
             self._views_added = True
             logger.info("Added persistent async tournament views")
 

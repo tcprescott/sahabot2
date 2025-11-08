@@ -1075,3 +1075,138 @@ class AsyncTournamentService:
                 await self.calculate_permalink_scores(updated_race.permalink_id, organization_id)
 
         return updated_race
+
+    async def get_race_by_thread_id(
+        self,
+        user: Optional[User],
+        discord_thread_id: int
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Get a race by Discord thread ID.
+
+        Validates that the user is the race participant.
+
+        Args:
+            user: User making the request
+            discord_thread_id: Discord thread ID
+
+        Returns:
+            Race if found and user is participant, None otherwise
+        """
+        if not user:
+            logger.warning("Unauthenticated race lookup by thread_id %s", discord_thread_id)
+            return None
+
+        # Get race from repository
+        race = await self.repo.get_race_by_thread_id(discord_thread_id)
+        if not race:
+            return None
+
+        # Verify user is the race participant
+        if race.user_id != user.id:
+            logger.warning("User %s attempted to access race %s owned by user %s", user.id, race.id, race.user_id)
+            return None
+
+        return race
+
+    async def update_race_submission(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        race_id: int,
+        runner_vod_url: Optional[str] = None,
+        runner_notes: Optional[str] = None,
+        review_requested_by_user: Optional[bool] = None,
+        review_request_reason: Optional[str] = None,
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Update a race submission with VoD URL, notes, and review flag.
+
+        Only the race participant can update their own submission.
+
+        Args:
+            user: User making the request
+            organization_id: Organization ID
+            race_id: Race ID
+            runner_vod_url: Optional VOD URL
+            runner_notes: Optional runner notes/comments
+            review_requested_by_user: Optional flag to request review
+            review_request_reason: Optional reason for requesting review
+
+        Returns:
+            Updated race, or None if not found/unauthorized
+        """
+        if not user:
+            logger.warning("Unauthenticated race submission update attempt for race %s", race_id)
+            return None
+
+        # Check if user is member of organization
+        if not await self.org_service.is_member(user, organization_id):
+            logger.warning("User %s not member of org %s for race submission update", user.id, organization_id)
+            return None
+
+        # Get the race
+        race = await self.repo.get_race_by_id(race_id, organization_id)
+        if not race:
+            return None
+
+        # Only allow the race participant to update their submission
+        if race.user_id != user.id:
+            logger.warning("User %s attempted to update race %s owned by user %s", user.id, race_id, race.user_id)
+            return None
+
+        # Build update fields
+        update_fields = {}
+        if runner_vod_url is not None:
+            update_fields['runner_vod_url'] = runner_vod_url
+        if runner_notes is not None:
+            update_fields['runner_notes'] = runner_notes
+        if review_requested_by_user is not None:
+            update_fields['review_requested_by_user'] = review_requested_by_user
+            # If flagging for review, require a reason
+            if review_requested_by_user and not review_request_reason:
+                logger.warning("User %s attempted to flag race %s without reason", user.id, race_id)
+                return None
+        if review_request_reason is not None:
+            update_fields['review_request_reason'] = review_request_reason
+
+        # Update the race
+        updated_race = await self.repo.update_race(
+            race_id=race_id,
+            organization_id=organization_id,
+            **update_fields
+        )
+
+        if updated_race:
+            # Create audit log
+            action_parts = []
+            if runner_vod_url is not None:
+                action_parts.append("VOD URL")
+            if runner_notes is not None:
+                action_parts.append("notes")
+            if review_requested_by_user:
+                action_parts.append("flagged for review")
+
+            action_desc = ", ".join(action_parts) if action_parts else "submission"
+
+            await self.repo.create_audit_log(
+                tournament_id=updated_race.tournament_id,
+                action="update_race_submission",
+                details=f"Race {race_id} submission updated: {action_desc}",
+                user_id=user.id,
+            )
+
+            # Emit event for race submission update
+            event = RaceSubmittedEvent(
+                entity_id=race_id,
+                user_id=user.id,
+                organization_id=organization_id,
+                tournament_id=updated_race.tournament_id,
+                racer_user_id=updated_race.user_id,
+            )
+            await EventBus.emit(event)
+            logger.debug("Emitted RaceSubmittedEvent for race %s", race_id)
+
+            logger.info("User %s updated race %s submission: %s", user.id, race_id, action_desc)
+
+        return updated_race

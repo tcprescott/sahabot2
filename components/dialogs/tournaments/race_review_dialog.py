@@ -82,6 +82,14 @@ class RaceReviewDialog(BaseDialog):
                 with ui.card().classes('w-full p-2 bg-gray-100'):
                     ui.label(self.race_data['runner_notes']).classes('text-sm whitespace-pre-wrap')
 
+            # Show review flag if present
+            if self.race_data.get('review_requested_by_user'):
+                ui.label('⚠️ FLAGGED FOR REVIEW BY USER').classes('font-bold text-sm mt-4 text-warning')
+                if self.race_data.get('review_request_reason'):
+                    ui.label('Reason for Review Request:').classes('font-semibold text-sm mt-2')
+                    with ui.card().classes('w-full p-2 bg-yellow-50 border-2 border-yellow-400'):
+                        ui.label(self.race_data['review_request_reason']).classes('text-sm whitespace-pre-wrap font-semibold')
+
         ui.separator()
 
         # Review Section

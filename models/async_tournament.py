@@ -148,6 +148,8 @@ class AsyncTournamentRace(Model):
     reviewed_by = fields.ForeignKeyField('models.User', related_name='async_race_reviews', null=True)
     reviewed_at = fields.DatetimeField(null=True)
     reviewer_notes = fields.TextField(null=True)
+    review_requested_by_user = fields.BooleanField(default=False)  # True if user flagged for review
+    review_request_reason = fields.TextField(null=True)  # User's reason for requesting review
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
