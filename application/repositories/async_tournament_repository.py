@@ -40,6 +40,7 @@ class AsyncTournamentRepository:
         hide_results: bool = False,
         discord_channel_id: Optional[int] = None,
         runs_per_pool: int = 1,
+        require_racetime_for_async_runs: bool = False,
     ) -> AsyncTournament:
         """Create a new async tournament."""
         tournament = await AsyncTournament.create(
@@ -50,6 +51,7 @@ class AsyncTournamentRepository:
             hide_results=hide_results,
             discord_channel_id=discord_channel_id,
             runs_per_pool=runs_per_pool,
+            require_racetime_for_async_runs=require_racetime_for_async_runs,
         )
         logger.info("Created async tournament %s for org %s", tournament.id, organization_id)
         return tournament

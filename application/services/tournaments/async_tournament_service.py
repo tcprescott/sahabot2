@@ -190,6 +190,7 @@ class AsyncTournamentService:
         hide_results: bool = False,
         discord_channel_id: Optional[int] = None,
         runs_per_pool: int = 1,
+        require_racetime_for_async_runs: bool = False,
     ) -> Tuple[Optional[AsyncTournament], List[str]]:
         """
         Create a new async tournament.
@@ -229,6 +230,7 @@ class AsyncTournamentService:
             hide_results=hide_results,
             discord_channel_id=discord_channel_id,
             runs_per_pool=runs_per_pool,
+            require_racetime_for_async_runs=require_racetime_for_async_runs,
         )
         
         # Cache permission warnings if channel was checked

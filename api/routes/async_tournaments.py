@@ -104,6 +104,7 @@ async def create_async_tournament(
         is_active=data.is_active,
         discord_channel_id=data.discord_channel_id,
         runs_per_pool=data.runs_per_pool,
+        require_racetime_for_async_runs=data.require_racetime_for_async_runs,
     )
 
     if not tournament:

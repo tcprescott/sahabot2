@@ -6,11 +6,10 @@ when the tournament has require_racetime_for_async_runs enabled.
 """
 
 import pytest
-from datetime import datetime, timezone
 
 from models.user import User, Permission
-from models.async_tournament import AsyncTournament, AsyncTournamentPool, AsyncTournamentPermalink
-from models.organizations import Organization, OrganizationMember
+from models.async_tournament import AsyncTournament
+from models.organizations import Organization
 
 
 @pytest.mark.asyncio
