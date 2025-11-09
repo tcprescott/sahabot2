@@ -44,7 +44,6 @@ async def test_advance_match_status(db):
     )
     assert updated is not None
     assert updated.checked_in_at is not None
-    print(f"✓ checked_in_at: {updated.checked_in_at}")
     
     # 2. Started
     updated = await service.advance_match_status(
@@ -55,7 +54,6 @@ async def test_advance_match_status(db):
     )
     assert updated is not None
     assert updated.started_at is not None
-    print(f"✓ started_at: {updated.started_at}")
     
     # 3. Finished
     updated = await service.advance_match_status(
@@ -66,7 +64,6 @@ async def test_advance_match_status(db):
     )
     assert updated is not None
     assert updated.finished_at is not None
-    print(f"✓ finished_at: {updated.finished_at}")
     
     # 4. Recorded
     updated = await service.advance_match_status(
@@ -77,9 +74,7 @@ async def test_advance_match_status(db):
     )
     assert updated is not None
     assert updated.confirmed_at is not None
-    print(f"✓ confirmed_at (recorded): {updated.confirmed_at}")
     
-    print("\n✅ All status advancements work correctly!")
 
 
 @pytest.mark.asyncio
@@ -136,7 +131,6 @@ async def test_revert_match_status(db):
     # Verify finished
     match = await Match.get(id=match.id)
     assert match.finished_at is not None
-    print(f"✓ Match finished at: {match.finished_at}")
     
     # Now revert from finished
     updated = await service.revert_match_status(
@@ -148,7 +142,6 @@ async def test_revert_match_status(db):
     assert updated is not None
     assert updated.finished_at is None
     assert updated.started_at is not None  # Should still be started
-    print("✓ Reverted from finished, finished_at is now None")
     
     # Revert from started
     updated = await service.revert_match_status(
@@ -160,7 +153,6 @@ async def test_revert_match_status(db):
     assert updated is not None
     assert updated.started_at is None
     assert updated.checked_in_at is not None  # Should still be checked in
-    print("✓ Reverted from started, started_at is now None")
     
     # Revert from checked_in
     updated = await service.revert_match_status(
@@ -171,9 +163,7 @@ async def test_revert_match_status(db):
     )
     assert updated is not None
     assert updated.checked_in_at is None
-    print("✓ Reverted from checked_in, checked_in_at is now None")
     
-    print("\n✅ All status reverts work correctly!")
 
 
 @pytest.mark.asyncio
@@ -229,7 +219,6 @@ async def test_revert_with_racetime_room_fails(db):
         assert False, "Should have raised ValueError"
     except ValueError as e:
         assert "RaceTime room" in str(e)
-        print(f"✓ Correctly prevented advance: {e}")
     
     # Try to revert - should also fail with ValueError
     try:
@@ -242,9 +231,7 @@ async def test_revert_with_racetime_room_fails(db):
         assert False, "Should have raised ValueError"
     except ValueError as e:
         assert "RaceTime room" in str(e)
-        print(f"✓ Correctly prevented revert: {e}")
     
-    print("\n✅ Both advance and revert correctly blocked for matches with RaceTime room!")
 
 
 @pytest.mark.asyncio
@@ -321,9 +308,7 @@ async def test_sync_racetime_room_status(db):
     assert result is not None
     assert result.checked_in_at is not None
     assert result.started_at is not None
-    print(f"✓ Match synced: checked_in_at={result.checked_in_at}, started_at={result.started_at}")
     
-    print("\n✅ RaceTime room status sync works correctly!")
 
 
 @pytest.mark.asyncio
@@ -402,6 +387,4 @@ async def test_sync_racetime_cancelled_unlinks_room(db):
     # Verify room was deleted
     room_exists = await RacetimeRoom.filter(id=room.id).exists()
     assert not room_exists
-    print(f"✓ RaceTime room deleted: room exists={room_exists}")
     
-    print("\n✅ Cancelled race correctly unlinks RaceTime room!")

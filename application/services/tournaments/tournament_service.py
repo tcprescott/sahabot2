@@ -1189,7 +1189,7 @@ class TournamentService:
                 category, room_name = parts
                 
                 # Create RacetimeRoom record
-                room = await RacetimeRoom.create(
+                await RacetimeRoom.create(
                     slug=room_slug,
                     category=category,
                     room_name=room_name,
