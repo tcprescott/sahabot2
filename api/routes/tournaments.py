@@ -577,6 +577,74 @@ async def advance_match_status(
         )
 
 
+@router.post(
+    "/matches/{match_id}/revert-status",
+    response_model=MatchOut,
+    dependencies=[Depends(enforce_rate_limit)],
+    summary="Revert Match Status",
+    description="Revert a match to a previous status by clearing the timestamp. Only allowed on matches without a RaceTime room. Requires TOURNAMENT_MANAGER or MODERATOR permission.",
+    responses={
+        200: {"description": "Match status reverted successfully"},
+        400: {"description": "Invalid status value or match has RaceTime room"},
+        401: {"description": "Invalid or missing authentication token"},
+        403: {"description": "Insufficient permissions"},
+        404: {"description": "Match not found"},
+        429: {"description": "Rate limit exceeded"},
+    },
+)
+async def revert_match_status(
+    data: MatchAdvanceStatusRequest,
+    match_id: int = Path(..., description="Match ID"),
+    organization_id: int = Query(..., description="Organization ID"),
+    current_user: User = Depends(get_current_user)
+) -> MatchOut:
+    """
+    Revert match status.
+
+    Reverts a match to a previous status by clearing the specified timestamp.
+    Valid statuses: 'checked_in', 'started', 'finished', 'recorded'.
+
+    Only allowed on matches without a RaceTime room linked. This is for correcting user errors.
+
+    Args:
+        match_id: ID of the match to update
+        organization_id: Organization ID
+        data: Status revert request
+        current_user: Authenticated user making the request
+
+    Returns:
+        MatchOut: Updated match
+
+    Raises:
+        HTTPException: 400 if status is invalid or match has RaceTime room
+        HTTPException: 403 if user lacks permission or tournament is read-only
+        HTTPException: 404 if match not found
+    """
+    service = TournamentService()
+
+    try:
+        match = await service.revert_match_status(
+            user=current_user,
+            organization_id=organization_id,
+            match_id=match_id,
+            status=data.status
+        )
+
+        if not match:
+            raise HTTPException(
+                status_code=403,
+                detail="Match not found or insufficient permissions"
+            )
+
+        return MatchOut.model_validate(match)
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
+
 # ==================== CREW MANAGEMENT ====================
 
 

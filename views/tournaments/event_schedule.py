@@ -327,9 +327,54 @@ class EventScheduleView:
                         )
                         await dialog.show()
 
+                    async def revert_status(match_id: int, status: str, status_label: str):
+                        """Revert match status with confirmation."""
+                        from components.dialogs.common import ConfirmDialog
+
+                        async def on_confirm():
+                            try:
+                                # Use API directly since we need to post
+                                import aiohttp
+                                from nicegui import app
+                                from config import Settings
+                                settings = Settings()
+
+                                # Get auth token from session
+                                token = app.storage.user.get('access_token') if hasattr(app, 'storage') and hasattr(app.storage, 'user') else None
+
+                                if not token:
+                                    ui.notify('Authentication error', type='negative')
+                                    return
+
+                                async with aiohttp.ClientSession() as session:
+                                    url = f"{settings.API_BASE_URL}/tournaments/matches/{match_id}/revert-status"
+                                    headers = {"Authorization": f"Bearer {token}"}
+                                    params = {"organization_id": self.organization.id}
+                                    json_data = {"status": status}
+
+                                    async with session.post(url, headers=headers, params=params, json=json_data) as response:
+                                        if response.status == 200:
+                                            ui.notify(f'Match status reverted from {status_label}', type='positive')
+                                            await self._refresh()
+                                        else:
+                                            error_data = await response.json()
+                                            ui.notify(f"Failed: {error_data.get('detail', 'Unknown error')}", type='negative')
+                            except Exception as e:
+                                logger.error("Failed to revert match status: %s", e)
+                                ui.notify(f'Failed to revert status: {str(e)}', type='negative')
+
+                        dialog = ConfirmDialog(
+                            title=f'Revert from {status_label}',
+                            message=f'Are you sure you want to revert this match from {status_label}? This will clear the timestamp.',
+                            on_confirm=on_confirm
+                        )
+                        await dialog.show()
+
                     def render_status(match: Match):
                         # Check if match is from SpeedGaming (read-only)
                         is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
+                        # Check if match has RaceTime room (cannot revert if it does)
+                        has_racetime_room = bool(match.racetime_room_slug)
 
                         with ui.column().classes('gap-1'):
                             # Show status badge
@@ -346,34 +391,60 @@ class EventScheduleView:
                             else:
                                 ui.label('Pending').classes('badge')
 
-                            # Show advancement buttons for tournament admins
+                            # Show advancement and revert buttons for tournament admins
                             if self.can_manage_tournaments and not is_speedgaming:
-                                # Determine next available action based on current state
-                                if not match.confirmed_at:
-                                    if match.finished_at:
-                                        # Can advance to recorded
-                                        ui.button(
-                                            icon='check_circle',
-                                            on_click=lambda m=match: advance_status(m.id, 'recorded', 'Recorded')
-                                        ).classes('btn btn-sm').props('flat color=dark size=sm').tooltip('Mark as recorded in bracket')
-                                    elif match.started_at:
-                                        # Can advance to finished
-                                        ui.button(
-                                            icon='flag',
-                                            on_click=lambda m=match: advance_status(m.id, 'finished', 'Finished')
-                                        ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Mark as finished')
-                                    elif match.checked_in_at:
-                                        # Can advance to started
-                                        ui.button(
-                                            icon='play_arrow',
-                                            on_click=lambda m=match: advance_status(m.id, 'started', 'Started')
-                                        ).classes('btn btn-sm').props('flat color=info size=sm').tooltip('Mark as started')
-                                    elif match.scheduled_at:
-                                        # Can advance to checked_in
-                                        ui.button(
-                                            icon='how_to_reg',
-                                            on_click=lambda m=match: advance_status(m.id, 'checked_in', 'Checked In')
-                                        ).classes('btn btn-sm').props('flat color=warning size=sm').tooltip('Mark as checked in')
+                                with ui.row().classes('gap-1'):
+                                    # Determine next available action based on current state
+                                    if not match.confirmed_at:
+                                        if match.finished_at:
+                                            # Can advance to recorded
+                                            ui.button(
+                                                icon='check_circle',
+                                                on_click=lambda m=match: advance_status(m.id, 'recorded', 'Recorded')
+                                            ).classes('btn btn-sm').props('flat color=dark size=sm').tooltip('Mark as recorded in bracket')
+                                            # Can revert from finished (only if no RaceTime room)
+                                            if not has_racetime_room:
+                                                ui.button(
+                                                    icon='undo',
+                                                    on_click=lambda m=match: revert_status(m.id, 'finished', 'Finished')
+                                                ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Revert from finished')
+                                        elif match.started_at:
+                                            # Can advance to finished
+                                            ui.button(
+                                                icon='flag',
+                                                on_click=lambda m=match: advance_status(m.id, 'finished', 'Finished')
+                                            ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Mark as finished')
+                                            # Can revert from started (only if no RaceTime room)
+                                            if not has_racetime_room:
+                                                ui.button(
+                                                    icon='undo',
+                                                    on_click=lambda m=match: revert_status(m.id, 'started', 'Started')
+                                                ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Revert from started')
+                                        elif match.checked_in_at:
+                                            # Can advance to started
+                                            ui.button(
+                                                icon='play_arrow',
+                                                on_click=lambda m=match: advance_status(m.id, 'started', 'Started')
+                                            ).classes('btn btn-sm').props('flat color=info size=sm').tooltip('Mark as started')
+                                            # Can revert from checked_in (only if no RaceTime room)
+                                            if not has_racetime_room:
+                                                ui.button(
+                                                    icon='undo',
+                                                    on_click=lambda m=match: revert_status(m.id, 'checked_in', 'Checked In')
+                                                ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Revert from checked in')
+                                        elif match.scheduled_at:
+                                            # Can advance to checked_in
+                                            ui.button(
+                                                icon='how_to_reg',
+                                                on_click=lambda m=match: advance_status(m.id, 'checked_in', 'Checked In')
+                                            ).classes('btn btn-sm').props('flat color=warning size=sm').tooltip('Mark as checked in')
+                                    else:
+                                        # Match is recorded - can revert from recorded (only if no RaceTime room)
+                                        if not has_racetime_room:
+                                            ui.button(
+                                                icon='undo',
+                                                on_click=lambda m=match: revert_status(m.id, 'recorded', 'Recorded')
+                                            ).classes('btn btn-sm').props('flat color=negative size=sm').tooltip('Revert from recorded')
 
                     async def signup_crew(match_id: int, role: CrewRole):
                         """Sign up for a crew role."""

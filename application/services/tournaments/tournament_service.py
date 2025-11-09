@@ -722,6 +722,117 @@ class TournamentService:
 
         return match
 
+    async def revert_match_status(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        status: str,
+    ) -> Optional[Match]:
+        """Revert a match to a previous status by clearing the timestamp.
+
+        Valid statuses to revert: 'checked_in', 'started', 'finished', 'recorded'
+
+        Only allowed on matches without a RaceTime room linked (racetime_room_slug is None).
+        This is for correcting user errors.
+
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+
+        Args:
+            user: User performing the action
+            organization_id: Organization ID
+            match_id: Match ID
+            status: Status to revert (clear the timestamp for this status)
+
+        Returns:
+            Updated match, or None if unauthorized/failed
+
+        Raises:
+            ValueError: If status is invalid, tournament is read-only, or match has RaceTime room
+        """
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated revert_match_status attempt for org %s", organization_id)
+            return None
+
+        # Check if user can manage matches (tournament manager or moderator)
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "update"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+
+        if not can_manage:
+            # Check if user is at least a moderator (organization-level permission)
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+
+            if not can_moderate:
+                logger.warning("Unauthorized revert_match_status by user %s for org %s", user.id, organization_id)
+                return None
+
+        # Get the match
+        match = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('tournament').first()
+
+        if not match:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+
+        # Check if tournament schedule is read-only
+        if await self.is_schedule_read_only(match.tournament):
+            error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
+            logger.warning(
+                "Match status revert blocked - tournament %s has SpeedGaming integration enabled",
+                match.tournament_id
+            )
+            raise ValueError(error_msg)
+
+        # Check if match has a RaceTime room linked - cannot revert if it does
+        if match.racetime_room_slug:
+            error_msg = "Cannot revert status for matches with a RaceTime room linked"
+            logger.warning(
+                "Match status revert blocked - match %s has RaceTime room %s",
+                match_id,
+                match.racetime_room_slug
+            )
+            raise ValueError(error_msg)
+
+        # Clear appropriate timestamp based on status
+        valid_statuses = ['checked_in', 'started', 'finished', 'recorded']
+
+        if status not in valid_statuses:
+            raise ValueError(f"Invalid status: {status}. Must be one of {valid_statuses}")
+
+        if status == 'checked_in':
+            if not match.checked_in_at:
+                logger.info("Match %s not checked in, nothing to revert", match_id)
+            match.checked_in_at = None
+        elif status == 'started':
+            if not match.started_at:
+                logger.info("Match %s not started, nothing to revert", match_id)
+            match.started_at = None
+        elif status == 'finished':
+            if not match.finished_at:
+                logger.info("Match %s not finished, nothing to revert", match_id)
+            match.finished_at = None
+        elif status == 'recorded':
+            if not match.confirmed_at:
+                logger.info("Match %s not recorded, nothing to revert", match_id)
+            match.confirmed_at = None
+
+        await match.save()
+        logger.info("Reverted match %s status %s", match_id, status)
+
+        return match
+
     async def create_racetime_room(
         self,
         user: Optional[User],
