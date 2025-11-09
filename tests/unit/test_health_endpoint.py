@@ -2,9 +2,14 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from main import app
 from api.schemas.common import ServiceStatus
+from api.routes.health import (
+    check_database_health,
+    check_discord_health,
+    check_racetime_health,
+)
 
 
 @pytest.fixture
@@ -22,7 +27,7 @@ def mock_settings():
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_with_valid_secret(db, mock_settings):
+async def test_health_endpoint_with_valid_secret(db, mock_settings, client):
     """Test health endpoint returns ok with valid secret."""
     with patch(
         "api.routes.health.check_database_health", new_callable=AsyncMock
@@ -41,7 +46,6 @@ async def test_health_endpoint_with_valid_secret(db, mock_settings):
             status="ok", message="2 RaceTime bot(s) running"
         )
 
-        client = TestClient(app)
         response = client.get("/api/health?secret=test-secret-123")
 
         assert response.status_code == 200
@@ -58,9 +62,8 @@ async def test_health_endpoint_with_valid_secret(db, mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_with_invalid_secret(db, mock_settings):
+async def test_health_endpoint_with_invalid_secret(db, mock_settings, client):
     """Test health endpoint returns 401 with invalid secret."""
-    client = TestClient(app)
     response = client.get("/api/health?secret=wrong-secret")
 
     assert response.status_code == 401
@@ -69,9 +72,8 @@ async def test_health_endpoint_with_invalid_secret(db, mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_without_secret(db, mock_settings):
+async def test_health_endpoint_without_secret(db, mock_settings, client):
     """Test health endpoint returns 422 without secret parameter."""
-    client = TestClient(app)
     response = client.get("/api/health")
 
     # FastAPI returns 422 for missing required query parameters
@@ -79,7 +81,7 @@ async def test_health_endpoint_without_secret(db, mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_with_database_error(db, mock_settings):
+async def test_health_endpoint_with_database_error(db, mock_settings, client):
     """Test health endpoint returns degraded status when database fails."""
     with patch(
         "api.routes.health.check_database_health", new_callable=AsyncMock
@@ -98,7 +100,6 @@ async def test_health_endpoint_with_database_error(db, mock_settings):
             status="ok", message="2 RaceTime bot(s) running"
         )
 
-        client = TestClient(app)
         response = client.get("/api/health?secret=test-secret-123")
 
         assert response.status_code == 200
@@ -111,8 +112,6 @@ async def test_health_endpoint_with_database_error(db, mock_settings):
 @pytest.mark.asyncio
 async def test_check_database_health_success(db):
     """Test database health check succeeds with valid connection."""
-    from api.routes.health import check_database_health
-
     result = await check_database_health()
 
     assert result.status == "ok"
@@ -122,8 +121,6 @@ async def test_check_database_health_success(db):
 @pytest.mark.asyncio
 async def test_check_database_health_failure():
     """Test database health check fails with invalid connection."""
-    from api.routes.health import check_database_health
-
     with patch("api.routes.health.Tortoise.get_connection") as mock_conn:
         mock_conn.return_value.execute_query = AsyncMock(
             side_effect=Exception("Connection failed")
@@ -138,10 +135,7 @@ async def test_check_database_health_failure():
 @pytest.mark.asyncio
 async def test_check_discord_health_bot_ready():
     """Test Discord health check when bot is ready."""
-    from api.routes.health import check_discord_health
-    from unittest.mock import MagicMock
-
-    with patch("discordbot.client.get_bot_instance") as mock_get_bot:
+    with patch("api.routes.health.get_bot_instance") as mock_get_bot:
         mock_bot = MagicMock()
         mock_bot.is_ready.return_value = True
         mock_get_bot.return_value = mock_bot
@@ -155,10 +149,7 @@ async def test_check_discord_health_bot_ready():
 @pytest.mark.asyncio
 async def test_check_discord_health_bot_not_ready():
     """Test Discord health check when bot is not ready."""
-    from api.routes.health import check_discord_health
-    from unittest.mock import MagicMock
-
-    with patch("discordbot.client.get_bot_instance") as mock_get_bot:
+    with patch("api.routes.health.get_bot_instance") as mock_get_bot:
         mock_bot = MagicMock()
         mock_bot.is_ready.return_value = False
         mock_get_bot.return_value = mock_bot
@@ -172,9 +163,7 @@ async def test_check_discord_health_bot_not_ready():
 @pytest.mark.asyncio
 async def test_check_discord_health_bot_not_started():
     """Test Discord health check when bot is not started."""
-    from api.routes.health import check_discord_health
-
-    with patch("discordbot.client.get_bot_instance") as mock_get_bot:
+    with patch("api.routes.health.get_bot_instance") as mock_get_bot:
         mock_get_bot.return_value = None
 
         result = await check_discord_health()
@@ -186,10 +175,7 @@ async def test_check_discord_health_bot_not_started():
 @pytest.mark.asyncio
 async def test_check_racetime_health_bots_running():
     """Test RaceTime health check when bots are running."""
-    from api.routes.health import check_racetime_health
-    from unittest.mock import MagicMock
-
-    with patch("racetime.client.get_all_racetime_bot_instances") as mock_get_bots:
+    with patch("api.routes.health.get_all_racetime_bot_instances") as mock_get_bots:
         mock_get_bots.return_value = {"alttpr": MagicMock(), "smz3": MagicMock()}
 
         result = await check_racetime_health()
@@ -203,9 +189,7 @@ async def test_check_racetime_health_bots_running():
 @pytest.mark.asyncio
 async def test_check_racetime_health_no_bots():
     """Test RaceTime health check when no bots are running."""
-    from api.routes.health import check_racetime_health
-
-    with patch("racetime.client.get_all_racetime_bot_instances") as mock_get_bots:
+    with patch("api.routes.health.get_all_racetime_bot_instances") as mock_get_bots:
         mock_get_bots.return_value = {}
 
         result = await check_racetime_health()
@@ -215,7 +199,7 @@ async def test_check_racetime_health_no_bots():
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_with_discord_error(db, mock_settings):
+async def test_health_endpoint_with_discord_error(db, mock_settings, client):
     """Test health endpoint returns degraded status when Discord fails."""
     with patch(
         "api.routes.health.check_database_health", new_callable=AsyncMock
@@ -234,7 +218,6 @@ async def test_health_endpoint_with_discord_error(db, mock_settings):
             status="ok", message="2 RaceTime bot(s) running"
         )
 
-        client = TestClient(app)
         response = client.get("/api/health?secret=test-secret-123")
 
         assert response.status_code == 200
@@ -244,7 +227,7 @@ async def test_health_endpoint_with_discord_error(db, mock_settings):
 
 
 @pytest.mark.asyncio
-async def test_health_endpoint_with_racetime_error(db, mock_settings):
+async def test_health_endpoint_with_racetime_error(db, mock_settings, client):
     """Test health endpoint returns degraded status when RaceTime fails."""
     with patch(
         "api.routes.health.check_database_health", new_callable=AsyncMock
@@ -263,7 +246,6 @@ async def test_health_endpoint_with_racetime_error(db, mock_settings):
             status="error", message="No RaceTime bots running"
         )
 
-        client = TestClient(app)
         response = client.get("/api/health?secret=test-secret-123")
 
         assert response.status_code == 200

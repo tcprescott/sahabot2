@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Query
 from api.schemas.common import HealthResponse, ServiceStatus
 from config import settings
 from tortoise import Tortoise
+from discordbot.client import get_bot_instance
+from racetime.client import get_all_racetime_bot_instances
 import sentry_sdk
 
 logger = logging.getLogger(__name__)
@@ -39,8 +41,6 @@ async def check_discord_health() -> ServiceStatus:
         ServiceStatus: Discord bot health status
     """
     try:
-        from discordbot.client import get_bot_instance
-
         bot = get_bot_instance()
         if bot is None:
             return ServiceStatus(
@@ -68,8 +68,6 @@ async def check_racetime_health() -> ServiceStatus:
         ServiceStatus: RaceTime bot health status
     """
     try:
-        from racetime.client import get_all_racetime_bot_instances
-
         bots = get_all_racetime_bot_instances()
         if not bots:
             return ServiceStatus(
