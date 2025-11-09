@@ -272,6 +272,8 @@ poetry run aerich upgrade
 
 ### 4. Configure Systemd Service
 
+> **Note**: A production-ready systemd service unit file is available as [`sahabot2.service`](../../sahabot2.service) in the repository root. For staging, you can copy and modify it, or use the simplified version below.
+
 **File**: `/etc/systemd/system/sahabot2-staging.service`
 
 ```ini
@@ -459,6 +461,8 @@ poetry run aerich upgrade
 ```
 
 ### 5. Production Systemd Service
+
+> **Note**: A production-ready systemd service unit file is available in the repository root as [`sahabot2.service`](../../sahabot2.service). This file includes comprehensive documentation, security hardening, and multiple configuration options. Copy it to `/etc/systemd/system/` and customize as needed.
 
 **File**: `/etc/systemd/system/sahabot2.service`
 
@@ -784,6 +788,8 @@ docker-compose down
 ---
 
 ## Systemd Service
+
+> **Quick Start**: A production-ready systemd service unit file is available at [`sahabot2.service`](../../sahabot2.service) in the repository root. This file includes comprehensive documentation, security hardening options, and multiple configuration alternatives. Copy it to `/etc/systemd/system/` and follow the installation instructions in the file header.
 
 ### Service Management
 

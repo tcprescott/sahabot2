@@ -432,24 +432,30 @@ For production deployment with Nginx reverse proxy, SSL/TLS, and systemd service
   - Security headers
   - Static file serving
   - Gzip compression
+- ⚙️ **[sahabot2.service](sahabot2.service)** - Systemd service unit file for Ubuntu/Debian with:
+  - Automatic startup on boot
+  - Automatic restart on failure
+  - Security hardening (PrivateTmp, NoNewPrivileges, ProtectSystem)
+  - Resource limits
+  - Logging to systemd journal
 
-Quick start for Nginx setup:
+Quick start for deployment:
 ```bash
-# Copy sample configuration
+# Copy Nginx configuration
 sudo cp nginx.conf.sample /etc/nginx/sites-available/sahabot2
-
-# Edit with your domain and certificate paths
-sudo nano /etc/nginx/sites-available/sahabot2
-
-# Enable site
+sudo nano /etc/nginx/sites-available/sahabot2  # Edit domain and SSL paths
 sudo ln -s /etc/nginx/sites-available/sahabot2 /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
 
-# Test and reload
-sudo nginx -t
-sudo systemctl reload nginx
+# Copy and enable systemd service
+sudo cp sahabot2.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable sahabot2
+sudo systemctl start sahabot2
+sudo systemctl status sahabot2
 ```
 
-See the [Deployment Guide](docs/operations/DEPLOYMENT_GUIDE.md) for complete setup instructions including database, systemd service, SSL certificates, and monitoring.
+See the [Deployment Guide](docs/operations/DEPLOYMENT_GUIDE.md) for complete setup instructions including database, SSL certificates, and monitoring.
 
 ## Security
 
