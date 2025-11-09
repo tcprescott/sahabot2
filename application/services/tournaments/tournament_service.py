@@ -23,6 +23,7 @@ from application.events import (
     MatchChannelUnassignedEvent,
     MatchScheduledEvent,
     MatchFinishedEvent,
+    RacetimeRoomOpenedEvent,
 )
 
 if TYPE_CHECKING:
@@ -613,6 +614,114 @@ class TournamentService:
         
         return updated_match
 
+    async def advance_match_status(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        status: str,
+    ) -> Optional[Match]:
+        """Advance a match to the next status.
+
+        Valid statuses: 'checked_in', 'started', 'finished', 'recorded'
+
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+
+        Args:
+            user: User performing the action
+            organization_id: Organization ID
+            match_id: Match ID
+            status: Target status to advance to
+
+        Returns:
+            Updated match, or None if unauthorized/failed
+
+        Raises:
+            ValueError: If status is invalid or tournament is read-only
+        """
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated advance_match_status attempt for org %s", organization_id)
+            return None
+
+        # Check if user can manage matches (tournament manager or moderator)
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "update"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+
+        if not can_manage:
+            # Check if user is at least a moderator (organization-level permission)
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+
+            if not can_moderate:
+                logger.warning("Unauthorized advance_match_status by user %s for org %s", user.id, organization_id)
+                return None
+
+        # Get the match
+        match = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('tournament').first()
+
+        if not match:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+
+        # Check if tournament schedule is read-only
+        if await self.is_schedule_read_only(match.tournament):
+            error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
+            logger.warning(
+                "Match status advance blocked - tournament %s has SpeedGaming integration enabled",
+                match.tournament_id
+            )
+            raise ValueError(error_msg)
+
+        # Update appropriate timestamp based on status
+        now = datetime.now(timezone.utc)
+        valid_statuses = ['checked_in', 'started', 'finished', 'recorded']
+
+        if status not in valid_statuses:
+            raise ValueError(f"Invalid status: {status}. Must be one of {valid_statuses}")
+
+        if status == 'checked_in':
+            if match.checked_in_at:
+                logger.info("Match %s already checked in at %s", match_id, match.checked_in_at)
+            match.checked_in_at = now
+        elif status == 'started':
+            if match.started_at:
+                logger.info("Match %s already started at %s", match_id, match.started_at)
+            match.started_at = now
+        elif status == 'finished':
+            if match.finished_at:
+                logger.info("Match %s already finished at %s", match_id, match.finished_at)
+            match.finished_at = now
+            # Emit MatchFinishedEvent
+            await EventBus.emit(MatchFinishedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=match_id,
+                match_id=match_id,
+                tournament_id=match.tournament_id,
+            ))
+            logger.info("Emitted MatchFinishedEvent for match %s", match_id)
+        elif status == 'recorded':
+            if match.confirmed_at:
+                logger.info("Match %s already recorded at %s", match_id, match.confirmed_at)
+            match.confirmed_at = now
+
+        await match.save()
+        logger.info("Advanced match %s to status %s", match_id, status)
+
+        return match
+
     async def create_racetime_room(
         self,
         user: Optional[User],
@@ -818,6 +927,19 @@ class TournamentService:
                     skipped_count
                 )
 
+                # Emit RacetimeRoomOpenedEvent
+                tournament_id = match.tournament.id if hasattr(match, 'tournament') and match.tournament else None
+                await EventBus.emit(RacetimeRoomOpenedEvent(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    entity_id=match_id,
+                    match_id=match_id,
+                    tournament_id=tournament_id,
+                    room_slug=room_slug,
+                    opened_by_user_id=user.id,
+                ))
+                logger.info("Emitted RacetimeRoomOpenedEvent for match %s, room %s", match_id, room_slug)
+
                 return match
                 
             finally:
@@ -838,7 +960,6 @@ class TournamentService:
         Raises:
             ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
-        from models.match_schedule import Crew
 
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
@@ -940,7 +1061,6 @@ class TournamentService:
         Raises:
             ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
-        from models.match_schedule import Crew
 
         # Check if admin user has permission to approve crew (same permission level)
         allowed = await self.org_service.user_can_approve_crew(admin_user, organization_id)

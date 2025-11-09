@@ -6,7 +6,6 @@ Shows upcoming matches and events for the organization.
 
 from __future__ import annotations
 import logging
-import json
 from typing import Optional
 from nicegui import ui
 from models import Organization, User, CrewRole
@@ -285,17 +284,96 @@ class EventScheduleView:
                         else:
                             ui.label('—').classes('text-secondary')
 
+                    async def advance_status(match_id: int, status: str, status_label: str):
+                        """Advance match status with confirmation."""
+                        from components.dialogs.common import ConfirmDialog
+
+                        async def on_confirm():
+                            try:
+                                # Use API directly since we need to post
+                                import aiohttp
+                                from nicegui import app
+                                from config import Settings
+                                settings = Settings()
+
+                                # Get auth token from session
+                                token = app.storage.user.get('access_token') if hasattr(app, 'storage') and hasattr(app.storage, 'user') else None
+
+                                if not token:
+                                    ui.notify('Authentication error', type='negative')
+                                    return
+
+                                async with aiohttp.ClientSession() as session:
+                                    url = f"{settings.API_BASE_URL}/tournaments/matches/{match_id}/advance-status"
+                                    headers = {"Authorization": f"Bearer {token}"}
+                                    params = {"organization_id": self.organization.id}
+                                    json_data = {"status": status}
+
+                                    async with session.post(url, headers=headers, params=params, json=json_data) as response:
+                                        if response.status == 200:
+                                            ui.notify(f'Match status advanced to {status_label}', type='positive')
+                                            await self._refresh()
+                                        else:
+                                            error_data = await response.json()
+                                            ui.notify(f"Failed: {error_data.get('detail', 'Unknown error')}", type='negative')
+                            except Exception as e:
+                                logger.error("Failed to advance match status: %s", e)
+                                ui.notify(f'Failed to advance status: {str(e)}', type='negative')
+
+                        dialog = ConfirmDialog(
+                            title=f'Advance to {status_label}',
+                            message=f'Are you sure you want to advance this match to {status_label}?',
+                            on_confirm=on_confirm
+                        )
+                        await dialog.show()
+
                     def render_status(match: Match):
-                        if match.finished_at:
-                            ui.label('Finished').classes('badge badge-success')
-                        elif match.started_at:
-                            ui.label('In Progress').classes('badge badge-info')
-                        elif match.checked_in_at:
-                            ui.label('Checked In').classes('badge badge-warning')
-                        elif match.scheduled_at:
-                            ui.label('Scheduled').classes('badge badge-secondary')
-                        else:
-                            ui.label('Pending').classes('badge')
+                        # Check if match is from SpeedGaming (read-only)
+                        is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
+
+                        with ui.column().classes('gap-1'):
+                            # Show status badge
+                            if match.confirmed_at:
+                                ui.label('Recorded').classes('badge badge-dark')
+                            elif match.finished_at:
+                                ui.label('Finished').classes('badge badge-success')
+                            elif match.started_at:
+                                ui.label('In Progress').classes('badge badge-info')
+                            elif match.checked_in_at:
+                                ui.label('Checked In').classes('badge badge-warning')
+                            elif match.scheduled_at:
+                                ui.label('Scheduled').classes('badge badge-secondary')
+                            else:
+                                ui.label('Pending').classes('badge')
+
+                            # Show advancement buttons for tournament admins
+                            if self.can_manage_tournaments and not is_speedgaming:
+                                # Determine next available action based on current state
+                                if not match.confirmed_at:
+                                    if match.finished_at:
+                                        # Can advance to recorded
+                                        ui.button(
+                                            icon='check_circle',
+                                            on_click=lambda m=match: advance_status(m.id, 'recorded', 'Recorded')
+                                        ).classes('btn btn-sm').props('flat color=dark size=sm').tooltip('Mark as recorded in bracket')
+                                    elif match.started_at:
+                                        # Can advance to finished
+                                        ui.button(
+                                            icon='flag',
+                                            on_click=lambda m=match: advance_status(m.id, 'finished', 'Finished')
+                                        ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Mark as finished')
+                                    elif match.checked_in_at:
+                                        # Can advance to started
+                                        ui.button(
+                                            icon='play_arrow',
+                                            on_click=lambda m=match: advance_status(m.id, 'started', 'Started')
+                                        ).classes('btn btn-sm').props('flat color=info size=sm').tooltip('Mark as started')
+                                    elif match.scheduled_at:
+                                        # Can advance to checked_in
+                                        ui.button(
+                                            icon='how_to_reg',
+                                            on_click=lambda m=match: advance_status(m.id, 'checked_in', 'Checked In')
+                                        ).classes('btn btn-sm').props('flat color=warning size=sm').tooltip('Mark as checked in')
 
                     async def signup_crew(match_id: int, role: CrewRole):
                         """Sign up for a crew role."""
