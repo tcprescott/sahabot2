@@ -1,0 +1,131 @@
+# SahaBot2 Systemd Service Unit File
+#
+# This is a production-ready systemd service unit file for deploying SahaBot2 on Ubuntu/Debian systems.
+# It manages the SahaBot2 application as a system service with automatic restart, logging, and security hardening.
+#
+# Installation:
+#   sudo cp sahabot2.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable sahabot2
+#   sudo systemctl start sahabot2
+#
+# Before using this service file:
+#   1. Create a dedicated user for running the application (recommended: 'sahabot')
+#   2. Install the application in /opt/sahabot2 (or update WorkingDirectory below)
+#   3. Ensure Poetry is installed for the sahabot user
+#   4. Create log directory: sudo mkdir -p /var/log/sahabot2 && sudo chown sahabot:sahabot /var/log/sahabot2
+#   5. Ensure .env file is present in the application directory with all required configuration
+#   6. Run database migrations: poetry run aerich upgrade
+#   7. Test the application manually first: ./start.sh prod
+
+[Unit]
+# Service description
+Description=SahaBot2 - Multi-tenant Discord Bot and Web Application
+Documentation=https://github.com/tcprescott/sahabot2
+
+# Service dependencies
+# Start after network and MySQL are available
+After=network-online.target mysql.service
+Wants=network-online.target
+# Require MySQL to be running
+Requires=mysql.service
+
+[Service]
+# Service type
+# 'simple' type means systemd considers the service started immediately after ExecStart is called
+Type=simple
+
+# User and group
+# Run as dedicated non-root user for security
+User=sahabot
+Group=sahabot
+
+# Working directory
+# This should point to your application installation directory
+WorkingDirectory=/opt/sahabot2
+
+# Environment variables
+# PATH: Ensure Poetry and Python are accessible
+Environment="PATH=/home/sahabot/.local/bin:/usr/local/bin:/usr/bin:/bin"
+# Force production environment
+Environment="ENVIRONMENT=production"
+Environment="DEBUG=False"
+
+# Service command
+# Using start.sh script which runs uvicorn with single worker
+# Single worker is required because the Discord bot runs within the server lifecycle
+# and needs to share state with the web application
+ExecStart=/bin/bash /opt/sahabot2/start.sh prod
+
+# Alternative: Direct uvicorn single worker (without start.sh)
+# ExecStart=/home/sahabot/.local/bin/poetry run uvicorn main:app \
+#     --host 127.0.0.1 \
+#     --port 8080 \
+#     --log-level info
+
+# Note: Multi-worker configurations are NOT recommended for this application
+# The Discord bot and web application share state through the lifespan context manager
+# Using multiple workers would create separate bot instances and cause conflicts
+
+# Restart policy
+# Always restart the service if it stops for any reason
+Restart=always
+# Wait 30 seconds before restarting
+RestartSec=30
+# Limit restart attempts to prevent boot loops
+StartLimitInterval=600
+StartLimitBurst=3
+
+# Standard output and error handling
+# Logs are captured by systemd journal
+# View with: sudo journalctl -u sahabot2 -f
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=sahabot2
+
+# Security hardening
+# These options improve security by restricting what the service can access
+
+# Use a private /tmp directory
+PrivateTmp=yes
+
+# Prevent privilege escalation
+NoNewPrivileges=yes
+
+# Make /usr, /boot, and /etc read-only
+ProtectSystem=strict
+
+# Make /home, /root, and /run/user read-only
+# Changed from 'yes' to 'read-only' to allow Poetry access from /home/sahabot/.local/bin
+ProtectHome=read-only
+
+# Deny access to kernel logs
+ProtectKernelLogs=yes
+
+# Deny access to kernel tunables
+ProtectKernelTunables=yes
+
+# Deny access to kernel modules
+ProtectKernelModules=yes
+
+# Only allow reading from specified directories
+# Allow writing to application directory, logs, and temp
+ReadWritePaths=/opt/sahabot2 /var/log/sahabot2
+
+# Process resource limits
+# Prevent runaway processes from consuming all resources
+
+# Maximum number of file descriptors (default is usually sufficient)
+LimitNOFILE=65536
+
+# Maximum number of processes/threads
+LimitNPROC=512
+
+# CPU and memory limits (optional, uncomment and adjust as needed)
+# CPUQuota=200%  # Limit to 2 CPU cores worth of CPU time
+# MemoryMax=2G   # Maximum memory usage (requires systemd 230+)
+# MemoryHigh=1.5G  # Soft memory limit (requires systemd 230+)
+
+[Install]
+# Start this service automatically on boot
+WantedBy=multi-user.target

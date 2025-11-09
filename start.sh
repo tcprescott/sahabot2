@@ -12,7 +12,8 @@ elif [ "$MODE" == "prod" ]; then
     echo "Starting SahaBot2 in production mode..."
     export ENVIRONMENT=production
     export DEBUG=False
-    poetry run uvicorn main:app --host 0.0.0.0 --port 8080 --workers 4
+    # Single worker only - Discord bot runs in application lifecycle
+    poetry run uvicorn main:app --host 0.0.0.0 --port 8080
 else
     echo "Usage: ./start.sh [dev|prod]"
     exit 1
