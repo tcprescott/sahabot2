@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     All settings are loaded from .env file or environment variables.
     """
 
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
     # Database Configuration
     DB_HOST: str = "localhost"
@@ -44,19 +44,25 @@ class Settings(BaseSettings):
     # Racetime.gg OAuth2 Configuration (for user account linking)
     RACETIME_CLIENT_ID: str = ""
     RACETIME_CLIENT_SECRET: str = ""
-    RACETIME_OAUTH_REDIRECT_URI: Optional[str] = None  # Will default to {BASE_URL}/racetime/link/callback
+    RACETIME_OAUTH_REDIRECT_URI: Optional[str] = (
+        None  # Will default to {BASE_URL}/racetime/link/callback
+    )
     RACETIME_URL: str = "https://racetime.gg"
 
     # Twitch OAuth2 Configuration (for user account linking)
     TWITCH_CLIENT_ID: str = ""
     TWITCH_CLIENT_SECRET: str = ""
-    TWITCH_OAUTH_REDIRECT_URI: Optional[str] = None  # Will default to {BASE_URL}/twitch/link/callback
+    TWITCH_OAUTH_REDIRECT_URI: Optional[str] = (
+        None  # Will default to {BASE_URL}/twitch/link/callback
+    )
 
     # Application Configuration
     SECRET_KEY: str
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
     BASE_URL: str = "http://localhost:8080"  # Base URL for the application
+    # Secret for authenticating health check endpoint
+    HEALTH_CHECK_SECRET: str
 
     # Server Configuration
     HOST: str = "0.0.0.0"
@@ -92,7 +98,7 @@ class Settings(BaseSettings):
             else:
                 # Use file-based SQLite for testing
                 return f"sqlite://test_{self.DB_NAME}.db"
-        
+
         # Use MySQL for development and production
         # Validate password is provided for MySQL
         if not self.DB_PASSWORD:
@@ -113,9 +119,11 @@ class Settings(BaseSettings):
                 return "sqlite://:memory:"
             else:
                 return f"sqlite://test_{self.DB_NAME}.db"
-        
+
         # Use MySQL for development and production
-        return f"mysql://{self.DB_USER}:***@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return (
+            f"mysql://{self.DB_USER}:***@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        )
 
     @property
     def is_production(self) -> bool:
@@ -139,15 +147,17 @@ class Settings(BaseSettings):
             return []
 
         configs = []
-        for bot_config in self.RACETIME_BOTS.split(','):
+        for bot_config in self.RACETIME_BOTS.split(","):
             bot_config = bot_config.strip()
             if not bot_config:
                 continue
 
-            parts = bot_config.split(':')
+            parts = bot_config.split(":")
             if len(parts) == 3:
                 category, client_id, client_secret = parts
-                configs.append((category.strip(), client_id.strip(), client_secret.strip()))
+                configs.append(
+                    (category.strip(), client_id.strip(), client_secret.strip())
+                )
 
         return configs
 
