@@ -36,6 +36,14 @@ When all services are healthy:
     "database": {
       "status": "ok",
       "message": "Database connection healthy"
+    },
+    "discord": {
+      "status": "ok",
+      "message": "Discord bot connected and ready"
+    },
+    "racetime": {
+      "status": "ok",
+      "message": "2 RaceTime bot(s) running for categories: alttpr, smz3"
     }
   }
 }
@@ -51,8 +59,16 @@ When one or more services are unhealthy but the API is still operational:
   "version": "0.1.0",
   "services": {
     "database": {
+      "status": "ok",
+      "message": "Database connection healthy"
+    },
+    "discord": {
       "status": "error",
-      "message": "Database connection failed: Connection refused"
+      "message": "Discord bot not ready or disconnected"
+    },
+    "racetime": {
+      "status": "error",
+      "message": "No RaceTime bots running or configured"
     }
   }
 }
@@ -168,6 +184,16 @@ The health check currently monitors:
 - **Check**: Executes a simple query (`SELECT 1`) to verify database connectivity
 - **Status**: `ok` if query succeeds, `error` if query fails
 - **Message**: Describes the current state or error details
+
+### Discord
+- **Check**: Verifies Discord bot is connected and ready
+- **Status**: `ok` if bot is ready, `error` if bot is not started, not ready, or disconnected
+- **Message**: Describes bot connection state
+
+### RaceTime
+- **Check**: Counts active RaceTime.gg bot instances
+- **Status**: `ok` if bots are running, `error` if no bots are configured or running
+- **Message**: Lists number of bots and categories they're monitoring
 
 ## Implementation Details
 

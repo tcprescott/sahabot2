@@ -31,6 +31,66 @@ async def check_database_health() -> ServiceStatus:
         )
 
 
+async def check_discord_health() -> ServiceStatus:
+    """
+    Check Discord bot connectivity.
+
+    Returns:
+        ServiceStatus: Discord bot health status
+    """
+    try:
+        from discordbot.client import get_bot_instance
+
+        bot = get_bot_instance()
+        if bot is None:
+            return ServiceStatus(
+                status="error", message="Discord bot not started or disabled"
+            )
+
+        if bot.is_ready():
+            return ServiceStatus(status="ok", message="Discord bot connected and ready")
+        else:
+            return ServiceStatus(
+                status="error", message="Discord bot not ready or disconnected"
+            )
+    except Exception as e:
+        logger.error("Discord health check failed: %s", e)
+        return ServiceStatus(
+            status="error", message=f"Discord health check failed: {str(e)}"
+        )
+
+
+async def check_racetime_health() -> ServiceStatus:
+    """
+    Check RaceTime bot connectivity.
+
+    Returns:
+        ServiceStatus: RaceTime bot health status
+    """
+    try:
+        from racetime.client import get_all_racetime_bot_instances
+
+        bots = get_all_racetime_bot_instances()
+        if not bots:
+            return ServiceStatus(
+                status="error", message="No RaceTime bots running or configured"
+            )
+
+        # Count active bots
+        bot_count = len(bots)
+        categories = ", ".join(bots.keys())
+
+        return ServiceStatus(
+            status="ok",
+            message=f"{bot_count} RaceTime bot(s) running for categories: {categories}",
+        )
+    except Exception as e:
+        logger.error("RaceTime health check failed: %s", e)
+        return ServiceStatus(
+            status="error", message=f"RaceTime health check failed: {str(e)}"
+        )
+
+
 @router.get(
     "/health",
     response_model=HealthResponse,
@@ -48,7 +108,15 @@ async def check_database_health() -> ServiceStatus:
                             "database": {
                                 "status": "ok",
                                 "message": "Database connection healthy",
-                            }
+                            },
+                            "discord": {
+                                "status": "ok",
+                                "message": "Discord bot connected and ready",
+                            },
+                            "racetime": {
+                                "status": "ok",
+                                "message": "2 RaceTime bot(s) running for categories: alttpr, smz3",
+                            },
                         },
                     }
                 }
@@ -80,17 +148,26 @@ async def health(
         logger.warning("Health check attempted with invalid secret")
         raise HTTPException(status_code=401, detail="Invalid health check secret")
 
-    # Check database health
+    # Check all services
     db_status = await check_database_health()
+    discord_status = await check_discord_health()
+    racetime_status = await check_racetime_health()
 
     # Determine overall status
     overall_status = "ok"
-    if db_status.status == "error":
-        overall_status = "degraded"
+    services = {
+        "database": db_status,
+        "discord": discord_status,
+        "racetime": racetime_status,
+    }
 
-    return HealthResponse(
-        status=overall_status, version="0.1.0", services={"database": db_status}
-    )
+    # If any service has an error, overall status is degraded
+    for service_status in services.values():
+        if service_status.status == "error":
+            overall_status = "degraded"
+            break
+
+    return HealthResponse(status=overall_status, version="0.1.0", services=services)
 
 
 @router.get(
