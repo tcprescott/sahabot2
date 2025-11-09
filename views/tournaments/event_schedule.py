@@ -761,6 +761,73 @@ class EventScheduleView:
                                 on_click=None
                             ).classes('btn btn-sm').props('flat disable size=sm').tooltip('Tracker role not enabled for this tournament')
 
+                async def generate_seed(match_id: int, match_title: str):
+                    """Generate a seed using tournament's randomizer settings."""
+                    # Get current match to get tournament info
+                    match = next((m for m in matches if m.id == match_id), None)
+                    if not match:
+                        ui.notify('Match not found', type='negative')
+                        return
+
+                    # Check if tournament has randomizer configured
+                    if not match.tournament.randomizer:
+                        ui.notify(
+                            'Randomizer not configured for this tournament. '
+                            'Please configure it in Tournament Admin > Randomizer Settings.',
+                            type='warning'
+                        )
+                        return
+
+                    # Import randomizer service
+                    from application.services.randomizer.randomizer_service import RandomizerService
+                    randomizer_service = RandomizerService()
+
+                    try:
+                        # Get the randomizer
+                        randomizer = randomizer_service.get_randomizer(match.tournament.randomizer)
+
+                        # Prepare settings
+                        settings_dict = {}
+                        description = f"Generated {match.tournament.randomizer} seed"
+
+                        # Generate seed (use preset if configured)
+                        if match.tournament.randomizer_preset_id:
+                            # Load the preset
+                            await match.tournament.fetch_related('randomizer_preset')
+                            preset = match.tournament.randomizer_preset
+                            if preset:
+                                # Extract settings from preset
+                                settings_dict = preset.settings.get('settings', preset.settings)
+                                description = f"Generated {match.tournament.randomizer} seed using preset: {preset.name}"
+                            else:
+                                # Preset not found, log warning but continue with defaults
+                                logger.warning(
+                                    "Preset %s not found for tournament %s",
+                                    match.tournament.randomizer_preset_id,
+                                    match.tournament.id
+                                )
+
+                        # Generate the seed with settings
+                        result = await randomizer.generate(settings_dict)
+
+                        # Set the seed for the match
+                        await self.service.set_match_seed(
+                            self.user,
+                            self.organization.id,
+                            match_id,
+                            result.url,
+                            description
+                        )
+                        ui.notify('Seed generated successfully', type='positive')
+                        await self._refresh()
+
+                    except ValueError as e:
+                        logger.error("Failed to generate seed: %s", e)
+                        ui.notify(f'Failed to generate seed: {str(e)}', type='negative')
+                    except Exception as e:
+                        logger.error("Failed to generate seed: %s", e)
+                        ui.notify(f'Error generating seed: {str(e)}', type='negative')
+
                 async def open_seed_dialog(match_id: int, match_title: str):
                     """Open dialog to set/edit seed for a match."""
                     # Get current match to get seed info
@@ -822,14 +889,23 @@ class EventScheduleView:
                         else:
                             ui.label('—').classes('text-secondary')
 
-                        # Add "Set Seed" button for tournament managers
+                        # Add buttons for tournament managers
                         if self.can_manage_tournaments:
-                            icon = 'edit' if seed else 'add'
-                            tooltip = 'Edit seed' if seed else 'Set seed'
-                            ui.button(
-                                icon=icon,
-                                on_click=lambda m=match: open_seed_dialog(m.id, m.title)
-                            ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip(tooltip)
+                            with ui.row().classes('gap-1'):
+                                # Generate Seed button (with dice icon) - only if tournament has randomizer configured
+                                if match.tournament.randomizer:
+                                    ui.button(
+                                        icon='casino',
+                                        on_click=lambda m=match: generate_seed(m.id, m.title)
+                                    ).classes('btn btn-sm').props('flat color=positive size=sm').tooltip('Generate seed using tournament randomizer')
+                                
+                                # Set/Edit Seed button (manual URL entry)
+                                icon = 'edit' if seed else 'add'
+                                tooltip = 'Edit seed' if seed else 'Set seed URL manually'
+                                ui.button(
+                                    icon=icon,
+                                    on_click=lambda m=match: open_seed_dialog(m.id, m.title)
+                                ).classes('btn btn-sm').props('flat color=primary size=sm').tooltip(tooltip)
 
                 def render_racetime(match: Match):
                     """Render RaceTime.gg room information and controls."""
