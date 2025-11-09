@@ -49,25 +49,6 @@ textarea:focus,
     outline-offset: 2px;
 }
 
-/* Skip navigation link for keyboard users */
-.skip-nav {
-    position: absolute;
-    top: -40px;
-    left: 0;
-    background: var(--primary-color);
-    color: var(--white);
-    padding: 8px 16px;
-    text-decoration: none;
-    z-index: 10000;
-    border-radius: 0 0 4px 0;
-}
-
-.skip-nav:focus {
-    top: 0;
-    outline: 2px solid var(--white);
-    outline-offset: -2px;
-}
-
 /* Global light mode overrides */
 body:not(.body--dark):not(.q-dark) {
     background-color: var(--background-color);

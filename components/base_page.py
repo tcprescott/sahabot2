@@ -487,10 +487,6 @@ class BasePage:
         # Load current user
         await self._load_user()
 
-        # Add skip navigation link for keyboard accessibility
-        with ui.element('a').classes('skip-nav').props('href="#main-content"'):
-            ui.label('Skip to main content')
-
         # Render header
         self._render_header()
 
