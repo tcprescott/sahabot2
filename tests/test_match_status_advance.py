@@ -209,15 +209,20 @@ async def test_revert_with_racetime_room_fails(db):
     
     service = TournamentService()
     
-    # Advance to checked_in
-    await service.advance_match_status(
-        user=admin_user,
-        organization_id=org.id,
-        match_id=match.id,
-        status='checked_in'
-    )
+    # Try to advance - should fail with ValueError
+    try:
+        await service.advance_match_status(
+            user=admin_user,
+            organization_id=org.id,
+            match_id=match.id,
+            status='checked_in'
+        )
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "RaceTime room" in str(e)
+        print(f"✓ Correctly prevented advance: {e}")
     
-    # Try to revert - should fail with ValueError
+    # Try to revert - should also fail with ValueError
     try:
         await service.revert_match_status(
             user=admin_user,
@@ -230,4 +235,4 @@ async def test_revert_with_racetime_room_fails(db):
         assert "RaceTime room" in str(e)
         print(f"✓ Correctly prevented revert: {e}")
     
-    print("\n✅ Revert correctly blocked for matches with RaceTime room!")
+    print("\n✅ Both advance and revert correctly blocked for matches with RaceTime room!")

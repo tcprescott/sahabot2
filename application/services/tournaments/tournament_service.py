@@ -684,6 +684,16 @@ class TournamentService:
             )
             raise ValueError(error_msg)
 
+        # Check if match has a RaceTime room linked - cannot manually advance if it does
+        if match.racetime_room_slug:
+            error_msg = "Cannot manually advance status for matches with a RaceTime room linked - status is auto-managed"
+            logger.warning(
+                "Match status advance blocked - match %s has RaceTime room %s",
+                match_id,
+                match.racetime_room_slug
+            )
+            raise ValueError(error_msg)
+
         # Update appropriate timestamp based on status
         now = datetime.now(timezone.utc)
         valid_statuses = ['checked_in', 'started', 'finished', 'recorded']
