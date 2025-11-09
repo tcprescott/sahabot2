@@ -32,7 +32,7 @@ Requires=mysql.service
 
 [Service]
 # Service type
-# 'notify' type means the service will signal systemd when it's ready
+# 'simple' type means systemd considers the service started immediately after ExecStart is called
 Type=simple
 
 # User and group
@@ -52,28 +52,20 @@ Environment="ENVIRONMENT=production"
 Environment="DEBUG=False"
 
 # Service command
-# Using uvicorn directly with multiple workers for production
-# Adjust --workers based on your server's CPU cores (recommended: 2-4 workers per core)
-ExecStart=/home/sahabot/.local/bin/poetry run uvicorn main:app \
-    --host 127.0.0.1 \
-    --port 8080 \
-    --workers 4 \
-    --log-level info \
-    --access-log \
-    --use-colors
+# Using start.sh script which runs uvicorn with single worker
+# Single worker is required because the Discord bot runs within the server lifecycle
+# and needs to share state with the web application
+ExecStart=/bin/bash /opt/sahabot2/start.sh prod
 
-# Alternative: Single worker with auto-reload disabled (simpler, uses less memory)
-# ExecStart=/home/sahabot/.local/bin/poetry run uvicorn main:app --host 127.0.0.1 --port 8080
-
-# Alternative: Using gunicorn with uvicorn workers (more robust for high-traffic)
-# Requires: poetry add gunicorn
-# ExecStart=/home/sahabot/.local/bin/poetry run gunicorn main:app \
-#     --workers 4 \
-#     --worker-class uvicorn.workers.UvicornWorker \
-#     --bind 127.0.0.1:8080 \
-#     --access-logfile /var/log/sahabot2/access.log \
-#     --error-logfile /var/log/sahabot2/error.log \
+# Alternative: Direct uvicorn single worker (without start.sh)
+# ExecStart=/home/sahabot/.local/bin/poetry run uvicorn main:app \
+#     --host 127.0.0.1 \
+#     --port 8080 \
 #     --log-level info
+
+# Note: Multi-worker configurations are NOT recommended for this application
+# The Discord bot and web application share state through the lifespan context manager
+# Using multiple workers would create separate bot instances and cause conflicts
 
 # Restart policy
 # Always restart the service if it stops for any reason
@@ -103,8 +95,9 @@ NoNewPrivileges=yes
 # Make /usr, /boot, and /etc read-only
 ProtectSystem=strict
 
-# Make /home, /root, and /run/user inaccessible
-ProtectHome=yes
+# Make /home, /root, and /run/user read-only
+# Changed from 'yes' to 'read-only' to allow Poetry access from /home/sahabot/.local/bin
+ProtectHome=read-only
 
 # Deny access to kernel logs
 ProtectKernelLogs=yes

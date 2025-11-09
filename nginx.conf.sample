@@ -32,6 +32,14 @@ upstream sahabot2_backend {
     keepalive 32;
 }
 
+# WebSocket upgrade mapping
+# Conditionally set Connection header based on client's Upgrade request
+# This ensures WebSocket upgrades work while not breaking regular HTTP requests
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    '' close;
+}
+
 # Rate limiting zones
 # These define the rules for limiting request rates from clients
 # $binary_remote_addr: Uses client IP address for rate limiting
@@ -110,9 +118,6 @@ server {
     
     # Prevent MIME type sniffing
     add_header X-Content-Type-Options "nosniff" always;
-    
-    # Enable XSS protection in browsers
-    add_header X-XSS-Protection "1; mode=block" always;
     
     # Control referrer information
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
@@ -260,7 +265,7 @@ server {
         # Required for WebSocket support (NiceGUI uses WebSockets)
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection $connection_upgrade;
         
         # Standard proxy headers
         proxy_set_header Host $host;
