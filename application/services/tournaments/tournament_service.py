@@ -949,8 +949,14 @@ class TournamentService:
         now = datetime.now(timezone.utc)
         updated = False
 
+        # If race is cancelled, unlink the room from the match
+        if race_status == 'cancelled':
+            match.racetime_room_slug = None
+            updated = True
+            logger.info("Race cancelled - unlinked RaceTime room from match %s", match_id)
+
         # If race is open/invitational/pending and match not checked in yet
-        if race_status in ['open', 'invitational', 'pending'] and not match.checked_in_at:
+        elif race_status in ['open', 'invitational', 'pending'] and not match.checked_in_at:
             match.checked_in_at = now
             updated = True
             logger.info("Synced match %s to checked_in (race status: %s)", match_id, race_status)
@@ -985,7 +991,10 @@ class TournamentService:
 
         if updated:
             await match.save()
-            logger.info("Match %s status synced from RaceTime room %s", match_id, match.racetime_room_slug)
+            if race_status == 'cancelled':
+                logger.info("Match %s RaceTime room unlinked due to cancellation", match_id)
+            else:
+                logger.info("Match %s status synced from RaceTime room %s", match_id, match.racetime_room_slug)
         else:
             logger.info("Match %s status already up to date with RaceTime room %s", match_id, match.racetime_room_slug)
 

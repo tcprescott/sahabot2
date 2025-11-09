@@ -305,3 +305,71 @@ async def test_sync_racetime_room_status(db):
     print(f"✓ Match synced: checked_in_at={result.checked_in_at}, started_at={result.started_at}")
     
     print("\n✅ RaceTime room status sync works correctly!")
+
+
+@pytest.mark.asyncio
+async def test_sync_racetime_cancelled_unlinks_room(db):
+    """Test that syncing a cancelled race unlinks the RaceTime room."""
+    from models import User, Organization
+    from models.user import Permission
+    from models.match_schedule import Match, Tournament
+    from application.services.tournaments.tournament_service import TournamentService
+    from unittest.mock import AsyncMock, patch
+    
+    # Create test data
+    admin_user = await User.create(
+        discord_id=999888777666555448,
+        discord_username="CancelTestAdmin",
+        permission=Permission.ADMIN
+    )
+    
+    org = await Organization.create(name="Cancel Test Org")
+    
+    tournament = await Tournament.create(
+        organization=org,
+        name="Cancel Test Tournament",
+        is_active=True
+    )
+    
+    match = await Match.create(
+        tournament=tournament,
+        scheduled_at=datetime.now(timezone.utc),
+        title="Cancel Test Match",
+        racetime_room_slug="alttpr/cancelled-race"  # Has RaceTime room
+    )
+    
+    service = TournamentService()
+    
+    # Mock the aiohttp session to return cancelled race data
+    mock_race_data = {
+        'status': {'value': 'cancelled'}
+    }
+    
+    mock_response = AsyncMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(return_value=mock_race_data)
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_get = AsyncMock()
+    mock_get.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_get.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_session = AsyncMock()
+    mock_session.get = lambda url: mock_get
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+    
+    with patch('aiohttp.ClientSession', return_value=mock_session):
+        # Sync status from RaceTime - race is cancelled
+        result = await service.sync_racetime_room_status(
+            user=admin_user,
+            organization_id=org.id,
+            match_id=match.id
+        )
+    
+    assert result is not None
+    assert result.racetime_room_slug is None
+    print(f"✓ RaceTime room unlinked: racetime_room_slug={result.racetime_room_slug}")
+    
+    print("\n✅ Cancelled race correctly unlinks RaceTime room!")

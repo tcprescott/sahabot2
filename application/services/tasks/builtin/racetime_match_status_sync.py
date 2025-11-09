@@ -52,6 +52,7 @@ async def sync_racetime_match_status() -> dict:
     total_checked_in = 0
     total_started = 0
     total_finished = 0
+    total_cancelled = 0
     total_errors = 0
 
     async with aiohttp.ClientSession() as session:
@@ -92,8 +93,15 @@ async def sync_racetime_match_status() -> dict:
                 now = datetime.now(timezone.utc)
                 updated = False
 
+                # If race is cancelled, unlink the room from the match
+                if race_status == 'cancelled':
+                    match.racetime_room_slug = None
+                    updated = True
+                    total_cancelled += 1
+                    logger.info("Race cancelled - unlinked RaceTime room from match %s", match.id)
+
                 # If race is open/invitational/pending and match not checked in yet
-                if race_status in ['open', 'invitational', 'pending'] and not match.checked_in_at:
+                elif race_status in ['open', 'invitational', 'pending'] and not match.checked_in_at:
                     match.checked_in_at = now
                     updated = True
                     total_checked_in += 1
@@ -143,10 +151,11 @@ async def sync_racetime_match_status() -> dict:
                 total_errors += 1
 
     logger.info(
-        "RaceTime match status sync complete: %d checked in, %d started, %d finished, %d errors",
+        "RaceTime match status sync complete: %d checked in, %d started, %d finished, %d cancelled, %d errors",
         total_checked_in,
         total_started,
         total_finished,
+        total_cancelled,
         total_errors,
     )
 
@@ -155,6 +164,7 @@ async def sync_racetime_match_status() -> dict:
         'matches_checked_in': total_checked_in,
         'matches_started': total_started,
         'matches_finished': total_finished,
+        'matches_cancelled': total_cancelled,
         'errors': total_errors,
         'timestamp': datetime.now(timezone.utc).isoformat(),
     }
