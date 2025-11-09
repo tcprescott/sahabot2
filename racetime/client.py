@@ -1309,35 +1309,39 @@ async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
     Returns:
         int: Number of rooms successfully rejoined
     """
-    from models import Match
+    from models.racetime_room import RacetimeRoom
     from application.services.tournaments.tournament_service import TournamentService
     
     logger.info("Rejoining open RaceTime rooms for category: %s", bot.category_slug)
     
     try:
-        # Find all matches with RaceTime rooms that aren't finished
-        matches = await Match.filter(
-            racetime_room_slug__isnull=False,
-            finished_at__isnull=True,
-            racetime_room_slug__startswith=f"{bot.category_slug}/"
-        ).select_related('tournament').all()
+        # Find all RaceTime rooms for this category with unfinished matches
+        rooms = await RacetimeRoom.filter(
+            category=bot.category_slug,
+            match__finished_at__isnull=True
+        ).select_related('match__tournament').all()
         
-        logger.info("Found %d open RaceTime rooms for category %s", len(matches), bot.category_slug)
+        logger.info("Found %d open RaceTime rooms for category %s", len(rooms), bot.category_slug)
         
         rejoined_count = 0
         service = TournamentService()
         
-        for match in matches:
+        for room in rooms:
+            match = room.match
+            if not match:
+                logger.warning("Room %s has no match associated, skipping", room.slug)
+                continue
+            
             try:
                 logger.info("Attempting to rejoin room %s for match %s", 
-                           match.racetime_room_slug, match.id)
+                           room.slug, match.id)
                 
                 # Try to join the race room
-                handler = await bot.join_race_room(match.racetime_room_slug, force=True)
+                handler = await bot.join_race_room(room.slug, force=True)
                 
                 if handler:
                     rejoined_count += 1
-                    logger.info("Successfully rejoined room %s", match.racetime_room_slug)
+                    logger.info("Successfully rejoined room %s", room.slug)
                     
                     # Sync the room status to the match
                     try:
@@ -1347,20 +1351,20 @@ async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
                             match_id=match.id
                         )
                         logger.info("Synced status for match %s from room %s", 
-                                   match.id, match.racetime_room_slug)
+                                   match.id, room.slug)
                     except Exception as sync_error:
                         logger.warning("Failed to sync status for match %s: %s", 
                                       match.id, sync_error)
                 else:
-                    logger.warning("Failed to rejoin room %s", match.racetime_room_slug)
+                    logger.warning("Failed to rejoin room %s", room.slug)
                     
             except Exception as e:
                 logger.error("Error rejoining room %s for match %s: %s", 
-                            match.racetime_room_slug, match.id, e)
+                            room.slug, match.id, e)
                 continue
         
         logger.info("Rejoined %d out of %d open RaceTime rooms for category %s", 
-                   rejoined_count, len(matches), bot.category_slug)
+                   rejoined_count, len(rooms), bot.category_slug)
         return rejoined_count
         
     except Exception as e:

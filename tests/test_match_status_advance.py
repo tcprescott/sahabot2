@@ -108,9 +108,8 @@ async def test_revert_match_status(db):
     match = await Match.create(
         tournament=tournament,
         scheduled_at=datetime.now(timezone.utc),
-        title="Revert Test Match",
-        racetime_room_slug=None  # No RaceTime room
-    )
+        title="Revert Test Match"
+    )  # No RaceTime room
     
     service = TournamentService()
     
@@ -149,7 +148,7 @@ async def test_revert_match_status(db):
     assert updated is not None
     assert updated.finished_at is None
     assert updated.started_at is not None  # Should still be started
-    print(f"✓ Reverted from finished, finished_at is now None")
+    print("✓ Reverted from finished, finished_at is now None")
     
     # Revert from started
     updated = await service.revert_match_status(
@@ -161,7 +160,7 @@ async def test_revert_match_status(db):
     assert updated is not None
     assert updated.started_at is None
     assert updated.checked_in_at is not None  # Should still be checked in
-    print(f"✓ Reverted from started, started_at is now None")
+    print("✓ Reverted from started, started_at is now None")
     
     # Revert from checked_in
     updated = await service.revert_match_status(
@@ -172,7 +171,7 @@ async def test_revert_match_status(db):
     )
     assert updated is not None
     assert updated.checked_in_at is None
-    print(f"✓ Reverted from checked_in, checked_in_at is now None")
+    print("✓ Reverted from checked_in, checked_in_at is now None")
     
     print("\n✅ All status reverts work correctly!")
 
@@ -186,6 +185,8 @@ async def test_revert_with_racetime_room_fails(db):
     from application.services.tournaments.tournament_service import TournamentService
     
     # Create test data
+    from models.racetime_room import RacetimeRoom
+    
     admin_user = await User.create(
         discord_id=999888777666555446,
         discord_username="RoomTestAdmin",
@@ -203,8 +204,16 @@ async def test_revert_with_racetime_room_fails(db):
     match = await Match.create(
         tournament=tournament,
         scheduled_at=datetime.now(timezone.utc),
-        title="Room Test Match",
-        racetime_room_slug="alttpr/cool-doge-1234"  # Has RaceTime room
+        title="Room Test Match"
+    )
+    
+    # Create RaceTime room for this match
+    await RacetimeRoom.create(
+        slug="alttpr/cool-doge-1234",
+        category="alttpr",
+        room_name="cool-doge-1234",
+        status="open",
+        match_id=match.id
     )
     
     service = TournamentService()
@@ -248,6 +257,8 @@ async def test_sync_racetime_room_status(db):
     from unittest.mock import AsyncMock, patch
     
     # Create test data
+    from models.racetime_room import RacetimeRoom
+    
     admin_user = await User.create(
         discord_id=999888777666555447,
         discord_username="SyncTestAdmin",
@@ -265,8 +276,16 @@ async def test_sync_racetime_room_status(db):
     match = await Match.create(
         tournament=tournament,
         scheduled_at=datetime.now(timezone.utc),
-        title="Sync Test Match",
-        racetime_room_slug="alttpr/test-room-sync"  # Has RaceTime room
+        title="Sync Test Match"
+    )
+    
+    # Create RaceTime room for this match
+    await RacetimeRoom.create(
+        slug="alttpr/test-room-sync",
+        category="alttpr",
+        room_name="test-room-sync",
+        status="open",
+        match_id=match.id
     )
     
     service = TournamentService()
@@ -317,6 +336,8 @@ async def test_sync_racetime_cancelled_unlinks_room(db):
     from unittest.mock import AsyncMock, patch
     
     # Create test data
+    from models.racetime_room import RacetimeRoom
+    
     admin_user = await User.create(
         discord_id=999888777666555448,
         discord_username="CancelTestAdmin",
@@ -334,8 +355,16 @@ async def test_sync_racetime_cancelled_unlinks_room(db):
     match = await Match.create(
         tournament=tournament,
         scheduled_at=datetime.now(timezone.utc),
-        title="Cancel Test Match",
-        racetime_room_slug="alttpr/cancelled-race"  # Has RaceTime room
+        title="Cancel Test Match"
+    )
+    
+    # Create RaceTime room for this match
+    room = await RacetimeRoom.create(
+        slug="alttpr/cancelled-race",
+        category="alttpr",
+        room_name="cancelled-race",
+        status="open",
+        match_id=match.id
     )
     
     service = TournamentService()
@@ -369,7 +398,10 @@ async def test_sync_racetime_cancelled_unlinks_room(db):
         )
     
     assert result is not None
-    assert result.racetime_room_slug is None
-    print(f"✓ RaceTime room unlinked: racetime_room_slug={result.racetime_room_slug}")
+    
+    # Verify room was deleted
+    room_exists = await RacetimeRoom.filter(id=room.id).exists()
+    assert not room_exists
+    print(f"✓ RaceTime room deleted: room exists={room_exists}")
     
     print("\n✅ Cancelled race correctly unlinks RaceTime room!")

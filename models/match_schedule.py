@@ -70,9 +70,6 @@ class Match(Model):
     title = fields.CharField(max_length=255, null=True)
 
     # RaceTime.gg integration
-    # DEPRECATED: Use racetime_room relationship instead (see reverse relations below)
-    # This field will be removed in a future migration after data is migrated to RacetimeRoom table
-    racetime_room_slug = fields.CharField(max_length=255, null=True)  # e.g., "alttpr/cool-doge-1234"
     racetime_goal = fields.CharField(max_length=255, null=True)  # Override default tournament goal
     racetime_invitational = fields.BooleanField(default=True)  # Whether room is invite-only
     racetime_auto_create = fields.BooleanField(default=True)  # Whether to auto-create room (or manual)
@@ -89,38 +86,6 @@ class Match(Model):
     seed: fields.ReverseRelation["MatchSeed"]
     settings_submissions: fields.ReverseRelation["TournamentMatchSettings"]  # noqa: F821
     racetime_room: fields.ReverseRelation["RacetimeRoom"]  # OneToOne - active RaceTime room (if any)  # noqa: F821
-
-    async def get_racetime_room_slug(self) -> str | None:
-        """
-        Get the RaceTime room slug for this match.
-
-        This is a backward-compatible helper that checks both the new
-        racetime_room relationship and the deprecated racetime_room_slug field.
-
-        Returns:
-            Room slug (e.g., "alttpr/cool-doge-1234") or None
-        """
-        # Try the new relationship first
-        try:
-            room = await self.racetime_room.get_or_none()
-            if room:
-                return room.slug
-        except Exception:
-            # If relationship not fetched or doesn't exist, continue to fallback
-            pass
-
-        # Fallback to deprecated field
-        return self.racetime_room_slug
-
-    async def has_racetime_room(self) -> bool:
-        """
-        Check if this match has an active RaceTime room.
-
-        Returns:
-            True if match has an active room, False otherwise
-        """
-        slug = await self.get_racetime_room_slug()
-        return slug is not None
 
 class MatchSeed(Model):
     """Game seed/ROM information for a match (1:1 with Match)."""

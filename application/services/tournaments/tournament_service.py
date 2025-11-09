@@ -10,6 +10,7 @@ import logging
 
 from models import User, SYSTEM_USER_ID
 from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
+from models.racetime_room import RacetimeRoom
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
@@ -669,7 +670,7 @@ class TournamentService:
         match = await Match.filter(
             id=match_id,
             tournament__organization_id=organization_id
-        ).select_related('tournament').first()
+        ).select_related('tournament').prefetch_related('racetime_room').first()
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -685,12 +686,18 @@ class TournamentService:
             raise ValueError(error_msg)
 
         # Check if match has a RaceTime room linked - cannot manually advance if it does
-        if match.racetime_room_slug:
+        # Try to access the prefetched relation, or query if not prefetched
+        try:
+            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+        except AttributeError:
+            room = await RacetimeRoom.filter(match_id=match.id).first()
+        
+        if room:
             error_msg = "Cannot manually advance status for matches with a RaceTime room linked - status is auto-managed"
             logger.warning(
                 "Match status advance blocked - match %s has RaceTime room %s",
                 match_id,
-                match.racetime_room_slug
+                room.slug
             )
             raise ValueError(error_msg)
 
@@ -790,7 +797,7 @@ class TournamentService:
         match = await Match.filter(
             id=match_id,
             tournament__organization_id=organization_id
-        ).select_related('tournament').first()
+        ).select_related('tournament').prefetch_related('racetime_room').first()
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -806,12 +813,18 @@ class TournamentService:
             raise ValueError(error_msg)
 
         # Check if match has a RaceTime room linked - cannot revert if it does
-        if match.racetime_room_slug:
+        # Try to access the prefetched relation, or query if not prefetched
+        try:
+            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+        except AttributeError:
+            room = await RacetimeRoom.filter(match_id=match.id).first()
+        
+        if room:
             error_msg = "Cannot revert status for matches with a RaceTime room linked"
             logger.warning(
                 "Match status revert blocked - match %s has RaceTime room %s",
                 match_id,
-                match.racetime_room_slug
+                room.slug
             )
             raise ValueError(error_msg)
 
@@ -896,7 +909,7 @@ class TournamentService:
         match = await Match.filter(
             id=match_id,
             tournament__organization_id=organization_id
-        ).select_related('tournament').first()
+        ).select_related('tournament').prefetch_related('racetime_room').first()
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -912,7 +925,13 @@ class TournamentService:
             raise ValueError(error_msg)
 
         # Check if match has a RaceTime room
-        if not match.racetime_room_slug:
+        # Try to access the prefetched relation, or query if not prefetched
+        try:
+            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+        except AttributeError:
+            room = await RacetimeRoom.filter(match_id=match.id).first()
+        
+        if not room:
             error_msg = "Match does not have a RaceTime room linked"
             logger.warning("Match %s has no RaceTime room to sync", match_id)
             raise ValueError(error_msg)
@@ -923,12 +942,8 @@ class TournamentService:
 
         settings = Settings()
 
-        # Parse room slug to get category and room name
-        parts = match.racetime_room_slug.split('/', 1)
-        if len(parts) != 2:
-            raise ValueError(f"Invalid room slug format: {match.racetime_room_slug}")
-
-        category, room_name = parts
+        category = room.category
+        room_name = room.room_name
 
         async with aiohttp.ClientSession() as session:
             url = f"{settings.RACETIME_URL}/{category}/{room_name}/data"
@@ -951,7 +966,7 @@ class TournamentService:
 
         # If race is cancelled, unlink the room from the match
         if race_status == 'cancelled':
-            match.racetime_room_slug = None
+            await room.delete()
             updated = True
             logger.info("Race cancelled - unlinked RaceTime room from match %s", match_id)
 
@@ -994,9 +1009,9 @@ class TournamentService:
             if race_status == 'cancelled':
                 logger.info("Match %s RaceTime room unlinked due to cancellation", match_id)
             else:
-                logger.info("Match %s status synced from RaceTime room %s", match_id, match.racetime_room_slug)
+                logger.info("Match %s status synced from RaceTime room %s", match_id, room.slug)
         else:
-            logger.info("Match %s status already up to date with RaceTime room %s", match_id, match.racetime_room_slug)
+            logger.info("Match %s status already up to date with RaceTime room %s", match_id, room.slug)
 
         return match
 
@@ -1049,7 +1064,7 @@ class TournamentService:
         match = await Match.filter(
             id=match_id,
             tournament__organization_id=organization_id
-        ).select_related('tournament__racetime_bot').prefetch_related('players__user').first()
+        ).select_related('tournament__racetime_bot').prefetch_related('players__user', 'racetime_room').first()
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -1061,9 +1076,15 @@ class TournamentService:
             raise ValueError("Tournament does not have RaceTime integration configured")
 
         # Check if room already exists
-        if match.racetime_room_slug:
-            logger.warning("Match %s already has a RaceTime room: %s", match_id, match.racetime_room_slug)
-            raise ValueError(f"Match already has a room: {match.racetime_room_slug}")
+        # Try to access the prefetched relation, or query if not prefetched
+        try:
+            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+        except AttributeError:
+            room = await RacetimeRoom.filter(match_id=match.id).first()
+        
+        if room:
+            logger.warning("Match %s already has a RaceTime room: %s", match_id, room.slug)
+            raise ValueError(f"Match already has a room: {room.slug}")
 
         # Determine goal (use match-specific or tournament default)
         goal = match.racetime_goal or match.tournament.racetime_default_goal or "Beat the game"
@@ -1161,8 +1182,23 @@ class TournamentService:
                 if not room_slug:
                     raise ValueError("Race room created but no slug returned")
                 
-                # Update match with room details
-                match.racetime_room_slug = room_slug
+                # Parse slug to get category and room name
+                parts = room_slug.split('/', 1)
+                if len(parts) != 2:
+                    raise ValueError(f"Invalid room slug format: {room_slug}")
+                category, room_name = parts
+                
+                # Create RacetimeRoom record
+                room = await RacetimeRoom.create(
+                    slug=room_slug,
+                    category=category,
+                    room_name=room_name,
+                    status='open',
+                    match_id=match.id,
+                    bot_id=match.tournament.racetime_bot_id
+                )
+                
+                # Update match with racetime goal
                 match.racetime_goal = goal
                 await match.save()
 

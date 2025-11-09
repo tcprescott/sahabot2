@@ -349,7 +349,7 @@ class EventScheduleView:
                         # Check if match is from SpeedGaming (read-only)
                         is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
                         # Check if match has RaceTime room (cannot advance or revert if it does)
-                        has_racetime_room = bool(match.racetime_room_slug)
+                        has_racetime_room = bool(match.racetime_room)
 
                         with ui.column().classes('gap-1'):
                             # Show status badge
@@ -715,8 +715,9 @@ class EventScheduleView:
                             return
 
                         # Show room link if room exists
-                        if match.racetime_room_slug:
-                            room_url = f'{settings.RACETIME_URL}/{match.racetime_room_slug}'
+                        room = match.racetime_room
+                        if room:
+                            room_url = f'{settings.RACETIME_URL}/{room.slug}'
                             with ui.link(target=room_url, new_tab=True).classes('text-primary'):
                                 with ui.row().classes('items-center gap-1'):
                                     ui.icon('sports_esports').classes('text-sm')
@@ -747,7 +748,7 @@ class EventScheduleView:
                                 ).classes('btn btn-sm').props('flat color=positive size=sm')
 
                         # Show countdown timer if room should open soon
-                        if match.scheduled_at and not match.racetime_room_slug:
+                        if match.scheduled_at and not room:
                             from datetime import datetime, timezone, timedelta
                             room_open_minutes = getattr(match.tournament, 'room_open_minutes_before', 60)
                             open_time = match.scheduled_at - timedelta(minutes=room_open_minutes)
