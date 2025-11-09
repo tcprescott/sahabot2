@@ -550,7 +550,7 @@ class DiscordGuildService:
             has_permission = False
             try:
                 # Get Discord guild object
-                discord_guild = bot.get_guild(guild_model.discord_id)
+                discord_guild = bot.get_guild(guild_model.guild_id)
                 if discord_guild:
                     # Get bot member
                     bot_member = discord_guild.get_member(bot.user.id)
@@ -560,7 +560,7 @@ class DiscordGuildService:
             except Exception as e:
                 logger.debug(
                     "Error checking MANAGE_EVENTS for guild %s: %s",
-                    guild_model.discord_id,
+                    guild_model.guild_id,
                     e
                 )
 

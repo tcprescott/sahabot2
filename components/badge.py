@@ -187,3 +187,21 @@ class Badge:
 
         with ui.element('span').classes(f'badge {badge_class}'):
             ui.label(text)
+
+    @staticmethod
+    def placeholder(is_placeholder: bool):
+        """
+        Render a placeholder user indicator badge.
+
+        Args:
+            is_placeholder: Whether the user is a placeholder user
+
+        Returns:
+            The badge element or None if not a placeholder
+
+        Example:
+            Badge.placeholder(user.is_placeholder)
+        """
+        if is_placeholder:
+            with ui.element('span').classes('badge badge-warning'):
+                ui.label('Placeholder')

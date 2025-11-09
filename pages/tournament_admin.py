@@ -17,7 +17,6 @@ from views.tournament_admin import (
     TournamentDiscordEventsView,
     TournamentSettingsView,
 )
-from views.tournaments import TournamentManagementView
 
 
 def register():
@@ -107,23 +106,12 @@ def register():
                         view = TournamentSettingsView(page.user, org, tournament)
                         await view.render()
 
-            async def load_management():
-                """Load tournament management (registrations)."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentManagementView(org, page.user)
-                        view.selected_tournaments = [tournament_id]
-                        await view.render()
-
             # Register loaders
             page.register_content_loader('overview', load_overview)
             page.register_content_loader('players', load_players)
             page.register_content_loader('racetime', load_racetime)
             page.register_content_loader('discord-events', load_discord_events)
             page.register_content_loader('settings', load_settings)
-            page.register_content_loader('management', load_management)
 
             # Load initial content only if no view parameter was specified
             if not page.initial_view:
@@ -135,7 +123,6 @@ def register():
             base.create_separator(),
             base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
             base.create_sidebar_item_with_loader('Players', 'people', 'players'),
-            base.create_sidebar_item_with_loader('Registrations', 'how_to_reg', 'management'),
             base.create_sidebar_item_with_loader('RaceTime Settings', 'settings', 'racetime'),
             base.create_sidebar_item_with_loader('Discord Events', 'event_available', 'discord-events'),
             base.create_sidebar_item_with_loader('Settings', 'tune', 'settings'),

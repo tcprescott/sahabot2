@@ -8,13 +8,13 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.async_tournament import AsyncTournament
+from models.match_schedule import Tournament
 
 
 class TournamentRacetimeSettingsView:
     """View for managing tournament-specific RaceTime settings."""
 
-    def __init__(self, user: User, organization: Organization, tournament: AsyncTournament):
+    def __init__(self, user: User, organization: Organization, tournament: Tournament):
         """
         Initialize the RaceTime settings view.
 
@@ -27,13 +27,15 @@ class TournamentRacetimeSettingsView:
         self.organization = organization
         self.tournament = tournament
         self.profiles = []
+        self.bots = []
         self.selected_profile_id = None
         self.profile_select = None
         self.profile_preview_container = None
 
     async def render(self):
         """Render the RaceTime settings view."""
-        # Load available profiles
+        # Load available bots and profiles
+        await self._load_bots()
         await self._load_profiles()
 
         # RaceTime Bots Card
@@ -49,13 +51,16 @@ class TournamentRacetimeSettingsView:
         # Race Room Profiles Management Card
         await self._render_profiles_card()
 
-    async def _render_bots_card(self):
-        """Render card showing RaceTime bots assigned to this organization."""
+    async def _load_bots(self):
+        """Load RaceTime bots available for this organization."""
         from application.services.racetime.racetime_bot_service import RacetimeBotService
-        from components.data_table import ResponsiveTable, TableColumn
 
         bot_service = RacetimeBotService()
-        bots = await bot_service.get_bots_for_organization(self.organization.id, self.user)
+        self.bots = await bot_service.get_bots_for_organization(self.organization.id, self.user)
+
+    async def _render_bots_card(self):
+        """Render card showing RaceTime bots assigned to this organization."""
+        from components.data_table import ResponsiveTable, TableColumn
 
         with ui.element('div').classes('card'):
             with ui.element('div').classes('card-header'):
@@ -64,13 +69,13 @@ class TournamentRacetimeSettingsView:
                     ui.label('RaceTime Bots').classes('text-xl font-bold')
 
             with ui.element('div').classes('card-body'):
-                if not bots:
+                if not self.bots:
                     with ui.element('div').classes('text-center p-4 text-secondary'):
                         ui.icon('info', size='2rem')
                         ui.label('No RaceTime bots assigned').classes('text-sm mt-2')
                         ui.label('Contact an administrator to assign bots to this organization').classes('text-xs')
                 else:
-                    ui.label(f'{len(bots)} bot{"s" if len(bots) != 1 else ""} assigned to this organization').classes('text-sm text-secondary mb-4')
+                    ui.label(f'{len(self.bots)} bot{"s" if len(self.bots) != 1 else ""} assigned to this organization').classes('text-sm text-secondary mb-4')
                     
                     # Define table columns
                     columns = [
@@ -89,7 +94,7 @@ class TournamentRacetimeSettingsView:
                     ]
 
                     # Render table
-                    table = ResponsiveTable(columns=columns, rows=bots)
+                    table = ResponsiveTable(columns=columns, rows=self.bots)
                     await table.render()
 
                     # Note about bot assignment
@@ -114,6 +119,25 @@ class TournamentRacetimeSettingsView:
                     ui.label('Auto-create rooms:').classes('w-64')
                     auto_create_toggle = ui.checkbox(value=self.tournament.racetime_auto_create_rooms or False)
                     ui.label('Automatically create RaceTime rooms when matches are scheduled').classes('text-sm text-secondary')
+
+                # Bot selection
+                with ui.row().classes('items-center gap-4 mb-4'):
+                    ui.label('RaceTime Bot:').classes('w-64')
+                    # Build bot options: None for "Select a bot", then all org bots
+                    bot_options = {None: 'Select a bot...'}
+                    for bot in self.bots:
+                        status = ' (Healthy)' if bot.is_healthy() else ' (Unhealthy)'
+                        bot_options[bot.id] = f"{bot.name} - {bot.category}{status}"
+                    
+                    bot_select = ui.select(
+                        options=bot_options,
+                        value=self.tournament.racetime_bot_id,
+                        label='Bot to use for race rooms'
+                    ).classes('w-96')
+                    if not self.bots:
+                        ui.label('No bots available. Contact administrator to assign bots to this organization.').classes('text-sm text-warning')
+                    else:
+                        ui.label('Select which bot will manage race rooms for this tournament').classes('text-sm text-secondary')
 
                 # Room opening time
                 with ui.row().classes('items-center gap-4 mb-4'):
@@ -171,6 +195,7 @@ class TournamentRacetimeSettingsView:
                         open_minutes.value,
                         require_link_toggle.value,
                         default_goal.value,
+                        bot_select.value,
                     )).classes('btn').props('color=positive')
 
     async def _render_profiles_card(self):
@@ -282,6 +307,7 @@ class TournamentRacetimeSettingsView:
         open_minutes: float,
         require_link: bool,
         default_goal: str,
+        racetime_bot_id: int | None,
     ):
         """
         Save RaceTime settings.
@@ -291,6 +317,7 @@ class TournamentRacetimeSettingsView:
             open_minutes: Minutes before scheduled time to open room
             require_link: Whether to require RaceTime link
             default_goal: Default race goal text
+            racetime_bot_id: ID of the RaceTime bot to use (None for no bot)
         """
         from application.services.tournaments.tournament_service import TournamentService
 
@@ -304,6 +331,7 @@ class TournamentRacetimeSettingsView:
             require_racetime_link=require_link,
             racetime_default_goal=default_goal,
             race_room_profile_id=self.selected_profile_id,
+            racetime_bot_id=racetime_bot_id,
         )
 
         ui.notify('RaceTime settings saved successfully!', type='positive')

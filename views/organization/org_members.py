@@ -198,8 +198,13 @@ class OrganizationMembersView:
             else:
                 def render_username(m):
                     if hasattr(m, 'user') and m.user:
-                        return ui.label(m.user.get_display_name())
-                    return ui.label(f'User {m.user_id}')
+                        with ui.row().classes('items-center gap-2'):
+                            ui.label(m.user.get_display_name())
+                            if m.user.is_placeholder:
+                                from components.badge import Badge
+                                Badge.placeholder(True)
+                    else:
+                        ui.label(f'User {m.user_id}')
 
                 async def render_permissions(m):
                     perms = await m.permissions.all() if hasattr(m, 'permissions') else []
