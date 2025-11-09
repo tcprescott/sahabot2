@@ -1296,6 +1296,79 @@ _racetime_bots: dict[str, RacetimeBot] = {}
 _racetime_bot_tasks: dict[str, asyncio.Task] = {}
 
 
+async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
+    """
+    Rejoin all open RaceTime rooms for matches when bot restarts.
+    
+    Queries the database for all matches with active RaceTime rooms (not finished),
+    and attempts to rejoin those rooms, syncing their status.
+    
+    Args:
+        bot: The RacetimeBot instance to use for rejoining
+        
+    Returns:
+        int: Number of rooms successfully rejoined
+    """
+    from models import Match
+    from application.services.tournaments.tournament_service import TournamentService
+    
+    logger.info("Rejoining open RaceTime rooms for category: %s", bot.category_slug)
+    
+    try:
+        # Find all matches with RaceTime rooms that aren't finished
+        matches = await Match.filter(
+            racetime_room_slug__isnull=False,
+            finished_at__isnull=True,
+            racetime_room_slug__startswith=f"{bot.category_slug}/"
+        ).select_related('tournament').all()
+        
+        logger.info("Found %d open RaceTime rooms for category %s", len(matches), bot.category_slug)
+        
+        rejoined_count = 0
+        service = TournamentService()
+        
+        for match in matches:
+            try:
+                logger.info("Attempting to rejoin room %s for match %s", 
+                           match.racetime_room_slug, match.id)
+                
+                # Try to join the race room
+                handler = await bot.join_race_room(match.racetime_room_slug, force=True)
+                
+                if handler:
+                    rejoined_count += 1
+                    logger.info("Successfully rejoined room %s", match.racetime_room_slug)
+                    
+                    # Sync the room status to the match
+                    try:
+                        await service.sync_racetime_room_status(
+                            user=None,  # System action
+                            organization_id=match.tournament.organization_id,
+                            match_id=match.id
+                        )
+                        logger.info("Synced status for match %s from room %s", 
+                                   match.id, match.racetime_room_slug)
+                    except Exception as sync_error:
+                        logger.warning("Failed to sync status for match %s: %s", 
+                                      match.id, sync_error)
+                else:
+                    logger.warning("Failed to rejoin room %s", match.racetime_room_slug)
+                    
+            except Exception as e:
+                logger.error("Error rejoining room %s for match %s: %s", 
+                            match.racetime_room_slug, match.id, e)
+                continue
+        
+        logger.info("Rejoined %d out of %d open RaceTime rooms for category %s", 
+                   rejoined_count, len(matches), bot.category_slug)
+        return rejoined_count
+        
+    except Exception as e:
+        logger.error("Failed to rejoin open RaceTime rooms for category %s: %s", 
+                    bot.category_slug, e, exc_info=True)
+        return 0
+
+
 async def start_racetime_bot(
     category: str,
     client_id: str,
@@ -1371,6 +1444,15 @@ async def start_racetime_bot(
                         # Reset retry count on successful connection
                         retry_count = 0
                         backoff_delay = initial_backoff
+
+                        # Rejoin any open RaceTime rooms from before bot restart
+                        try:
+                            rejoined_count = await rejoin_open_racetime_rooms(bot)
+                            logger.info("Rejoined %d open RaceTime rooms for category %s", 
+                                       rejoined_count, category)
+                        except Exception as rejoin_error:
+                            logger.error("Failed to rejoin open RaceTime rooms for %s: %s", 
+                                        category, rejoin_error, exc_info=True)
 
                         # Instead of calling bot.run() which tries to take over the event loop,
                         # we manually create the reauthorize task that run() would create.

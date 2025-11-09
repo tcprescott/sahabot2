@@ -853,10 +853,11 @@ class TournamentService:
 
         Queries the RaceTime API for the current race status and updates the match accordingly.
 
-        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission when user is provided.
+        When user is None, this is a system-initiated sync (e.g., bot restart) and bypasses auth.
 
         Args:
-            user: User performing the action
+            user: User performing the action (None for system-initiated sync)
             organization_id: Organization ID
             match_id: Match ID
 
@@ -866,31 +867,30 @@ class TournamentService:
         Raises:
             ValueError: If match has no RaceTime room or tournament is read-only
         """
-        # Use new authorization system
-        if not user:
-            logger.warning("Unauthenticated sync_racetime_room_status attempt for org %s", organization_id)
-            return None
-
-        # Check if user can manage matches (tournament manager or moderator)
-        can_manage = await self.auth.can(
-            user,
-            action=self.auth.get_action_for_operation("match", "update"),
-            resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
-        )
-
-        if not can_manage:
-            # Check if user is at least a moderator (organization-level permission)
-            can_moderate = await self.auth.can(
+        # Use new authorization system - skip auth check if user is None (system action)
+        if user:
+            # Check if user can manage matches (tournament manager or moderator)
+            can_manage = await self.auth.can(
                 user,
-                action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
+                action=self.auth.get_action_for_operation("match", "update"),
+                resource=self.auth.get_resource_identifier("match", match_id),
                 organization_id=organization_id
             )
 
-            if not can_moderate:
-                logger.warning("Unauthorized sync_racetime_room_status by user %s for org %s", user.id, organization_id)
-                return None
+            if not can_manage:
+                # Check if user is at least a moderator (organization-level permission)
+                can_moderate = await self.auth.can(
+                    user,
+                    action="organization:moderate",
+                    resource=self.auth.get_resource_identifier("organization", organization_id),
+                    organization_id=organization_id
+                )
+
+                if not can_moderate:
+                    logger.warning("Unauthorized sync_racetime_room_status by user %s for org %s", user.id, organization_id)
+                    return None
+        else:
+            logger.info("System-initiated sync_racetime_room_status for match %s", match_id)
 
         # Get the match
         match = await Match.filter(
@@ -981,7 +981,7 @@ class TournamentService:
 
             # Emit MatchFinishedEvent
             await EventBus.emit(MatchFinishedEvent(
-                user_id=user.id,
+                user_id=user.id if user else SYSTEM_USER_ID,
                 organization_id=organization_id,
                 entity_id=match_id,
                 match_id=match_id,
