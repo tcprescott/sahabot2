@@ -6,7 +6,7 @@ including player and crew member matching/creation.
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 
 from models import User
@@ -20,6 +20,7 @@ from models.match_schedule import (
 )
 from models.organizations import OrganizationMember
 from models.audit_log import AuditLog
+from models.racetime_room import RacetimeRoom
 from application.services.speedgaming.speedgaming_service import (
     SpeedGamingService,
     SpeedGamingEpisode,
@@ -1329,6 +1330,9 @@ class SpeedGamingETLService:
     ) -> int:
         """
         Detect and delete matches for episodes no longer in SpeedGaming.
+        
+        Also auto-finishes matches that are more than 4 hours past their scheduled time
+        before deletion to preserve match data.
 
         Args:
             tournament: Tournament to check
@@ -1343,41 +1347,87 @@ class SpeedGamingETLService:
             speedgaming_episode_id__isnull=False
         ).all()
 
+        if not existing_matches:
+            return 0
+
         deleted_count = 0
+        current_time = datetime.now(timezone.utc)
+        four_hours_ago = current_time - timedelta(hours=4)
+        
+        # Batch collect matches that need auto-finishing
+        matches_to_finish = []
+        matches_to_check_deletion = []
 
         for match in existing_matches:
-            # If episode ID is not in current list, verify it's deleted
-            if match.speedgaming_episode_id not in current_episode_ids:
-                # Double-check by querying SpeedGaming API directly
-                try:
-                    episode = await self.sg_service.get_episode(
+            # Check if match should be auto-finished (more than 4 hours past scheduled time)
+            # Do NOT auto-finish if match has a RaceTime room linked
+            if (match.scheduled_at and 
+                not match.finished_at and 
+                match.scheduled_at < four_hours_ago):
+                
+                # Check if match has a RaceTime room
+                has_racetime_room = await RacetimeRoom.exists(match_id=match.id)
+                
+                if has_racetime_room:
+                    logger.info(
+                        "Match %s (episode %s) has RaceTime room linked, skipping auto-finish",
+                        match.id,
                         match.speedgaming_episode_id
                     )
-
-                    if episode is None:
-                        # Episode is truly deleted, remove the match
-                        logger.info(
-                            "Episode %s no longer exists in SpeedGaming, "
-                            "deleting match %s",
-                            match.speedgaming_episode_id,
-                            match.id
-                        )
-                        await match.delete()
-                        deleted_count += 1
-                    else:
-                        logger.info(
-                            "Episode %s still exists but not in event schedule, "
-                            "keeping match %s",
-                            match.speedgaming_episode_id,
-                            match.id
-                        )
-
-                except Exception as e:
-                    logger.error(
-                        "Error checking episode %s: %s",
-                        match.speedgaming_episode_id,
-                        e
+                else:
+                    match.finished_at = current_time
+                    matches_to_finish.append(match)
+                    logger.info(
+                        "Match %s (episode %s) is more than 4 hours past scheduled time, marking for auto-finish",
+                        match.id,
+                        match.speedgaming_episode_id
                     )
+            
+            # If episode ID is not in current list and match is not finished, check for deletion
+            if (match.speedgaming_episode_id not in current_episode_ids and 
+                not match.finished_at):
+                matches_to_check_deletion.append(match)
+        
+        # Batch save all auto-finished matches
+        if matches_to_finish:
+            for match in matches_to_finish:
+                await match.save()
+            logger.info(
+                "Auto-finished %s matches that were >4 hours past scheduled time",
+                len(matches_to_finish)
+            )
+        
+        # Check deletion for unfinished matches not in current schedule
+        for match in matches_to_check_deletion:
+            try:
+                episode = await self.sg_service.get_episode(
+                    match.speedgaming_episode_id
+                )
+
+                if episode is None:
+                    # Episode is truly deleted, remove the match
+                    logger.info(
+                        "Episode %s no longer exists in SpeedGaming, "
+                        "deleting match %s",
+                        match.speedgaming_episode_id,
+                        match.id
+                    )
+                    await match.delete()
+                    deleted_count += 1
+                else:
+                    logger.info(
+                        "Episode %s still exists but not in event schedule, "
+                        "keeping match %s",
+                        match.speedgaming_episode_id,
+                        match.id
+                    )
+
+            except Exception as e:
+                logger.error(
+                    "Error checking episode %s: %s",
+                    match.speedgaming_episode_id,
+                    e
+                )
 
         return deleted_count
 

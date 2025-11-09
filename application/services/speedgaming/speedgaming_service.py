@@ -249,6 +249,16 @@ class SpeedGamingService:
                     response.raise_for_status()
 
                 data = response.json()
+                
+                # Check if response contains an error (deleted episode)
+                if isinstance(data, dict) and "error" in data:
+                    logger.info(
+                        "Episode %s not found (API returned error: %s)",
+                        episode_id,
+                        data.get("error")
+                    )
+                    return None
+                
                 episode = SpeedGamingEpisode.from_dict(data)
                 logger.info("Fetched episode %s: %s", episode_id, episode.title)
                 return episode
