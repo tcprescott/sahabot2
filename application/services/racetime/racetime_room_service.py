@@ -17,6 +17,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Optional
 from models import Match, Tournament, User
+from models.racetime_room import RacetimeRoom
 from application.events import EventBus, RacetimeRoomCreatedEvent
 
 logger = logging.getLogger(__name__)
@@ -156,9 +157,21 @@ class RacetimeRoomService:
             # Extract room slug from handler data
             room_slug = handler.data.get('name')  # e.g., "alttpr/cool-doge-1234"
 
-            # Update match with room info
-            match.racetime_room_slug = room_slug
-            await match.save(update_fields=['racetime_room_slug'])
+            # Parse slug to get category and room name
+            parts = room_slug.split('/', 1)
+            if len(parts) != 2:
+                raise ValueError(f"Invalid room slug format: {room_slug}")
+            category, room_name = parts
+
+            # Create RacetimeRoom record
+            await RacetimeRoom.create(
+                slug=room_slug,
+                category=category,
+                room_name=room_name,
+                status='open',
+                match_id=match.id,
+                bot_id=tournament.racetime_bot_id
+            )
 
             logger.info("Created race room %s for match %s", room_slug, match.id)
 
@@ -269,7 +282,8 @@ class RacetimeRoomService:
             True if room should be created, False otherwise
         """
         # Don't create if room already exists
-        if match.racetime_room_slug:
+        room = await RacetimeRoom.filter(match_id=match.id).first()
+        if room:
             return False
         
         # Don't create if match not scheduled
@@ -323,14 +337,15 @@ class RacetimeRoomService:
             - is_player: True if the user is a player on the match, False otherwise
             - match_id: The match ID if found, None if no match found
         """
-        # Look up match by room slug
-        match = await Match.filter(
-            racetime_room_slug=room_slug
-        ).prefetch_related('players__user').first()
-
-        if not match:
+        # Look up room and match by slug
+        room = await RacetimeRoom.filter(slug=room_slug).select_related('match').first()
+        
+        if not room or not room.match:
             logger.debug("No match found for room %s", room_slug)
             return False, None
+        
+        match = room.match
+        await match.fetch_related('players__user')
 
         # Check if the requesting user is a player on the match
         match_players = await match.players.all().prefetch_related('user')

@@ -121,6 +121,12 @@ class MatchUpdateRequest(BaseModel):
     comment: Optional[str] = Field(None, description="Match comment")
 
 
+class MatchAdvanceStatusRequest(BaseModel):
+    """Request schema for advancing match status."""
+
+    status: str = Field(..., description="Target status: 'checked_in', 'started', 'finished', or 'recorded'")
+
+
 class TournamentPlayerOut(BaseModel):
     """Tournament player output schema."""
 
