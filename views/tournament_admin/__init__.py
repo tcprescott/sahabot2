@@ -9,6 +9,7 @@ from views.tournament_admin.tournament_players import TournamentPlayersView
 from views.tournament_admin.tournament_racetime_settings import TournamentRacetimeSettingsView
 from views.tournament_admin.tournament_discord_events import TournamentDiscordEventsView
 from views.tournament_admin.tournament_settings import TournamentSettingsView
+from views.tournament_admin.tournament_randomizer_settings import TournamentRandomizerSettingsView
 
 __all__ = [
     'TournamentOverviewView',
@@ -16,4 +17,5 @@ __all__ = [
     'TournamentRacetimeSettingsView',
     'TournamentDiscordEventsView',
     'TournamentSettingsView',
+    'TournamentRandomizerSettingsView',
 ]

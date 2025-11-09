@@ -53,6 +53,10 @@ class Tournament(Model):
     # Onsite tournament mode
     onsite_tournament = fields.BooleanField(default=False)  # Enable onsite mode (requires station assignments)
 
+    # Randomizer settings for seed generation
+    randomizer = fields.CharField(max_length=50, null=True)  # Randomizer type (alttpr, sm, smz3, etc.)
+    randomizer_preset = fields.ForeignKeyField('models.RandomizerPreset', related_name='tournaments', null=True)  # Preset for seed generation
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

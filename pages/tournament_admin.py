@@ -16,6 +16,7 @@ from views.tournament_admin import (
     TournamentRacetimeSettingsView,
     TournamentDiscordEventsView,
     TournamentSettingsView,
+    TournamentRandomizerSettingsView,
 )
 
 
@@ -106,11 +107,21 @@ def register():
                         view = TournamentSettingsView(page.user, org, tournament)
                         await view.render()
 
+            async def load_randomizer_settings():
+                """Load randomizer settings."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = TournamentRandomizerSettingsView(page.user, org, tournament)
+                        await view.render()
+
             # Register loaders
             page.register_content_loader('overview', load_overview)
             page.register_content_loader('players', load_players)
             page.register_content_loader('racetime', load_racetime)
             page.register_content_loader('discord-events', load_discord_events)
+            page.register_content_loader('randomizer-settings', load_randomizer_settings)
             page.register_content_loader('settings', load_settings)
 
             # Load initial content only if no view parameter was specified
@@ -125,6 +136,7 @@ def register():
             base.create_sidebar_item_with_loader('Players', 'people', 'players'),
             base.create_sidebar_item_with_loader('RaceTime Settings', 'settings', 'racetime'),
             base.create_sidebar_item_with_loader('Discord Events', 'event_available', 'discord-events'),
+            base.create_sidebar_item_with_loader('Randomizer Settings', 'casino', 'randomizer-settings'),
             base.create_sidebar_item_with_loader('Settings', 'tune', 'settings'),
         ]
 

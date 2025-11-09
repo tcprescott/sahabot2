@@ -208,6 +208,8 @@ class TournamentService:
         discord_event_filter: Optional[str] = None,
         event_duration_minutes: Optional[int] = None,
         onsite_tournament: Optional[bool] = None,
+        randomizer: Optional[str] = None,
+        randomizer_preset_id: Optional[int] = None,
     ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         # Use new authorization system
@@ -263,6 +265,10 @@ class TournamentService:
             updates['event_duration_minutes'] = event_duration_minutes
         if onsite_tournament is not None:
             updates['onsite_tournament'] = onsite_tournament
+        if randomizer is not None:
+            updates['randomizer'] = randomizer
+        if randomizer_preset_id is not None:
+            updates['randomizer_preset_id'] = randomizer_preset_id
 
         tournament = await self.repo.update(organization_id, tournament_id, **updates)
         
