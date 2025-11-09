@@ -236,3 +236,72 @@ async def test_revert_with_racetime_room_fails(db):
         print(f"✓ Correctly prevented revert: {e}")
     
     print("\n✅ Both advance and revert correctly blocked for matches with RaceTime room!")
+
+
+@pytest.mark.asyncio
+async def test_sync_racetime_room_status(db):
+    """Test manually syncing match status from RaceTime room."""
+    from models import User, Organization
+    from models.user import Permission
+    from models.match_schedule import Match, Tournament
+    from application.services.tournaments.tournament_service import TournamentService
+    from unittest.mock import AsyncMock, patch
+    
+    # Create test data
+    admin_user = await User.create(
+        discord_id=999888777666555447,
+        discord_username="SyncTestAdmin",
+        permission=Permission.ADMIN
+    )
+    
+    org = await Organization.create(name="Sync Test Org")
+    
+    tournament = await Tournament.create(
+        organization=org,
+        name="Sync Test Tournament",
+        is_active=True
+    )
+    
+    match = await Match.create(
+        tournament=tournament,
+        scheduled_at=datetime.now(timezone.utc),
+        title="Sync Test Match",
+        racetime_room_slug="alttpr/test-room-sync"  # Has RaceTime room
+    )
+    
+    service = TournamentService()
+    
+    # Mock the aiohttp session to return race data
+    mock_race_data = {
+        'status': {'value': 'in_progress'}
+    }
+    
+    mock_response = AsyncMock()
+    mock_response.status = 200
+    mock_response.json = AsyncMock(return_value=mock_race_data)
+    mock_response.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_response.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_get = AsyncMock()
+    mock_get.__aenter__ = AsyncMock(return_value=mock_response)
+    mock_get.__aexit__ = AsyncMock(return_value=None)
+    
+    mock_session = AsyncMock()
+    mock_session.get = lambda url: mock_get
+    mock_session.__aenter__ = AsyncMock(return_value=mock_session)
+    mock_session.__aexit__ = AsyncMock(return_value=None)
+    
+    with patch('aiohttp.ClientSession', return_value=mock_session):
+        # Sync status from RaceTime
+        result = await service.sync_racetime_room_status(
+            user=admin_user,
+            organization_id=org.id,
+            match_id=match.id
+        )
+    
+    assert result is not None
+    assert result.checked_in_at is not None
+    assert result.started_at is not None
+    print(f"✓ Match synced: checked_in_at={result.checked_in_at}, started_at={result.started_at}")
+    
+    print("\n✅ RaceTime room status sync works correctly!")

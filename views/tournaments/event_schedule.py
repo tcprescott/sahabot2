@@ -722,6 +722,13 @@ class EventScheduleView:
                                     ui.icon('sports_esports').classes('text-sm')
                                     ui.label('Join Room')
 
+                            # Show sync button for admins (if match not finished)
+                            if self.can_manage_tournaments and not match.finished_at:
+                                ui.button(
+                                    icon='sync',
+                                    on_click=lambda m=match: sync_racetime_status(m.id)
+                                ).classes('btn btn-sm').props('flat color=info size=sm').tooltip('Sync status from RaceTime')
+
                             # Show room status
                             if match.racetime_invitational:
                                 with ui.row().classes('items-center gap-1'):
@@ -780,6 +787,26 @@ class EventScheduleView:
                     except Exception as e:
                         logger.error("Failed to create RaceTime room: %s", e)
                         ui.notify(f'Failed to create room: {str(e)}', type='negative')
+
+                async def sync_racetime_status(match_id: int):
+                    """Manually sync match status from RaceTime room."""
+                    try:
+                        result = await self.service.sync_racetime_room_status(
+                            user=self.user,
+                            organization_id=self.organization.id,
+                            match_id=match_id
+                        )
+                        if result:
+                            ui.notify('Match status synced from RaceTime', type='positive')
+                            await self._refresh()
+                        else:
+                            ui.notify('Failed to sync match status', type='negative')
+                    except ValueError as e:
+                        logger.error("Failed to sync RaceTime status: %s", e)
+                        ui.notify(f'Failed: {str(e)}', type='negative')
+                    except Exception as e:
+                        logger.error("Failed to sync RaceTime status: %s", e)
+                        ui.notify(f'Failed to sync status: {str(e)}', type='negative')
 
                 async def open_edit_match_dialog(match_id: int):
                     """Open dialog to edit a match."""

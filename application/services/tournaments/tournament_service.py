@@ -843,6 +843,154 @@ class TournamentService:
 
         return match
 
+    async def sync_racetime_room_status(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+    ) -> Optional[Match]:
+        """Manually sync match status from RaceTime.gg room.
+
+        Queries the RaceTime API for the current race status and updates the match accordingly.
+
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+
+        Args:
+            user: User performing the action
+            organization_id: Organization ID
+            match_id: Match ID
+
+        Returns:
+            Updated match, or None if unauthorized/failed
+
+        Raises:
+            ValueError: If match has no RaceTime room or tournament is read-only
+        """
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated sync_racetime_room_status attempt for org %s", organization_id)
+            return None
+
+        # Check if user can manage matches (tournament manager or moderator)
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "update"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+
+        if not can_manage:
+            # Check if user is at least a moderator (organization-level permission)
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+
+            if not can_moderate:
+                logger.warning("Unauthorized sync_racetime_room_status by user %s for org %s", user.id, organization_id)
+                return None
+
+        # Get the match
+        match = await Match.filter(
+            id=match_id,
+            tournament__organization_id=organization_id
+        ).select_related('tournament').first()
+
+        if not match:
+            logger.warning("Match %s not found in org %s", match_id, organization_id)
+            return None
+
+        # Check if tournament schedule is read-only
+        if await self.is_schedule_read_only(match.tournament):
+            error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
+            logger.warning(
+                "Match status sync blocked - tournament %s has SpeedGaming integration enabled",
+                match.tournament_id
+            )
+            raise ValueError(error_msg)
+
+        # Check if match has a RaceTime room
+        if not match.racetime_room_slug:
+            error_msg = "Match does not have a RaceTime room linked"
+            logger.warning("Match %s has no RaceTime room to sync", match_id)
+            raise ValueError(error_msg)
+
+        # Query RaceTime API for race status
+        import aiohttp
+        from config import Settings
+
+        settings = Settings()
+
+        # Parse room slug to get category and room name
+        parts = match.racetime_room_slug.split('/', 1)
+        if len(parts) != 2:
+            raise ValueError(f"Invalid room slug format: {match.racetime_room_slug}")
+
+        category, room_name = parts
+
+        async with aiohttp.ClientSession() as session:
+            url = f"{settings.RACETIME_URL}/{category}/{room_name}/data"
+
+            async with session.get(url) as response:
+                if response.status != 200:
+                    raise ValueError(f"Failed to fetch RaceTime data: HTTP {response.status}")
+
+                race_data = await response.json()
+
+        # Get race status
+        race_status = race_data.get('status', {}).get('value') if race_data else None
+
+        if not race_status:
+            raise ValueError("No status in RaceTime data")
+
+        # Update match status based on race status
+        now = datetime.now(timezone.utc)
+        updated = False
+
+        # If race is open/invitational/pending and match not checked in yet
+        if race_status in ['open', 'invitational', 'pending'] and not match.checked_in_at:
+            match.checked_in_at = now
+            updated = True
+            logger.info("Synced match %s to checked_in (race status: %s)", match_id, race_status)
+
+        # If race is in progress and match not started yet
+        elif race_status == 'in_progress' and not match.started_at:
+            if not match.checked_in_at:
+                match.checked_in_at = now
+            match.started_at = now
+            updated = True
+            logger.info("Synced match %s to started (race in progress)", match_id)
+
+        # If race is finished and match not finished yet
+        elif race_status == 'finished' and not match.finished_at:
+            if not match.checked_in_at:
+                match.checked_in_at = now
+            if not match.started_at:
+                match.started_at = now
+            match.finished_at = now
+            updated = True
+            logger.info("Synced match %s to finished (race finished)", match_id)
+
+            # Emit MatchFinishedEvent
+            await EventBus.emit(MatchFinishedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=match_id,
+                match_id=match_id,
+                tournament_id=match.tournament_id,
+            ))
+            logger.info("Emitted MatchFinishedEvent for match %s", match_id)
+
+        if updated:
+            await match.save()
+            logger.info("Match %s status synced from RaceTime room %s", match_id, match.racetime_room_slug)
+        else:
+            logger.info("Match %s status already up to date with RaceTime room %s", match_id, match.racetime_room_slug)
+
+        return match
+
     async def create_racetime_room(
         self,
         user: Optional[User],
