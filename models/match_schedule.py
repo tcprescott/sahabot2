@@ -50,6 +50,9 @@ class Tournament(Model):
     # Settings submission form configuration
     settings_form_schema = fields.JSONField(null=True)  # Form field definitions for settings submission
 
+    # Onsite tournament mode
+    onsite_tournament = fields.BooleanField(default=False)  # Enable onsite mode (requires station assignments)
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 

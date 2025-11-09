@@ -40,6 +40,18 @@ class UserMenu:
         ui.notify('Logged out successfully', type='positive')
         ui.navigate.to('/')
 
+    async def _handle_login(self) -> None:
+        """Handle user login - capture current URL and redirect to login page."""
+        # Get current URL using JavaScript and redirect to login with it
+        current_url = await ui.run_javascript('window.location.pathname + window.location.search + window.location.hash')
+        
+        # Store the redirect URL
+        from nicegui import app
+        app.storage.user['redirect_after_login'] = current_url or '/'
+        
+        # Navigate to login page
+        ui.navigate.to('/auth/login')
+
     async def _handle_stop_impersonation(self) -> None:
         """Handle stopping impersonation."""
         from application.services.core.user_service import UserService
@@ -144,7 +156,7 @@ class UserMenu:
                 {
                     'name': 'Login with Discord',
                     'icon': 'login',
-                    'on_click': lambda: ui.navigate.to('/auth/login')
+                    'on_click': self._handle_login
                 }
             ])
 

@@ -54,6 +54,13 @@ class TournamentSettingsView:
                     ui.label('Enable Tracker:')
                     tracker_toggle = ui.checkbox(value=self.tournament.tracker_enabled or False)
 
+                with ui.row().classes('items-center gap-4 mb-4'):
+                    ui.label('Onsite Tournament:')
+                    onsite_toggle = ui.checkbox(value=self.tournament.onsite_tournament or False)
+                    ui.icon('info').classes('text-grey').tooltip(
+                        'Enable for in-person tournaments. Players will be assigned station numbers during check-in.'
+                    )
+
                 ui.separator().classes('my-4')
 
                 # SpeedGaming Integration Section
@@ -100,6 +107,7 @@ class TournamentSettingsView:
                         description_input.value,
                         active_toggle.value,
                         tracker_toggle.value,
+                        onsite_toggle.value,
                         speedgaming_enabled.value,
                         speedgaming_event_slug.value
                     )).classes('btn').props('color=positive')
@@ -110,6 +118,7 @@ class TournamentSettingsView:
         description: str,
         is_active: bool,
         tracker_enabled: bool,
+        onsite_tournament: bool,
         speedgaming_enabled: bool,
         speedgaming_event_slug: str
     ):
@@ -121,6 +130,7 @@ class TournamentSettingsView:
             description: Tournament description
             is_active: Whether tournament is active
             tracker_enabled: Whether tracker is enabled
+            onsite_tournament: Whether this is an onsite tournament
             speedgaming_enabled: Whether SpeedGaming integration is enabled
             speedgaming_event_slug: SpeedGaming event slug
         """
@@ -155,6 +165,7 @@ class TournamentSettingsView:
                 description=description,
                 is_active=is_active,
                 tracker_enabled=tracker_enabled,
+                onsite_tournament=onsite_tournament,
                 speedgaming_enabled=speedgaming_enabled,
                 speedgaming_event_slug=speedgaming_event_slug if speedgaming_enabled else None
             )

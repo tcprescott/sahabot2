@@ -207,6 +207,7 @@ class TournamentService:
         discord_guild_ids: Optional[list[int]] = None,
         discord_event_filter: Optional[str] = None,
         event_duration_minutes: Optional[int] = None,
+        onsite_tournament: Optional[bool] = None,
     ) -> Optional[Tournament]:
         """Update a tournament if user can admin the org."""
         # Use new authorization system
@@ -260,6 +261,8 @@ class TournamentService:
             updates['discord_event_filter'] = discord_event_filter
         if event_duration_minutes is not None:
             updates['event_duration_minutes'] = event_duration_minutes
+        if onsite_tournament is not None:
+            updates['onsite_tournament'] = onsite_tournament
 
         tournament = await self.repo.update(organization_id, tournament_id, **updates)
         
@@ -676,15 +679,6 @@ class TournamentService:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
             return None
 
-        # Check if tournament schedule is read-only
-        if await self.is_schedule_read_only(match.tournament):
-            error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
-            logger.warning(
-                "Match status advance blocked - tournament %s has SpeedGaming integration enabled",
-                match.tournament_id
-            )
-            raise ValueError(error_msg)
-
         # Check if match has a RaceTime room linked - cannot manually advance if it does
         # Try to access the prefetched relation, or query if not prefetched
         try:
@@ -855,6 +849,136 @@ class TournamentService:
         logger.info("Reverted match %s status %s", match_id, status)
 
         return match
+
+    async def set_match_winner(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        match_player_id: int,
+    ) -> Optional[MatchPlayers]:
+        """
+        Set the winner of a match by setting finish_rank=1 for the winning player.
+        
+        Clears finish_rank for all other players in the match.
+        
+        Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
+        
+        Args:
+            user: User performing the action
+            organization_id: Organization ID
+            match_id: Match ID
+            match_player_id: MatchPlayers ID of the winning player
+        
+        Returns:
+            Updated MatchPlayers record for the winner, or None if unauthorized/failed
+        """
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated set_match_winner attempt for org %s", organization_id)
+            return None
+
+        # Check if user can manage matches
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "update"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+
+        if not can_manage:
+            # Check if user is at least a moderator
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+
+            if not can_moderate:
+                logger.warning("Unauthorized set_match_winner by user %s for org %s", user.id, organization_id)
+                return None
+
+        # Get all match players for this match
+        match_players = await MatchPlayers.filter(match_id=match_id).all()
+        
+        if not match_players:
+            logger.warning("No players found for match %s", match_id)
+            return None
+
+        # Find the winner
+        winner = None
+        for mp in match_players:
+            if mp.id == match_player_id:
+                mp.finish_rank = 1
+                winner = mp
+            else:
+                mp.finish_rank = None
+            await mp.save()
+
+        if winner:
+            logger.info("Set winner for match %s: match_player_id=%s", match_id, match_player_id)
+        else:
+            logger.warning("Winner match_player_id %s not found in match %s", match_player_id, match_id)
+
+        return winner
+
+    async def update_station_assignments(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        station_assignments: dict[int, str],
+    ) -> bool:
+        """
+        Update station assignments for match players (onsite tournaments).
+        
+        Args:
+            user: User performing the action
+            organization_id: Organization ID
+            match_id: Match ID
+            station_assignments: Dict mapping match_player_id to station number string
+        
+        Returns:
+            True if successful, False if unauthorized or failed
+        """
+        # Use new authorization system
+        if not user:
+            logger.warning("Unauthenticated update_station_assignments attempt for org %s", organization_id)
+            return False
+
+        # Check if user can manage matches
+        can_manage = await self.auth.can(
+            user,
+            action=self.auth.get_action_for_operation("match", "update"),
+            resource=self.auth.get_resource_identifier("match", match_id),
+            organization_id=organization_id
+        )
+
+        if not can_manage:
+            # Check if user is at least a moderator
+            can_moderate = await self.auth.can(
+                user,
+                action="organization:moderate",
+                resource=self.auth.get_resource_identifier("organization", organization_id),
+                organization_id=organization_id
+            )
+
+            if not can_moderate:
+                logger.warning("Unauthorized update_station_assignments by user %s for org %s", user.id, organization_id)
+                return False
+
+        # Update station assignments for each match player
+        for match_player_id, station in station_assignments.items():
+            match_player = await MatchPlayers.filter(id=match_player_id, match_id=match_id).first()
+            if match_player:
+                match_player.assigned_station = station
+                await match_player.save()
+                logger.info("Updated station for match_player %s: station=%s", match_player_id, station)
+            else:
+                logger.warning("MatchPlayer %s not found in match %s", match_player_id, match_id)
+
+        return True
 
     async def sync_racetime_room_status(
         self,

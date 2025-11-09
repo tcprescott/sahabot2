@@ -20,10 +20,20 @@ def register():
     auth_service = DiscordAuthService()
 
     @ui.page('/auth/login')
-    async def login_page():
+    async def login_page(redirect: str = None):
         """
         Login page - redirects to Discord OAuth2.
+        
+        Args:
+            redirect: Optional URL to redirect to after successful login
         """
+        # Save redirect URL if not already set (prefer explicit parameter, fallback to stored value)
+        if redirect:
+            app.storage.user['redirect_after_login'] = redirect
+        elif 'redirect_after_login' not in app.storage.user:
+            # If no redirect is specified and none is stored, default to home
+            app.storage.user['redirect_after_login'] = '/'
+        
         # Generate CSRF state token
         state = secrets.token_urlsafe(32)
 

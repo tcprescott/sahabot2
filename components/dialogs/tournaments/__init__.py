@@ -11,6 +11,8 @@ from components.dialogs.tournaments.async_tournament_dialog import AsyncTourname
 from components.dialogs.tournaments.race_review_dialog import RaceReviewDialog
 from components.dialogs.tournaments.add_crew_dialog import AddCrewDialog
 from components.dialogs.tournaments.create_live_race_dialog import CreateLiveRaceDialog
+from components.dialogs.tournaments.match_winner_dialog import MatchWinnerDialog
+from components.dialogs.tournaments.check_in_dialog import CheckInDialog
 
 __all__ = [
     'MatchSeedDialog',
@@ -24,4 +26,6 @@ __all__ = [
     'RaceReviewDialog',
     'AddCrewDialog',
     'CreateLiveRaceDialog',
+    'MatchWinnerDialog',
+    'CheckInDialog',
 ]

@@ -13,7 +13,7 @@ from models.user import Permission
 from models.match_schedule import Match
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
-from components.dialogs import MatchSeedDialog, EditMatchDialog, CreateMatchDialog
+from components.dialogs import MatchSeedDialog, EditMatchDialog, CreateMatchDialog, MatchWinnerDialog, CheckInDialog
 from components.dialogs.common import ConfirmDialog
 from application.services.tournaments.tournament_service import TournamentService
 from application.services.organizations.organization_service import OrganizationService
@@ -260,7 +260,7 @@ class EventScheduleView:
                             
                             # Show SpeedGaming badge if imported from SpeedGaming
                             if hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id:
-                                ui.badge('SpeedGaming').classes('badge-info').tooltip('Managed by SpeedGaming (read-only)')
+                                ui.badge('SpeedGaming').classes('badge-info').tooltip('Imported from SpeedGaming')
 
                     def render_scheduled_time(match: Match):
                         if match.scheduled_at:
@@ -281,39 +281,168 @@ class EventScheduleView:
                         if players:
                             with ui.column().classes('gap-1'):
                                 for player in players:
-                                    ui.label(player.user.get_display_name()).classes('text-sm')
+                                    display_name = player.user.get_display_name()
+                                    # Show station number if assigned (onsite tournaments)
+                                    if player.assigned_station:
+                                        with ui.row().classes('gap-1 items-center'):
+                                            ui.label(display_name).classes('text-sm')
+                                            ui.html(f'<i>({player.assigned_station})</i>').classes('text-sm text-secondary')
+                                    else:
+                                        ui.label(display_name).classes('text-sm')
                         else:
                             ui.label('—').classes('text-secondary')
 
                     async def advance_status(match_id: int, status: str, status_label: str):
-                        """Advance match status with confirmation."""
-                        async def on_confirm():
-                            try:
-                                # Use service layer directly
-                                result = await self.service.advance_match_status(
-                                    user=self.user,
-                                    organization_id=self.organization.id,
-                                    match_id=match_id,
-                                    status=status
+                        """Advance match status with confirmation or winner selection."""
+                        # Special handling for 'checked_in' status in onsite tournaments - prompt for station numbers
+                        if status == 'checked_in':
+                            # Get match to check if tournament is onsite
+                            match = await Match.filter(id=match_id).prefetch_related('tournament', 'players__user').first()
+                            if not match:
+                                ui.notify('Match not found', type='negative')
+                                return
+                            
+                            # Check if tournament is onsite
+                            if match.tournament.onsite_tournament:
+                                # Build player list for dialog
+                                players = []
+                                for mp in match.players:
+                                    players.append({
+                                        'id': mp.user.id,
+                                        'username': mp.user.get_display_name(),
+                                        'match_player_id': mp.id
+                                    })
+                                
+                                async def on_station_assigned(station_assignments: dict[int, str]):
+                                    """Handle station assignment and advance status."""
+                                    try:
+                                        # First advance match status to checked_in
+                                        result = await self.service.advance_match_status(
+                                            user=self.user,
+                                            organization_id=self.organization.id,
+                                            match_id=match_id,
+                                            status=status
+                                        )
+                                        if not result:
+                                            ui.notify('Failed to check in match', type='negative')
+                                            return
+                                        
+                                        # Then update station assignments
+                                        updated = await self.service.update_station_assignments(
+                                            user=self.user,
+                                            organization_id=self.organization.id,
+                                            match_id=match_id,
+                                            station_assignments=station_assignments
+                                        )
+                                        if updated:
+                                            ui.notify('Match checked in with station assignments', type='positive')
+                                        else:
+                                            ui.notify('Match checked in (failed to set stations)', type='warning')
+                                        
+                                        await self._refresh()
+                                    except ValueError as e:
+                                        logger.error("Failed to check in match: %s", e)
+                                        ui.notify(f'Failed: {str(e)}', type='negative')
+                                    except Exception as e:
+                                        logger.error("Failed to check in match: %s", e)
+                                        ui.notify(f'Failed to check in match: {str(e)}', type='negative')
+                                
+                                # Show check-in dialog with station assignment
+                                dialog = CheckInDialog(
+                                    match_title=match.title or f'Match {match_id}',
+                                    players=players,
+                                    on_checkin=on_station_assigned
                                 )
-                                if result:
-                                    ui.notify(f'Match status advanced to {status_label}', type='positive')
+                                await dialog.show()
+                                return  # Exit early, dialog handles the rest
+                        
+                        # Special handling for 'finished' status - show winner selection dialog
+                        if status == 'finished':
+                            # Get match to fetch players
+                            match = await Match.filter(id=match_id).prefetch_related('players__user').first()
+                            if not match:
+                                ui.notify('Match not found', type='negative')
+                                return
+                            
+                            # Build player list for dialog
+                            players = []
+                            for mp in match.players:
+                                players.append({
+                                    'id': mp.user.id,
+                                    'username': mp.user.get_display_name(),
+                                    'match_player_id': mp.id
+                                })
+                            
+                            async def on_winner_selected(match_player_id: int):
+                                """Handle winner selection and advance status."""
+                                try:
+                                    # First advance match status
+                                    result = await self.service.advance_match_status(
+                                        user=self.user,
+                                        organization_id=self.organization.id,
+                                        match_id=match_id,
+                                        status=status
+                                    )
+                                    if not result:
+                                        ui.notify('Failed to advance match status', type='negative')
+                                        return
+                                    
+                                    # Then set the winner
+                                    winner = await self.service.set_match_winner(
+                                        user=self.user,
+                                        organization_id=self.organization.id,
+                                        match_id=match_id,
+                                        match_player_id=match_player_id
+                                    )
+                                    if winner:
+                                        ui.notify('Match finished and winner set', type='positive')
+                                    else:
+                                        ui.notify('Match finished (failed to set winner)', type='warning')
+                                    
                                     await self._refresh()
-                                else:
-                                    ui.notify('Failed to advance match status', type='negative')
-                            except ValueError as e:
-                                logger.error("Failed to advance match status: %s", e)
-                                ui.notify(f'Failed: {str(e)}', type='negative')
-                            except Exception as e:
-                                logger.error("Failed to advance match status: %s", e)
-                                ui.notify(f'Failed to advance status: {str(e)}', type='negative')
+                                except ValueError as e:
+                                    logger.error("Failed to finish match: %s", e)
+                                    ui.notify(f'Failed: {str(e)}', type='negative')
+                                except Exception as e:
+                                    logger.error("Failed to finish match: %s", e)
+                                    ui.notify(f'Failed to finish match: {str(e)}', type='negative')
+                            
+                            # Show winner selection dialog
+                            dialog = MatchWinnerDialog(
+                                match_title=match.title or f'Match {match_id}',
+                                players=players,
+                                on_select=on_winner_selected
+                            )
+                            await dialog.show()
+                        else:
+                            # For other statuses, use confirmation dialog
+                            async def on_confirm():
+                                try:
+                                    # Use service layer directly
+                                    result = await self.service.advance_match_status(
+                                        user=self.user,
+                                        organization_id=self.organization.id,
+                                        match_id=match_id,
+                                        status=status
+                                    )
+                                    if result:
+                                        ui.notify(f'Match status advanced to {status_label}', type='positive')
+                                        await self._refresh()
+                                    else:
+                                        ui.notify('Failed to advance match status', type='negative')
+                                except ValueError as e:
+                                    logger.error("Failed to advance match status: %s", e)
+                                    ui.notify(f'Failed: {str(e)}', type='negative')
+                                except Exception as e:
+                                    logger.error("Failed to advance match status: %s", e)
+                                    ui.notify(f'Failed to advance status: {str(e)}', type='negative')
 
-                        dialog = ConfirmDialog(
-                            title=f'Advance to {status_label}',
-                            message=f'Are you sure you want to advance this match to {status_label}?',
-                            on_confirm=on_confirm
-                        )
-                        await dialog.show()
+                            dialog = ConfirmDialog(
+                                title=f'Advance to {status_label}',
+                                message=f'Are you sure you want to advance this match to {status_label}?',
+                                on_confirm=on_confirm
+                            )
+                            await dialog.show()
 
                     async def revert_status(match_id: int, status: str, status_label: str):
                         """Revert match status with confirmation."""
@@ -346,8 +475,6 @@ class EventScheduleView:
                         await dialog.show()
 
                     def render_status(match: Match):
-                        # Check if match is from SpeedGaming (read-only)
-                        is_speedgaming = hasattr(match, 'speedgaming_episode_id') and match.speedgaming_episode_id
                         # Check if match has RaceTime room (cannot advance or revert if it does)
                         has_racetime_room = bool(match.racetime_room)
 
@@ -367,8 +494,8 @@ class EventScheduleView:
                                 ui.label('Pending').classes('badge')
 
                             # Show advancement and revert buttons for tournament admins
-                            # Don't show if SpeedGaming (read-only) or if has RaceTime room (auto-managed)
-                            if self.can_manage_tournaments and not is_speedgaming and not has_racetime_room:
+                            # Don't show if has RaceTime room (auto-managed)
+                            if self.can_manage_tournaments and not has_racetime_room:
                                 with ui.row().classes('gap-1'):
                                     # Determine next available action based on current state
                                     if not match.confirmed_at:

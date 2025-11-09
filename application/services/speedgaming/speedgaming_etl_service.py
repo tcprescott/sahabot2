@@ -917,19 +917,35 @@ class SpeedGamingETLService:
         organization_id = tournament.organization_id
 
         # Check if match should be auto-finished (more than 4 hours in the past)
+        # Only auto-finish if no manual status has been set
         current_time = datetime.now(timezone.utc)
         if existing_match and existing_match.scheduled_at:
-            time_since_scheduled = current_time - existing_match.scheduled_at
-            # 4 hours = 14400 seconds
-            if time_since_scheduled.total_seconds() > 14400:
-                logger.info(
-                    "Match %s (episode %s) is more than 4 hours past scheduled time, auto-finishing",
+            # Check if any manual status has been set
+            has_manual_status = bool(
+                existing_match.checked_in_at or
+                existing_match.started_at or
+                existing_match.finished_at or
+                existing_match.confirmed_at
+            )
+            
+            if not has_manual_status:
+                time_since_scheduled = current_time - existing_match.scheduled_at
+                # 4 hours = 14400 seconds
+                if time_since_scheduled.total_seconds() > 14400:
+                    logger.info(
+                        "Match %s (episode %s) is more than 4 hours past scheduled time, auto-finishing",
+                        existing_match.id,
+                        episode.id
+                    )
+                    existing_match.finished_at = current_time
+                    await existing_match.save()
+                    return existing_match
+            else:
+                logger.debug(
+                    "Match %s (episode %s) has manual status set, skipping auto-finish",
                     existing_match.id,
                     episode.id
                 )
-                existing_match.finished_at = current_time
-                await existing_match.save()
-                return existing_match
 
         # Collect all players from match1 and match2
         all_players: List[SpeedGamingPlayer] = []
