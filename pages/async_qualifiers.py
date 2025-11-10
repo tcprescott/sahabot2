@@ -196,7 +196,7 @@ def register():
                     base.create_nav_link(
                         f"🏆 {tournament.name}",
                         "emoji_events",
-                        f"/org/{organization_id}/tournament?qualifier_id={tournament.id}",
+                        f"/org/{organization_id}/tournament?tournament_id={tournament.id}",
                     )
                 )
 
