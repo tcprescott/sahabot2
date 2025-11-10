@@ -11,11 +11,11 @@ import discord
 import httpx
 from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType
-from models.async_tournament import AsyncTournament, AsyncTournamentRace
+from models.async_tournament import AsyncQualifier, AsyncQualifierRace
 from models import SYSTEM_USER_ID
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
-from application.services.tournaments.async_tournament_service import (
-    AsyncTournamentService,
+from application.services.tournaments.async_qualifier_service import (
+    AsyncQualifierService,
 )
 from application.services.tournaments.async_live_race_service import (
     AsyncLiveRaceService,
@@ -213,7 +213,7 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
     timeout_minutes = config.get("timeout_minutes", 20)
 
     try:
-        pending_races = await AsyncTournamentRace.filter(
+        pending_races = await AsyncQualifierRace.filter(
             status="pending", discord_thread_id__isnull=False
         ).prefetch_related("user")
 
@@ -262,7 +262,7 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
                 await race.save()
 
                 # Create audit log
-                tournament_service = AsyncTournamentService()
+                tournament_service = AsyncQualifierService()
                 await tournament_service.repo.create_audit_log(
                     tournament_id=race.tournament_id,
                     action="auto_forfeit",
@@ -308,7 +308,7 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
     max_hours = config.get("max_hours", 12)
 
     try:
-        in_progress = await AsyncTournamentRace.filter(
+        in_progress = await AsyncQualifierRace.filter(
             status="in_progress", discord_thread_id__isnull=False
         ).prefetch_related("user")
 
@@ -331,7 +331,7 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
                 await race.save()
 
                 # Create audit log
-                tournament_service = AsyncTournamentService()
+                tournament_service = AsyncQualifierService()
                 await tournament_service.repo.create_audit_log(
                     tournament_id=race.tournament_id,
                     action="auto_forfeit",
@@ -365,7 +365,7 @@ async def handle_async_tournament_score_calculation(task: ScheduledTask) -> None
     """
     logger.info("Starting async tournament score calculation task: %s", task.name)
 
-    tournament_service = AsyncTournamentService()
+    tournament_service = AsyncQualifierService()
 
     try:
         # Extract configuration
@@ -374,10 +374,10 @@ async def handle_async_tournament_score_calculation(task: ScheduledTask) -> None
 
         if specific_tournament_ids:
             # Recalculate for specific tournaments
-            tournaments = await AsyncTournament.filter(id__in=specific_tournament_ids)
+            tournaments = await AsyncQualifier.filter(id__in=specific_tournament_ids)
         else:
             # Recalculate for all active tournaments
-            tournaments = await AsyncTournament.filter(is_active=True)
+            tournaments = await AsyncQualifier.filter(is_active=True)
 
         for tournament in tournaments:
             logger.info("Recalculating scores for tournament %s", tournament.id)
@@ -410,7 +410,7 @@ async def handle_async_live_race_open(task: ScheduledTask) -> None:
 
     Expected task_config:
     {
-        "live_race_id": 123,  # ID of AsyncTournamentLiveRace
+        "live_race_id": 123,  # ID of AsyncQualifierLiveRace
         "organization_id": 1,  # Organization ID for context
     }
 

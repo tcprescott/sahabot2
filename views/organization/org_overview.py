@@ -28,13 +28,13 @@ class OrganizationOverviewView:
         from application.services.tournaments.tournament_service import (
             TournamentService,
         )
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
         org_service = OrganizationService()
         tournament_service = TournamentService()
-        async_tournament_service = AsyncTournamentService()
+        async_qualifier_service = AsyncQualifierService()
 
         # Check if user can admin this org
         can_admin = await org_service.user_can_admin_org(
@@ -55,7 +55,7 @@ class OrganizationOverviewView:
 
         # Get active async tournaments (using service layer)
         active_async_tournaments = (
-            await async_tournament_service.list_active_org_tournaments(
+            await async_qualifier_service.list_active_org_tournaments(
                 self.user, self.organization.id
             )
         )

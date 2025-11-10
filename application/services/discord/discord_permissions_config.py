@@ -18,7 +18,7 @@ class PermissionRequirement:
     required: bool = True  # If False, it's a warning but not strictly required
 
 
-class AsyncTournamentChannelPermissions:
+class AsyncQualifierChannelPermissions:
     """
     Permission requirements for async tournament Discord channels.
 

@@ -7,7 +7,7 @@ Provides form for pool name and description with validation.
 from typing import Optional, Callable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models.async_tournament import AsyncTournamentPool
+from models.async_tournament import AsyncQualifierPool
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class PoolDialog(BaseDialog):
 
     def __init__(
         self,
-        pool: Optional[AsyncTournamentPool] = None,
+        pool: Optional[AsyncQualifierPool] = None,
         on_save: Optional[Callable] = None,
     ):
         """

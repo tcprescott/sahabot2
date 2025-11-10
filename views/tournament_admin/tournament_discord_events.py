@@ -8,7 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.async_tournament import AsyncTournament
+from models.async_tournament import AsyncQualifier
 from application.services.tournaments.tournament_service import TournamentService
 from application.services.discord.discord_scheduled_event_service import (
     DiscordScheduledEventService,
@@ -20,7 +20,7 @@ class TournamentDiscordEventsView:
     """View for managing Discord scheduled events for a tournament."""
 
     def __init__(
-        self, user: User, organization: Organization, tournament: AsyncTournament
+        self, user: User, organization: Organization, tournament: AsyncQualifier
     ):
         """
         Initialize the Discord events view.

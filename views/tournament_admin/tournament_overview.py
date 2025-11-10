@@ -8,7 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.async_tournament import AsyncTournament
+from models.async_tournament import AsyncQualifier
 from application.repositories.audit_repository import AuditRepository
 from components.datetime_label import DateTimeLabel
 
@@ -17,7 +17,7 @@ class TournamentOverviewView:
     """View for tournament overview dashboard."""
 
     def __init__(
-        self, user: User, organization: Organization, tournament: AsyncTournament
+        self, user: User, organization: Organization, tournament: AsyncQualifier
     ):
         """
         Initialize the overview view.
