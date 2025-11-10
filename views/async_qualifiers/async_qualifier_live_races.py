@@ -14,7 +14,7 @@ from components.badge import Badge
 from components.empty_state import EmptyState
 from components.datetime_label import DateTimeLabel
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs.tournaments import CreateLiveRaceDialog
+from components.dialogs.async_qualifiers import CreateLiveRaceDialog
 from components.dialogs.common import ConfirmDialog
 from application.services.async_qualifiers.async_live_race_service import (
     AsyncLiveRaceService,

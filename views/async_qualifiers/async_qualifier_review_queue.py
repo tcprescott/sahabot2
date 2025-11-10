@@ -13,7 +13,7 @@ from models.async_tournament import AsyncQualifier
 from components.card import Card
 from components.empty_state import EmptyState
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs.tournaments import RaceReviewDialog
+from components.dialogs.async_qualifiers import RaceReviewDialog
 
 
 class AsyncReviewQueueView:
