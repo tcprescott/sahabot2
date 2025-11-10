@@ -1402,7 +1402,7 @@ class AsyncTournamentService:
             reason is None if can_reattempt is True, otherwise contains error message
         """
         # Get the race
-        race = await self.repo.get_race_by_id(race_id)
+        race = await self.repo.get_race_by_id(race_id, organization_id=organization_id)
         if not race:
             return False, "Race not found"
 
@@ -1435,7 +1435,7 @@ class AsyncTournamentService:
         # Check re-attempt limit (-1 = unlimited, 0 = none allowed, >0 = specific limit)
         if tournament.max_reattempts == 0:
             return False, "Re-attempts are not allowed for this tournament"
-        
+
         if tournament.max_reattempts > 0:
             current_count = await self.get_reattempt_count(
                 user, organization_id, tournament.id
