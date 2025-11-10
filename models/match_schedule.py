@@ -94,6 +94,9 @@ class Tournament(Model):
     randomizer_preset = fields.ForeignKeyField(
         "models.RandomizerPreset", related_name="tournaments", null=True
     )  # Preset for seed generation
+    preset_selection_rules = fields.JSONField(
+        null=True
+    )  # Conditional preset selection rules (evaluated per match)
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
