@@ -497,6 +497,121 @@ class BasePage:
                 if inspect.iscoroutine(result):
                     await result
 
+    def register_view_loader(
+        self, key: str, view_factory: Callable[[], Any]
+    ) -> None:
+        """Register a view loader with automatic container management.
+
+        This is a convenience method that combines view instantiation and loader
+        registration into a single call, reducing boilerplate.
+
+        Args:
+            key: Unique identifier for this content loader
+            view_factory: Callable that returns a view instance
+
+        Example:
+            # Instead of:
+            async def load_players():
+                view = TournamentPlayersView(page.user, org, tournament)
+                await page.load_view_into_container(view)
+            page.register_content_loader("players", load_players)
+
+            # Use:
+            page.register_view_loader(
+                "players",
+                lambda: TournamentPlayersView(page.user, org, tournament)
+            )
+        """
+
+        async def loader():
+            view = view_factory()
+            await self.load_view_into_container(view)
+
+        self.register_content_loader(key, loader)
+
+    def register_instance_view(
+        self, key: str, view_factory: Callable[[], Any]
+    ) -> None:
+        """Register an instance view loader.
+
+        This is a shorthand for the common pattern of using create_instance_view_loader
+        with register_content_loader.
+
+        Args:
+            key: Unique identifier for this content loader
+            view_factory: Zero-argument callable that returns a view instance
+
+        Example:
+            # Instead of:
+            page.register_content_loader(
+                "profile",
+                page.create_instance_view_loader(lambda: ProfileInfoView(page.user))
+            )
+
+            # Use:
+            page.register_instance_view("profile", lambda: ProfileInfoView(page.user))
+        """
+        self.register_content_loader(key, self.create_instance_view_loader(view_factory))
+
+    def register_multiple_views(
+        self, view_mappings: list[tuple[str, Callable[[], Any]]]
+    ) -> None:
+        """Register multiple view loaders at once.
+
+        This is a convenience method to reduce repetitive registration calls.
+
+        Args:
+            view_mappings: List of (key, view_factory) tuples
+
+        Example:
+            # Instead of:
+            page.register_view_loader("overview", lambda: OverviewView(org, user))
+            page.register_view_loader("members", lambda: MembersView(org, user))
+            page.register_view_loader("settings", lambda: SettingsView(org, user))
+
+            # Use:
+            page.register_multiple_views([
+                ("overview", lambda: OverviewView(org, user)),
+                ("members", lambda: MembersView(org, user)),
+                ("settings", lambda: SettingsView(org, user)),
+            ])
+        """
+        for key, view_factory in view_mappings:
+            self.register_view_loader(key, view_factory)
+
+    def create_sidebar_items(
+        self, items: list[tuple[str, str, str]]
+    ) -> list[dict]:
+        """Create multiple sidebar items with loaders at once.
+
+        This is a convenience method to reduce repetitive sidebar item creation.
+
+        Args:
+            items: List of (label, icon, loader_key) tuples
+
+        Returns:
+            List of sidebar item dictionaries
+
+        Example:
+            # Instead of:
+            sidebar_items = [
+                page.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
+                page.create_sidebar_item_with_loader("Members", "people", "members"),
+                page.create_sidebar_item_with_loader("Settings", "settings", "settings"),
+            ]
+
+            # Use:
+            sidebar_items = page.create_sidebar_items([
+                ("Overview", "dashboard", "overview"),
+                ("Members", "people", "members"),
+                ("Settings", "settings", "settings"),
+            ])
+        """
+        return [
+            self.create_sidebar_item_with_loader(label, icon, loader_key)
+            for label, icon, loader_key in items
+        ]
+
     async def render(
         self,
         content: Optional[Callable[[BasePage], Awaitable[None]]] = None,

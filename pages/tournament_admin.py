@@ -128,21 +128,15 @@ def register():
                 f"/orgs/{organization_id}/admin?view=tournaments",
             ),
             base.create_separator(),
-            base.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
-            base.create_sidebar_item_with_loader("Players", "people", "players"),
-            base.create_sidebar_item_with_loader(
-                "RaceTime Settings", "settings", "racetime"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Discord Events", "event_available", "discord-events"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Randomizer Settings", "casino", "randomizer-settings"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Preset Selection Rules", "rule", "preset-rules"
-            ),
-            base.create_sidebar_item_with_loader("Settings", "tune", "settings"),
         ]
+        sidebar_items.extend(base.create_sidebar_items([
+            ("Overview", "dashboard", "overview"),
+            ("Players", "people", "players"),
+            ("RaceTime Settings", "settings", "racetime"),
+            ("Discord Events", "event_available", "discord-events"),
+            ("Randomizer Settings", "casino", "randomizer-settings"),
+            ("Preset Selection Rules", "rule", "preset-rules"),
+            ("Settings", "tune", "settings"),
+        ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

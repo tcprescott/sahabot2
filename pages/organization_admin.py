@@ -166,60 +166,26 @@ def register():
         ]
 
         if allowed_admin:
-            sidebar_items.extend(
-                [
-                    base.create_sidebar_item_with_loader(
-                        "Overview", "dashboard", "overview"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Members", "people", "members"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Permissions", "verified_user", "permissions"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Stream Channels", "cast", "stream_channels"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Tournaments", "emoji_events", "tournaments"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Async Tournaments", "schedule", "async_tournaments"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Race Room Profiles", "tune", "race_room_profiles"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Discord Servers", "dns", "discord_servers"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Racer Verification", "verified", "racer_verification"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Scheduled Tasks", "schedule", "scheduled_tasks"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Audit Logs", "history", "audit_logs"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Settings", "settings", "settings"
-                    ),
-                ]
-            )
+            sidebar_items.extend(base.create_sidebar_items([
+                ("Overview", "dashboard", "overview"),
+                ("Members", "people", "members"),
+                ("Permissions", "verified_user", "permissions"),
+                ("Stream Channels", "cast", "stream_channels"),
+                ("Tournaments", "emoji_events", "tournaments"),
+                ("Async Tournaments", "schedule", "async_tournaments"),
+                ("Race Room Profiles", "tune", "race_room_profiles"),
+                ("Discord Servers", "dns", "discord_servers"),
+                ("Racer Verification", "verified", "racer_verification"),
+                ("Scheduled Tasks", "schedule", "scheduled_tasks"),
+                ("Audit Logs", "history", "audit_logs"),
+                ("Settings", "settings", "settings"),
+            ]))
         else:
             # Tournament managers see both regular and async tournaments plus race room profiles
-            sidebar_items.extend(
-                [
-                    base.create_sidebar_item_with_loader(
-                        "Tournaments", "emoji_events", "tournaments"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Async Tournaments", "schedule", "async_tournaments"
-                    ),
-                    base.create_sidebar_item_with_loader(
-                        "Race Room Profiles", "tune", "race_room_profiles"
-                    ),
-                ]
-            )
+            sidebar_items.extend(base.create_sidebar_items([
+                ("Tournaments", "emoji_events", "tournaments"),
+                ("Async Tournaments", "schedule", "async_tournaments"),
+                ("Race Room Profiles", "tune", "race_room_profiles"),
+            ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

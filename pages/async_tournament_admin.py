@@ -107,8 +107,10 @@ def register():
                 f"/orgs/{organization_id}/admin?view=async_tournaments",
             ),
             base.create_separator(),
-            base.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
-            base.create_sidebar_item_with_loader("Settings", "tune", "settings"),
         ]
+        sidebar_items.extend(base.create_sidebar_items([
+            ("Overview", "dashboard", "overview"),
+            ("Settings", "tune", "settings"),
+        ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

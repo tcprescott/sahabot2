@@ -72,17 +72,13 @@ def register():
                     await load_overview()
 
             # Create sidebar items with dynamic content loaders
-            sidebar_items = [
-                base.create_sidebar_item_with_loader(
-                    "Overview", "dashboard", "overview"
-                ),
-                base.create_sidebar_item_with_loader("Presets", "code", "presets"),
-                base.create_sidebar_item_with_loader(
-                    "Organizations", "group", "organizations"
-                ),
-                base.create_separator(),
-                base.create_nav_link("My Profile", "person", "/profile"),
-            ]
+            sidebar_items = base.create_sidebar_items([
+                ("Overview", "dashboard", "overview"),
+                ("Presets", "code", "presets"),
+                ("Organizations", "group", "organizations"),
+            ])
+            sidebar_items.append(base.create_separator())
+            sidebar_items.append(base.create_nav_link("My Profile", "person", "/profile"))
             # Add admin panel link for admin users
             if user.is_admin():
                 sidebar_items.append(base.create_separator())

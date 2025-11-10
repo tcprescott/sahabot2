@@ -35,54 +35,15 @@ def register():
         async def content(page: BasePage):
             """Render profile page content."""
             # Register content loaders for dynamic switching
-            page.register_content_loader(
-                "profile",
-                page.create_instance_view_loader(lambda: ProfileInfoView(page.user)),
-            )
-            page.register_content_loader(
-                "settings",
-                page.create_instance_view_loader(
-                    lambda: ProfileSettingsView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "api-keys",
-                page.create_instance_view_loader(lambda: ApiKeysView(page.user)),
-            )
-            page.register_content_loader(
-                "organizations",
-                page.create_instance_view_loader(
-                    lambda: UserOrganizationsView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "racetime",
-                page.create_instance_view_loader(
-                    lambda: RacetimeAccountView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "twitch",
-                page.create_instance_view_loader(lambda: TwitchAccountView(page.user)),
-            )
-            page.register_content_loader(
-                "preset-namespaces",
-                page.create_instance_view_loader(
-                    lambda: PresetNamespacesView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "notifications",
-                page.create_instance_view_loader(
-                    lambda: NotificationPreferencesView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "racer-verification",
-                page.create_instance_view_loader(
-                    lambda: RacerVerificationView(page.user)
-                ),
-            )
+            page.register_instance_view("profile", lambda: ProfileInfoView(page.user))
+            page.register_instance_view("settings", lambda: ProfileSettingsView(page.user))
+            page.register_instance_view("api-keys", lambda: ApiKeysView(page.user))
+            page.register_instance_view("organizations", lambda: UserOrganizationsView(page.user))
+            page.register_instance_view("racetime", lambda: RacetimeAccountView(page.user))
+            page.register_instance_view("twitch", lambda: TwitchAccountView(page.user))
+            page.register_instance_view("preset-namespaces", lambda: PresetNamespacesView(page.user))
+            page.register_instance_view("notifications", lambda: NotificationPreferencesView(page.user))
+            page.register_instance_view("racer-verification", lambda: RacerVerificationView(page.user))
 
             # Load initial content only if no view parameter was specified
             if not page.initial_view:
@@ -94,30 +55,20 @@ def register():
         sidebar_items = [
             base.create_nav_link("Back to Home", "home", "/"),
             base.create_separator(),
-            base.create_sidebar_item_with_loader("Profile Info", "person", "profile"),
-            base.create_sidebar_item_with_loader(
-                "Profile Settings", "settings", "settings"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Notifications", "notifications", "notifications"
-            ),
-            base.create_sidebar_item_with_loader("API Keys", "vpn_key", "api-keys"),
-            base.create_sidebar_item_with_loader(
-                "Organizations", "business", "organizations"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Preset Namespaces", "folder", "preset-namespaces"
-            ),
-            base.create_separator(),
-            base.create_sidebar_item_with_loader(
-                "RaceTime Account", "link", "racetime"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Twitch Account", "videocam", "twitch"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Racer Verification", "verified", "racer-verification"
-            ),
         ]
+        sidebar_items.extend(base.create_sidebar_items([
+            ("Profile Info", "person", "profile"),
+            ("Profile Settings", "settings", "settings"),
+            ("Notifications", "notifications", "notifications"),
+            ("API Keys", "vpn_key", "api-keys"),
+            ("Organizations", "business", "organizations"),
+            ("Preset Namespaces", "folder", "preset-namespaces"),
+        ]))
+        sidebar_items.append(base.create_separator())
+        sidebar_items.extend(base.create_sidebar_items([
+            ("RaceTime Account", "link", "racetime"),
+            ("Twitch Account", "videocam", "twitch"),
+            ("Racer Verification", "verified", "racer-verification"),
+        ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

@@ -432,16 +432,12 @@ def register():
                 "Back to Organization", "arrow_back", f"/org/{organization_id}"
             ),
             base.create_separator(),
-            base.create_sidebar_item_with_loader(
-                "Event Schedule", "event", "event_schedule"
-            ),
-            base.create_sidebar_item_with_loader(
-                "My Matches", "sports_esports", "my_matches"
-            ),
-            base.create_sidebar_item_with_loader(
-                "My Settings", "settings", "my_settings"
-            ),
         ]
+        sidebar_items.extend(base.create_sidebar_items([
+            ("Event Schedule", "event", "event_schedule"),
+            ("My Matches", "sports_esports", "my_matches"),
+            ("My Settings", "settings", "my_settings"),
+        ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)
 
