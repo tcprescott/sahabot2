@@ -89,6 +89,20 @@ class AsyncTournamentMainView(ui.View):
             )
             return
 
+        # Check if user already has an active race
+        existing_races = await service.get_active_races_for_user(
+            user=user,
+            organization_id=tournament.organization_id,
+            tournament_id=tournament.id,
+        )
+
+        if existing_races:
+            await interaction.response.send_message(
+                "You already have an active race. Please complete or forfeit it before starting a new one.",
+                ephemeral=True,
+            )
+            return
+
         # Get user's race history
         user_races = await service.get_user_races(
             user, tournament.organization_id, tournament.id
@@ -196,22 +210,8 @@ class PoolSelectionView(ui.View):
 
         await interaction.response.defer(ephemeral=True)
 
-        # Check for existing active races
-        service = AsyncTournamentService()
-        existing_races = await service.get_active_races_for_user(
-            user=self.user,
-            organization_id=self.tournament.organization_id,
-            tournament_id=self.tournament.id,
-        )
-
-        if existing_races:
-            await interaction.followup.send(
-                "You already have an active race. Please complete or forfeit it first.",
-                ephemeral=True,
-            )
-            return
-
         # Get a random eligible permalink from the selected pool
+        service = AsyncTournamentService()
         import random
         from application.services.tournaments.async_tournament_service import (
             MAX_POOL_IMBALANCE,
@@ -258,7 +258,13 @@ class PoolSelectionView(ui.View):
         )
 
         if not race:
-            await interaction.followup.send("Failed to create race.", ephemeral=True)
+            # Delete the thread since race creation failed
+            await thread.delete()
+            await interaction.followup.send(
+                "Failed to create race. You may already have an active race in progress. "
+                "Please complete or forfeit your current race before starting a new one.",
+                ephemeral=True,
+            )
             return
 
         # Invite user to thread
@@ -318,7 +324,7 @@ class RaceReadyView(ui.View):
         # Get race for this thread
         race = await AsyncTournamentRace.get_or_none(
             discord_thread_id=interaction.channel.id
-        ).prefetch_related("user")
+        ).prefetch_related("user", "tournament")
 
         if not race:
             await interaction.response.send_message(
@@ -383,7 +389,7 @@ class RaceReadyView(ui.View):
         """Common forfeit logic."""
         race = await AsyncTournamentRace.get_or_none(
             discord_thread_id=interaction.channel.id
-        ).prefetch_related("user")
+        ).prefetch_related("user", "tournament")
 
         if not race:
             await interaction.response.send_message(
@@ -642,7 +648,7 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
         placeholder="Add any notes or comments about your run...",
         style=discord.TextStyle.long,
         required=False,
-        max_length=10000,
+        max_length=4000,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -705,7 +711,7 @@ class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
         placeholder="Please explain why you want this run reviewed...",
         style=discord.TextStyle.long,
         required=True,
-        max_length=5000,
+        max_length=4000,
     )
 
     async def on_submit(self, interaction: discord.Interaction):

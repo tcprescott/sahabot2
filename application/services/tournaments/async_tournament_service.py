@@ -679,6 +679,16 @@ class AsyncTournamentService:
             )
             return None
 
+        # Check if user already has an in-progress race
+        has_in_progress = await self.repo.has_in_progress_race(user.id, tournament_id)
+        if has_in_progress:
+            logger.warning(
+                "User %s attempted to create race while having in-progress race in tournament %s",
+                user.id,
+                tournament_id,
+            )
+            return None
+
         race = await self.repo.create_race(
             tournament_id=tournament_id,
             organization_id=organization_id,

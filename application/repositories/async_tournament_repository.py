@@ -300,6 +300,26 @@ class AsyncTournamentRepository:
         ).prefetch_related("user", "tournament")
         return race
 
+    async def has_in_progress_race(
+        self, user_id: int, tournament_id: int
+    ) -> bool:
+        """
+        Check if user has an in-progress race in the tournament.
+        
+        Args:
+            user_id: User ID
+            tournament_id: Tournament ID
+            
+        Returns:
+            True if user has a race with status 'in_progress' or 'pending'
+        """
+        race = await AsyncTournamentRace.filter(
+            user_id=user_id,
+            tournament_id=tournament_id,
+            status__in=["pending", "in_progress"],
+        ).first()
+        return race is not None
+
     async def create_race(
         self,
         tournament_id: int,
