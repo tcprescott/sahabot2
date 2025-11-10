@@ -14,7 +14,7 @@ Complete reference for all 65+ REST API endpoints in SahaBot2.
 - [Organizations (8)](#organizations)
 - [Organization Invites (4)](#organization-invites)
 - [Tournaments (8)](#tournaments)
-- [Async Tournaments (12)](#async-tournaments)
+- [Async Qualifiers (12)](#async-tournaments)
 - [Async Live Races (6)](#async-live-races)
 - [RaceTime Integration (12)](#racetime-integration)
 - [Discord Integration (4)](#discord-integration)
@@ -493,10 +493,10 @@ Complete reference for all 65+ REST API endpoints in SahaBot2.
 
 ---
 
-## Async Tournaments
+## Async Qualifiers
 
 ### POST /api/organizations/{org_id}/async-tournaments
-**Purpose**: Create async tournament
+**Purpose**: Create async qualifier
 
 **Parameters**:
 - `org_id` (path, int): Organization ID
@@ -510,7 +510,7 @@ Complete reference for all 65+ REST API endpoints in SahaBot2.
 ---
 
 ### GET /api/organizations/{org_id}/async-tournaments
-**Purpose**: List async tournaments
+**Purpose**: List async qualifiers
 
 **Parameters**:
 - `org_id` (path, int): Organization ID
@@ -523,7 +523,7 @@ Complete reference for all 65+ REST API endpoints in SahaBot2.
 ---
 
 ### GET /api/async-tournaments/{tournament_id}
-**Purpose**: Get async tournament details
+**Purpose**: Get async qualifier details
 
 **Rate Limit**: 60/minute  
 **Authentication**: Required  
@@ -532,7 +532,7 @@ Complete reference for all 65+ REST API endpoints in SahaBot2.
 ---
 
 ### PATCH /api/async-tournaments/{tournament_id}
-**Purpose**: Update async tournament
+**Purpose**: Update async qualifier
 
 **Rate Limit**: 60/minute  
 **Authentication**: Required  
@@ -541,7 +541,7 @@ Complete reference for all 65+ REST API endpoints in SahaBot2.
 ---
 
 ### DELETE /api/async-tournaments/{tournament_id}
-**Purpose**: Delete async tournament
+**Purpose**: Delete async qualifier
 
 **Rate Limit**: 60/minute  
 **Authentication**: Required  

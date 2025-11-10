@@ -214,7 +214,7 @@ The tool generates:
 - **Users** with different permission levels (SUPERADMIN, ADMIN, MODERATOR, USER)
 - **Organizations** with members and permission structures
 - **Tournaments** with scheduled matches, players, and results
-- **Async Tournaments** with pools, permalinks, and race submissions
+- **Async Qualifiers** with pools, permalinks, and race submissions
 - **Matches** with realistic scheduling, player assignments, and completion states
 
 See [`tools/README.md`](tools/README.md) for detailed documentation.

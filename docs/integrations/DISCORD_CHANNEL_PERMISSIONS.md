@@ -1,12 +1,12 @@
-# Discord Channel Permission Checking for Async Tournaments
+# Discord Channel Permission Checking for Async Qualifiers
 
 ## Overview
 
-This implementation adds automatic permission checking for Discord channels when creating or editing async tournaments. The system verifies that the selected Discord channel has the correct permissions and displays warnings if issues are found.
+This implementation adds automatic permission checking for Discord channels when creating or editing async qualifiers. The system verifies that the selected Discord channel has the correct permissions and displays warnings if issues are found.
 
 ## Features
 
-1. **Permission Validation**: Checks channel permissions when creating or updating async tournaments
+1. **Permission Validation**: Checks channel permissions when creating or updating async qualifiers
 2. **Warning System**: Displays warnings to users if permissions are not correctly configured
 3. **Non-Blocking**: Tournaments can still be created even with permission warnings
 4. **Centralized Configuration**: All permission requirements are defined in one place for easy modification
@@ -40,22 +40,22 @@ Central configuration file that defines all permission requirements:
 
 #### 2. Permission Checker (`application/services/discord_guild_service.py`)
 - `ChannelPermissionCheck` dataclass - Result of permission check
-- `check_async_tournament_channel_permissions()` method - Performs the actual check
+- `check_async_qualifier_channel_permissions()` method - Performs the actual check
 - Uses Discord.py to fetch channel and check permissions
 - Returns warnings list for any permission issues found
 
-#### 3. Service Layer (`application/services/async_tournament_service.py`)
+#### 3. Service Layer (`application/services/async_qualifier_service.py`)
 - `create_tournament()` - Returns tuple of (tournament, warnings)
 - `update_tournament()` - Returns tuple of (tournament, warnings)
 - Calls permission checker when Discord channel is specified
 - Logs permission warnings but still creates/updates tournament
 
-#### 4. API Layer (`api/routes/async_tournaments.py`, `api/schemas/async_tournament.py`)
+#### 4. API Layer (`api/routes/async_qualifiers.py`, `api/schemas/async_qualifier.py`)
 - `AsyncTournamentCreateResponse` schema includes warnings field
 - Both create and update endpoints return tournament + warnings
 - API consumers receive warnings in response
 
-#### 5. UI Layer (`views/organization/org_async_tournaments.py`)
+#### 5. UI Layer (`views/organization/org_async_qualifiers.py`)
 - Create and edit dialogs display warnings to user
 - Warnings shown as individual notifications with 'warning' type
 - Tournament creation/update proceeds even with warnings
@@ -113,7 +113,7 @@ Same behavior as creation - warnings displayed if new channel has permission iss
 
 ### Permission Check Flow
 1. Service receives discord_channel_id
-2. Service calls `DiscordGuildService.check_async_tournament_channel_permissions()`
+2. Service calls `DiscordGuildService.check_async_qualifier_channel_permissions()`
 3. Permission checker:
    - Gets bot instance (via `get_bot_instance()`)
    - Fetches Discord channel

@@ -13,7 +13,7 @@ Complete reference for all 30+ database models in SahaBot2, organized by domain.
 - [User Management (3)](#user-management)
 - [Organizations (4)](#organizations)
 - [Tournaments (7)](#tournaments)
-- [Async Tournaments (6)](#async-tournaments)
+- [Async Qualifiers (6)](#async-tournaments)
 - [Discord Integration (3)](#discord-integration)
 - [RaceTime Integration (4)](#racetime-integration)
 - [Settings & Configuration (5)](#settings--configuration)
@@ -409,10 +409,10 @@ enable_racetime_integration: true
 
 ---
 
-## Async Tournaments
+## Async Qualifiers
 
 ### AsyncTournament
-**File**: `models/async_tournament.py`
+**File**: `models/async_qualifier.py`
 
 **Purpose**: Self-paced tournament where participants race on their own schedule.
 
@@ -450,9 +450,9 @@ enable_racetime_integration: true
 ---
 
 ### AsyncTournamentPool
-**File**: `models/async_tournament.py`
+**File**: `models/async_qualifier.py`
 
-**Purpose**: Grouping of races within an async tournament (e.g., "Week 1", "Quarterfinals").
+**Purpose**: Grouping of races within an async qualifier (e.g., "Week 1", "Quarterfinals").
 
 **Fields**:
 | Field | Type | Constraints | Description |
@@ -474,9 +474,9 @@ enable_racetime_integration: true
 ---
 
 ### AsyncTournamentParticipant
-**File**: `models/async_tournament.py`
+**File**: `models/async_qualifier.py`
 
-**Purpose**: Participant registration in an async tournament.
+**Purpose**: Participant registration in an async qualifier.
 
 **Fields**:
 | Field | Type | Constraints | Description |
@@ -498,9 +498,9 @@ enable_racetime_integration: true
 ---
 
 ### AsyncRaceSubmission
-**File**: `models/async_tournament.py`
+**File**: `models/async_qualifier.py`
 
-**Purpose**: A participant's submitted race result in async tournament.
+**Purpose**: A participant's submitted race result in async qualifier.
 
 **Fields**:
 | Field | Type | Constraints | Description |
@@ -534,9 +534,9 @@ enable_racetime_integration: true
 ---
 
 ### AsyncLiveRace
-**File**: `models/async_tournament.py`
+**File**: `models/async_qualifier.py`
 
-**Purpose**: Scheduled live race within async tournament (on RaceTime.gg).
+**Purpose**: Scheduled live race within async qualifier (on RaceTime.gg).
 
 **Fields**:
 | Field | Type | Constraints | Description |

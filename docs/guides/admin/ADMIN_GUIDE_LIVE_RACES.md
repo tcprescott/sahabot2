@@ -210,7 +210,7 @@ Use the status filter dropdown to view:
 #### Team Race
 - **When to use**: Team-based tournaments
 - **Considerations**: Requires team assignments
-- **Note**: Most async tournaments use individual races
+- **Note**: Most async qualifiers use individual races
 
 ### Race Room Profiles
 

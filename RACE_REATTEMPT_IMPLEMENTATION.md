@@ -2,7 +2,7 @@
 
 ## Overview
 
-Implemented a comprehensive race re-attempt system for async tournaments that allows players to re-attempt races with configurable limits. Re-attempted races are marked and excluded from scoring calculations.
+Implemented a comprehensive race re-attempt system for async qualifiers that allows players to re-attempt races with configurable limits. Re-attempted races are marked and excluded from scoring calculations.
 
 **Implementation Date**: November 10, 2025
 
@@ -10,20 +10,20 @@ Implemented a comprehensive race re-attempt system for async tournaments that al
 
 ### 1. Database Schema
 
-**File**: `models/async_tournament.py`
+**File**: `models/async_qualifier.py`
 - Added `max_reattempts` field (SmallIntField, default=-1)
   - -1 = unlimited re-attempts
   - 0 = no re-attempts allowed
   - >0 = specific limit per player
 - Existing `reattempted` field on `AsyncTournamentRace` model already present
 
-**Migration**: `migrations/models/55_20251110005745_add_max_reattempts_to_async_tournament.py`
+**Migration**: `migrations/models/55_20251110005745_add_max_reattempts_to_async_qualifier.py`
 - Status: ✅ Applied
-- SQL: `ALTER TABLE async_tournaments ADD max_reattempts SMALLINT NOT NULL DEFAULT -1`
+- SQL: `ALTER TABLE async_qualifiers ADD max_reattempts SMALLINT NOT NULL DEFAULT -1`
 
 ### 2. Repository Layer
 
-**File**: `application/repositories/async_tournament_repository.py`
+**File**: `application/repositories/async_qualifier_repository.py`
 
 New methods:
 - `count_reattempted_races(user_id, tournament_id)` - Count reattempted races for a user
@@ -31,7 +31,7 @@ New methods:
 
 ### 3. Service Layer
 
-**File**: `application/services/tournaments/async_tournament_service.py`
+**File**: `application/services/tournaments/async_qualifier_service.py`
 
 New methods:
 
@@ -88,7 +88,7 @@ Added:
 - `_on_reattempt_success()` method - Refreshes view after re-attempt
 
 #### Tournament Admin Dialog
-**File**: `components/dialogs/tournaments/async_tournament_dialog.py` (MODIFIED)
+**File**: `components/dialogs/tournaments/async_qualifier_dialog.py` (MODIFIED)
 
 Added:
 - `max_reattempts_input` field
@@ -156,7 +156,7 @@ Added:
 ## Administrator Configuration
 
 **Setting Re-attempt Limits**:
-1. Navigate to Organization Admin → Async Tournaments
+1. Navigate to Organization Admin → Async Qualifiers
 2. Create or edit tournament
 3. Set "Max Re-attempts" field:
    - -1 = Unlimited re-attempts
@@ -237,14 +237,14 @@ Potential improvements:
 
 ### New Files (2)
 1. `components/dialogs/tournaments/race_reattempt_dialog.py` - Dialog component
-2. `migrations/models/55_20251110005745_add_max_reattempts_to_async_tournament.py` - Migration
+2. `migrations/models/55_20251110005745_add_max_reattempts_to_async_qualifier.py` - Migration
 
 ### Modified Files (6)
-1. `models/async_tournament.py` - Added max_reattempts field
-2. `application/repositories/async_tournament_repository.py` - Added 2 methods
-3. `application/services/tournaments/async_tournament_service.py` - Added 3 methods, updated create_tournament
+1. `models/async_qualifier.py` - Added max_reattempts field
+2. `application/repositories/async_qualifier_repository.py` - Added 2 methods
+3. `application/services/tournaments/async_qualifier_service.py` - Added 3 methods, updated create_tournament
 4. `components/dialogs/tournaments/__init__.py` - Exported new dialog
-5. `components/dialogs/tournaments/async_tournament_dialog.py` - Added max_reattempts input
+5. `components/dialogs/tournaments/async_qualifier_dialog.py` - Added max_reattempts input
 6. `views/tournaments/async_player_history.py` - Added Actions column and dialog integration
 
 ### Total Changes

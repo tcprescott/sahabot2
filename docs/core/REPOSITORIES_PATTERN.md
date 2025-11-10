@@ -50,7 +50,7 @@ application/repositories/
 ├── user_repository.py                   # User data access
 ├── organization_repository.py           # Organization data access
 ├── tournament_repository.py             # Tournament data access
-├── async_tournament_repository.py       # Async tournament data access
+├── async_qualifier_repository.py       # Async tournament data access
 ├── async_live_race_repository.py        # Live race data access
 ├── audit_repository.py                  # Audit log data access
 ├── preset_namespace_repository.py       # Preset namespace data access
@@ -852,10 +852,10 @@ async def test_service_uses_repository():
 | TournamentRepository | Tournament | `tournament_repository.py` |
 | TournamentCrewRepository | TournamentCrew | `tournament_repository.py` |
 | MatchRepository | Match | `tournament_repository.py` |
-| AsyncTournamentRepository | AsyncTournament | `async_tournament_repository.py` |
-| AsyncTournamentPoolRepository | AsyncTournamentPool | `async_tournament_repository.py` |
-| AsyncTournamentParticipantRepository | AsyncTournamentParticipant | `async_tournament_repository.py` |
-| AsyncRaceSubmissionRepository | AsyncRaceSubmission | `async_tournament_repository.py` |
+| AsyncTournamentRepository | AsyncTournament | `async_qualifier_repository.py` |
+| AsyncTournamentPoolRepository | AsyncTournamentPool | `async_qualifier_repository.py` |
+| AsyncTournamentParticipantRepository | AsyncTournamentParticipant | `async_qualifier_repository.py` |
+| AsyncRaceSubmissionRepository | AsyncRaceSubmission | `async_qualifier_repository.py` |
 | AsyncLiveRaceRepository | AsyncLiveRace | `async_live_race_repository.py` |
 | AuditRepository | AuditLog | `audit_repository.py` |
 | NotificationRepository | NotificationSubscription, NotificationLog | `notification_repository.py` |
