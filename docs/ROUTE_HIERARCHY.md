@@ -22,14 +22,14 @@ This document provides a comprehensive overview of all routes in the SahaBot2 ap
   - [Admin Routes](#admin-routes)
   - [Organization Routes](#organization-routes)
   - [Tournament Routes](#tournament-routes)
-  - [Async Tournament Routes](#async-tournament-routes)
+  - [Async Qualifier Routes](#async-tournament-routes)
   - [OAuth Callback Routes](#oauth-callback-routes)
 - [REST API Routes (FastAPI)](#rest-api-routes-fastapi)
   - [Health & Monitoring](#health--monitoring)
   - [Users](#users)
   - [Organizations](#organizations)
   - [Tournaments](#tournaments)
-  - [Async Tournaments](#async-tournaments)
+  - [Async Qualifiers](#async-tournaments)
   - [Settings & Configuration](#settings--configuration)
   - [External Integrations](#external-integrations)
   - [System Administration](#system-administration)
@@ -124,7 +124,7 @@ Routes for organization members and administrators.
 - `permissions` - Permission management
 - `stream_channels` - Stream channel configuration
 - `tournaments` - Tournament management
-- `async_tournaments` - Async tournament management
+- `async_tournaments` - Async Qualifier management
 - `race_room_profiles` - RaceTime room profile management
 - `discord_servers` - Discord server integration
 - `racer_verification` - Racer verification configuration
@@ -151,18 +151,18 @@ Routes for tournament management and viewing.
 - `preset-rules` - Preset selection rules
 - `settings` - Tournament settings
 
-### Async Tournament Routes
+### Async Qualifier Routes
 
 Routes for asynchronous tournament management.
 
-**Async Tournament Administration**:
+**Async Qualifier Administration**:
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/org/{organization_id}/async/{tournament_id}/admin` | Async tournament admin (default view: overview) | `pages/async_tournament_admin.py` |
-| `/org/{organization_id}/async/{tournament_id}/admin/{view}` | Async tournament admin with specific view | `pages/async_tournament_admin.py` |
+| `/org/{organization_id}/async/{tournament_id}/admin` | Async Qualifier admin (default view: overview) | `pages/async_tournament_admin.py` |
+| `/org/{organization_id}/async/{tournament_id}/admin/{view}` | Async Qualifier admin with specific view | `pages/async_tournament_admin.py` |
 
-**Available Async Tournament Admin Views**:
+**Available Async Qualifier Admin Views**:
 - `overview` - Tournament dashboard
 - `settings` - Tournament settings
 
@@ -177,11 +177,11 @@ Routes for asynchronous tournament management.
 - `overview` - Qualifier dashboard
 - `settings` - Qualifier settings
 
-**Async Tournament Public Views**:
+**Async Qualifier Public Views**:
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/org/{organization_id}/async/{tournament_id}` | Async tournament public page | `pages/tournaments.py` |
+| `/org/{organization_id}/async/{tournament_id}` | Async Qualifier public page | `pages/tournaments.py` |
 | `/org/{organization_id}/async/{tournament_id}/leaderboard` | Tournament leaderboard | `pages/tournaments.py` |
 | `/org/{organization_id}/async/{tournament_id}/pools` | Tournament pools/brackets | `pages/tournaments.py` |
 | `/org/{organization_id}/async/{tournament_id}/player/{player_id}` | Player profile in tournament | `pages/tournaments.py` |
@@ -262,17 +262,17 @@ Base path: `/api/tournaments/settings`
 | GET | `/{tournament_id}` | Get tournament settings | Yes | `api/routes/tournament_match_settings.py` |
 | PUT | `/{tournament_id}` | Update tournament settings | Yes | `api/routes/tournament_match_settings.py` |
 
-### Async Tournaments
+### Async Qualifiers
 
 Base path: `/api/async-tournaments`
 
 | Method | Route | Description | Auth Required | File |
 |--------|-------|-------------|---------------|------|
-| GET | `/` | List async tournaments | Yes | `api/routes/async_tournaments.py` |
-| POST | `/` | Create async tournament | Yes | `api/routes/async_tournaments.py` |
-| GET | `/{tournament_id}` | Get async tournament details | Yes | `api/routes/async_tournaments.py` |
-| PATCH | `/{tournament_id}` | Update async tournament | Yes | `api/routes/async_tournaments.py` |
-| DELETE | `/{tournament_id}` | Delete async tournament | Yes | `api/routes/async_tournaments.py` |
+| GET | `/` | List Async Qualifiers | Yes | `api/routes/async_tournaments.py` |
+| POST | `/` | Create Async Qualifier | Yes | `api/routes/async_tournaments.py` |
+| GET | `/{tournament_id}` | Get Async Qualifier details | Yes | `api/routes/async_tournaments.py` |
+| PATCH | `/{tournament_id}` | Update Async Qualifier | Yes | `api/routes/async_tournaments.py` |
+| DELETE | `/{tournament_id}` | Delete Async Qualifier | Yes | `api/routes/async_tournaments.py` |
 
 **Async Qualifiers**:
 
@@ -465,7 +465,7 @@ Base path: `/api/ui-auth`
 
 3. **Tournament routing**: Follows organization hierarchy
    - Regular tournaments: `/org/{org_id}/tournament/{tournament_id}`
-   - Async tournaments: `/org/{org_id}/async/{tournament_id}`
+   - Async Qualifiers: `/org/{org_id}/async/{tournament_id}`
 
 ### API Routes (FastAPI)
 
