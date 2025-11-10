@@ -6,7 +6,7 @@ This implementation adds comprehensive audit log viewing capabilities for both g
 ## Features Implemented
 
 ### 1. Admin Panel Audit Log View
-**Location**: `/admin?view=audit-logs`
+**Location**: `/admin/audit-logs`
 
 **Features**:
 - View all audit logs across the entire system
@@ -22,7 +22,7 @@ This implementation adds comprehensive audit log viewing capabilities for both g
 **Access**: Requires SUPERADMIN permission
 
 ### 2. Organization Admin Panel Audit Log View
-**Location**: `/orgs/{organization_id}/admin?view=audit_logs`
+**Location**: `/orgs/{organization_id}/admin/audit_logs`
 
 **Features**:
 - View audit logs scoped to a specific organization

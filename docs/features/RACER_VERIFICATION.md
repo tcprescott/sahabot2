@@ -118,7 +118,7 @@ User-facing verification interface:
 
 **Deep Linking Support**:
 - Can load specific verification by ID via `?verification_id=X`
-- Standalone navigation: `/profile?view=racer-verification`
+- Standalone navigation: `/profile/racer-verification`
 
 **Account Linking Flow**:
 1. Check if user has linked RaceTime account
@@ -188,7 +188,7 @@ Creates two tables:
 
 Organization can share verification link:
 ```
-https://yoursite.com/profile?view=racer-verification&verification_id=1
+https://yoursite.com/profile/racer-verification?verification_id=1
 ```
 
 User clicks link → logs in → sees specific verification → verifies if eligible

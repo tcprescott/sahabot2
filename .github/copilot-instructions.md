@@ -476,6 +476,16 @@ poetry run aerich downgrade
 
 **Why this matters**: Aerich migration files contain a `models_state` constant that tracks schema state. Manually created files missing this data cause "Old format of migration file detected" errors and break migration tracking.
 
+### Route Documentation
+
+**Always update `docs/ROUTE_HIERARCHY.md` when modifying routes**:
+- **Adding new routes**: Add the route to the appropriate section (UI or API)
+- **Removing routes**: Remove the route from the document
+- **Changing route paths**: Update the path in the document
+- **Adding view segments**: Document available views for dynamic content pages
+
+The route hierarchy document serves as the source of truth for all application routes and must be kept in sync with the codebase.
+
 ### Environment Variables
 Required in `.env`:
 - `DATABASE_URL` - MySQL connection string

@@ -11,6 +11,7 @@ The page uses a single route with dynamic content switching via sidebar navigati
 This pattern is reusable for other multi-section pages via BasePage.
 """
 
+from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from views.admin import (
@@ -35,9 +36,10 @@ def register():
     """Register admin page routes."""
 
     @ui.page("/admin")
-    async def admin_page():
+    @ui.page("/admin/{view}")
+    async def admin_page(view: Optional[str] = None):
         """Admin dashboard page with dynamic content switching."""
-        base = BasePage.admin_page(title="SahaBot2 - Admin")
+        base = BasePage.admin_page(title="SahaBot2 - Admin", view=view)
 
         async def content(page: BasePage):
             """Render the admin page with dynamic content container."""

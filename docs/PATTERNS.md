@@ -172,11 +172,11 @@ ui.navigate.to('/tournaments?message=changes_saved')
 For pages that load different views dynamically:
 
 ```python
-# Redirect to specific view
-ui.navigate.to('/orgs/1/admin?view=members')
+# Navigate to specific view using path segment
+ui.navigate.to('/orgs/1/admin/members')
 
 # Page loads the 'members' view automatically
-# Based on view parameter
+# Based on view path segment
 ```
 
 **See**: [`docs/core/BASEPAGE_GUIDE.md`](core/BASEPAGE_GUIDE.md) for complete examples.

@@ -78,12 +78,13 @@ class BasePage:
         sidebar_open: Whether sidebar is currently open
     """
 
-    def __init__(self, title: str = "SahaBot2"):
+    def __init__(self, title: str = "SahaBot2", view: Optional[str] = None):
         """
         Initialize base page.
 
         Args:
             title: Page title for browser tab
+            view: Optional view identifier from URL path segment
         """
         self.title = title
         self.user: Optional[User] = None
@@ -94,7 +95,7 @@ class BasePage:
         self._dynamic_content_container = None
         self._content_loaders: dict[str, Callable[[], Awaitable[None]]] = {}
         self._current_view_key: Optional[str] = None
-        self.initial_view: Optional[str] = None  # View from query parameter
+        self.initial_view: Optional[str] = view  # View from URL path segment
 
     async def _load_user(self) -> None:
         """Load current user from session."""
@@ -162,18 +163,15 @@ class BasePage:
             message = params["message"].replace("_", " ").title()
             ui.notify(message, type="info", timeout=5000)
 
-    async def _get_view_from_query(self) -> Optional[str]:
+    def _get_view_from_path(self) -> Optional[str]:
         """
-        Get the view parameter from URL query string.
+        Get the view parameter from URL path segment.
 
         Returns:
-            The view key from the query parameter if it exists, None otherwise
+            The view key from the path if it was provided during initialization, None otherwise
         """
-        # Get 'view' query parameter from URL using URLManager
-        view_value = await ui.run_javascript(
-            "return window.URLManager.getParam('view');"
-        )
-        return view_value if view_value else None
+        # View is now passed via constructor from the route path parameter
+        return self.initial_view
 
     def _toggle_sidebar(self) -> None:
         """Toggle sidebar open/closed state."""
@@ -352,10 +350,13 @@ class BasePage:
         """
 
         async def wrapped_loader():
-            """Wrapped loader that updates the URL query parameter when loading content."""
+            """Wrapped loader that updates the URL path when loading content."""
+            import json
             self._current_view_key = key
-            # Update URL query parameter to reflect current view using URLManager
-            ui.run_javascript(f"window.URLManager.setParam('view', '{key}');")
+            # Update URL path to reflect current view by appending view to current path
+            # Use json.dumps to properly escape the key value for JavaScript
+            escaped_key = json.dumps(key)
+            await ui.run_javascript(f"window.Navigation.updateViewPath({escaped_key});")
             await loader()
 
         self._content_loaders[key] = wrapped_loader
@@ -646,6 +647,7 @@ class BasePage:
         js_modules = [
             "core/dark-mode.js",  # Dark mode (must be first to prevent flash)
             "core/url-manager.js",  # URL/query parameter management
+            "core/navigation.js",  # Navigation operations
             "utils/clipboard.js",  # Clipboard operations
             "utils/window-utils.js",  # Window operations
         ]
@@ -683,9 +685,8 @@ class BasePage:
         # Render content if provided
         if content:
             if use_dynamic_content:
-                # Check for view parameter BEFORE rendering content
-                # Store it so pages can check if they should skip default rendering
-                self.initial_view = await self._get_view_from_query()
+                # initial_view is now set via constructor from route path parameter
+                # No need to extract it from query parameters
 
                 # Create a dynamic content container that can be cleared/reloaded
                 self._content_container = (
@@ -726,30 +727,32 @@ class BasePage:
                 await self._show_query_param_notifications()
 
     @staticmethod
-    def simple_page(title: str = "SahaBot2") -> "BasePage":
+    def simple_page(title: str = "SahaBot2", view: Optional[str] = None) -> "BasePage":
         """
         Create a simple page (no authentication required).
 
         Args:
             title: Page title
+            view: Optional view identifier from URL path segment
 
         Returns:
             BasePage: Configured page instance
         """
-        return BasePage(title=title)
+        return BasePage(title=title, view=view)
 
     @staticmethod
-    def authenticated_page(title: str = "SahaBot2") -> "BasePage":
+    def authenticated_page(title: str = "SahaBot2", view: Optional[str] = None) -> "BasePage":
         """
         Create an authenticated page (requires login).
 
         Args:
             title: Page title
+            view: Optional view identifier from URL path segment
 
         Returns:
             BasePage: Configured page instance that requires authentication
         """
-        page = BasePage(title=title)
+        page = BasePage(title=title, view=view)
 
         # Override render to enforce authentication
         original_render = page.render
@@ -769,17 +772,18 @@ class BasePage:
         return page
 
     @staticmethod
-    def admin_page(title: str = "Admin - SahaBot2") -> "BasePage":
+    def admin_page(title: str = "Admin - SahaBot2", view: Optional[str] = None) -> "BasePage":
         """
         Create an admin page (requires admin permission).
 
         Args:
             title: Page title
+            view: Optional view identifier from URL path segment
 
         Returns:
             BasePage: Configured page instance that requires admin permission
         """
-        page = BasePage(title=title)
+        page = BasePage(title=title, view=view)
 
         # Override render to enforce admin permission
         original_render = page.render

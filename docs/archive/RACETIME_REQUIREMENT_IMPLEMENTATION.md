@@ -47,7 +47,7 @@ COMMENT 'Require RaceTime.gg account for async runs';
 - Added validation check after user authentication and before pool selection
 - If tournament requires RaceTime and user doesn't have `racetime_id`:
   - Display error message with emoji indicator (⚠️)
-  - Include direct link to profile page: `{BASE_URL}/profile?view=racetime`
+  - Include direct link to profile page: `{BASE_URL}/profile/racetime`
   - Return early without creating thread
   - Message is ephemeral (only visible to user)
 
@@ -142,7 +142,7 @@ When attempting to start an async run:
 This tournament requires you to link your RaceTime.gg account before starting async runs.
 
 Please visit your profile page to link your account:
-https://example.com/profile?view=racetime
+https://example.com/profile/racetime
 
 After linking, you'll be able to start async runs.
 ```
@@ -205,7 +205,7 @@ The migration is safe to run on production:
 No configuration changes required. The feature uses existing:
 - `settings.BASE_URL` for constructing profile URL
 - Existing `racetime_id` field on User model
-- Existing profile page route: `/profile?view=racetime`
+- Existing profile page route: `/profile/racetime`
 
 ### Rollout Recommendation
 

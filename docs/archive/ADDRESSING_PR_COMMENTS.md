@@ -61,7 +61,7 @@ When requirement is enabled and player lacks RaceTime account:
 - Discord bot blocks async run creation
 - Shows ephemeral error message with profile link
 - No thread is created
-- Must link account at `/profile?view=racetime` before proceeding
+- Must link account at `/profile/racetime` before proceeding
 
 ## Commit Reference
 - **Commit**: f2db5f3

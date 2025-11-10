@@ -65,7 +65,7 @@ class AsyncQualifierMainView(ui.View):
         # Check if RaceTime.gg account is required and linked
         if qualifier.require_racetime_for_async_runs:
             if not user.racetime_id:
-                profile_url = f"{settings.BASE_URL}/profile?view=racetime"
+                profile_url = f"{settings.BASE_URL}/profile/racetime"
                 await interaction.response.send_message(
                     f"⚠️ **RaceTime.gg Account Required**\n\n"
                     f"This tournament requires you to link your RaceTime.gg account before starting async runs.\n\n"

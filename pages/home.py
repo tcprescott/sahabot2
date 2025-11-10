@@ -9,6 +9,7 @@ For authenticated users, the page supports multiple views:
 - Organizations: Organization selector and management
 """
 
+from typing import Optional
 from nicegui import ui
 from components import BasePage
 from views.home import OverviewView, WelcomeView, PresetsView
@@ -20,14 +21,15 @@ def register():
     """Register home page routes."""
 
     @ui.page("/")
-    async def home_page():
+    @ui.page("/{view}")
+    async def home_page(view: Optional[str] = None):
         """Main home page."""
         # Check authentication to determine page mode
         user = await DiscordAuthService.get_current_user()
 
         if user:
             # Authenticated user - dynamic content page
-            base = BasePage.authenticated_page(title="SahaBot2 - Home")
+            base = BasePage.authenticated_page(title="SahaBot2 - Home", view=view)
 
             async def content(page: BasePage):
                 """Render home page content with dynamic views."""
