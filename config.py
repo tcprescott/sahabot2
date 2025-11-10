@@ -9,7 +9,7 @@ from typing import Optional
 from pathlib import Path
 
 
-def _get_env_file() -> str:
+def _get_env_file() -> Optional[str]:
     """
     Determine which .env file to use for configuration.
 
@@ -19,7 +19,7 @@ def _get_env_file() -> str:
     3. None (rely on environment variables only)
 
     Returns:
-        str: Path to the .env file to use, or None if no file should be loaded
+        Optional[str]: Path to the .env file to use, or None if no file should be loaded
     """
     env_file = Path(".env")
     env_test_file = Path(".env.test")
