@@ -142,7 +142,9 @@ class RaceReattemptDialog(BaseDialog):
             ui.notify("Failed to mark race as re-attempted", type="negative")
             return
 
-        ui.notify("Race marked for re-attempt. You can now start a new race.", type="positive")
+        ui.notify(
+            "Race marked for re-attempt. You can now start a new race.", type="positive"
+        )
 
         # Call success callback
         if self.on_success:

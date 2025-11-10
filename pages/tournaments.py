@@ -239,10 +239,14 @@ def register():
             ),
             base.create_separator(),
         ]
-        sidebar_items.extend(base.create_sidebar_items([
-            ("Event Schedule", "event", "event_schedule"),
-            ("My Matches", "sports_esports", "my_matches"),
-            ("My Settings", "settings", "my_settings"),
-        ]))
+        sidebar_items.extend(
+            base.create_sidebar_items(
+                [
+                    ("Event Schedule", "event", "event_schedule"),
+                    ("My Matches", "sports_esports", "my_matches"),
+                    ("My Settings", "settings", "my_settings"),
+                ]
+            )
+        )
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

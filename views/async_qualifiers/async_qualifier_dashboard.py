@@ -135,9 +135,7 @@ class AsyncDashboardView:
                         "text-warning inline-block"
                     )
 
-    async def _render_pool_progress(
-        self, races: list[AsyncQualifierRace], pools: list
-    ):
+    async def _render_pool_progress(self, races: list[AsyncQualifierRace], pools: list):
         """Render pool completion progress."""
         if not pools:
             return
