@@ -351,27 +351,12 @@ class BasePage:
 
         async def wrapped_loader():
             """Wrapped loader that updates the URL path when loading content."""
+            import json
             self._current_view_key = key
             # Update URL path to reflect current view by appending view to current path
-            # Get current path and update it with the view segment
-            # Sanitize key to prevent script injection
-            escaped_key = key.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
-            await ui.run_javascript(f"""
-                const currentPath = window.location.pathname;
-                const pathParts = currentPath.split('/').filter(p => p);
-                // Remove last part if it's not purely numeric (i.e., it's likely a view identifier)
-                // View identifiers are typically kebab-case or snake_case strings
-                if (pathParts.length > 0) {{
-                    const lastPart = pathParts[pathParts.length - 1];
-                    // If last part is not a pure number, remove it (it's likely a previous view)
-                    if (isNaN(parseInt(lastPart)) || lastPart !== String(parseInt(lastPart))) {{
-                        pathParts.pop();
-                    }}
-                }}
-                pathParts.push('{escaped_key}');
-                const newPath = '/' + pathParts.join('/');
-                window.history.pushState({{}}, '', newPath);
-            """)
+            # Use json.dumps to properly escape the key value for JavaScript
+            escaped_key = json.dumps(key)
+            await ui.run_javascript(f"window.Navigation.updateViewPath({escaped_key});")
             await loader()
 
         self._content_loaders[key] = wrapped_loader
@@ -662,6 +647,7 @@ class BasePage:
         js_modules = [
             "core/dark-mode.js",  # Dark mode (must be first to prevent flash)
             "core/url-manager.js",  # URL/query parameter management
+            "core/navigation.js",  # Navigation operations
             "utils/clipboard.js",  # Clipboard operations
             "utils/window-utils.js",  # Window operations
         ]

@@ -188,7 +188,7 @@ Creates two tables:
 
 Organization can share verification link:
 ```
-https://yoursite.com/profile/racer-verification&verification_id=1
+https://yoursite.com/profile/racer-verification?verification_id=1
 ```
 
 User clicks link → logs in → sees specific verification → verifies if eligible
