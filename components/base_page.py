@@ -486,16 +486,20 @@ class BasePage:
                 view = TournamentPlayersView(page.user, org, tournament)
                 await page.load_view_into_container(view)
         """
-        container = self.get_dynamic_content_container()
-        if container:
-            container.clear()
-            with container:
-                render_fn = getattr(view_instance, "render", None)
-                if render_fn is None:
-                    return
-                result = render_fn()
-                if inspect.iscoroutine(result):
-                    await result
+        container = self.get_dynamic_content_container() or self._content_container
+        if container is None:
+            # Initialize a default content container if not present
+            self._content_container = ui.element("div").classes("page-container")
+            container = self._content_container
+
+        container.clear()
+        with container:
+            render_fn = getattr(view_instance, "render", None)
+            if render_fn is None:
+                return
+            result = render_fn()
+            if inspect.iscoroutine(result):
+                await result
 
     def register_view_loader(
         self, key: str, view_factory: Callable[[], Any]

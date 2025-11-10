@@ -5,7 +5,7 @@ Tests the helper methods and functionality of the BasePage class.
 """
 
 import pytest
-from unittest.mock import Mock, AsyncMock, MagicMock, patch
+from unittest.mock import Mock, AsyncMock
 from components.base_page import BasePage
 
 
@@ -71,20 +71,24 @@ class TestBasePage:
 
     @pytest.mark.asyncio
     async def test_load_view_into_container_no_container(self):
-        """Test load_view_into_container when no container exists."""
+        """Test load_view_into_container when no container exists - creates fallback."""
         # Create a BasePage instance
         page = BasePage(title="Test Page")
         page._dynamic_content_container = None
+        page._content_container = None
 
         # Create a mock view
         mock_view = Mock()
         mock_view.render = AsyncMock()
 
-        # Call the method - should handle gracefully
+        # Call the method - should create fallback container and render
         await page.load_view_into_container(mock_view)
 
-        # Verify render was not called since no container
-        mock_view.render.assert_not_called()
+        # Verify a fallback content container was created
+        assert page._content_container is not None
+
+        # Verify render was called since fallback container was created
+        mock_view.render.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_load_view_into_container_no_render_method(self):
