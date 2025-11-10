@@ -14,11 +14,12 @@ from pages import (
     admin,
     organization_admin,
     tournament_admin,
-    async_tournament_admin,
+    async_qualifier_admin,
+    tournaments,
+    async_qualifiers,
     tournament_match_settings,
     user_profile,
     invite,
-    tournaments,
     racetime_oauth,
     twitch_oauth,
     discord_guild_callback,
@@ -79,11 +80,12 @@ def register_routes(fastapi_app: FastAPI = None):
     admin.register()
     organization_admin.register()
     tournament_admin.register()
-    async_tournament_admin.register()
+    async_qualifier_admin.register()
+    tournaments.register()
+    async_qualifiers.register()
     tournament_match_settings.register()
     user_profile.register()
     invite.register()
-    tournaments.register()
     racetime_oauth.register()
     twitch_oauth.register()
     discord_guild_callback.register()

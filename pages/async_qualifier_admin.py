@@ -10,10 +10,10 @@ from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
-from views.tournaments import AsyncDashboardView
+from views.async_qualifiers import AsyncDashboardView
 
 
 def register():

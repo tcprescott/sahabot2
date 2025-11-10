@@ -1115,7 +1115,7 @@ async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
     from application.services.notifications.notification_service import (
         NotificationService,
     )
-    from application.services.tournaments.async_live_race_service import (
+    from application.services.async_qualifiers.async_live_race_service import (
         AsyncLiveRaceService,
     )
     from models.notification_subscription import NotificationEventType
@@ -1173,7 +1173,7 @@ async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> N
     from application.services.notifications.notification_service import (
         NotificationService,
     )
-    from application.services.tournaments.async_live_race_service import (
+    from application.services.async_qualifiers.async_live_race_service import (
         AsyncLiveRaceService,
     )
     from application.repositories.async_live_race_repository import (
@@ -1241,7 +1241,7 @@ async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
     from application.services.notifications.notification_service import (
         NotificationService,
     )
-    from application.services.tournaments.async_live_race_service import (
+    from application.services.async_qualifiers.async_live_race_service import (
         AsyncLiveRaceService,
     )
     from application.repositories.async_live_race_repository import (
@@ -1307,7 +1307,7 @@ async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
     from application.services.notifications.notification_service import (
         NotificationService,
     )
-    from application.services.tournaments.async_live_race_service import (
+    from application.services.async_qualifiers.async_live_race_service import (
         AsyncLiveRaceService,
     )
     from application.repositories.async_live_race_repository import (
@@ -1373,7 +1373,7 @@ async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None
     from application.services.notifications.notification_service import (
         NotificationService,
     )
-    from application.services.tournaments.async_live_race_service import (
+    from application.services.async_qualifiers.async_live_race_service import (
         AsyncLiveRaceService,
     )
     from application.repositories.async_live_race_repository import (

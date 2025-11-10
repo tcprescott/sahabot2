@@ -13,7 +13,7 @@ from components.data_table import ResponsiveTable, TableColumn
 from components.badge import Badge
 from components.empty_state import EmptyState
 from components.stat_card import StatGrid
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
 

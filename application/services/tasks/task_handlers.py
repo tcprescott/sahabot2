@@ -14,10 +14,10 @@ from models.scheduled_task import ScheduledTask, TaskType
 from models.async_tournament import AsyncQualifier, AsyncQualifierRace
 from models import SYSTEM_USER_ID
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
-from application.services.tournaments.async_live_race_service import (
+from application.services.async_qualifiers.async_live_race_service import (
     AsyncLiveRaceService,
 )
 from discordbot.client import get_bot_instance

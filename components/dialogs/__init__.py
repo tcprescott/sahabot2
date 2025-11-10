@@ -50,9 +50,18 @@ from components.dialogs.tournaments import (
     CreateMatchDialog,
     SubmitMatchDialog,
     RegisterPlayerDialog,
-    AsyncQualifierDialog,
     MatchWinnerDialog,
     CheckInDialog,
+)
+
+# Async Qualifier dialogs
+from components.dialogs.async_qualifiers import (
+    AsyncQualifierDialog,
+    CreateLiveRaceDialog,
+    PermalinkDialog,
+    PoolDialog,
+    RaceReattemptDialog,
+    RaceReviewDialog,
 )
 
 # User profile dialogs
@@ -100,9 +109,15 @@ __all__ = [
     "MatchSeedDialog",
     "EditMatchDialog",
     "CreateMatchDialog",
-    "AsyncQualifierDialog",
     "MatchWinnerDialog",
     "CheckInDialog",
+    # Async Qualifiers
+    "AsyncQualifierDialog",
+    "CreateLiveRaceDialog",
+    "PermalinkDialog",
+    "PoolDialog",
+    "RaceReattemptDialog",
+    "RaceReviewDialog",
     # User profile
     "CreateApiKeyDialog",
     "DisplayTokenDialog",
