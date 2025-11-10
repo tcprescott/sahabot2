@@ -12,18 +12,18 @@ from pathlib import Path
 def _get_env_file() -> str:
     """
     Determine which .env file to use for configuration.
-    
+
     Priority:
     1. .env (if it exists)
     2. .env.test (fallback for testing/CI environments)
     3. None (rely on environment variables only)
-    
+
     Returns:
         str: Path to the .env file to use, or None if no file should be loaded
     """
     env_file = Path(".env")
     env_test_file = Path(".env.test")
-    
+
     if env_file.exists():
         return str(env_file)
     elif env_test_file.exists():
@@ -42,9 +42,7 @@ class Settings(BaseSettings):
     """
 
     model_config = SettingsConfigDict(
-        env_file=_get_env_file(), 
-        env_file_encoding="utf-8",
-        extra="ignore"
+        env_file=_get_env_file(), env_file_encoding="utf-8", extra="ignore"
     )
 
     # Database Configuration
