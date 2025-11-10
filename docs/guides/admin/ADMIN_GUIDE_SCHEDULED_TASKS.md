@@ -17,7 +17,7 @@ SahaBot2 has a task scheduler that runs automated tasks in the background. As an
 Built-in tasks are system-level automation tasks that are defined in the application code. Examples include:
 
 - **Tournament Usage Cleanup**: Removes old tournament usage tracking data
-- **Async Tournament Timeout**: Manages timeout logic for async tournament races
+- **Async Qualifier Timeout**: Manages timeout logic for async qualifier races
 - **Score Calculation**: Recalculates tournament scores periodically
 - **SpeedGaming Import**: Imports upcoming SpeedGaming episodes
 - **Placeholder User Cleanup**: Removes abandoned placeholder users

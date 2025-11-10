@@ -272,19 +272,19 @@ await service.add_crew(tournament_id=tournament.id, user_id=commentator_id, role
 ---
 
 ### AsyncTournamentService
-**File**: `application/services/async_tournament_service.py`
+**File**: `application/services/async_qualifier_service.py`
 
 **Purpose**: Asynchronous tournament management (self-paced races).
 
 **Key Methods**:
-- `create_async_tournament(org_id, name, current_user)` - Create async tournament
-- `get_async_tournament(tournament_id, current_user)` - Get details
-- `update_async_tournament(tournament_id, updates, current_user)` - Update
+- `create_async_qualifier(org_id, name, current_user)` - Create async qualifier
+- `get_async_qualifier(tournament_id, current_user)` - Get details
+- `update_async_qualifier(tournament_id, updates, current_user)` - Update
 - `add_pool(tournament_id, name, current_user)` - Create race pool
 - `add_participant(tournament_id, user_id, current_user)` - Register participant
 - `create_race(pool_id, seed_url, current_user)` - Create race
 - `get_leaderboard(tournament_id)` - Get standings
-- `list_async_tournaments(org_id, current_user)` - List org's async tournaments
+- `list_async_qualifiers(org_id, current_user)` - List org's async qualifiers
 
 **Authorization**: Org members (view), managers (create/edit)  
 **Multi-tenant**: Yes (org-scoped)  
@@ -293,7 +293,7 @@ await service.add_crew(tournament_id=tournament.id, user_id=commentator_id, role
 **Usage Example**:
 ```python
 service = AsyncTournamentService()
-tournament = await service.create_async_tournament(
+tournament = await service.create_async_qualifier(
     org_id=1,
     name="Spring Async League",
     current_user=user
@@ -306,7 +306,7 @@ pool = await service.add_pool(tournament_id=tournament.id, name="Week 1", curren
 ### AsyncLiveRaceService
 **File**: `application/services/async_live_race_service.py`
 
-**Purpose**: Manage live races within async tournaments (scheduled racetime rooms).
+**Purpose**: Manage live races within async qualifiers (scheduled racetime rooms).
 
 **Key Methods**:
 - `create_live_race(tournament_id, pool_id, scheduled_at, current_user)` - Schedule live race

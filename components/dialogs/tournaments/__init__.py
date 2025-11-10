@@ -7,7 +7,7 @@ from components.dialogs.tournaments.submit_match_dialog import SubmitMatchDialog
 from components.dialogs.tournaments.register_player_dialog import RegisterPlayerDialog
 from components.dialogs.tournaments.pool_dialog import PoolDialog
 from components.dialogs.tournaments.permalink_dialog import PermalinkDialog
-from components.dialogs.tournaments.async_tournament_dialog import AsyncTournamentDialog
+from components.dialogs.tournaments.async_qualifier_dialog import AsyncQualifierDialog
 from components.dialogs.tournaments.race_review_dialog import RaceReviewDialog
 from components.dialogs.tournaments.race_reattempt_dialog import RaceReattemptDialog
 from components.dialogs.tournaments.add_crew_dialog import AddCrewDialog
@@ -23,7 +23,7 @@ __all__ = [
     "RegisterPlayerDialog",
     "PoolDialog",
     "PermalinkDialog",
-    "AsyncTournamentDialog",
+    "AsyncQualifierDialog",
     "RaceReviewDialog",
     "RaceReattemptDialog",
     "AddCrewDialog",

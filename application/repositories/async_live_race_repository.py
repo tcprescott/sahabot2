@@ -1,20 +1,20 @@
 """
 Async Live Race Repository.
 
-Data access layer for async tournament live races.
+Data access layer for async qualifier live races.
 """
 
 from __future__ import annotations
 import logging
 from datetime import datetime, timezone
 from typing import Optional
-from models import AsyncTournamentLiveRace, AsyncTournamentRace, User
+from models import AsyncQualifierLiveRace, AsyncQualifierRace, User
 
 logger = logging.getLogger(__name__)
 
 
 class AsyncLiveRaceRepository:
-    """Repository for async tournament live race data access."""
+    """Repository for async qualifier live race data access."""
 
     async def create_live_race(
         self,
@@ -26,7 +26,7 @@ class AsyncLiveRaceRepository:
         permalink_id: Optional[int] = None,
         race_room_profile_id: Optional[int] = None,
         racetime_goal: Optional[str] = None,
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Create a new live race.
 
@@ -43,7 +43,7 @@ class AsyncLiveRaceRepository:
         Returns:
             Created live race
         """
-        live_race = await AsyncTournamentLiveRace.create(
+        live_race = await AsyncQualifierLiveRace.create(
             tournament_id=tournament_id,
             pool_id=pool_id,
             scheduled_at=scheduled_at,
@@ -59,7 +59,7 @@ class AsyncLiveRaceRepository:
         )
         return live_race
 
-    async def get_by_id(self, live_race_id: int) -> Optional[AsyncTournamentLiveRace]:
+    async def get_by_id(self, live_race_id: int) -> Optional[AsyncQualifierLiveRace]:
         """
         Get live race by ID.
 
@@ -69,11 +69,11 @@ class AsyncLiveRaceRepository:
         Returns:
             Live race if found, None otherwise
         """
-        return await AsyncTournamentLiveRace.filter(id=live_race_id).first()
+        return await AsyncQualifierLiveRace.filter(id=live_race_id).first()
 
     async def get_by_id_with_relations(
         self, live_race_id: int
-    ) -> Optional[AsyncTournamentLiveRace]:
+    ) -> Optional[AsyncQualifierLiveRace]:
         """
         Get live race by ID with related data.
 
@@ -84,7 +84,7 @@ class AsyncLiveRaceRepository:
             Live race with tournament, pool, permalink if found, None otherwise
         """
         return (
-            await AsyncTournamentLiveRace.filter(id=live_race_id)
+            await AsyncQualifierLiveRace.filter(id=live_race_id)
             .prefetch_related(
                 "tournament",
                 "pool",
@@ -96,7 +96,7 @@ class AsyncLiveRaceRepository:
 
     async def get_by_episode_id(
         self, episode_id: int
-    ) -> Optional[AsyncTournamentLiveRace]:
+    ) -> Optional[AsyncQualifierLiveRace]:
         """
         Get live race by SpeedGaming episode ID.
 
@@ -106,11 +106,11 @@ class AsyncLiveRaceRepository:
         Returns:
             Live race if found, None otherwise
         """
-        return await AsyncTournamentLiveRace.filter(episode_id=episode_id).first()
+        return await AsyncQualifierLiveRace.filter(episode_id=episode_id).first()
 
     async def get_by_racetime_slug(
         self, racetime_slug: str
-    ) -> Optional[AsyncTournamentLiveRace]:
+    ) -> Optional[AsyncQualifierLiveRace]:
         """
         Get live race by RaceTime.gg slug.
 
@@ -120,11 +120,11 @@ class AsyncLiveRaceRepository:
         Returns:
             Live race if found, None otherwise
         """
-        return await AsyncTournamentLiveRace.filter(racetime_slug=racetime_slug).first()
+        return await AsyncQualifierLiveRace.filter(racetime_slug=racetime_slug).first()
 
     async def update_live_race(
         self, live_race_id: int, **updates
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Update live race fields.
 
@@ -165,7 +165,7 @@ class AsyncLiveRaceRepository:
         tournament_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         upcoming_only: bool = True,
-    ) -> list[AsyncTournamentLiveRace]:
+    ) -> list[AsyncQualifierLiveRace]:
         """
         Get upcoming scheduled races.
 
@@ -177,7 +177,7 @@ class AsyncLiveRaceRepository:
         Returns:
             List of upcoming live races
         """
-        query = AsyncTournamentLiveRace.filter(status="scheduled")
+        query = AsyncQualifierLiveRace.filter(status="scheduled")
 
         if tournament_id:
             query = query.filter(tournament_id=tournament_id)
@@ -199,7 +199,7 @@ class AsyncLiveRaceRepository:
         self,
         tournament_id: int,
         status: Optional[str] = None,
-    ) -> list[AsyncTournamentLiveRace]:
+    ) -> list[AsyncQualifierLiveRace]:
         """
         Get all live races for a tournament.
 
@@ -210,7 +210,7 @@ class AsyncLiveRaceRepository:
         Returns:
             List of live races
         """
-        query = AsyncTournamentLiveRace.filter(tournament_id=tournament_id)
+        query = AsyncQualifierLiveRace.filter(tournament_id=tournament_id)
 
         if status:
             query = query.filter(status=status)
@@ -251,7 +251,7 @@ class AsyncLiveRaceRepository:
             reason = None
 
             # Check if user has exceeded runs_per_pool limit
-            pool_race_count = await AsyncTournamentRace.filter(
+            pool_race_count = await AsyncQualifierRace.filter(
                 tournament_id=live_race.tournament_id,
                 permalink__pool_id=live_race.pool_id,
                 user_id=user.id,
@@ -263,7 +263,7 @@ class AsyncLiveRaceRepository:
                 reason = f"Already completed {pool_race_count} race(s) in this pool (limit: {live_race.tournament.runs_per_pool})"
 
             # Check if user has active pending/in_progress races
-            active_race_count = await AsyncTournamentRace.filter(
+            active_race_count = await AsyncQualifierRace.filter(
                 tournament_id=live_race.tournament_id,
                 user_id=user.id,
                 status__in=["pending", "in_progress"],
@@ -281,11 +281,11 @@ class AsyncLiveRaceRepository:
         self,
         live_race_id: int,
         user_ids: list[int],
-    ) -> list[AsyncTournamentRace]:
+    ) -> list[AsyncQualifierRace]:
         """
         Create race records for live race participants.
 
-        Called when race starts to create AsyncTournamentRace records
+        Called when race starts to create AsyncQualifierRace records
         for each participant who joined the RaceTime.gg room.
 
         Args:
@@ -302,7 +302,7 @@ class AsyncLiveRaceRepository:
         races = []
         for user_id in user_ids:
             # Check if race already exists
-            existing = await AsyncTournamentRace.filter(
+            existing = await AsyncQualifierRace.filter(
                 live_race_id=live_race_id,
                 user_id=user_id,
             ).first()
@@ -312,7 +312,7 @@ class AsyncLiveRaceRepository:
                 continue
 
             # Create new race
-            race = await AsyncTournamentRace.create(
+            race = await AsyncQualifierRace.create(
                 tournament_id=live_race.tournament_id,
                 permalink_id=live_race.permalink_id,
                 user_id=user_id,

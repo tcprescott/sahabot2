@@ -1,7 +1,7 @@
 """
-Async Tournament models.
+Async Qualifier models.
 
-This module contains models for async tournaments - a tournament type where
+This module contains models for async qualifiers - a qualifier type where
 players complete races asynchronously at their own pace, with scores calculated
 based on performance relative to a par time.
 """
@@ -17,25 +17,25 @@ if TYPE_CHECKING:
     from .race_room_profile import RaceRoomProfile
 
 
-class AsyncTournament(Model):
+class AsyncQualifier(Model):
     """
-    Async Tournament model.
+    Async Qualifier model.
 
-    Async tournaments allow players to complete races asynchronously, with each
+    Async qualifiers allow players to complete races asynchronously, with each
     player racing permalinks from various pools at their own pace. Scores are
     calculated based on finish time relative to a par time (average of top 5).
     """
 
     id = fields.IntField(pk=True)
     organization = fields.ForeignKeyField(
-        "models.Organization", related_name="async_tournaments"
+        "models.Organization", related_name="async_qualifiers"
     )
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     is_active = fields.BooleanField(default=True)
     hide_results = fields.BooleanField(
         default=False
-    )  # Hide other players' results until tournament ends
+    )  # Hide other players' results until qualifier ends
     discord_channel_id = fields.BigIntField(
         null=True, unique=True
     )  # Discord channel for race actions
@@ -59,41 +59,41 @@ class AsyncTournament(Model):
     updated_at = fields.DatetimeField(auto_now=True)
 
     # related fields (reverse relations)
-    pools: fields.ReverseRelation["AsyncTournamentPool"]
-    races: fields.ReverseRelation["AsyncTournamentRace"]
-    live_races: fields.ReverseRelation["AsyncTournamentLiveRace"]
-    audit_logs: fields.ReverseRelation["AsyncTournamentAuditLog"]
+    pools: fields.ReverseRelation["AsyncQualifierPool"]
+    races: fields.ReverseRelation["AsyncQualifierRace"]
+    live_races: fields.ReverseRelation["AsyncQualifierLiveRace"]
+    audit_logs: fields.ReverseRelation["AsyncQualifierAuditLog"]
 
     class Meta:
-        table = "async_tournaments"
+        table = "async_qualifiers"
 
 
-class AsyncTournamentPool(Model):
+class AsyncQualifierPool(Model):
     """
-    Pool of permalinks for an async tournament.
+    Pool of permalinks for an async qualifier.
 
-    A tournament can have multiple pools, and players must complete a certain
+    A qualifier can have multiple pools, and players must complete a certain
     number of runs from each pool.
     """
 
     id = fields.IntField(pk=True)
-    tournament = fields.ForeignKeyField("models.AsyncTournament", related_name="pools")
+    tournament = fields.ForeignKeyField("models.AsyncQualifier", related_name="pools")
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
     # related fields (reverse relations)
-    permalinks: fields.ReverseRelation["AsyncTournamentPermalink"]
+    permalinks: fields.ReverseRelation["AsyncQualifierPermalink"]
 
     class Meta:
-        table = "async_tournament_pools"
+        table = "async_qualifier_pools"
         unique_together = (("tournament", "name"),)
 
 
-class AsyncTournamentPermalink(Model):
+class AsyncQualifierPermalink(Model):
     """
-    Permalink/seed for an async tournament pool.
+    Permalink/seed for an async qualifier pool.
 
     Each permalink can be raced by multiple players. The par time is calculated
     as the average of the top 5 finish times.
@@ -101,7 +101,7 @@ class AsyncTournamentPermalink(Model):
 
     id = fields.IntField(pk=True)
     pool = fields.ForeignKeyField(
-        "models.AsyncTournamentPool", related_name="permalinks"
+        "models.AsyncQualifierPool", related_name="permalinks"
     )
     url = fields.CharField(max_length=500)
     notes = fields.TextField(null=True)
@@ -111,10 +111,10 @@ class AsyncTournamentPermalink(Model):
     updated_at = fields.DatetimeField(auto_now=True)
 
     # related fields (reverse relations)
-    races: fields.ReverseRelation["AsyncTournamentRace"]
+    races: fields.ReverseRelation["AsyncQualifierRace"]
 
     class Meta:
-        table = "async_tournament_permalinks"
+        table = "async_qualifier_permalinks"
 
     @property
     def par_time_timedelta(self) -> Optional[timedelta]:
@@ -133,24 +133,24 @@ class AsyncTournamentPermalink(Model):
         return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
 
 
-class AsyncTournamentRace(Model):
+class AsyncQualifierRace(Model):
     """
-    Individual race in an async tournament.
+    Individual race in an async qualifier.
 
     Tracks a single player's attempt at a permalink, including timing,
     status, and scoring information.
     """
 
     id = fields.IntField(pk=True)
-    tournament = fields.ForeignKeyField("models.AsyncTournament", related_name="races")
+    tournament = fields.ForeignKeyField("models.AsyncQualifier", related_name="races")
     permalink = fields.ForeignKeyField(
-        "models.AsyncTournamentPermalink", related_name="races"
+        "models.AsyncQualifierPermalink", related_name="races"
     )
-    user = fields.ForeignKeyField("models.User", related_name="async_tournament_races")
+    user = fields.ForeignKeyField("models.User", related_name="async_qualifier_races")
 
     # Link to live race (if this race was part of a live event)
     live_race = fields.ForeignKeyField(
-        "models.AsyncTournamentLiveRace", related_name="participant_races", null=True
+        "models.AsyncQualifierLiveRace", related_name="participant_races", null=True
     )
 
     discord_thread_id = fields.BigIntField(null=True)  # Discord thread for this race
@@ -189,7 +189,7 @@ class AsyncTournamentRace(Model):
     updated_at = fields.DatetimeField(auto_now=True)
 
     class Meta:
-        table = "async_tournament_races"
+        table = "async_qualifier_races"
 
     @property
     def elapsed_time(self) -> Optional[timedelta]:
@@ -240,27 +240,27 @@ class AsyncTournamentRace(Model):
         return status_map.get(self.review_status, self.review_status.title())
 
 
-class AsyncTournamentLiveRace(Model):
+class AsyncQualifierLiveRace(Model):
     """
-    Live race event for async tournaments.
+    Live race event for async qualifiers.
 
     Represents a scheduled race where all eligible participants race the same
     seed simultaneously on RaceTime.gg. Results are automatically recorded.
     Unlike standard async races (individual, thread-based), live races are:
     - Scheduled at specific times
-    - Open to all eligible tournament participants
+    - Open to all eligible qualifier participants
     - Hosted on RaceTime.gg with automatic result tracking
     """
 
     id = fields.IntField(pk=True)
     tournament = fields.ForeignKeyField(
-        "models.AsyncTournament", related_name="live_races"
+        "models.AsyncQualifier", related_name="live_races"
     )
     pool = fields.ForeignKeyField(
-        "models.AsyncTournamentPool", related_name="live_races"
+        "models.AsyncQualifierPool", related_name="live_races"
     )
     permalink = fields.ForeignKeyField(
-        "models.AsyncTournamentPermalink", related_name="live_races", null=True
+        "models.AsyncQualifierPermalink", related_name="live_races", null=True
     )
 
     # Scheduling
@@ -295,10 +295,10 @@ class AsyncTournamentLiveRace(Model):
     updated_at = fields.DatetimeField(auto_now=True)
 
     # related fields (reverse relations)
-    participant_races: fields.ReverseRelation["AsyncTournamentRace"]
+    participant_races: fields.ReverseRelation["AsyncQualifierRace"]
 
     class Meta:
-        table = "async_tournament_live_races"
+        table = "async_qualifier_live_races"
 
     @property
     def racetime_url(self) -> Optional[str]:
@@ -340,20 +340,20 @@ class AsyncTournamentLiveRace(Model):
         return await repo.get_default_for_org(self.tournament.organization_id)
 
 
-class AsyncTournamentAuditLog(Model):
+class AsyncQualifierAuditLog(Model):
     """
-    Audit log for async tournament actions.
+    Audit log for async qualifier actions.
 
-    Tracks all significant actions in async tournaments for accountability
+    Tracks all significant actions in async qualifiers for accountability
     and debugging.
     """
 
     id = fields.IntField(pk=True)
     tournament = fields.ForeignKeyField(
-        "models.AsyncTournament", related_name="audit_logs"
+        "models.AsyncQualifier", related_name="audit_logs"
     )
     user = fields.ForeignKeyField(
-        "models.User", related_name="async_tournament_audit_logs", null=True
+        "models.User", related_name="async_qualifier_audit_logs", null=True
     )
     action = fields.CharField(
         max_length=100
@@ -362,4 +362,4 @@ class AsyncTournamentAuditLog(Model):
     created_at = fields.DatetimeField(auto_now_add=True)
 
     class Meta:
-        table = "async_tournament_audit_logs"
+        table = "async_qualifier_audit_logs"

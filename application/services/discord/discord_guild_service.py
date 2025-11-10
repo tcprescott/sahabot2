@@ -16,7 +16,7 @@ from models.discord_guild import DiscordGuild
 from application.repositories.discord_guild_repository import DiscordGuildRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.discord.discord_permissions_config import (
-    AsyncTournamentChannelPermissions,
+    AsyncQualifierChannelPermissions,
 )
 from application.events import (
     EventBus,
@@ -411,11 +411,11 @@ class DiscordGuildService:
                         for (
                             perm_name
                         ) in (
-                            AsyncTournamentChannelPermissions.get_bot_permission_names()
+                            AsyncQualifierChannelPermissions.get_bot_permission_names()
                         ):
                             if not getattr(bot_permissions, perm_name, False):
                                 warnings.append(
-                                    AsyncTournamentChannelPermissions.get_bot_permission_description(
+                                    AsyncQualifierChannelPermissions.get_bot_permission_description(
                                         perm_name
                                     )
                                 )
@@ -444,10 +444,10 @@ class DiscordGuildService:
                 # Check @everyone restrictions using config
                 for (
                     perm_name
-                ) in AsyncTournamentChannelPermissions.get_everyone_restriction_names():
+                ) in AsyncQualifierChannelPermissions.get_everyone_restriction_names():
                     if getattr(everyone_permissions, perm_name, False):
                         warnings.append(
-                            AsyncTournamentChannelPermissions.get_everyone_restriction_description(
+                            AsyncQualifierChannelPermissions.get_everyone_restriction_description(
                                 perm_name
                             )
                         )
@@ -469,10 +469,10 @@ class DiscordGuildService:
                     bot_permissions = channel.permissions_for(bot_member)
                     for (
                         perm_name
-                    ) in AsyncTournamentChannelPermissions.get_bot_permission_names():
+                    ) in AsyncQualifierChannelPermissions.get_bot_permission_names():
                         if not getattr(bot_permissions, perm_name, False):
                             warnings.append(
-                                AsyncTournamentChannelPermissions.get_bot_permission_description(
+                                AsyncQualifierChannelPermissions.get_bot_permission_description(
                                     perm_name
                                 )
                             )

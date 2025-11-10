@@ -5,7 +5,7 @@
 A data-driven chat command system for racetime.gg rooms. Commands are prefixed with `!` and can be:
 
 - **Defined in the database** (no code changes needed)
-- **Scoped** to bots, tournaments, or async tournaments
+- **Scoped** to bots, tournaments, or async qualifiers
 - **Static text** or **dynamic** (call Python handlers)
 - **Customized** per tournament
 

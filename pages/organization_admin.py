@@ -15,7 +15,7 @@ from views.organization import (
     OrganizationPermissionsView,
     OrganizationSettingsView,
     OrganizationTournamentsView,
-    OrganizationAsyncTournamentsView,
+    OrganizationAsyncQualifiersView,
     OrganizationStreamChannelsView,
     OrganizationScheduledTasksView,
     DiscordServersView,
@@ -98,7 +98,7 @@ def register():
 
             async def load_async_tournaments():
                 """Load organization async tournaments management."""
-                view = OrganizationAsyncTournamentsView(org, page.user)
+                view = OrganizationAsyncQualifiersView(org, page.user)
                 await page.load_view_into_container(view)
 
             async def load_stream_channels():

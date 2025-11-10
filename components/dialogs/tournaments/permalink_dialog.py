@@ -7,7 +7,7 @@ Provides form for permalink URL and notes with validation.
 from typing import Optional, Callable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models.async_tournament import AsyncTournamentPermalink
+from models.async_tournament import AsyncQualifierPermalink
 import logging
 
 logger = logging.getLogger(__name__)
@@ -18,7 +18,7 @@ class PermalinkDialog(BaseDialog):
 
     def __init__(
         self,
-        permalink: Optional[AsyncTournamentPermalink] = None,
+        permalink: Optional[AsyncQualifierPermalink] = None,
         on_save: Optional[Callable] = None,
     ):
         """

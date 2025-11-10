@@ -170,7 +170,7 @@ class TournamentEndedEvent(EntityEvent):
 class RaceSubmittedEvent(EntityEvent):
     """Emitted when a player submits a race result."""
 
-    entity_type: str = field(default="AsyncTournamentRace", init=False)
+    entity_type: str = field(default="AsyncQualifierRace", init=False)
     tournament_id: Optional[int] = None
     permalink_id: Optional[int] = None
     racer_user_id: Optional[int] = None
@@ -182,7 +182,7 @@ class RaceSubmittedEvent(EntityEvent):
 class RaceApprovedEvent(EntityEvent):
     """Emitted when a race submission is approved by a reviewer."""
 
-    entity_type: str = field(default="AsyncTournamentRace", init=False)
+    entity_type: str = field(default="AsyncQualifierRace", init=False)
     tournament_id: Optional[int] = None
     racer_user_id: Optional[int] = None
     reviewer_user_id: Optional[int] = None
@@ -192,7 +192,7 @@ class RaceApprovedEvent(EntityEvent):
 class RaceRejectedEvent(EntityEvent):
     """Emitted when a race submission is rejected by a reviewer."""
 
-    entity_type: str = field(default="AsyncTournamentRace", init=False)
+    entity_type: str = field(default="AsyncQualifierRace", init=False)
     tournament_id: Optional[int] = None
     racer_user_id: Optional[int] = None
     reviewer_user_id: Optional[int] = None
@@ -267,7 +267,7 @@ class TournamentMatchSettingsSubmittedEvent(EntityEvent):
 class AsyncLiveRaceCreatedEvent(EntityEvent):
     """Emitted when a new live race is scheduled."""
 
-    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    entity_type: str = field(default="AsyncQualifierLiveRace", init=False)
     tournament_id: Optional[int] = None
     pool_id: Optional[int] = None
     scheduled_at: Optional[str] = None  # ISO format
@@ -278,7 +278,7 @@ class AsyncLiveRaceCreatedEvent(EntityEvent):
 class AsyncLiveRaceUpdatedEvent(EntityEvent):
     """Emitted when a live race is updated."""
 
-    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    entity_type: str = field(default="AsyncQualifierLiveRace", init=False)
     tournament_id: Optional[int] = None
     changed_fields: List[str] = field(default_factory=list)
 
@@ -287,7 +287,7 @@ class AsyncLiveRaceUpdatedEvent(EntityEvent):
 class AsyncLiveRaceRoomOpenedEvent(EntityEvent):
     """Emitted when a RaceTime.gg room is opened for a live race."""
 
-    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    entity_type: str = field(default="AsyncQualifierLiveRace", init=False)
     tournament_id: Optional[int] = None
     racetime_slug: Optional[str] = None
     racetime_url: Optional[str] = None
@@ -299,7 +299,7 @@ class AsyncLiveRaceRoomOpenedEvent(EntityEvent):
 class AsyncLiveRaceStartedEvent(EntityEvent):
     """Emitted when a live race countdown completes and race begins."""
 
-    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    entity_type: str = field(default="AsyncQualifierLiveRace", init=False)
     tournament_id: Optional[int] = None
     racetime_slug: Optional[str] = None
     participant_count: int = 0
@@ -310,7 +310,7 @@ class AsyncLiveRaceStartedEvent(EntityEvent):
 class AsyncLiveRaceFinishedEvent(EntityEvent):
     """Emitted when a live race completes and results are recorded."""
 
-    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    entity_type: str = field(default="AsyncQualifierLiveRace", init=False)
     tournament_id: Optional[int] = None
     racetime_slug: Optional[str] = None
     finisher_count: int = 0
@@ -321,7 +321,7 @@ class AsyncLiveRaceFinishedEvent(EntityEvent):
 class AsyncLiveRaceCancelledEvent(EntityEvent):
     """Emitted when a live race is cancelled."""
 
-    entity_type: str = field(default="AsyncTournamentLiveRace", init=False)
+    entity_type: str = field(default="AsyncQualifierLiveRace", init=False)
     tournament_id: Optional[int] = None
     reason: Optional[str] = None
     priority: EventPriority = EventPriority.NORMAL

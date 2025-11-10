@@ -8,7 +8,7 @@ when the tournament has require_racetime_for_async_runs enabled.
 import pytest
 
 from models.user import User, Permission
-from models.async_tournament import AsyncTournament
+from models.async_tournament import AsyncQualifier
 from models.organizations import Organization
 
 
@@ -19,7 +19,7 @@ async def test_async_tournament_with_racetime_required(db):
     org = await Organization.create(name="Test Org", slug="test-org")
 
     # Create tournament with RaceTime requirement
-    tournament = await AsyncTournament.create(
+    tournament = await AsyncQualifier.create(
         organization=org,
         name="Test Tournament",
         description="Test tournament with RaceTime requirement",
@@ -87,7 +87,7 @@ async def test_tournament_without_racetime_requirement(db):
     org = await Organization.create(name="Test Org 2", slug="test-org-2")
 
     # Create tournament without RaceTime requirement
-    tournament = await AsyncTournament.create(
+    tournament = await AsyncQualifier.create(
         organization=org,
         name="Test Tournament 2",
         description="Test tournament without RaceTime requirement",
@@ -111,7 +111,7 @@ async def test_default_racetime_requirement_is_false(db):
     org = await Organization.create(name="Test Org 3", slug="test-org-3")
 
     # Create tournament without specifying RaceTime requirement
-    tournament = await AsyncTournament.create(
+    tournament = await AsyncQualifier.create(
         organization=org,
         name="Test Tournament 3",
         description="Test tournament with default RaceTime requirement",

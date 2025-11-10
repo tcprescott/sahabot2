@@ -9,8 +9,8 @@ from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
 from application.services.tournaments.tournament_service import TournamentService
-from application.services.tournaments.async_tournament_service import (
-    AsyncTournamentService,
+from application.services.tournaments.async_qualifier_service import (
+    AsyncQualifierService,
 )
 from application.services.tournaments.tournament_usage_service import (
     TournamentUsageService,
@@ -40,7 +40,7 @@ def register():
         base = BasePage.authenticated_page(title="Organization")
         org_service = OrganizationService()
         tournament_service = TournamentService()
-        async_tournament_service = AsyncTournamentService()
+        async_tournament_service = AsyncQualifierService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
@@ -113,7 +113,7 @@ def register():
                 "Tournaments", "emoji_events", f"/org/{organization_id}/tournament"
             ),
             base.create_nav_link(
-                "Async Tournaments", "schedule", f"/org/{organization_id}/async"
+                "Async Qualifiers", "schedule", f"/org/{organization_id}/async"
             ),
         ]
 
@@ -138,11 +138,11 @@ def register():
                     base.create_nav_link(
                         f"🏆 {tournament.name}",
                         "emoji_events",
-                        f"/org/{organization_id}/tournament?tournament_id={tournament.id}",
+                        f"/org/{organization_id}/tournament?qualifier_id={tournament.id}",
                     )
                 )
 
-            # Add async tournaments
+            # Add async qualifiers
             for tournament in active_async_tournaments:
                 sidebar_items.append(
                     base.create_nav_link(
@@ -156,12 +156,12 @@ def register():
 
     @ui.page("/org/{organization_id}/async")
     @ui.page("/org/{organization_id}/async")
-    async def async_tournament_overview_page(organization_id: int):
-        """Async tournaments overview page for an organization."""
-        base = BasePage.authenticated_page(title="Async Tournaments")
+    async def async_qualifier_overview_page(organization_id: int):
+        """Async qualifiers overview page for an organization."""
+        base = BasePage.authenticated_page(title="Async Qualifiers")
         org_service = OrganizationService()
         tournament_service = TournamentService()
-        async_tournament_service = AsyncTournamentService()
+        async_tournament_service = AsyncQualifierService()
 
         # Pre-check that user is a member of the organization
         from middleware.auth import DiscordAuthService
@@ -203,7 +203,7 @@ def register():
                         ).classes("btn")
                 return
 
-            # Get all async tournaments for this organization (using service layer)
+            # Get all async qualifiers for this organization (using service layer)
             all_tournaments = await async_tournament_service.list_org_tournaments(
                 user, organization_id
             )
@@ -214,10 +214,10 @@ def register():
             from components.datetime_label import DateTimeLabel
 
             # Header
-            with Card.create(title="Async Tournaments"):
+            with Card.create(title="Async Qualifiers"):
                 with ui.column().classes("gap-md"):
                     ui.label(
-                        f"View and participate in async tournaments for {org.name}"
+                        f"View and participate in async qualifiers for {org.name}"
                     ).classes("text-secondary")
 
                     if active:
@@ -303,7 +303,7 @@ def register():
                     if not all_tournaments:
                         with ui.element("div").classes("text-center mt-4"):
                             ui.icon("schedule").classes("text-secondary icon-large")
-                            ui.label("No async tournaments yet").classes(
+                            ui.label("No async qualifiers yet").classes(
                                 "text-secondary"
                             )
                             ui.label("Ask an administrator to create one").classes(
@@ -326,11 +326,11 @@ def register():
                     base.create_nav_link(
                         f"🏆 {tournament.name}",
                         "emoji_events",
-                        f"/org/{organization_id}/tournament?tournament_id={tournament.id}",
+                        f"/org/{organization_id}/tournament?qualifier_id={tournament.id}",
                     )
                 )
 
-            # Add async tournaments
+            # Add async qualifiers
             for tournament in active_async_tournaments:
                 sidebar_items.append(
                     base.create_nav_link(
@@ -344,7 +344,7 @@ def register():
 
     @ui.page("/org/{organization_id}/tournament")
     async def tournament_org_page(
-        organization_id: int, tournament_id: int | None = None
+        organization_id: int, qualifier_id: int | None = None
     ):
         """Organization features page for specific organization."""
         base = BasePage.authenticated_page(title="Organization")
@@ -441,18 +441,18 @@ def register():
 
         await base.render(content, sidebar_items, use_dynamic_content=True)
 
-    # Async Tournament Pages
+    # Async Qualifier Pages
 
     @ui.page("/org/{organization_id}/async/{tournament_id}")
-    async def async_tournament_dashboard(organization_id: int, tournament_id: int):
-        """Async tournament dashboard - player's own races."""
-        base = BasePage.authenticated_page(title="Async Tournament")
+    async def async_qualifier_dashboard(organization_id: int, qualifier_id: int):
+        """Async qualifier dashboard - player's own races."""
+        base = BasePage.authenticated_page(title="Async Qualifier")
 
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
-        async_service = AsyncTournamentService()
+        async_service = AsyncQualifierService()
 
         async def content(page: BasePage):
             # Get tournament
@@ -477,15 +477,15 @@ def register():
         await base.render(content, sidebar_items)
 
     @ui.page("/org/{organization_id}/async/{tournament_id}/leaderboard")
-    async def async_tournament_leaderboard(organization_id: int, tournament_id: int):
-        """Async tournament leaderboard."""
-        base = BasePage.authenticated_page(title="Async Tournament Leaderboard")
+    async def async_qualifier_leaderboard(organization_id: int, qualifier_id: int):
+        """Async qualifier leaderboard."""
+        base = BasePage.authenticated_page(title="Async Qualifier Leaderboard")
 
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
-        async_service = AsyncTournamentService()
+        async_service = AsyncQualifierService()
 
         async def content(page: BasePage):
             # Get tournament
@@ -520,15 +520,15 @@ def register():
         await base.render(content, sidebar_items)
 
     @ui.page("/org/{organization_id}/async/{tournament_id}/pools")
-    async def async_tournament_pools(organization_id: int, tournament_id: int):
-        """Async tournament pools."""
-        base = BasePage.authenticated_page(title="Async Tournament Pools")
+    async def async_qualifier_pools(organization_id: int, qualifier_id: int):
+        """Async qualifier pools."""
+        base = BasePage.authenticated_page(title="Async Qualifier Pools")
 
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
-        async_service = AsyncTournamentService()
+        async_service = AsyncQualifierService()
 
         async def content(page: BasePage):
             # Get tournament
@@ -563,17 +563,17 @@ def register():
         await base.render(content, sidebar_items)
 
     @ui.page("/org/{organization_id}/async/{tournament_id}/player/{player_id}")
-    async def async_tournament_player(
-        organization_id: int, tournament_id: int, player_id: int
+    async def async_qualifier_player(
+        organization_id: int, qualifier_id: int, player_id: int
     ):
-        """Async tournament player history."""
+        """Async qualifier player history."""
         base = BasePage.authenticated_page(title="Player History")
 
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
-        async_service = AsyncTournamentService()
+        async_service = AsyncQualifierService()
 
         async def content(page: BasePage):
             # Get tournament
@@ -605,17 +605,17 @@ def register():
         await base.render(content, sidebar_items)
 
     @ui.page("/org/{organization_id}/async/{tournament_id}/permalink/{permalink_id}")
-    async def async_tournament_permalink(
-        organization_id: int, tournament_id: int, permalink_id: int
+    async def async_qualifier_permalink(
+        organization_id: int, qualifier_id: int, permalink_id: int
     ):
-        """Async tournament permalink view."""
+        """Async qualifier permalink view."""
         base = BasePage.authenticated_page(title="Permalink Races")
 
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
-        async_service = AsyncTournamentService()
+        async_service = AsyncQualifierService()
 
         async def content(page: BasePage):
             # Get tournament
@@ -650,15 +650,15 @@ def register():
         await base.render(content, sidebar_items)
 
     @ui.page("/org/{organization_id}/async/{tournament_id}/review")
-    async def async_tournament_review_queue(organization_id: int, tournament_id: int):
-        """Async tournament review queue - for reviewers only."""
+    async def async_qualifier_review_queue(organization_id: int, qualifier_id: int):
+        """Async qualifier review queue - for reviewers only."""
         base = BasePage.authenticated_page(title="Race Review Queue")
 
-        from application.services.tournaments.async_tournament_service import (
-            AsyncTournamentService,
+        from application.services.tournaments.async_qualifier_service import (
+            AsyncQualifierService,
         )
 
-        async_service = AsyncTournamentService()
+        async_service = AsyncQualifierService()
 
         async def content(page: BasePage):
             # Get tournament

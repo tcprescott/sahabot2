@@ -36,12 +36,12 @@ from models.organization_request import OrganizationRequest
 from models.settings import GlobalSetting, OrganizationSetting
 from models.discord_guild import DiscordGuild
 from models.async_tournament import (
-    AsyncTournament,
-    AsyncTournamentPool,
-    AsyncTournamentPermalink,
-    AsyncTournamentRace,
-    AsyncTournamentLiveRace,
-    AsyncTournamentAuditLog,
+    AsyncQualifier,
+    AsyncQualifierPool,
+    AsyncQualifierPermalink,
+    AsyncQualifierRace,
+    AsyncQualifierLiveRace,
+    AsyncQualifierAuditLog,
 )
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from models.builtin_task_override import BuiltinTaskOverride
@@ -92,12 +92,12 @@ __all__ = [
     "Crew",
     "CrewRole",
     "DiscordEventFilter",
-    "AsyncTournament",
-    "AsyncTournamentPool",
-    "AsyncTournamentPermalink",
-    "AsyncTournamentRace",
-    "AsyncTournamentLiveRace",
-    "AsyncTournamentAuditLog",
+    "AsyncQualifier",
+    "AsyncQualifierPool",
+    "AsyncQualifierPermalink",
+    "AsyncQualifierRace",
+    "AsyncQualifierLiveRace",
+    "AsyncQualifierAuditLog",
     "ScheduledTask",
     "TaskType",
     "ScheduleType",

@@ -12,14 +12,14 @@ import logging
 
 from models import User, SYSTEM_USER_ID
 from models.async_tournament import (
-    AsyncTournamentPool,
-    AsyncTournamentPermalink,
-    AsyncTournamentLiveRace,
-    AsyncTournamentRace,
+    AsyncQualifierPool,
+    AsyncQualifierPermalink,
+    AsyncQualifierLiveRace,
+    AsyncQualifierRace,
 )
 from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
-from application.repositories.async_tournament_repository import (
-    AsyncTournamentRepository,
+from application.repositories.async_qualifier_repository import (
+    AsyncQualifierRepository,
 )
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import (
@@ -52,7 +52,7 @@ class AsyncLiveRaceService:
 
     def __init__(self) -> None:
         self.repo = AsyncLiveRaceRepository()
-        self.tournament_repo = AsyncTournamentRepository()
+        self.tournament_repo = AsyncQualifierRepository()
         self.org_service = OrganizationService()
         self.auth = AuthorizationServiceV2()
 
@@ -101,7 +101,7 @@ class AsyncLiveRaceService:
         permalink_id: Optional[int] = None,
         episode_id: Optional[int] = None,
         race_room_profile_id: Optional[int] = None,
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Create a new scheduled live race.
 
@@ -117,7 +117,7 @@ class AsyncLiveRaceService:
             race_room_profile_id: Optional race room profile override
 
         Returns:
-            Created AsyncTournamentLiveRace
+            Created AsyncQualifierLiveRace
 
         Raises:
             PermissionError: If user lacks ASYNC_TOURNAMENT_ADMIN permission
@@ -140,7 +140,7 @@ class AsyncLiveRaceService:
             raise ValueError("Tournament not found or does not belong to organization")
 
         # Validate pool belongs to tournament
-        pool = await AsyncTournamentPool.get_or_none(
+        pool = await AsyncQualifierPool.get_or_none(
             id=pool_id, tournament_id=tournament_id
         )
         if not pool:
@@ -148,7 +148,7 @@ class AsyncLiveRaceService:
 
         # Validate permalink if provided
         if permalink_id:
-            permalink = await AsyncTournamentPermalink.get_or_none(id=permalink_id)
+            permalink = await AsyncQualifierPermalink.get_or_none(id=permalink_id)
             if not permalink:
                 raise ValueError("Permalink not found")
 
@@ -191,7 +191,7 @@ class AsyncLiveRaceService:
 
     async def _schedule_room_open_task(
         self,
-        live_race: AsyncTournamentLiveRace,
+        live_race: AsyncQualifierLiveRace,
         creating_user: User,
     ) -> None:
         """
@@ -250,7 +250,7 @@ class AsyncLiveRaceService:
         organization_id: int,
         live_race_id: int,
         **updates,
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Update a live race.
 
@@ -261,7 +261,7 @@ class AsyncLiveRaceService:
             **updates: Fields to update (scheduled_at, match_title, etc.)
 
         Returns:
-            Updated AsyncTournamentLiveRace
+            Updated AsyncQualifierLiveRace
 
         Raises:
             PermissionError: If user lacks ASYNC_TOURNAMENT_ADMIN permission
@@ -319,7 +319,7 @@ class AsyncLiveRaceService:
         organization_id: int,
         live_race_id: int,
         reason: Optional[str] = None,
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Cancel a scheduled or pending live race.
 
@@ -330,7 +330,7 @@ class AsyncLiveRaceService:
             reason: Optional reason for cancellation
 
         Returns:
-            Cancelled AsyncTournamentLiveRace
+            Cancelled AsyncQualifierLiveRace
 
         Raises:
             PermissionError: If user lacks ASYNC_TOURNAMENT_ADMIN permission
@@ -441,7 +441,7 @@ class AsyncLiveRaceService:
     async def open_race_room(
         self,
         live_race_id: int,
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Open a RaceTime.gg room for a live race.
 
@@ -452,7 +452,7 @@ class AsyncLiveRaceService:
             live_race_id: Live race to open room for
 
         Returns:
-            Updated AsyncTournamentLiveRace with racetime_slug
+            Updated AsyncQualifierLiveRace with racetime_slug
 
         Raises:
             ValueError: If live race not found or already opened
@@ -555,18 +555,18 @@ class AsyncLiveRaceService:
         self,
         live_race_id: int,
         participant_racetime_ids: List[str],
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Process race start event from RaceTime.gg.
 
-        Creates AsyncTournamentRace records for all participants.
+        Creates AsyncQualifierRace records for all participants.
 
         Args:
             live_race_id: Live race that started
             participant_racetime_ids: List of RaceTime.gg user IDs who entered
 
         Returns:
-            Updated AsyncTournamentLiveRace
+            Updated AsyncQualifierLiveRace
 
         Raises:
             ValueError: If live race not found
@@ -618,18 +618,18 @@ class AsyncLiveRaceService:
         results: List[
             Tuple[str, int, str]
         ],  # (racetime_id, finish_time_seconds, status)
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Process race finish event from RaceTime.gg.
 
-        Updates AsyncTournamentRace records with finish times and statuses.
+        Updates AsyncQualifierRace records with finish times and statuses.
 
         Args:
             live_race_id: Live race that finished
             results: List of (racetime_id, finish_time_seconds, status) tuples
 
         Returns:
-            Updated AsyncTournamentLiveRace
+            Updated AsyncQualifierLiveRace
 
         Raises:
             ValueError: If live race not found
@@ -657,7 +657,7 @@ class AsyncLiveRaceService:
                 continue
 
             # Find the race record
-            race = await AsyncTournamentRace.get_or_none(
+            race = await AsyncQualifierRace.get_or_none(
                 live_race_id=live_race_id,
                 user_id=user.id,
             )
@@ -706,7 +706,7 @@ class AsyncLiveRaceService:
         current_user: User,
         organization_id: int,
         racetime_slug: str,
-    ) -> AsyncTournamentLiveRace:
+    ) -> AsyncQualifierLiveRace:
         """
         Manually record results from a RaceTime.gg race.
 
@@ -718,7 +718,7 @@ class AsyncLiveRaceService:
             racetime_slug: RaceTime.gg race slug to fetch results from
 
         Returns:
-            Updated AsyncTournamentLiveRace
+            Updated AsyncQualifierLiveRace
 
         Raises:
             PermissionError: If user lacks reviewer permission
@@ -820,16 +820,16 @@ class AsyncLiveRaceService:
             return False, "Tournament not found"
 
         # Get pool
-        pool = await AsyncTournamentPool.get_or_none(
+        pool = await AsyncQualifierPool.get_or_none(
             id=pool_id, tournament_id=tournament_id
         )
         if not pool:
             return False, "Pool not found"
 
         # Check if user is registered for tournament (if registration is enabled)
-        # Note: AsyncTournamentRegistration is not yet implemented, will be added in future
+        # Note: AsyncQualifierRegistration is not yet implemented, will be added in future
         # For now, assume all organization members can participate
-        # registration = await AsyncTournamentRegistration.get_or_none(
+        # registration = await AsyncQualifierRegistration.get_or_none(
         #     tournament_id=tournament_id,
         #     user_id=user_id,
         # )
@@ -839,7 +839,7 @@ class AsyncLiveRaceService:
         # Check pool availability (runs_per_pool)
         if pool.runs_per_pool is not None and pool.runs_per_pool > 0:
             # Count completed races in this pool
-            finished_count = await AsyncTournamentRace.filter(
+            finished_count = await AsyncQualifierRace.filter(
                 user_id=user_id,
                 permalink__pool_id=pool_id,
                 status="finished",
@@ -852,7 +852,7 @@ class AsyncLiveRaceService:
                 )
 
         # Check for active pending/in_progress races
-        active_race = await AsyncTournamentRace.filter(
+        active_race = await AsyncQualifierRace.filter(
             user_id=user_id,
             permalink__pool__tournament_id=tournament_id,
             status__in=["pending", "in_progress"],
@@ -871,7 +871,7 @@ class AsyncLiveRaceService:
         self,
         organization_id: int,
         live_race_id: int,
-    ) -> Optional[AsyncTournamentLiveRace]:
+    ) -> Optional[AsyncQualifierLiveRace]:
         """
         Get a specific live race by ID.
 
@@ -880,7 +880,7 @@ class AsyncLiveRaceService:
             live_race_id: Live race ID
 
         Returns:
-            AsyncTournamentLiveRace or None if not found/no access
+            AsyncQualifierLiveRace or None if not found/no access
         """
         live_race = await self.repo.get_by_id_with_relations(live_race_id)
         if not live_race:
@@ -948,7 +948,7 @@ class AsyncLiveRaceService:
         self,
         organization_id: int,
         tournament_id: Optional[int] = None,
-    ) -> List[AsyncTournamentLiveRace]:
+    ) -> List[AsyncQualifierLiveRace]:
         """
         Get list of upcoming scheduled live races.
 
@@ -957,7 +957,7 @@ class AsyncLiveRaceService:
             tournament_id: Optional tournament to filter by
 
         Returns:
-            List of upcoming AsyncTournamentLiveRace objects
+            List of upcoming AsyncQualifierLiveRace objects
         """
         return await self.repo.list_scheduled_races(
             organization_id=organization_id,
@@ -969,7 +969,7 @@ class AsyncLiveRaceService:
         organization_id: int,
         tournament_id: int,
         status: Optional[str] = None,
-    ) -> List[AsyncTournamentLiveRace]:
+    ) -> List[AsyncQualifierLiveRace]:
         """
         Get all live races for a tournament.
 
@@ -979,7 +979,7 @@ class AsyncLiveRaceService:
             status: Optional status filter
 
         Returns:
-            List of AsyncTournamentLiveRace objects
+            List of AsyncQualifierLiveRace objects
         """
         # Validate tournament belongs to organization
         tournament = await self.tournament_repo.get_by_id(

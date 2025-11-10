@@ -125,7 +125,7 @@ def init_frontend():
 #### Other Services
 - `tournament_service.py`: Tournament business logic
 - `organization_service.py`: Organization management
-- `async_tournament_service.py`: Async tournament logic
+- `async_qualifier_service.py`: Async tournament logic
 - `racetime_service.py`: RaceTime.gg integration logic
 
 **Service Pattern**:
@@ -432,7 +432,7 @@ The Discord bot runs as a **singleton within the application**, not as a separat
 discordbot/
 ├── __init__.py
 ├── client.py                    # Bot singleton
-├── async_tournament_views.py   # Discord UI components
+├── async_qualifier_views.py   # Discord UI components
 └── commands/
     ├── __init__.py
     ├── admin.py                 # Admin commands
@@ -578,7 +578,7 @@ models/
 ├── user.py                     # User and permissions
 ├── audit_log.py                # Audit logging
 ├── organizations.py            # Organizations and membership
-├── async_tournament.py         # Async tournaments
+├── async_qualifier.py         # Async tournaments
 ├── match.py                    # Tournament matches
 ├── race_room_profile.py        # RaceTime.gg profiles
 └── ...
@@ -659,7 +659,7 @@ api/
     ├── users.py
     ├── organizations.py
     ├── tournaments.py
-    └── async_tournaments.py
+    └── async_qualifiers.py
 ```
 
 **API Pattern**:

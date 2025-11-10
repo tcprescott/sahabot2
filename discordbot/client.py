@@ -158,7 +158,7 @@ class DiscordBot(commands.Bot):
 
         # Load async tournament cog
         try:
-            await self.load_extension("discordbot.commands.async_tournament")
+            await self.load_extension("discordbot.commands.async_qualifier")
             logger.info("Loaded async tournament commands")
         except Exception as e:
             logger.error(

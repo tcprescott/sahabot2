@@ -7,10 +7,10 @@ Dialog to confirm re-attempting a race with warnings about limits.
 from __future__ import annotations
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncTournamentRace
+from models.async_tournament import AsyncQualifierRace
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.tournaments.async_tournament_service import (
-    AsyncTournamentService,
+from application.services.tournaments.async_qualifier_service import (
+    AsyncQualifierService,
 )
 
 
@@ -19,7 +19,7 @@ class RaceReattemptDialog(BaseDialog):
 
     def __init__(
         self,
-        race: AsyncTournamentRace,
+        race: AsyncQualifierRace,
         current_user: User,
         organization_id: int,
         on_success=None,
@@ -38,7 +38,7 @@ class RaceReattemptDialog(BaseDialog):
         self.current_user = current_user
         self.organization_id = organization_id
         self.on_success = on_success
-        self.service = AsyncTournamentService()
+        self.service = AsyncQualifierService()
 
     async def show(self):
         """Display the confirmation dialog."""

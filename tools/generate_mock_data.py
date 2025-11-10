@@ -38,10 +38,10 @@ from models import (
     Organization,
     OrganizationMember,
     OrganizationPermission,
-    AsyncTournament,
-    AsyncTournamentPool,
-    AsyncTournamentPermalink,
-    AsyncTournamentRace,
+    AsyncQualifier,
+    AsyncQualifierPool,
+    AsyncQualifierPermalink,
+    AsyncQualifierRace,
     Tournament,
     Match,
     MatchPlayers,
@@ -251,10 +251,10 @@ class MockDataGenerator:
         await TournamentPlayers.all().delete()
         await Tournament.all().delete()
 
-        await AsyncTournamentRace.all().delete()
-        await AsyncTournamentPermalink.all().delete()
-        await AsyncTournamentPool.all().delete()
-        await AsyncTournament.all().delete()
+        await AsyncQualifierRace.all().delete()
+        await AsyncQualifierPermalink.all().delete()
+        await AsyncQualifierPool.all().delete()
+        await AsyncQualifier.all().delete()
 
         await OrganizationMember.all().delete()
         await OrganizationPermission.all().delete()
@@ -524,7 +524,7 @@ class MockDataGenerator:
                 category = random.choice(GAME_CATEGORIES)
                 name = f"{org.name} - Async {category.upper()} {i + 1}"
 
-                async_tournament = await AsyncTournament.create(
+                async_tournament = await AsyncQualifier.create(
                     organization=org,
                     name=name,
                     description=f"Asynchronous racing tournament for {category}.",
@@ -536,7 +536,7 @@ class MockDataGenerator:
                 # Generate 2-5 pools
                 num_pools = random.randint(2, 5)
                 for pool_idx in range(num_pools):
-                    pool = await AsyncTournamentPool.create(
+                    pool = await AsyncQualifierPool.create(
                         tournament=async_tournament,
                         name=f"Pool {pool_idx + 1}",
                         description=f"Collection of seeds for pool {pool_idx + 1}",
@@ -545,7 +545,7 @@ class MockDataGenerator:
                     # Generate 3-8 permalinks per pool
                     num_permalinks = random.randint(3, 8)
                     for perm_idx in range(num_permalinks):
-                        permalink = await AsyncTournamentPermalink.create(
+                        permalink = await AsyncQualifierPermalink.create(
                             pool=pool,
                             url=f"https://alttpr.com/h/{self._random_hash()}",
                             notes=f"Seed {perm_idx + 1} for {pool.name}",
@@ -592,7 +592,7 @@ class MockDataGenerator:
                                 end_time = None
                                 vod_url = None
 
-                            await AsyncTournamentRace.create(
+                            await AsyncQualifierRace.create(
                                 tournament=async_tournament,
                                 permalink=permalink,
                                 user=racer.user,
@@ -664,12 +664,12 @@ class MockDataGenerator:
         print(f"  - Completed matches: {completed_matches}")
 
         # Async Tournaments
-        total_async = await AsyncTournament.all().count()
-        active_async = await AsyncTournament.filter(is_active=True).count()
-        total_pools = await AsyncTournamentPool.all().count()
-        total_permalinks = await AsyncTournamentPermalink.all().count()
-        total_races = await AsyncTournamentRace.all().count()
-        approved_races = await AsyncTournamentRace.filter(
+        total_async = await AsyncQualifier.all().count()
+        active_async = await AsyncQualifier.filter(is_active=True).count()
+        total_pools = await AsyncQualifierPool.all().count()
+        total_permalinks = await AsyncQualifierPermalink.all().count()
+        total_races = await AsyncQualifierRace.all().count()
+        approved_races = await AsyncQualifierRace.filter(
             review_status="accepted"
         ).count()
 

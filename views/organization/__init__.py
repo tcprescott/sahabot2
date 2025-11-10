@@ -9,7 +9,7 @@ from views.organization.org_members import OrganizationMembersView
 from views.organization.org_permissions import OrganizationPermissionsView
 from views.organization.org_settings import OrganizationSettingsView
 from views.organization.org_tournaments import OrganizationTournamentsView
-from views.organization.org_async_tournaments import OrganizationAsyncTournamentsView
+from views.organization.org_async_qualifiers import OrganizationAsyncQualifiersView
 from views.organization.org_stream_channels import OrganizationStreamChannelsView
 from views.organization.scheduled_tasks import OrganizationScheduledTasksView
 from views.organization.discord_servers import DiscordServersView
@@ -26,7 +26,7 @@ __all__ = [
     "OrganizationPermissionsView",
     "OrganizationSettingsView",
     "OrganizationTournamentsView",
-    "OrganizationAsyncTournamentsView",
+    "OrganizationAsyncQualifiersView",
     "OrganizationStreamChannelsView",
     "OrganizationScheduledTasksView",
     "DiscordServersView",

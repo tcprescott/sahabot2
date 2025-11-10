@@ -7,7 +7,7 @@ from typing import Optional, Callable
 from datetime import datetime, timezone, timedelta
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models import AsyncTournamentPool, AsyncTournamentPermalink, RaceRoomProfile
+from models import AsyncQualifierPool, AsyncQualifierPermalink, RaceRoomProfile
 import logging
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,8 @@ class CreateLiveRaceDialog(BaseDialog):
         self,
         organization_id: int,
         tournament_id: int,
-        pools: list[AsyncTournamentPool],
-        permalinks: list[AsyncTournamentPermalink],
+        pools: list[AsyncQualifierPool],
+        permalinks: list[AsyncQualifierPermalink],
         profiles: list[RaceRoomProfile],
         on_save: Optional[Callable] = None,
     ):

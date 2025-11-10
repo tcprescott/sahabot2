@@ -1,6 +1,6 @@
-# Async Tournament End-User Features
+# Async Qualifier End-User Features
 
-This document describes the end-user functionality implemented for async tournaments in SahaBot2.
+This document describes the end-user functionality implemented for async qualifiers in SahaBot2.
 
 ## Overview
 
@@ -140,8 +140,8 @@ Shows details about a specific permalink and all races completed on it (likely a
   - Methods: `get_user_races()`, `get_leaderboard()`, etc.
 
 - **Discord Bot Layer**: Race initiation and management
-  - `discordbot/async_tournament_views.py`: Discord UI components
-  - `discordbot/commands/async_tournament.py`: Admin commands
+  - `discordbot/async_qualifier_views.py`: Discord UI components
+  - `discordbot/commands/async_qualifier.py`: Admin commands
   - Persistent views for buttons in Discord channels
   - Modal forms for VOD submission
 
@@ -200,7 +200,7 @@ The Discord bot provides the primary interface for starting and managing races:
 ### Admin UI Actions
 
 - **Post Embed to Discord**: Admins can post the tournament embed with action buttons directly from the web interface
-  - Available in Organization Admin > Async Tournaments
+  - Available in Organization Admin > Async Qualifiers
   - "Post Embed" button appears for tournaments with a configured Discord channel
   - Posts an embed with tournament info and the "Start New Async Run" button
   - Previously required using the `/async_post_embed` Discord command
@@ -265,7 +265,7 @@ These features from the original SahasrahBot could be added:
 
 ## Summary
 
-The async tournament end-user functionality provides a comprehensive web interface for players to:
+The async qualifier end-user functionality provides a comprehensive web interface for players to:
 - View their tournament progress and statistics
 - Track races across multiple pools
 - View leaderboards and standings

@@ -8,14 +8,14 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.async_tournament import AsyncTournament
+from models.async_tournament import AsyncQualifier
 
 
 class TournamentSettingsView:
     """View for managing general tournament settings."""
 
     def __init__(
-        self, user: User, organization: Organization, tournament: AsyncTournament
+        self, user: User, organization: Organization, tournament: AsyncQualifier
     ):
         """
         Initialize the settings view.

@@ -32,7 +32,7 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
 
         Args:
             bot_instance: The RacetimeBot instance
-            live_race_id: ID of the AsyncTournamentLiveRace
+            live_race_id: ID of the AsyncQualifierLiveRace
             *args: Arguments for parent RaceHandler
             **kwargs: Keyword arguments for parent RaceHandler
         """

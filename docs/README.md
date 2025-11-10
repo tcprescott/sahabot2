@@ -66,7 +66,7 @@ End-user and administrator documentation:
 - **[Live Races Admin Guide](guides/admin/LIVE_RACES.md)** - Managing live race features
 
 #### User Guides
-- **[Async Tournaments Guide](guides/user/ASYNC_TOURNAMENT_END_USER_GUIDE.md)** - End user tournament guide
+- **[Async Qualifiers Guide](guides/user/ASYNC_TOURNAMENT_END_USER_GUIDE.md)** - End user tournament guide
 - **[Live Races User Guide](guides/user/USER_GUIDE_LIVE_RACES.md)** - Using live race features
 
 ### Reference

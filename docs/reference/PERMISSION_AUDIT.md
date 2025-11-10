@@ -91,7 +91,7 @@ Defined in `models/organizations.py`:
 | `MEMBER_MANAGER` | Member management | Can invite, remove, and manage member permissions |
 | `TOURNAMENT_MANAGER` | Tournament management | Can create and manage tournaments |
 | `ASYNC_REVIEWER` | Async race review | Can review and approve async race submissions |
-| `CREW_APPROVER` | Crew approval | Can approve crew members for async tournaments |
+| `CREW_APPROVER` | Crew approval | Can approve crew members for async qualifiers |
 | `SCHEDULED_TASK_MANAGER` | Task scheduling | Can create and manage scheduled tasks |
 | `RACE_ROOM_MANAGER` | RaceTime profiles | Can manage RaceTime room profiles |
 | `LIVE_RACE_MANAGER` | Live race management | Can manage live race monitoring |
@@ -127,7 +127,7 @@ Defined in `models/organizations.py`:
 - Can view race VODs and verification data
 
 #### CREW_APPROVER
-- Can approve crew members for async tournaments
+- Can approve crew members for async qualifiers
 - Can manage crew assignments
 
 #### SCHEDULED_TASK_MANAGER
@@ -261,7 +261,7 @@ Uses `AuthorizationServiceV2.can()` with `"member:manage"` action:
 - **`delete_verification()`**: Requires member management permission
 
 #### AsyncTournamentService
-Uses internal `can_manage_async_tournaments()` method:
+Uses internal `can_manage_async_qualifiers()` method:
 - **`create_tournament()`**: Requires SUPERADMIN or TOURNAMENT_MANAGER role
 - **`update_tournament()`**: Requires SUPERADMIN or TOURNAMENT_MANAGER role
 - **`delete_tournament()`**: Requires SUPERADMIN or TOURNAMENT_MANAGER role
@@ -341,7 +341,7 @@ Endpoints that check organization membership and roles at service layer:
 - Authorization checked in `TournamentService`
 - Requires SUPERADMIN or TOURNAMENT_MANAGER role in organization
 
-#### Async Tournaments (`/api/async-tournaments/organizations/{organization_id}`)
+#### Async Qualifiers (`/api/async-tournaments/organizations/{organization_id}`)
 - Authorization checked in `AsyncTournamentService`
 - Requires SUPERADMIN or TOURNAMENT_MANAGER role in organization
 
@@ -405,17 +405,17 @@ This matrix shows which roles can perform which actions.
 | View Tournaments | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Participate in Tournament | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-### Async Tournament Management
+### Async Qualifier Management
 
 | Action | SUPERADMIN | ADMIN | Org ADMIN | TOURNAMENT_MANAGER | ASYNC_REVIEWER | Regular Member |
 |--------|-----------|-------|-----------|-------------------|----------------|----------------|
-| Create Async Tournament | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ | ❌ |
-| Update Async Tournament | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ | ❌ |
-| Delete Async Tournament | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ | ❌ |
+| Create Async Qualifier | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ | ❌ |
+| Update Async Qualifier | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ | ❌ |
+| Delete Async Qualifier | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ | ❌ |
 | Review Race Submissions | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ |
 | Approve Race Results | 🌐 ✅ | 🌐 ✅ | 🏢 ✅ | 🏢 ✅ | 🏢 ✅ | ❌ |
 | Submit Race Result | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| View Async Tournaments | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| View Async Qualifiers | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ### Task Management
 
