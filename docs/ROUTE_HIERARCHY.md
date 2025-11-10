@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of all routes in the SahaBot2 application, including both UI pages (NiceGUI) and REST API endpoints (FastAPI).
 
-**Last Updated**: November 10, 2024
+**Last Updated**: November 10, 2025
 
 > **⚠️ Important**: This document must be kept up-to-date whenever routes are added, removed, or modified. When making changes to routes:
 > - **Adding routes**: Add the new route to the appropriate section

@@ -354,6 +354,8 @@ class BasePage:
             self._current_view_key = key
             # Update URL path to reflect current view by appending view to current path
             # Get current path and update it with the view segment
+            # Sanitize key to prevent script injection
+            escaped_key = key.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r')
             await ui.run_javascript(f"""
                 const currentPath = window.location.pathname;
                 const pathParts = currentPath.split('/').filter(p => p);
@@ -366,7 +368,7 @@ class BasePage:
                         pathParts.pop();
                     }}
                 }}
-                pathParts.push('{key}');
+                pathParts.push('{escaped_key}');
                 const newPath = '/' + pathParts.join('/');
                 window.history.pushState({{}}, '', newPath);
             """)
