@@ -4,6 +4,13 @@ import logging
 from fastapi import APIRouter, Depends, Query, HTTPException, Request
 from api.schemas.user import UserOut, UserListResponse
 from api.deps import get_current_user, enforce_rate_limit
+from api.utils import (
+    api_responses,
+    validate_model_list,
+    create_list_response,
+    handle_not_found,
+    handle_unauthorized,
+)
 from application.services.core.user_service import UserService
 from middleware.auth import DiscordAuthService
 from models import User, Permission
@@ -19,17 +26,7 @@ router = APIRouter(prefix="/users", tags=["users"])
     dependencies=[Depends(enforce_rate_limit)],
     summary="Get Current User",
     description="Get the profile information for the currently authenticated user.",
-    responses={
-        200: {
-            "description": "User profile retrieved successfully",
-        },
-        401: {
-            "description": "Invalid or missing authentication token",
-        },
-        429: {
-            "description": "Rate limit exceeded",
-        },
-    },
+    responses=api_responses(200, 401, 429),
 )
 async def get_me(current_user: User = Depends(get_current_user)) -> UserOut:
     """
@@ -53,20 +50,7 @@ async def get_me(current_user: User = Depends(get_current_user)) -> UserOut:
     dependencies=[Depends(enforce_rate_limit)],
     summary="List All Users",
     description="List all users in the system. Requires ADMIN permission.",
-    responses={
-        200: {
-            "description": "Users retrieved successfully",
-        },
-        401: {
-            "description": "Invalid or missing authentication token",
-        },
-        403: {
-            "description": "Insufficient permissions (requires ADMIN)",
-        },
-        429: {
-            "description": "Rate limit exceeded",
-        },
-    },
+    responses=api_responses(200, 401, 403, 429),
 )
 async def list_users(
     current_user: User = Depends(get_current_user),
@@ -91,7 +75,7 @@ async def list_users(
     """
     service = UserService()
     users = await service.get_all_users(current_user, include_inactive=include_inactive)
-    items = [UserOut.model_validate(u) for u in users]
+    items = validate_model_list(users, UserOut)
     return UserListResponse(items=items, count=len(items))
 
 
@@ -101,23 +85,7 @@ async def list_users(
     dependencies=[Depends(enforce_rate_limit)],
     summary="Search Users",
     description="Search for users by username. Requires MODERATOR permission.",
-    responses={
-        200: {
-            "description": "Search results retrieved successfully",
-        },
-        401: {
-            "description": "Invalid or missing authentication token",
-        },
-        403: {
-            "description": "Insufficient permissions (requires MODERATOR)",
-        },
-        422: {
-            "description": "Invalid search query (must be 2-100 characters)",
-        },
-        429: {
-            "description": "Rate limit exceeded",
-        },
-    },
+    responses=api_responses(200, 401, 403, 422, 429),
 )
 async def search_users(
     current_user: User = Depends(get_current_user),
@@ -145,7 +113,7 @@ async def search_users(
     """
     service = UserService()
     users = await service.search_users(current_user, q)
-    items = [UserOut.model_validate(u) for u in users]
+    items = validate_model_list(users, UserOut)
     return UserListResponse(items=items, count=len(items))
 
 
@@ -155,23 +123,7 @@ async def search_users(
     dependencies=[Depends(enforce_rate_limit)],
     summary="Start Impersonating User",
     description="Start impersonating another user. Requires SUPERADMIN permission.",
-    responses={
-        200: {
-            "description": "Impersonation started successfully",
-        },
-        401: {
-            "description": "Invalid or missing authentication token",
-        },
-        403: {
-            "description": "Insufficient permissions (requires SUPERADMIN)",
-        },
-        404: {
-            "description": "Target user not found",
-        },
-        429: {
-            "description": "Rate limit exceeded",
-        },
-    },
+    responses=api_responses(200, 401, 403, 404, 429),
 )
 async def start_impersonation(
     user_id: int, request: Request, current_user: User = Depends(get_current_user)
@@ -246,20 +198,7 @@ async def start_impersonation(
     dependencies=[Depends(enforce_rate_limit)],
     summary="Stop Impersonating User",
     description="Stop impersonating and return to original user.",
-    responses={
-        200: {
-            "description": "Impersonation stopped successfully",
-        },
-        401: {
-            "description": "Invalid or missing authentication token",
-        },
-        400: {
-            "description": "Not currently impersonating",
-        },
-        429: {
-            "description": "Rate limit exceeded",
-        },
-    },
+    responses=api_responses(200, 401, 400, 429),
 )
 async def stop_impersonation(
     request: Request, current_user: User = Depends(get_current_user)
