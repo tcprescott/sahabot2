@@ -71,113 +71,65 @@ def register():
             # Register content loaders for different sections
             async def load_overview():
                 """Load organization overview."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationOverviewView(org, page.user)
-                        await view.render()
+                view = OrganizationOverviewView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_members():
                 """Load members management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationMembersView(org, page.user)
-                        await view.render()
+                view = OrganizationMembersView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_permissions():
                 """Load permissions management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationPermissionsView(org, page.user)
-                        await view.render()
+                view = OrganizationPermissionsView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_settings():
                 """Load organization settings."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationSettingsView(org, page.user)
-                        await view.render()
+                view = OrganizationSettingsView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_tournaments():
                 """Load organization tournaments management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationTournamentsView(
-                            page.user, org, TournamentService()
-                        )
-                        await view.render()
+                view = OrganizationTournamentsView(
+                    page.user, org, TournamentService()
+                )
+                await page.load_view_into_container(view)
 
             async def load_async_tournaments():
                 """Load organization async tournaments management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationAsyncTournamentsView(org, page.user)
-                        await view.render()
+                view = OrganizationAsyncTournamentsView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_stream_channels():
                 """Load organization stream channels management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationStreamChannelsView(org, page.user)
-                        await view.render()
+                view = OrganizationStreamChannelsView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_scheduled_tasks():
                 """Load organization scheduled tasks management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationScheduledTasksView(org, page.user)
-                        await view.render()
+                view = OrganizationScheduledTasksView(org, page.user)
+                await page.load_view_into_container(view)
 
             async def load_discord_servers():
                 """Load Discord servers management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = DiscordServersView(page.user, org)
-                        await view.render()
+                view = DiscordServersView(page.user, org)
+                await page.load_view_into_container(view)
 
             async def load_race_room_profiles():
                 """Load race room profiles management."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = RaceRoomProfileManagementView(page.user, org)
-                        await view.render()
+                view = RaceRoomProfileManagementView(page.user, org)
+                await page.load_view_into_container(view)
 
             async def load_racer_verification():
                 """Load racer verification configuration."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = RacerVerificationConfigView(org.id, page.user)
-                        await view.render()
+                view = RacerVerificationConfigView(org.id, page.user)
+                await page.load_view_into_container(view)
 
             async def load_audit_logs():
                 """Load audit logs."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationAuditLogsView(org, page.user)
-                        await view.render()
+                view = OrganizationAuditLogsView(org, page.user)
+                await page.load_view_into_container(view)
 
             # Register loaders (restrict for non-admin tournament managers)
             if allowed_admin:

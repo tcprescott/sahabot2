@@ -73,12 +73,8 @@ def register():
             # Register content loaders for different sections
             async def load_overview():
                 """Load async tournament overview/dashboard."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = AsyncDashboardView(page.user, tournament)
-                        await view.render()
+                view = AsyncDashboardView(page.user, tournament)
+                await page.load_view_into_container(view)
 
             async def load_settings():
                 """Load async tournament settings."""

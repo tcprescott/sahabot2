@@ -92,12 +92,8 @@ def register():
             # Register content loaders for different sections
             async def load_overview():
                 """Load overview view."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = OrganizationOverviewView(org, page.user)
-                        await view.render()
+                view = OrganizationOverviewView(org, page.user)
+                await page.load_view_into_container(view)
 
             # Register loaders
             page.register_content_loader("overview", load_overview)
@@ -404,34 +400,22 @@ def register():
             # Register content loaders for different sections
             async def load_event_schedule():
                 """Load event schedule."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = EventScheduleView(org, page.user)
-                        if tournament_id:
-                            view.selected_tournaments = [tournament_id]
-                        await view.render()
+                view = EventScheduleView(org, page.user)
+                if tournament_id:
+                    view.selected_tournaments = [tournament_id]
+                await page.load_view_into_container(view)
 
             async def load_my_matches():
                 """Load my matches."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = MyMatchesView(org, page.user)
-                        if tournament_id:
-                            view.selected_tournaments = [tournament_id]
-                        await view.render()
+                view = MyMatchesView(org, page.user)
+                if tournament_id:
+                    view.selected_tournaments = [tournament_id]
+                await page.load_view_into_container(view)
 
             async def load_my_settings():
                 """Load my settings."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = MySettingsView(page.user, org, tournament_service)
-                        await view.render()
+                view = MySettingsView(page.user, org, tournament_service)
+                await page.load_view_into_container(view)
 
             # Register loaders
             page.register_content_loader("event_schedule", load_event_schedule)

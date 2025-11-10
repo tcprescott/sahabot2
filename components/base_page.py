@@ -468,6 +468,35 @@ class BasePage:
 
         return loader
 
+    async def load_view_into_container(self, view_instance: Any) -> None:
+        """Load a view instance into the dynamic content container.
+
+        This is a convenience method that encapsulates the common pattern of:
+        1. Getting the dynamic content container
+        2. Clearing it
+        3. Rendering a view instance into it
+
+        This reduces boilerplate in page loader functions.
+
+        Args:
+            view_instance: A view instance with an async render() method
+
+        Example:
+            async def load_players():
+                view = TournamentPlayersView(page.user, org, tournament)
+                await page.load_view_into_container(view)
+        """
+        container = self.get_dynamic_content_container()
+        if container:
+            container.clear()
+            with container:
+                render_fn = getattr(view_instance, "render", None)
+                if render_fn is None:
+                    return
+                result = render_fn()
+                if inspect.iscoroutine(result):
+                    await result
+
     async def render(
         self,
         content: Optional[Callable[[BasePage], Awaitable[None]]] = None,

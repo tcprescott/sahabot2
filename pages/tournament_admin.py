@@ -72,72 +72,38 @@ def register():
             # Register content loaders for different sections
             async def load_overview():
                 """Load tournament overview."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentOverviewView(page.user, org, tournament)
-                        await view.render()
+                view = TournamentOverviewView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             async def load_players():
                 """Load tournament players."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentPlayersView(page.user, org, tournament)
-                        await view.render()
+                view = TournamentPlayersView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             async def load_racetime():
                 """Load RaceTime settings."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentRacetimeSettingsView(
-                            page.user, org, tournament
-                        )
-                        await view.render()
+                view = TournamentRacetimeSettingsView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             async def load_discord_events():
                 """Load Discord events settings."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentDiscordEventsView(page.user, org, tournament)
-                        await view.render()
+                view = TournamentDiscordEventsView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             async def load_settings():
                 """Load tournament settings."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentSettingsView(page.user, org, tournament)
-                        await view.render()
+                view = TournamentSettingsView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             async def load_randomizer_settings():
                 """Load randomizer settings."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentRandomizerSettingsView(
-                            page.user, org, tournament
-                        )
-                        await view.render()
+                view = TournamentRandomizerSettingsView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             async def load_preset_rules():
                 """Load preset selection rules."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = TournamentPresetSelectionRulesView(
-                            page.user, org, tournament
-                        )
-                        await view.render()
+                view = TournamentPresetSelectionRulesView(page.user, org, tournament)
+                await page.load_view_into_container(view)
 
             # Register loaders
             page.register_content_loader("overview", load_overview)
