@@ -108,7 +108,7 @@ def register():
                     )
                     # Redirect to organization admin page with success message
                     ui.navigate.to(
-                        f"/orgs/{organization_id}/admin?view=discord_servers&success=discord_server_linked"
+                        f"/orgs/{organization_id}/admin/discord_servers&success=discord_server_linked"
                     )
                 else:
                     # Failed to link - use specific error message
@@ -133,14 +133,14 @@ def register():
 
                     # Redirect to organization admin page with specific error
                     ui.navigate.to(
-                        f"/orgs/{organization_id}/admin?view=discord_servers&error={error_msg}"
+                        f"/orgs/{organization_id}/admin/discord_servers&error={error_msg}"
                     )
 
             except Exception as e:
                 logger.exception("Error processing Discord guild callback: %s", e)
                 # Redirect to organization admin page with error
                 ui.navigate.to(
-                    f"/orgs/{organization_id}/admin?view=discord_servers&error=failed_to_link_discord_server"
+                    f"/orgs/{organization_id}/admin/discord_servers&error=failed_to_link_discord_server"
                 )
 
         await base.render(content)

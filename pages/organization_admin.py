@@ -5,6 +5,7 @@ Accessible by SUPERADMIN/ADMIN or members with an org-level admin role.
 """
 
 from __future__ import annotations
+from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
@@ -29,9 +30,10 @@ def register():
     """Register organization admin route."""
 
     @ui.page("/orgs/{organization_id}/admin")
-    async def organization_admin_page(organization_id: int):
+    @ui.page("/orgs/{organization_id}/admin/{view}")
+    async def organization_admin_page(organization_id: int, view: Optional[str] = None):
         """Organization admin page with scoped authorization checks."""
-        base = BasePage.authenticated_page(title="Organization Admin")
+        base = BasePage.authenticated_page(title="Organization Admin", view=view)
         service = OrganizationService()
 
         # Pre-check authorization to determine sidebar structure
@@ -64,7 +66,7 @@ def register():
                     with ui.element("div").classes("card-body"):
                         ui.button(
                             "Back to Organizations",
-                            on_click=lambda: ui.navigate.to("/?view=organizations"),
+                            on_click=lambda: ui.navigate.to("/organizations"),
                         ).classes("btn")
                 return
 

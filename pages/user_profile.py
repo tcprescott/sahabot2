@@ -4,6 +4,7 @@ User Profile page.
 Allow users to view and manage their profile information, API keys, and organizations.
 """
 
+from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from views.user_profile import (
@@ -23,14 +24,15 @@ def register():
     """Register user profile page route."""
 
     @ui.page("/profile")
-    async def profile_page():
+    @ui.page("/profile/{view}")
+    async def profile_page(view: Optional[str] = None):
         """
         User profile page with dynamic content switching.
 
         Displays profile information, API keys management, and organization memberships.
         """
         # Create authenticated page
-        base = BasePage.authenticated_page(title="My Profile")
+        base = BasePage.authenticated_page(title="My Profile", view=view)
 
         async def content(page: BasePage):
             """Render profile page content."""

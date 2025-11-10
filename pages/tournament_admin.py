@@ -6,6 +6,7 @@ Provides detailed tournament management with dedicated views for different aspec
 """
 
 from __future__ import annotations
+from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
@@ -25,9 +26,10 @@ def register():
     """Register tournament admin page routes."""
 
     @ui.page("/org/{organization_id}/tournament/{tournament_id}/admin")
-    async def tournament_admin_page(organization_id: int, tournament_id: int):
+    @ui.page("/org/{organization_id}/tournament/{tournament_id}/admin/{view}")
+    async def tournament_admin_page(organization_id: int, tournament_id: int, view: Optional[str] = None):
         """Tournament administration page."""
-        base = BasePage.authenticated_page(title="Tournament Admin")
+        base = BasePage.authenticated_page(title="Tournament Admin", view=view)
         org_service = OrganizationService()
 
         # Pre-check authorization
@@ -125,7 +127,7 @@ def register():
             base.create_nav_link(
                 "Back to Organization",
                 "arrow_back",
-                f"/orgs/{organization_id}/admin?view=tournaments",
+                f"/orgs/{organization_id}/admin/tournaments",
             ),
             base.create_separator(),
         ]

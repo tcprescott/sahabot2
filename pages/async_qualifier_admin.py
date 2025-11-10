@@ -6,6 +6,7 @@ Provides detailed async qualifier management with dedicated views for different 
 """
 
 from __future__ import annotations
+from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
@@ -19,9 +20,10 @@ def register():
     """Register async qualifier admin page routes."""
 
     @ui.page("/org/{organization_id}/async/{qualifier_id}/admin")
-    async def async_qualifier_admin_page(organization_id: int, qualifier_id: int):
+    @ui.page("/org/{organization_id}/async/{qualifier_id}/admin/{view}")
+    async def async_qualifier_admin_page(organization_id: int, qualifier_id: int, view: Optional[str] = None):
         """Async qualifier administration page."""
-        base = BasePage.authenticated_page(title="Async Qualifier Admin")
+        base = BasePage.authenticated_page(title="Async Qualifier Admin", view=view)
         org_service = OrganizationService()
         async_service = AsyncQualifierService()
 
@@ -104,7 +106,7 @@ def register():
             base.create_nav_link(
                 "Back to Organization",
                 "arrow_back",
-                f"/orgs/{organization_id}/admin?view=async_tournaments",
+                f"/orgs/{organization_id}/admin/async_tournaments",
             ),
             base.create_separator(),
         ]

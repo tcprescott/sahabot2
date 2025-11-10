@@ -195,7 +195,7 @@ class TournamentPresetSelectionRulesView:
         """Cancel editing."""
         # Reload the view
         ui.navigate.to(
-            f"/org/{self.organization.id}/tournament/{self.tournament.id}/admin?view=preset-rules"
+            f"/org/{self.organization.id}/tournament/{self.tournament.id}/admin/preset-rules"
         )
 
 
