@@ -13,7 +13,7 @@ from components.data_table import ResponsiveTable, TableColumn
 from components.badge import Badge
 from components.empty_state import EmptyState
 from components.stat_card import StatGrid
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
 
@@ -135,9 +135,7 @@ class AsyncDashboardView:
                         "text-warning inline-block"
                     )
 
-    async def _render_pool_progress(
-        self, races: list[AsyncQualifierRace], pools: list
-    ):
+    async def _render_pool_progress(self, races: list[AsyncQualifierRace], pools: list):
         """Render pool completion progress."""
         if not pools:
             return

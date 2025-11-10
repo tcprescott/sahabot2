@@ -14,7 +14,7 @@ from api.schemas.async_qualifier import (
     UserBasicInfo,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
 from models import User

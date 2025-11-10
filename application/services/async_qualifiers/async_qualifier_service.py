@@ -953,9 +953,9 @@ class AsyncQualifierService:
         await tournament.fetch_related("pools")
 
         # Get all user IDs who have participated
-        all_races = await AsyncQualifierRace.filter(
-            qualifier_id=qualifier_id
-        ).values("user_id")
+        all_races = await AsyncQualifierRace.filter(qualifier_id=qualifier_id).values(
+            "user_id"
+        )
         user_ids = list(set(r["user_id"] for r in all_races))
 
         # Batch fetch all users to avoid N+1 queries

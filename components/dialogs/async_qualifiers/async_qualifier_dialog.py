@@ -134,9 +134,9 @@ class AsyncQualifierDialog(BaseDialog):
                     .classes("w-full")
                     .props("outlined")
                 )
-                ui.label("Maximum number of re-attempts per player (-1 = unlimited, 0 = none)").classes(
-                    "text-sm text-secondary"
-                )
+                ui.label(
+                    "Maximum number of re-attempts per player (-1 = unlimited, 0 = none)"
+                ).classes("text-sm text-secondary")
                 ui.label("How many times each pool can be attempted").classes(
                     "text-sm text-secondary"
                 )
@@ -279,7 +279,9 @@ class AsyncQualifierDialog(BaseDialog):
             return
 
         if self.max_reattempts_input and self.max_reattempts_input.value < -1:
-            ui.notify("Max re-attempts must be -1 (unlimited) or greater", type="warning")
+            ui.notify(
+                "Max re-attempts must be -1 (unlimited) or greater", type="warning"
+            )
             return
 
         # Determine Discord channel ID (manual input takes precedence)
@@ -321,7 +323,11 @@ class AsyncQualifierDialog(BaseDialog):
                 else False
             ),
             "runs_per_pool": int(self.runs_per_pool_input.value),
-            "max_reattempts": int(self.max_reattempts_input.value) if self.max_reattempts_input else -1,
+            "max_reattempts": (
+                int(self.max_reattempts_input.value)
+                if self.max_reattempts_input
+                else -1
+            ),
             "discord_channel_id": discord_channel_id,
         }
 

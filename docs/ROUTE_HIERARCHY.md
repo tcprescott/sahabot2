@@ -2,7 +2,7 @@
 
 This document provides a comprehensive overview of all routes in the SahaBot2 application, including both UI pages (NiceGUI) and REST API endpoints (FastAPI).
 
-**Last Updated**: November 10, 2025
+**Last Updated**: November 10, 2025 (Updated for tournament/async qualifier domain separation)
 
 > **⚠️ Important**: This document must be kept up-to-date whenever routes are added, removed, or modified. When making changes to routes:
 > - **Adding routes**: Add the new route to the appropriate section
@@ -109,7 +109,6 @@ Routes for organization members and administrators.
 |-------|-------------|------|
 | `/org/{organization_id}` | Organization overview page | `pages/tournaments.py` |
 | `/org/{organization_id}/tournament` | Organization tournament list | `pages/tournaments.py` |
-| `/org/{organization_id}/async` | Organization async qualifier list | `pages/tournaments.py` |
 
 **Organization Administration**:
 
@@ -153,18 +152,13 @@ Routes for tournament management and viewing.
 
 ### Async Qualifier Routes
 
-Routes for asynchronous tournament management.
+Routes for asynchronous qualifier management.
 
-**Async Qualifier Administration**:
+**Async Qualifier List**:
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/org/{organization_id}/async/{tournament_id}/admin` | Async Qualifier admin (default view: overview) | `pages/async_tournament_admin.py` |
-| `/org/{organization_id}/async/{tournament_id}/admin/{view}` | Async Qualifier admin with specific view | `pages/async_tournament_admin.py` |
-
-**Available Async Qualifier Admin Views**:
-- `overview` - Tournament dashboard
-- `settings` - Tournament settings
+| `/org/{organization_id}/async` | Organization async qualifier list | `pages/async_qualifiers.py` |
 
 **Async Qualifier Administration**:
 
@@ -181,12 +175,12 @@ Routes for asynchronous tournament management.
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/org/{organization_id}/async/{tournament_id}` | Async Qualifier public page | `pages/tournaments.py` |
-| `/org/{organization_id}/async/{tournament_id}/leaderboard` | Tournament leaderboard | `pages/tournaments.py` |
-| `/org/{organization_id}/async/{tournament_id}/pools` | Tournament pools/brackets | `pages/tournaments.py` |
-| `/org/{organization_id}/async/{tournament_id}/player/{player_id}` | Player profile in tournament | `pages/tournaments.py` |
-| `/org/{organization_id}/async/{tournament_id}/review` | Race review interface | `pages/tournaments.py` |
-| `/org/{organization_id}/async/{tournament_id}/permalink/{permalink_id}` | Permalink to specific race result | `pages/tournaments.py` |
+| `/org/{organization_id}/async/{qualifier_id}` | Async qualifier dashboard | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{qualifier_id}/leaderboard` | Qualifier leaderboard | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{qualifier_id}/pools` | Qualifier pools | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{qualifier_id}/player/{player_id}` | Player profile in qualifier | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{qualifier_id}/review` | Race review interface | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{qualifier_id}/permalink/{permalink_id}` | Permalink to specific race result | `pages/async_qualifiers.py` |
 
 ### OAuth Callback Routes
 

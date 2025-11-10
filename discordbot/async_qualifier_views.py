@@ -13,7 +13,7 @@ from slugify import slugify
 
 from models import User
 from models.async_tournament import AsyncQualifier, AsyncQualifierRace
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
 from application.services.organizations.organization_service import OrganizationService
@@ -213,7 +213,7 @@ class PoolSelectionView(ui.View):
         # Get a random eligible permalink from the selected pool
         service = AsyncQualifierService()
         import random
-        from application.services.tournaments.async_qualifier_service import (
+        from application.services.async_qualifiers.async_qualifier_service import (
             MAX_POOL_IMBALANCE,
         )
 

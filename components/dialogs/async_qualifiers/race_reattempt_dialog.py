@@ -9,7 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncQualifierRace
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.tournaments.async_qualifier_service import (
+from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
 
@@ -142,7 +142,9 @@ class RaceReattemptDialog(BaseDialog):
             ui.notify("Failed to mark race as re-attempted", type="negative")
             return
 
-        ui.notify("Race marked for re-attempt. You can now start a new race.", type="positive")
+        ui.notify(
+            "Race marked for re-attempt. You can now start a new race.", type="positive"
+        )
 
         # Call success callback
         if self.on_success:
