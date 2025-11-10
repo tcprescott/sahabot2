@@ -27,14 +27,10 @@ def test_weighted_choice():
     """Test weighted random choice."""
     print("Testing weighted random choice...")
 
-    weights = {
-        'option_a': 10,
-        'option_b': 5,
-        'option_c': 1
-    }
+    weights = {"option_a": 10, "option_b": 5, "option_c": 1}
 
     # Test 100 times and check distribution roughly matches weights
-    results = {'option_a': 0, 'option_b': 0, 'option_c': 0}
+    results = {"option_a": 0, "option_b": 0, "option_c": 0}
     for _ in range(100):
         choice = weighted_random_choice(weights)
         results[choice] += 1
@@ -53,9 +49,9 @@ def test_weighted_choice():
     # Allow 30% deviation (generous for randomness)
     tolerance = 0.3
     checks = [
-        abs(results['option_a'] - expected_a) < expected_a * tolerance,
-        abs(results['option_b'] - expected_b) < expected_b * tolerance,
-        abs(results['option_c'] - expected_c) < expected_c * tolerance,
+        abs(results["option_a"] - expected_a) < expected_a * tolerance,
+        abs(results["option_b"] - expected_b) < expected_b * tolerance,
+        abs(results["option_c"] - expected_c) < expected_c * tolerance,
     ]
 
     if all(checks):
@@ -63,7 +59,9 @@ def test_weighted_choice():
         return True
     else:
         print(f"  ⚠ WARNING - Distribution may be off, but this is probabilistic")
-        print(f"    Expected: a={expected_a:.1f}, b={expected_b:.1f}, c={expected_c:.1f}")
+        print(
+            f"    Expected: a={expected_a:.1f}, b={expected_b:.1f}, c={expected_c:.1f}"
+        )
         return True  # Still pass, as this is probabilistic
 
 
@@ -72,17 +70,9 @@ def test_mystery_rolling_logic():
     print("\nTesting mystery rolling logic...")
 
     # Simulate rolling with weights + subweights
-    weights = {
-        'open': 10,
-        'standard': 5
-    }
+    weights = {"open": 10, "standard": 5}
 
-    subweights = {
-        'open': {
-            'normal': 5,
-            'hard': 3
-        }
-    }
+    subweights = {"open": {"normal": 5, "hard": 3}}
 
     print("  Rolling 5 times:")
     for i in range(5):
@@ -110,24 +100,32 @@ def test_validation():
 
     # Valid cases
     valid_cases = [
-        {'weights': {'open': 1}},
-        {'entrance_weights': {'none': 1}},
-        {'customizer': {'eq': {'progressive': 1}}},
+        {"weights": {"open": 1}},
+        {"entrance_weights": {"none": 1}},
+        {"customizer": {"eq": {"progressive": 1}}},
     ]
 
     for i, case in enumerate(valid_cases):
-        has_required = any(k in case for k in ['weights', 'entrance_weights', 'customizer', 'door_weights'])
+        has_required = any(
+            k in case
+            for k in ["weights", "entrance_weights", "customizer", "door_weights"]
+        )
         print(f"  Case {i+1}: {'✓ VALID' if has_required else '✗ INVALID'}")
 
     # Invalid cases
     invalid_cases = [
         {},  # Empty
-        {'other_key': 'value'},  # Missing required keys
+        {"other_key": "value"},  # Missing required keys
     ]
 
     for i, case in enumerate(invalid_cases):
-        has_required = any(k in case for k in ['weights', 'entrance_weights', 'customizer', 'door_weights'])
-        print(f"  Invalid case {i+1}: {'✗ Should reject' if not has_required else '⚠ Should have rejected'}")
+        has_required = any(
+            k in case
+            for k in ["weights", "entrance_weights", "customizer", "door_weights"]
+        )
+        print(
+            f"  Invalid case {i+1}: {'✗ Should reject' if not has_required else '⚠ Should have rejected'}"
+        )
 
     print("  ✓ PASS - Validation logic is correct")
     return True
@@ -153,6 +151,7 @@ def main():
         except Exception as e:
             print(f"\n✗ Test failed with exception: {e}")
             import traceback
+
             traceback.print_exc()
             results.append(False)
 
@@ -163,7 +162,8 @@ def main():
     return all(results)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     success = main()
     sys.exit(0 if success else 1)

@@ -54,11 +54,19 @@ class AuditService:
         except Exception as e:
             logger.error(
                 "Failed to create audit log: action=%s, user_id=%s, error=%s",
-                action, user.id if user else None, e, exc_info=True
+                action,
+                user.id if user else None,
+                e,
+                exc_info=True,
             )
             raise
 
-    async def log_login(self, user: User, ip_address: Optional[str] = None, organization_id: Optional[int] = None) -> AuditLog:
+    async def log_login(
+        self,
+        user: User,
+        ip_address: Optional[str] = None,
+        organization_id: Optional[int] = None,
+    ) -> AuditLog:
         """
         Log a user login.
 
@@ -124,7 +132,9 @@ class AuditService:
         """
         return await self.audit_repository.get_recent(limit=limit)
 
-    async def get_recent_logs_for_org(self, organization_id: int, limit: int = 100) -> list[AuditLog]:
+    async def get_recent_logs_for_org(
+        self, organization_id: int, limit: int = 100
+    ) -> list[AuditLog]:
         """
         Get recent audit logs for a specific organization.
 
@@ -135,7 +145,9 @@ class AuditService:
         Returns:
             list[AuditLog]: Recent audit log entries for the organization
         """
-        return await self.audit_repository.get_recent_for_org(organization_id=organization_id, limit=limit)
+        return await self.audit_repository.get_recent_for_org(
+            organization_id=organization_id, limit=limit
+        )
 
     async def get_user_logs(self, user_id: int, limit: int = 100) -> list[AuditLog]:
         """
@@ -150,7 +162,9 @@ class AuditService:
         """
         return await self.audit_repository.get_by_user(user_id=user_id, limit=limit)
 
-    async def get_user_logs_in_org(self, user_id: int, organization_id: int, limit: int = 100) -> list[AuditLog]:
+    async def get_user_logs_in_org(
+        self, user_id: int, organization_id: int, limit: int = 100
+    ) -> list[AuditLog]:
         """
         Get audit logs for a specific user within an organization.
 
@@ -162,7 +176,9 @@ class AuditService:
         Returns:
             list[AuditLog]: User's audit log entries scoped to the organization
         """
-        return await self.audit_repository.get_by_user_in_org(user_id=user_id, organization_id=organization_id, limit=limit)
+        return await self.audit_repository.get_by_user_in_org(
+            user_id=user_id, organization_id=organization_id, limit=limit
+        )
 
     async def log_user_update(
         self,

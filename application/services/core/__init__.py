@@ -6,8 +6,8 @@ from application.services.core.settings_service import SettingsService
 from application.services.core.rate_limit_service import RateLimitService
 
 __all__ = [
-    'UserService',
-    'AuditService',
-    'SettingsService',
-    'RateLimitService',
+    "UserService",
+    "AuditService",
+    "SettingsService",
+    "RateLimitService",
 ]

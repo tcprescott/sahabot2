@@ -24,8 +24,10 @@ class AuditLog(Model):
     """
 
     id = fields.IntField(pk=True)
-    user = fields.ForeignKeyField('models.User', related_name='audit_logs', null=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='audit_logs', null=True, index=True)
+    user = fields.ForeignKeyField("models.User", related_name="audit_logs", null=True)
+    organization = fields.ForeignKeyField(
+        "models.Organization", related_name="audit_logs", null=True, index=True
+    )
     action = fields.CharField(max_length=255)
     details = fields.JSONField(null=True)
     ip_address = fields.CharField(max_length=45, null=True)

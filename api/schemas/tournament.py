@@ -14,8 +14,12 @@ class TournamentOut(BaseModel):
     description: Optional[str] = Field(None, description="Tournament description")
     is_active: bool = Field(..., description="Whether the tournament is active")
     tracker_enabled: bool = Field(..., description="Whether tracker is enabled")
-    speedgaming_enabled: bool = Field(..., description="Whether SpeedGaming integration is enabled")
-    speedgaming_event_slug: Optional[str] = Field(None, description="SpeedGaming event slug")
+    speedgaming_enabled: bool = Field(
+        ..., description="Whether SpeedGaming integration is enabled"
+    )
+    speedgaming_event_slug: Optional[str] = Field(
+        None, description="SpeedGaming event slug"
+    )
     created_at: datetime = Field(..., description="Tournament creation timestamp")
     updated_at: datetime = Field(..., description="Tournament last update timestamp")
 
@@ -38,31 +42,35 @@ class TournamentCreateRequest(BaseModel):
     is_active: bool = Field(True, description="Whether the tournament is active")
     tracker_enabled: bool = Field(True, description="Whether tracker is enabled")
     speedgaming_enabled: bool = Field(
-        False,
-        description="Enable SpeedGaming integration (makes schedule read-only)"
+        False, description="Enable SpeedGaming integration (makes schedule read-only)"
     )
     speedgaming_event_slug: Optional[str] = Field(
         None,
         max_length=255,
-        description="SpeedGaming event slug (required if speedgaming_enabled=True)"
+        description="SpeedGaming event slug (required if speedgaming_enabled=True)",
     )
 
 
 class TournamentUpdateRequest(BaseModel):
     """Request schema for updating a tournament."""
 
-    name: Optional[str] = Field(None, min_length=1, max_length=255, description="Tournament name")
+    name: Optional[str] = Field(
+        None, min_length=1, max_length=255, description="Tournament name"
+    )
     description: Optional[str] = Field(None, description="Tournament description")
-    is_active: Optional[bool] = Field(None, description="Whether the tournament is active")
-    tracker_enabled: Optional[bool] = Field(None, description="Whether tracker is enabled")
+    is_active: Optional[bool] = Field(
+        None, description="Whether the tournament is active"
+    )
+    tracker_enabled: Optional[bool] = Field(
+        None, description="Whether tracker is enabled"
+    )
     speedgaming_enabled: Optional[bool] = Field(
-        None,
-        description="Enable SpeedGaming integration (makes schedule read-only)"
+        None, description="Enable SpeedGaming integration (makes schedule read-only)"
     )
     speedgaming_event_slug: Optional[str] = Field(
         None,
         max_length=255,
-        description="SpeedGaming event slug (required if speedgaming_enabled=True)"
+        description="SpeedGaming event slug (required if speedgaming_enabled=True)",
     )
 
 
@@ -76,12 +84,13 @@ class MatchOut(BaseModel):
     checked_in_at: Optional[datetime] = Field(None, description="Check-in time")
     started_at: Optional[datetime] = Field(None, description="Match start time")
     finished_at: Optional[datetime] = Field(None, description="Match finish time")
-    confirmed_at: Optional[datetime] = Field(None, description="Match confirmation time")
+    confirmed_at: Optional[datetime] = Field(
+        None, description="Match confirmation time"
+    )
     comment: Optional[str] = Field(None, description="Match comment")
     title: Optional[str] = Field(None, description="Match title")
     speedgaming_episode_id: Optional[int] = Field(
-        None,
-        description="SpeedGaming episode ID (if imported from SpeedGaming)"
+        None, description="SpeedGaming episode ID (if imported from SpeedGaming)"
     )
     created_at: datetime = Field(..., description="Match creation timestamp")
     updated_at: datetime = Field(..., description="Match last update timestamp")
@@ -105,7 +114,9 @@ class MatchCreateRequest(BaseModel):
     scheduled_at: Optional[datetime] = Field(None, description="Match scheduled time")
     title: Optional[str] = Field(None, max_length=255, description="Match title")
     comment: Optional[str] = Field(None, description="Match comment")
-    player_ids: list[int] = Field(default_factory=list, description="List of user IDs to add as players")
+    player_ids: list[int] = Field(
+        default_factory=list, description="List of user IDs to add as players"
+    )
 
 
 class MatchUpdateRequest(BaseModel):
@@ -116,7 +127,9 @@ class MatchUpdateRequest(BaseModel):
     checked_in_at: Optional[datetime] = Field(None, description="Check-in time")
     started_at: Optional[datetime] = Field(None, description="Match start time")
     finished_at: Optional[datetime] = Field(None, description="Match finish time")
-    confirmed_at: Optional[datetime] = Field(None, description="Match confirmation time")
+    confirmed_at: Optional[datetime] = Field(
+        None, description="Match confirmation time"
+    )
     title: Optional[str] = Field(None, max_length=255, description="Match title")
     comment: Optional[str] = Field(None, description="Match comment")
 
@@ -124,7 +137,10 @@ class MatchUpdateRequest(BaseModel):
 class MatchAdvanceStatusRequest(BaseModel):
     """Request schema for advancing match status."""
 
-    status: str = Field(..., description="Target status: 'checked_in', 'started', 'finished', or 'recorded'")
+    status: str = Field(
+        ...,
+        description="Target status: 'checked_in', 'started', 'finished', or 'recorded'",
+    )
 
 
 class TournamentPlayerOut(BaseModel):
@@ -142,7 +158,9 @@ class TournamentPlayerOut(BaseModel):
 class TournamentPlayerListResponse(BaseModel):
     """Response schema for lists of tournament players."""
 
-    items: list[TournamentPlayerOut] = Field(..., description="List of player registration objects")
+    items: list[TournamentPlayerOut] = Field(
+        ..., description="List of player registration objects"
+    )
     count: int = Field(..., description="Total number of players in the result")
 
 
@@ -186,9 +204,15 @@ class TournamentMatchSettingsOut(BaseModel):
     updated_at: datetime = Field(..., description="Last update timestamp")
     notes: Optional[str] = Field(None, description="Optional notes from submitter")
     is_valid: bool = Field(..., description="Whether settings passed validation")
-    validation_error: Optional[str] = Field(None, description="Validation error message if invalid")
-    applied: bool = Field(..., description="Whether settings have been applied to generate race")
-    applied_at: Optional[datetime] = Field(None, description="When settings were applied")
+    validation_error: Optional[str] = Field(
+        None, description="Validation error message if invalid"
+    )
+    applied: bool = Field(
+        ..., description="Whether settings have been applied to generate race"
+    )
+    applied_at: Optional[datetime] = Field(
+        None, description="When settings were applied"
+    )
 
     class Config:
         from_attributes = True
@@ -197,23 +221,33 @@ class TournamentMatchSettingsOut(BaseModel):
 class TournamentMatchSettingsListResponse(BaseModel):
     """Response schema for lists of tournament match settings."""
 
-    items: list[TournamentMatchSettingsOut] = Field(..., description="List of settings submissions")
+    items: list[TournamentMatchSettingsOut] = Field(
+        ..., description="List of settings submissions"
+    )
     count: int = Field(..., description="Total number of submissions in the result")
 
 
 class TournamentMatchSettingsSubmitRequest(BaseModel):
     """Request schema for submitting tournament match settings."""
 
-    settings: dict = Field(..., description="Settings data (structure varies by tournament type)")
-    game_number: int = Field(1, ge=1, le=10, description="Game number in match series (1-10)")
-    notes: Optional[str] = Field(None, max_length=1000, description="Optional notes from submitter")
+    settings: dict = Field(
+        ..., description="Settings data (structure varies by tournament type)"
+    )
+    game_number: int = Field(
+        1, ge=1, le=10, description="Game number in match series (1-10)"
+    )
+    notes: Optional[str] = Field(
+        None, max_length=1000, description="Optional notes from submitter"
+    )
 
 
 class TournamentMatchSettingsValidateRequest(BaseModel):
     """Request schema for validating tournament match settings."""
 
     settings: dict = Field(..., description="Settings data to validate")
-    tournament_id: int = Field(..., description="Tournament ID for tournament-specific validation")
+    tournament_id: int = Field(
+        ..., description="Tournament ID for tournament-specific validation"
+    )
 
 
 class TournamentMatchSettingsValidateResponse(BaseModel):
@@ -221,4 +255,3 @@ class TournamentMatchSettingsValidateResponse(BaseModel):
 
     is_valid: bool = Field(..., description="Whether settings are valid")
     error_message: Optional[str] = Field(None, description="Error message if invalid")
-

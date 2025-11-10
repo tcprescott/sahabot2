@@ -3,6 +3,7 @@ Race room profile repository.
 
 Handles data access for race room profiles.
 """
+
 import logging
 from typing import Optional
 from models import RaceRoomProfile

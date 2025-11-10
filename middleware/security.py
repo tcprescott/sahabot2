@@ -54,19 +54,14 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         headers = {
             # Prevent MIME type sniffing
             "X-Content-Type-Options": "nosniff",
-
             # Prevent clickjacking
             "X-Frame-Options": "DENY",
-
             # Enable browser XSS protection (legacy, but defense in depth)
             "X-XSS-Protection": "1; mode=block",
-
             # Control referrer information
             "Referrer-Policy": "strict-origin-when-cross-origin",
-
             # Restrict browser features and APIs
             "Permissions-Policy": "geolocation=(), microphone=(), camera=()",
-
             # Content Security Policy
             # Note: This CSP allows 'unsafe-inline' and 'unsafe-eval' which weakens XSS protection.
             # These are required for NiceGUI framework to function properly.
@@ -123,8 +118,7 @@ class HTTPSRedirectMiddleware(BaseHTTPMiddleware):
 
                     # Return permanent redirect
                     return Response(
-                        status_code=301,
-                        headers={"Location": str(https_url)}
+                        status_code=301, headers={"Location": str(https_url)}
                     )
 
         # Continue with request

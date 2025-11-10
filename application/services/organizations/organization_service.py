@@ -47,7 +47,10 @@ class OrganizationService:
 
         Each item contains {"name": str, "description": str}.
         """
-        return [{"name": name, "description": desc} for name, desc in self._PERMISSION_TYPES.items()]
+        return [
+            {"name": name, "description": desc}
+            for name, desc in self._PERMISSION_TYPES.items()
+        ]
 
     def _normalize_name(self, name: str) -> str:
         return (name or "").strip().upper()
@@ -59,16 +62,26 @@ class OrganizationService:
             ValueError: if any name is not an allowed permission type
         """
         allowed = set(self._PERMISSION_TYPES.keys())
-        invalid = [n for n in (self._normalize_name(x) for x in names) if n and n not in allowed]
+        invalid = [
+            n
+            for n in (self._normalize_name(x) for x in names)
+            if n and n not in allowed
+        ]
         if invalid:
-            raise ValueError(f"Unknown organization permission(s): {', '.join(sorted(set(invalid)))}")
+            raise ValueError(
+                f"Unknown organization permission(s): {', '.join(sorted(set(invalid)))}"
+            )
 
     async def initialize_default_permissions(self, organization_id: int) -> None:
         """Ensure all default permission definitions exist for an organization."""
         for name in self._PERMISSION_TYPES.keys():
-            await self.repo.get_or_create_permission(organization_id, name, self._PERMISSION_TYPES[name])
+            await self.repo.get_or_create_permission(
+                organization_id, name, self._PERMISSION_TYPES[name]
+            )
 
-    async def create_builtin_roles(self, organization: Organization) -> list[OrganizationRole]:
+    async def create_builtin_roles(
+        self, organization: Organization
+    ) -> list[OrganizationRole]:
         """
         Create built-in roles for an organization.
 
@@ -82,7 +95,11 @@ class OrganizationService:
         Returns:
             List of created OrganizationRole instances
         """
-        logger.info("Creating built-in roles for organization %s (id=%s)...", organization.name, organization.id)
+        logger.info(
+            "Creating built-in roles for organization %s (id=%s)...",
+            organization.name,
+            organization.id,
+        )
 
         # Get built-in role definitions for this organization type
         role_defs = get_builtin_role_definitions(organization.id)
@@ -92,8 +109,7 @@ class OrganizationService:
         for role_def in role_defs:
             # Check if role already exists
             existing = await OrganizationRole.filter(
-                organization=organization,
-                name=role_def.name
+                organization=organization, name=role_def.name
             ).first()
 
             if existing:
@@ -107,7 +123,7 @@ class OrganizationService:
                 description=role_def.description,
                 is_builtin=True,
                 is_locked=role_def.is_locked,
-                created_by=None  # System-created
+                created_by=None,  # System-created
             )
             logger.info("Created built-in role: %s (id=%s)", role.name, role.id)
             created_roles.append(role)
@@ -115,7 +131,7 @@ class OrganizationService:
         logger.info(
             "Built-in roles creation complete: %s created, %s skipped (already existed)",
             len(created_roles),
-            len(role_defs) - len(created_roles)
+            len(role_defs) - len(created_roles),
         )
 
         return created_roles
@@ -124,7 +140,7 @@ class OrganizationService:
         self,
         member: OrganizationMember,
         role_name: str,
-        assigned_by: Optional[User] = None
+        assigned_by: Optional[User] = None,
     ) -> Optional[OrganizationMemberRole]:
         """
         Assign a role to an organization member.
@@ -139,23 +155,19 @@ class OrganizationService:
         """
         # Find the role
         role = await OrganizationRole.filter(
-            organization_id=member.organization_id,
-            name=role_name
+            organization_id=member.organization_id, name=role_name
         ).first()
 
         if not role:
             logger.error(
                 "Role %s not found for organization %s",
                 role_name,
-                member.organization_id
+                member.organization_id,
             )
             return None
 
         # Check if already assigned
-        existing = await OrganizationMemberRole.filter(
-            member=member,
-            role=role
-        ).first()
+        existing = await OrganizationMemberRole.filter(member=member, role=role).first()
 
         if existing:
             logger.debug("Role %s already assigned to member %s", role_name, member.id)
@@ -163,16 +175,14 @@ class OrganizationService:
 
         # Create the assignment
         assignment = await OrganizationMemberRole.create(
-            member=member,
-            role=role,
-            assigned_by=assigned_by
+            member=member, role=role, assigned_by=assigned_by
         )
 
         logger.info(
             "Assigned role %s to member %s in organization %s",
             role_name,
             member.user_id,
-            member.organization_id
+            member.organization_id,
         )
 
         return assignment
@@ -185,7 +195,13 @@ class OrganizationService:
         """Get an organization by ID."""
         return await self.repo.get_by_id(organization_id)
 
-    async def create_organization(self, current_user: Optional[User], name: str, description: Optional[str], is_active: bool = True) -> Optional[Organization]:
+    async def create_organization(
+        self,
+        current_user: Optional[User],
+        name: str,
+        description: Optional[str],
+        is_active: bool = True,
+    ) -> Optional[Organization]:
         """
         Create a new organization.
 
@@ -203,30 +219,42 @@ class OrganizationService:
         if not current_user or not current_user.has_permission(Permission.SUPERADMIN):
             logger.warning(
                 "Unauthorized organization creation attempt by user %s",
-                current_user.id if current_user else None
+                current_user.id if current_user else None,
             )
             return None
 
-        organization = await self.repo.create(name=name, description=description, is_active=is_active)
+        organization = await self.repo.create(
+            name=name, description=description, is_active=is_active
+        )
 
         # Initialize default permissions for the new organization
         if organization:
             await self.initialize_default_permissions(organization.id)
-            logger.info("Initialized default permissions for organization %s", organization.id)
+            logger.info(
+                "Initialized default permissions for organization %s", organization.id
+            )
 
             # Create built-in roles for the new organization
             builtin_roles = await self.create_builtin_roles(organization)
-            logger.info("Created %s built-in roles for organization %s", len(builtin_roles), organization.id)
+            logger.info(
+                "Created %s built-in roles for organization %s",
+                len(builtin_roles),
+                organization.id,
+            )
 
             # Auto-add creator as a member with Admin role
             if current_user:
-                member = await self.add_member(organization.id, current_user.id, added_by_user_id=current_user.id)
+                member = await self.add_member(
+                    organization.id, current_user.id, added_by_user_id=current_user.id
+                )
                 if member:
-                    await self.assign_role_to_member(member, "Admin", assigned_by=current_user)
+                    await self.assign_role_to_member(
+                        member, "Admin", assigned_by=current_user
+                    )
                     logger.info(
                         "Auto-added creator %s as member with Admin role to organization %s",
                         current_user.id,
-                        organization.id
+                        organization.id,
                     )
 
             # Emit organization created event
@@ -237,7 +265,9 @@ class OrganizationService:
                 organization_name=name,
             )
             await EventBus.emit(event)
-            logger.debug("Emitted OrganizationCreatedEvent for organization %s", organization.id)
+            logger.debug(
+                "Emitted OrganizationCreatedEvent for organization %s", organization.id
+            )
 
         return organization
 
@@ -247,7 +277,7 @@ class OrganizationService:
         organization_id: int,
         name: str,
         description: Optional[str],
-        is_active: bool
+        is_active: bool,
     ) -> Optional[Organization]:
         """
         Update an existing organization.
@@ -268,22 +298,27 @@ class OrganizationService:
             logger.warning(
                 "Unauthorized organization update attempt by user %s for org %s",
                 current_user.id if current_user else None,
-                organization_id
+                organization_id,
             )
             return None
 
-        updated_org = await self.repo.update(organization_id=organization_id, name=name, description=description, is_active=is_active)
+        updated_org = await self.repo.update(
+            organization_id=organization_id,
+            name=name,
+            description=description,
+            is_active=is_active,
+        )
 
         # Emit organization updated event if successful
         if updated_org:
             # Track changed fields
             changed_fields = []
             if updated_org.name != name:
-                changed_fields.append('name')
+                changed_fields.append("name")
             if updated_org.description != description:
-                changed_fields.append('description')
+                changed_fields.append("description")
             if updated_org.is_active != is_active:
-                changed_fields.append('is_active')
+                changed_fields.append("is_active")
 
             if changed_fields:
                 event = OrganizationUpdatedEvent(
@@ -296,12 +331,14 @@ class OrganizationService:
                 logger.debug(
                     "Emitted OrganizationUpdatedEvent for organization %s, changed: %s",
                     organization_id,
-                    changed_fields
+                    changed_fields,
                 )
 
         return updated_org
 
-    async def user_can_admin_org(self, user: Optional[User], organization_id: int) -> bool:
+    async def user_can_admin_org(
+        self, user: Optional[User], organization_id: int
+    ) -> bool:
         """Check if the user can administer the given organization.
 
         Rules:
@@ -312,9 +349,13 @@ class OrganizationService:
             return False
         if user.has_permission(Permission.ADMIN):
             return True
-        return await self.repo.is_user_org_admin(user_id=user.id, organization_id=organization_id)
+        return await self.repo.is_user_org_admin(
+            user_id=user.id, organization_id=organization_id
+        )
 
-    async def user_can_manage_tournaments(self, user: Optional[User], organization_id: int) -> bool:
+    async def user_can_manage_tournaments(
+        self, user: Optional[User], organization_id: int
+    ) -> bool:
         """Check if the user can manage tournaments within the organization.
 
         Grants if:
@@ -330,11 +371,15 @@ class OrganizationService:
         member = await self.repo.get_member(organization_id, user.id)
         if not member:
             return False
-        await member.fetch_related('permissions')
-        permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
-        return 'TOURNAMENT_MANAGER' in permission_names
+        await member.fetch_related("permissions")
+        permission_names = [
+            p.permission_name for p in getattr(member, "permissions", [])
+        ]
+        return "TOURNAMENT_MANAGER" in permission_names
 
-    async def user_can_review_async_races(self, user: Optional[User], organization_id: int) -> bool:
+    async def user_can_review_async_races(
+        self, user: Optional[User], organization_id: int
+    ) -> bool:
         """Check if the user can review async tournament race submissions.
 
         Grants if:
@@ -350,11 +395,15 @@ class OrganizationService:
         member = await self.repo.get_member(organization_id, user.id)
         if not member:
             return False
-        await member.fetch_related('permissions')
-        permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
-        return 'ASYNC_REVIEWER' in permission_names
+        await member.fetch_related("permissions")
+        permission_names = [
+            p.permission_name for p in getattr(member, "permissions", [])
+        ]
+        return "ASYNC_REVIEWER" in permission_names
 
-    async def user_can_approve_crew(self, user: Optional[User], organization_id: int) -> bool:
+    async def user_can_approve_crew(
+        self, user: Optional[User], organization_id: int
+    ) -> bool:
         """Check if the user can approve crew members for matches.
 
         Grants if:
@@ -373,9 +422,11 @@ class OrganizationService:
         member = await self.repo.get_member(organization_id, user.id)
         if not member:
             return False
-        await member.fetch_related('permissions')
-        permission_names = [p.permission_name for p in getattr(member, 'permissions', [])]
-        return 'MODERATOR' in permission_names
+        await member.fetch_related("permissions")
+        permission_names = [
+            p.permission_name for p in getattr(member, "permissions", [])
+        ]
+        return "MODERATOR" in permission_names
 
     # --- Permissions definitions (per-organization) ---
 
@@ -386,7 +437,9 @@ class OrganizationService:
         """
         return await self.repo.list_permissions(organization_id)
 
-    async def ensure_permissions(self, organization_id: int, names: Iterable[str]) -> None:
+    async def ensure_permissions(
+        self, organization_id: int, names: Iterable[str]
+    ) -> None:
         """Ensure the provided permission names exist for the organization.
 
         Creates any missing OrganizationPermission rows. Does not delete existing.
@@ -400,7 +453,7 @@ class OrganizationService:
         current_user: Optional[User],
         organization_id: int,
         permission_name: str,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Create a permission definition for the organization.
@@ -417,28 +470,28 @@ class OrganizationService:
             Created permission or None if unauthorized
         """
         # Check authorization
-        can_manage = (
-            await self.user_can_admin_org(current_user, organization_id)
-            or (current_user and current_user.has_permission(Permission.SUPERADMIN))
+        can_manage = await self.user_can_admin_org(current_user, organization_id) or (
+            current_user and current_user.has_permission(Permission.SUPERADMIN)
         )
 
         if not can_manage:
             logger.warning(
                 "Unauthorized permission creation attempt by user %s in org %s",
                 current_user.id if current_user else None,
-                organization_id
+                organization_id,
             )
             return None
 
         normalized = self._normalize_name(permission_name)
         self._validate_permission_names([normalized])
-        return await self.repo.get_or_create_permission(organization_id, normalized, description or self._PERMISSION_TYPES.get(normalized))
+        return await self.repo.get_or_create_permission(
+            organization_id,
+            normalized,
+            description or self._PERMISSION_TYPES.get(normalized),
+        )
 
     async def delete_permission(
-        self,
-        current_user: Optional[User],
-        organization_id: int,
-        permission_name: str
+        self, current_user: Optional[User], organization_id: int, permission_name: str
     ) -> int:
         """
         Delete a permission definition by name.
@@ -454,16 +507,15 @@ class OrganizationService:
             Number of rows deleted (0 if unauthorized)
         """
         # Check authorization
-        can_manage = (
-            await self.user_can_admin_org(current_user, organization_id)
-            or (current_user and current_user.has_permission(Permission.SUPERADMIN))
+        can_manage = await self.user_can_admin_org(current_user, organization_id) or (
+            current_user and current_user.has_permission(Permission.SUPERADMIN)
         )
 
         if not can_manage:
             logger.warning(
                 "Unauthorized permission deletion attempt by user %s in org %s",
                 current_user.id if current_user else None,
-                organization_id
+                organization_id,
             )
             return 0
 
@@ -473,11 +525,15 @@ class OrganizationService:
 
     # --- Member permission assignments ---
 
-    async def list_member_permissions(self, organization_id: int, user_id: int) -> list[str]:
+    async def list_member_permissions(
+        self, organization_id: int, user_id: int
+    ) -> list[str]:
         """List permission names assigned to a member within the organization."""
         return await self.repo.list_member_permissions(organization_id, user_id)
 
-    async def add_permissions_to_member(self, organization_id: int, user_id: int, permission_names: Sequence[str]) -> None:
+    async def add_permissions_to_member(
+        self, organization_id: int, user_id: int, permission_names: Sequence[str]
+    ) -> None:
         """Grant one or more permissions to the member (additive)."""
         self._validate_permission_names(permission_names)
         normalized = [self._normalize_name(n) for n in permission_names]
@@ -488,7 +544,7 @@ class OrganizationService:
         current_user: Optional[User],
         organization_id: int,
         user_id: int,
-        permission_names: Sequence[str]
+        permission_names: Sequence[str],
     ) -> bool:
         """
         Replace the member's permissions with the provided list.
@@ -505,9 +561,8 @@ class OrganizationService:
             True if successful, False if unauthorized
         """
         # Check authorization
-        can_manage = (
-            await self.user_can_admin_org(current_user, organization_id)
-            or (current_user and current_user.has_permission(Permission.SUPERADMIN))
+        can_manage = await self.user_can_admin_org(current_user, organization_id) or (
+            current_user and current_user.has_permission(Permission.SUPERADMIN)
         )
 
         if not can_manage:
@@ -515,7 +570,7 @@ class OrganizationService:
                 "Unauthorized member permission update attempt by user %s in org %s for user %s",
                 current_user.id if current_user else None,
                 organization_id,
-                user_id
+                user_id,
             )
             return False
 
@@ -524,11 +579,15 @@ class OrganizationService:
         await self.repo.set_permissions_for_member(organization_id, user_id, normalized)
         return True
 
-    async def remove_permissions_from_member(self, organization_id: int, user_id: int, permission_names: Sequence[str]) -> None:
+    async def remove_permissions_from_member(
+        self, organization_id: int, user_id: int, permission_names: Sequence[str]
+    ) -> None:
         """Revoke one or more permissions from the member."""
         self._validate_permission_names(permission_names)
         normalized = [self._normalize_name(n) for n in permission_names]
-        await self.repo.remove_permissions_from_member(organization_id, user_id, normalized)
+        await self.repo.remove_permissions_from_member(
+            organization_id, user_id, normalized
+        )
 
     # --- Members management ---
 
@@ -569,10 +628,7 @@ class OrganizationService:
         return member is not None
 
     async def add_member(
-        self,
-        organization_id: int,
-        user_id: int,
-        added_by_user_id: Optional[int] = None
+        self, organization_id: int, user_id: int, added_by_user_id: Optional[int] = None
     ):
         """Add a user as a member of the organization.
 
@@ -594,7 +650,7 @@ class OrganizationService:
             logger.debug(
                 "Emitted OrganizationMemberAddedEvent: user %s added to org %s",
                 user_id,
-                organization_id
+                organization_id,
             )
 
         return member

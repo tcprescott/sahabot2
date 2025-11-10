@@ -13,7 +13,9 @@ from discordbot.client import get_bot_instance
 from models import User
 from models.notification_log import NotificationDeliveryStatus
 from models.notification_subscription import NotificationEventType
-from application.services.notifications.handlers.base_handler import BaseNotificationHandler
+from application.services.notifications.handlers.base_handler import (
+    BaseNotificationHandler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +33,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         self.bot = get_bot_instance()
 
     async def send_notification(
-        self,
-        user: User,
-        event_type: NotificationEventType,
-        event_data: dict
+        self, user: User, event_type: NotificationEventType, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a Discord DM notification to a user.
@@ -85,16 +84,13 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             # Generic fallback for event types without dedicated handlers
             logger.info(
                 "No dedicated handler for event type %s, using generic notification",
-                event_type.name
+                event_type.name,
             )
             message = f"Notification: {event_type.name}\n{event_data}"
             return await self._send_discord_dm(user, message)
 
     async def _send_discord_dm(
-        self,
-        user: User,
-        message: str,
-        embed: Optional[discord.Embed] = None
+        self, user: User, message: str, embed: Optional[discord.Embed] = None
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a Discord DM to a user.
@@ -111,22 +107,18 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         """
         if not self.bot:
             logger.error("Discord bot not available for notifications")
-            return (
-                NotificationDeliveryStatus.FAILED,
-                "Discord bot not initialized"
-            )
+            return (NotificationDeliveryStatus.FAILED, "Discord bot not initialized")
 
         try:
             # Get Discord user object
             discord_user = await self.bot.fetch_user(int(user.discord_id))
             if not discord_user:
                 logger.warning(
-                    "Could not fetch Discord user %s for notification",
-                    user.discord_id
+                    "Could not fetch Discord user %s for notification", user.discord_id
                 )
                 return (
                     NotificationDeliveryStatus.FAILED,
-                    f"Could not find Discord user {user.discord_id}"
+                    f"Could not find Discord user {user.discord_id}",
                 )
 
             # Send DM
@@ -138,7 +130,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             logger.info(
                 "Sent Discord notification to user %s (%s)",
                 user.get_display_name(),
-                user.discord_id
+                user.discord_id,
             )
             return (NotificationDeliveryStatus.SENT, None)
 
@@ -146,11 +138,11 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             # User has DMs disabled or blocked the bot
             logger.warning(
                 "Cannot send DM to user %s - DMs disabled or bot blocked",
-                user.discord_id
+                user.discord_id,
             )
             return (
                 NotificationDeliveryStatus.FAILED,
-                "User has DMs disabled or has blocked the bot"
+                "User has DMs disabled or has blocked the bot",
             )
 
         except discord.HTTPException as e:
@@ -158,29 +150,20 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             logger.error(
                 "HTTP error sending Discord notification to user %s: %s",
                 user.discord_id,
-                str(e)
+                str(e),
             )
             if e.status == 429:
                 # Rate limited - should retry later
-                return (
-                    NotificationDeliveryStatus.RETRYING,
-                    f"Rate limited: {str(e)}"
-                )
-            return (
-                NotificationDeliveryStatus.FAILED,
-                f"Discord API error: {str(e)}"
-            )
+                return (NotificationDeliveryStatus.RETRYING, f"Rate limited: {str(e)}")
+            return (NotificationDeliveryStatus.FAILED, f"Discord API error: {str(e)}")
 
         except Exception as e:
             # Unexpected error
             logger.exception(
                 "Unexpected error sending Discord notification to user %s",
-                user.discord_id
+                user.discord_id,
             )
-            return (
-                NotificationDeliveryStatus.FAILED,
-                f"Unexpected error: {str(e)}"
-            )
+            return (NotificationDeliveryStatus.FAILED, f"Unexpected error: {str(e)}")
 
     def _create_embed(
         self,
@@ -189,7 +172,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         color: discord.Color = discord.Color.blue(),
         fields: Optional[list[tuple[str, str, bool]]] = None,
         thumbnail_url: Optional[str] = None,
-        footer_text: Optional[str] = None
+        footer_text: Optional[str] = None,
     ) -> discord.Embed:
         """
         Create a Discord embed for rich notifications.
@@ -209,7 +192,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             title=title,
             description=description,
             color=color,
-            timestamp=datetime.now(timezone.utc)
+            timestamp=datetime.now(timezone.utc),
         )
 
         if fields:
@@ -225,9 +208,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         return embed
 
     async def _send_match_scheduled(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a match scheduled notification.
@@ -244,20 +225,18 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             description=f"You have a match scheduled in **{event_data.get('tournament_name', 'Unknown Tournament')}**",
             color=discord.Color.green(),
             fields=[
-                ("Opponent", event_data.get('opponent_name', 'TBD'), True),
-                ("Scheduled Time", event_data.get('scheduled_time', 'TBD'), True),
-                ("Round", event_data.get('round_name', 'TBD'), False),
+                ("Opponent", event_data.get("opponent_name", "TBD"), True),
+                ("Scheduled Time", event_data.get("scheduled_time", "TBD"), True),
+                ("Round", event_data.get("round_name", "TBD"), False),
             ],
-            footer_text="Check the tournament page for more details"
+            footer_text="Check the tournament page for more details",
         )
 
         message = f"Hey {user.get_display_name()}! You have a new match scheduled."
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_tournament_created(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a tournament created notification.
@@ -274,19 +253,17 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             description=f"**{event_data.get('tournament_name', 'Unknown')}** has been created!",
             color=discord.Color.gold(),
             fields=[
-                ("Format", event_data.get('format', 'TBD'), True),
-                ("Start Date", event_data.get('start_date', 'TBD'), True),
+                ("Format", event_data.get("format", "TBD"), True),
+                ("Start Date", event_data.get("start_date", "TBD"), True),
             ],
-            footer_text="Check the tournament page to register"
+            footer_text="Check the tournament page to register",
         )
 
         message = f"Hey {user.get_display_name()}! A new tournament has been created."
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_invite_received(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send an organization invite notification.
@@ -303,18 +280,16 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             description=f"You've been invited to join **{event_data.get('organization_name', 'Unknown Organization')}**",
             color=discord.Color.purple(),
             fields=[
-                ("Invited By", event_data.get('invited_by', 'Unknown'), False),
+                ("Invited By", event_data.get("invited_by", "Unknown"), False),
             ],
-            footer_text="Check your invites page to accept or decline"
+            footer_text="Check your invites page to accept or decline",
         )
 
         message = f"Hey {user.get_display_name()}! You have a new organization invite."
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_crew_approved(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a crew approved notification.
@@ -326,17 +301,21 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        role = event_data.get('role', 'crew').title()
-        auto_approved = event_data.get('auto_approved', False)
-        approver = event_data.get('added_by') if auto_approved else event_data.get('approved_by')
-        
+        role = event_data.get("role", "crew").title()
+        auto_approved = event_data.get("auto_approved", False)
+        approver = (
+            event_data.get("added_by")
+            if auto_approved
+            else event_data.get("approved_by")
+        )
+
         # Get match details
-        tournament_name = event_data.get('tournament_name')
-        stream_channel = event_data.get('stream_channel')
-        players = event_data.get('players', [])
-        
+        tournament_name = event_data.get("tournament_name")
+        stream_channel = event_data.get("stream_channel")
+        players = event_data.get("players", [])
+
         title = "🎬 Crew Role Assigned" if auto_approved else "✅ Crew Signup Approved"
-        
+
         # Build description with tournament info if available
         if tournament_name:
             description = (
@@ -350,44 +329,46 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 if auto_approved
                 else f"Your **{role}** signup has been approved!"
             )
-        
+
         fields = [
             ("Role", role, True),
-            ("Match ID", str(event_data.get('match_id', 'N/A')), True),
+            ("Match ID", str(event_data.get("match_id", "N/A")), True),
         ]
-        
+
         # Add stream channel if available
         if stream_channel:
             fields.append(("Stream Channel", stream_channel, False))
-        
+
         # Add players if available
         if players:
-            players_str = ", ".join(players) if len(players) <= 4 else f"{', '.join(players[:3])}, +{len(players)-3} more"
+            players_str = (
+                ", ".join(players)
+                if len(players) <= 4
+                else f"{', '.join(players[:3])}, +{len(players)-3} more"
+            )
             fields.append(("Players", players_str, False))
-        
+
         # Add approver/adder
         if approver:
-            fields.append((
-                "Assigned By" if auto_approved else "Approved By",
-                approver,
-                False
-            ))
-        
+            fields.append(
+                ("Assigned By" if auto_approved else "Approved By", approver, False)
+            )
+
         embed = self._create_embed(
             title=title,
             description=description,
             color=discord.Color.green(),
             fields=fields,
-            footer_text="Check the match schedule for full details"
+            footer_text="Check the match schedule for full details",
         )
 
-        message = f"Hey {user.get_display_name()}! You've been approved for a crew role."
+        message = (
+            f"Hey {user.get_display_name()}! You've been approved for a crew role."
+        )
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_crew_removed(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a crew removed notification.
@@ -399,26 +380,26 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        role = event_data.get('role', 'crew').title()
-        
+        role = event_data.get("role", "crew").title()
+
         embed = self._create_embed(
             title="❌ Crew Role Removed",
             description=f"You've been removed from the **{role}** role for a match.",
             color=discord.Color.red(),
             fields=[
                 ("Role", role, True),
-                ("Match ID", str(event_data.get('match_id', 'N/A')), True),
+                ("Match ID", str(event_data.get("match_id", "N/A")), True),
             ],
-            footer_text="Contact an admin if you have questions"
+            footer_text="Contact an admin if you have questions",
         )
 
-        message = f"Hey {user.get_display_name()}, you've been removed from a crew role."
+        message = (
+            f"Hey {user.get_display_name()}, you've been removed from a crew role."
+        )
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_race_submitted(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a race submitted notification.
@@ -435,19 +416,17 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             description="Your race result has been submitted and is pending review.",
             color=discord.Color.blue(),
             fields=[
-                ("Tournament ID", str(event_data.get('tournament_id', 'N/A')), True),
-                ("Time", event_data.get('time_seconds', 'N/A'), True),
+                ("Tournament ID", str(event_data.get("tournament_id", "N/A")), True),
+                ("Time", event_data.get("time_seconds", "N/A"), True),
             ],
-            footer_text="You'll be notified once it's reviewed"
+            footer_text="You'll be notified once it's reviewed",
         )
 
         message = f"Hey {user.get_display_name()}, your race has been submitted!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_race_approved(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a race approved notification.
@@ -459,26 +438,24 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        reviewer = event_data.get('reviewer', 'Admin')
-        
+        reviewer = event_data.get("reviewer", "Admin")
+
         embed = self._create_embed(
             title="✅ Race Approved",
             description="Your race result has been approved!",
             color=discord.Color.green(),
             fields=[
-                ("Tournament ID", str(event_data.get('tournament_id', 'N/A')), True),
+                ("Tournament ID", str(event_data.get("tournament_id", "N/A")), True),
                 ("Reviewed By", reviewer, True),
             ],
-            footer_text="Your time is now official"
+            footer_text="Your time is now official",
         )
 
         message = f"Hey {user.get_display_name()}, your race has been approved!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_race_rejected(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a race rejected notification.
@@ -490,28 +467,26 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        reviewer = event_data.get('reviewer', 'Admin')
-        reason = event_data.get('reason', 'No reason provided')
-        
+        reviewer = event_data.get("reviewer", "Admin")
+        reason = event_data.get("reason", "No reason provided")
+
         embed = self._create_embed(
             title="❌ Race Rejected",
             description="Your race result was not approved.",
             color=discord.Color.red(),
             fields=[
-                ("Tournament ID", str(event_data.get('tournament_id', 'N/A')), True),
+                ("Tournament ID", str(event_data.get("tournament_id", "N/A")), True),
                 ("Reviewed By", reviewer, True),
                 ("Reason", reason, False),
             ],
-            footer_text="Contact an admin if you have questions"
+            footer_text="Contact an admin if you have questions",
         )
 
         message = f"Hey {user.get_display_name()}, your race submission was rejected."
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_match_completed(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a match completed notification.
@@ -523,27 +498,25 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        winner = event_data.get('winner', 'Unknown')
-        
+        winner = event_data.get("winner", "Unknown")
+
         embed = self._create_embed(
             title="🏆 Match Completed",
             description="A match you participated in has been completed.",
             color=discord.Color.gold(),
             fields=[
-                ("Match ID", str(event_data.get('match_id', 'N/A')), True),
+                ("Match ID", str(event_data.get("match_id", "N/A")), True),
                 ("Winner", winner, True),
-                ("Tournament ID", str(event_data.get('tournament_id', 'N/A')), True),
+                ("Tournament ID", str(event_data.get("tournament_id", "N/A")), True),
             ],
-            footer_text="Check the tournament page for standings"
+            footer_text="Check the tournament page for standings",
         )
 
         message = f"Hey {user.get_display_name()}, your match is complete!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_tournament_started(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a tournament started notification.
@@ -555,8 +528,8 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Unknown Tournament')
-        
+        tournament_name = event_data.get("tournament_name", "Unknown Tournament")
+
         embed = self._create_embed(
             title="🎮 Tournament Started",
             description=f"**{tournament_name}** has started!",
@@ -564,16 +537,14 @@ class DiscordNotificationHandler(BaseNotificationHandler):
             fields=[
                 ("Tournament", tournament_name, False),
             ],
-            footer_text="Good luck!"
+            footer_text="Good luck!",
         )
 
         message = f"Hey {user.get_display_name()}, the tournament has started!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_tournament_ended(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a tournament ended notification.
@@ -585,9 +556,9 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Unknown Tournament')
-        winner = event_data.get('winner', 'TBD')
-        
+        tournament_name = event_data.get("tournament_name", "Unknown Tournament")
+        winner = event_data.get("winner", "TBD")
+
         embed = self._create_embed(
             title="🏁 Tournament Ended",
             description=f"**{tournament_name}** has concluded!",
@@ -596,16 +567,14 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Tournament", tournament_name, False),
                 ("Winner", winner, False),
             ],
-            footer_text="Thanks for participating!"
+            footer_text="Thanks for participating!",
         )
 
         message = f"Hey {user.get_display_name()}, the tournament has ended!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_organization_member_added(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send organization member added notification.
@@ -617,9 +586,9 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        org_name = event_data.get('organization_name', 'Unknown Organization')
-        added_by = event_data.get('added_by', 'Admin')
-        
+        org_name = event_data.get("organization_name", "Unknown Organization")
+        added_by = event_data.get("added_by", "Admin")
+
         embed = self._create_embed(
             title="👥 Added to Organization",
             description=f"You've been added to **{org_name}**!",
@@ -628,16 +597,16 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Organization", org_name, False),
                 ("Added By", added_by, False),
             ],
-            footer_text="Welcome to the organization!"
+            footer_text="Welcome to the organization!",
         )
 
-        message = f"Hey {user.get_display_name()}, you've been added to an organization!"
+        message = (
+            f"Hey {user.get_display_name()}, you've been added to an organization!"
+        )
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_user_permission_changed(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send user permission changed notification.
@@ -649,10 +618,10 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        old_permission = event_data.get('old_permission', 'Unknown')
-        new_permission = event_data.get('new_permission', 'Unknown')
-        changed_by = event_data.get('changed_by', 'Admin')
-        
+        old_permission = event_data.get("old_permission", "Unknown")
+        new_permission = event_data.get("new_permission", "Unknown")
+        changed_by = event_data.get("changed_by", "Admin")
+
         embed = self._create_embed(
             title="🔐 Permissions Updated",
             description="Your global permissions have been updated.",
@@ -662,16 +631,14 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("New Permission", new_permission, True),
                 ("Changed By", changed_by, False),
             ],
-            footer_text="Your access level has been modified"
+            footer_text="Your access level has been modified",
         )
 
         message = f"Hey {user.get_display_name()}, your permissions have been updated!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_organization_permission_changed(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send organization permission changed notification.
@@ -683,11 +650,11 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        org_name = event_data.get('organization_name', 'Unknown Organization')
-        old_permission = event_data.get('old_permission', 'Unknown')
-        new_permission = event_data.get('new_permission', 'Unknown')
-        changed_by = event_data.get('changed_by', 'Admin')
-        
+        org_name = event_data.get("organization_name", "Unknown Organization")
+        old_permission = event_data.get("old_permission", "Unknown")
+        new_permission = event_data.get("new_permission", "Unknown")
+        changed_by = event_data.get("changed_by", "Admin")
+
         embed = self._create_embed(
             title="🔐 Organization Permissions Updated",
             description=f"Your permissions in **{org_name}** have been updated.",
@@ -698,16 +665,14 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("New Permission", new_permission, True),
                 ("Changed By", changed_by, False),
             ],
-            footer_text="Your organization access level has been modified"
+            footer_text="Your organization access level has been modified",
         )
 
         message = f"Hey {user.get_display_name()}, your organization permissions have been updated!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_tournament_updated(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send tournament updated notification.
@@ -719,11 +684,11 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Unknown Tournament')
-        changed_fields = event_data.get('changed_fields', [])
-        
+        tournament_name = event_data.get("tournament_name", "Unknown Tournament")
+        changed_fields = event_data.get("changed_fields", [])
+
         fields_str = ", ".join(changed_fields) if changed_fields else "Multiple fields"
-        
+
         embed = self._create_embed(
             title="📝 Tournament Updated",
             description=f"**{tournament_name}** has been updated.",
@@ -732,16 +697,14 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Tournament", tournament_name, False),
                 ("Updated Fields", fields_str, False),
             ],
-            footer_text="Check the tournament page for details"
+            footer_text="Check the tournament page for details",
         )
 
         message = f"Hey {user.get_display_name()}, a tournament has been updated!"
         return await self._send_discord_dm(user, message, embed)
 
     async def _send_organization_member_removed(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send organization member removed notification.
@@ -753,9 +716,9 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        org_name = event_data.get('organization_name', 'Unknown Organization')
-        removed_by = event_data.get('removed_by', 'Admin')
-        
+        org_name = event_data.get("organization_name", "Unknown Organization")
+        removed_by = event_data.get("removed_by", "Admin")
+
         embed = self._create_embed(
             title="👋 Removed from Organization",
             description=f"You've been removed from **{org_name}**.",
@@ -764,7 +727,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Organization", org_name, False),
                 ("Removed By", removed_by, False),
             ],
-            footer_text="Contact an admin if you have questions"
+            footer_text="Contact an admin if you have questions",
         )
 
         return await self._send_discord_dm(user, "", embed=embed)
@@ -774,9 +737,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
     # =========================================================================
 
     async def _send_live_race_scheduled(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send notification for a newly scheduled live race.
@@ -788,10 +749,10 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Tournament')
-        pool_name = event_data.get('pool_name', 'Pool')
-        match_title = event_data.get('match_title', 'Live Race')
-        scheduled_at = event_data.get('scheduled_at', '')
+        tournament_name = event_data.get("tournament_name", "Tournament")
+        pool_name = event_data.get("pool_name", "Pool")
+        match_title = event_data.get("match_title", "Live Race")
+        scheduled_at = event_data.get("scheduled_at", "")
 
         embed = self._create_embed(
             title="🏁 Live Race Scheduled",
@@ -803,15 +764,13 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Title", match_title, True),
                 ("Scheduled Time", scheduled_at, False),
             ],
-            footer_text="The race room will open 30 minutes before the scheduled time"
+            footer_text="The race room will open 30 minutes before the scheduled time",
         )
 
         return await self._send_discord_dm(user, "", embed=embed)
 
     async def _send_live_race_room_opened(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send notification when a live race room opens on RaceTime.gg.
@@ -823,10 +782,10 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Tournament')
-        match_title = event_data.get('match_title', 'Live Race')
-        racetime_url = event_data.get('racetime_url', '')
-        scheduled_at = event_data.get('scheduled_at', '')
+        tournament_name = event_data.get("tournament_name", "Tournament")
+        match_title = event_data.get("match_title", "Live Race")
+        racetime_url = event_data.get("racetime_url", "")
+        scheduled_at = event_data.get("scheduled_at", "")
 
         embed = self._create_embed(
             title="🚪 Live Race Room Opened!",
@@ -838,15 +797,13 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Scheduled Time", scheduled_at, True),
                 ("Room Link", f"[Join on RaceTime.gg]({racetime_url})", False),
             ],
-            footer_text="Join the room and get ready to race!"
+            footer_text="Join the room and get ready to race!",
         )
 
         return await self._send_discord_dm(user, "", embed=embed)
 
     async def _send_live_race_started(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send notification when a live race starts.
@@ -858,10 +815,10 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Tournament')
-        match_title = event_data.get('match_title', 'Live Race')
-        racetime_url = event_data.get('racetime_url', '')
-        participant_count = event_data.get('participant_count', 0)
+        tournament_name = event_data.get("tournament_name", "Tournament")
+        match_title = event_data.get("match_title", "Live Race")
+        racetime_url = event_data.get("racetime_url", "")
+        participant_count = event_data.get("participant_count", 0)
 
         embed = self._create_embed(
             title="🏃 Live Race Started!",
@@ -872,15 +829,13 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Participants", str(participant_count), True),
                 ("Watch Live", f"[View on RaceTime.gg]({racetime_url})", False),
             ],
-            footer_text="Good luck to all racers!"
+            footer_text="Good luck to all racers!",
         )
 
         return await self._send_discord_dm(user, "", embed=embed)
 
     async def _send_live_race_finished(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send notification when a live race finishes.
@@ -892,10 +847,10 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Tournament')
-        match_title = event_data.get('match_title', 'Live Race')
-        racetime_url = event_data.get('racetime_url', '')
-        finisher_count = event_data.get('finisher_count', 0)
+        tournament_name = event_data.get("tournament_name", "Tournament")
+        match_title = event_data.get("match_title", "Live Race")
+        racetime_url = event_data.get("racetime_url", "")
+        finisher_count = event_data.get("finisher_count", 0)
 
         embed = self._create_embed(
             title="🏁 Live Race Finished!",
@@ -906,15 +861,13 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Finishers", str(finisher_count), True),
                 ("Results", f"[View Results]({racetime_url})", False),
             ],
-            footer_text="Results have been automatically recorded"
+            footer_text="Results have been automatically recorded",
         )
 
         return await self._send_discord_dm(user, "", embed=embed)
 
     async def _send_live_race_cancelled(
-        self,
-        user: User,
-        event_data: dict
+        self, user: User, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send notification when a live race is cancelled.
@@ -926,9 +879,9 @@ class DiscordNotificationHandler(BaseNotificationHandler):
         Returns:
             Tuple of (delivery_status, error_message)
         """
-        tournament_name = event_data.get('tournament_name', 'Tournament')
-        match_title = event_data.get('match_title', 'Live Race')
-        reason = event_data.get('reason', 'No reason provided')
+        tournament_name = event_data.get("tournament_name", "Tournament")
+        match_title = event_data.get("match_title", "Live Race")
+        reason = event_data.get("reason", "No reason provided")
 
         embed = self._create_embed(
             title="❌ Live Race Cancelled",
@@ -938,7 +891,7 @@ class DiscordNotificationHandler(BaseNotificationHandler):
                 ("Tournament", tournament_name, False),
                 ("Reason", reason, False),
             ],
-            footer_text="Contact tournament organizers for more information"
+            footer_text="Contact tournament organizers for more information",
         )
 
         return await self._send_discord_dm(user, "", embed=embed)

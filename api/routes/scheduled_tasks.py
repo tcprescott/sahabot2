@@ -28,7 +28,7 @@ router = APIRouter(prefix="/scheduled-tasks", tags=["scheduled-tasks"])
 )
 async def list_scheduled_tasks(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> ScheduledTaskListResponse:
     """
     List organization scheduled tasks.
@@ -67,7 +67,7 @@ async def list_scheduled_tasks(
 async def create_scheduled_task(
     data: ScheduledTaskCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> ScheduledTaskOut:
     """
     Create a new scheduled task.
@@ -102,7 +102,9 @@ async def create_scheduled_task(
     )
 
     if not task:
-        raise HTTPException(status_code=403, detail="Insufficient permissions to create scheduled task")
+        raise HTTPException(
+            status_code=403, detail="Insufficient permissions to create scheduled task"
+        )
 
     return ScheduledTaskOut.model_validate(task)
 
@@ -123,7 +125,7 @@ async def create_scheduled_task(
 async def get_scheduled_task(
     organization_id: int = Path(..., description="Organization ID"),
     task_id: int = Path(..., description="Scheduled task ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> ScheduledTaskOut:
     """
     Get a specific scheduled task.
@@ -170,7 +172,7 @@ async def update_scheduled_task(
     data: ScheduledTaskUpdateRequest,
     organization_id: int = Path(..., description="Organization ID"),
     task_id: int = Path(..., description="Scheduled task ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> ScheduledTaskOut:
     """
     Update a scheduled task.
@@ -195,10 +197,15 @@ async def update_scheduled_task(
     # Build update dict excluding None values
     update_data = {k: v for k, v in data.model_dump().items() if v is not None}
 
-    task = await service.update_task(current_user, organization_id, task_id, **update_data)
+    task = await service.update_task(
+        current_user, organization_id, task_id, **update_data
+    )
 
     if not task:
-        raise HTTPException(status_code=404, detail="Scheduled task not found or insufficient permissions")
+        raise HTTPException(
+            status_code=404,
+            detail="Scheduled task not found or insufficient permissions",
+        )
 
     return ScheduledTaskOut.model_validate(task)
 
@@ -220,7 +227,7 @@ async def update_scheduled_task(
 async def delete_scheduled_task(
     organization_id: int = Path(..., description="Organization ID"),
     task_id: int = Path(..., description="Scheduled task ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete a scheduled task.
@@ -240,7 +247,10 @@ async def delete_scheduled_task(
     success = await service.delete_task(current_user, organization_id, task_id)
 
     if not success:
-        raise HTTPException(status_code=404, detail="Scheduled task not found or insufficient permissions")
+        raise HTTPException(
+            status_code=404,
+            detail="Scheduled task not found or insufficient permissions",
+        )
 
 
 @router.post(
@@ -260,7 +270,7 @@ async def delete_scheduled_task(
 async def execute_scheduled_task_now(
     organization_id: int = Path(..., description="Organization ID"),
     task_id: int = Path(..., description="Scheduled task ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> dict:
     """
     Execute a scheduled task immediately.
@@ -284,7 +294,10 @@ async def execute_scheduled_task_now(
     success = await service.execute_task_now(current_user, organization_id, task_id)
 
     if not success:
-        raise HTTPException(status_code=404, detail="Scheduled task not found or insufficient permissions")
+        raise HTTPException(
+            status_code=404,
+            detail="Scheduled task not found or insufficient permissions",
+        )
 
     return {"message": "Task execution triggered successfully", "task_id": task_id}
 
@@ -300,9 +313,7 @@ async def execute_scheduled_task_now(
         429: {"description": "Rate limit exceeded"},
     },
 )
-async def get_scheduler_status(
-    current_user: User = Depends(get_current_user)
-) -> dict:
+async def get_scheduler_status(current_user: User = Depends(get_current_user)) -> dict:
     """
     Get task scheduler status.
 
@@ -317,5 +328,7 @@ async def get_scheduler_status(
     """
     return {
         "scheduler_running": TaskSchedulerService.is_running(),
-        "builtin_tasks": TaskSchedulerService.get_builtin_tasks_with_status(active_only=False),
+        "builtin_tasks": TaskSchedulerService.get_builtin_tasks_with_status(
+            active_only=False
+        ),
     }

@@ -4,6 +4,7 @@ Discord Scheduled Event models for tournament match integration.
 This module provides models for tracking Discord's native scheduled events
 that are automatically created for tournament matches.
 """
+
 from tortoise import fields
 from tortoise.models import Model
 
@@ -23,14 +24,16 @@ class DiscordScheduledEvent(Model):
     scheduled_event_id = fields.BigIntField(unique=True, index=True)
 
     # Match and organization relationships
-    match = fields.ForeignKeyField('models.Match', related_name='discord_events')
-    organization = fields.ForeignKeyField('models.Organization', related_name='discord_scheduled_events')
+    match = fields.ForeignKeyField("models.Match", related_name="discord_events")
+    organization = fields.ForeignKeyField(
+        "models.Organization", related_name="discord_scheduled_events"
+    )
 
     # Optional event slug for categorization (e.g., tournament abbreviation)
     event_slug = fields.CharField(max_length=40, null=True)
-    
+
     # Event status tracking (matches Discord's EventStatus: scheduled, active, completed, cancelled)
-    discord_status = fields.CharField(max_length=20, default='scheduled')
+    discord_status = fields.CharField(max_length=20, default="scheduled")
 
     # Timestamps
     created_at = fields.DatetimeField(auto_now_add=True)

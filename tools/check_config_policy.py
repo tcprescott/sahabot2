@@ -56,9 +56,15 @@ IGNORE_PATHS = {
 PATTERNS = [
     (re.compile(r"\bos\s*\.\s*environ\b"), "Direct env access via os.environ"),
     (re.compile(r"\bos\s*\.\s*getenv\b"), "Direct env access via os.getenv"),
-    (re.compile(r"from\s+os\s+import\s+(?:environ|getenv)\b"), "Importing environ/getenv from os"),
+    (
+        re.compile(r"from\s+os\s+import\s+(?:environ|getenv)\b"),
+        "Importing environ/getenv from os",
+    ),
     (re.compile(r"\bload_dotenv\b"), "Loading dotenv directly (use Pydantic Settings)"),
-    (re.compile(r"\bdotenv_values\b"), "Loading dotenv values directly (use Pydantic Settings)"),
+    (
+        re.compile(r"\bdotenv_values\b"),
+        "Loading dotenv values directly (use Pydantic Settings)",
+    ),
 ]
 
 
@@ -111,9 +117,13 @@ def main() -> int:
 
     if all_violations:
         print("Config policy violations found:\n")
-        for rel, lineno, message in sorted(all_violations, key=lambda t: (str(t[0]), t[1])):
+        for rel, lineno, message in sorted(
+            all_violations, key=lambda t: (str(t[0]), t[1])
+        ):
             print(f"{rel}:{lineno}: {message}")
-        print("\nPlease use 'from config import settings' instead of reading environment variables directly.")
+        print(
+            "\nPlease use 'from config import settings' instead of reading environment variables directly."
+        )
         return 1
 
     print("Config policy checks passed: no direct environment access detected.")

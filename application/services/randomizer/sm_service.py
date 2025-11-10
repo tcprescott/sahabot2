@@ -14,7 +14,7 @@ from .randomizer_service import RandomizerResult
 logger = logging.getLogger(__name__)
 
 # Type alias for randomizer types
-SMRandomizerType = Literal['varia', 'dash', 'total', 'multiworld']
+SMRandomizerType = Literal["varia", "dash", "total", "multiworld"]
 
 
 class SMService:
@@ -38,7 +38,7 @@ class SMService:
         settings: Dict[str, Any],
         tournament: bool = True,
         spoilers: bool = False,
-        spoiler_key: Optional[str] = None
+        spoiler_key: Optional[str] = None,
     ) -> RandomizerResult:
         """
         Generate a VARIA Super Metroid randomizer seed.
@@ -56,33 +56,33 @@ class SMService:
             httpx.HTTPError: If the API request fails
         """
         # Set race mode (VARIA API expects string "true"/"false")
-        settings['race'] = "true" if tournament else "false"
+        settings["race"] = "true" if tournament else "false"
 
         # Add spoiler key if requested
         if spoilers and spoiler_key:
-            settings['spoilerKey'] = spoiler_key
+            settings["spoilerKey"] = spoiler_key
 
         logger.info("Generating VARIA seed with race=%s", tournament)
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.varia_baseurl}/api/randomize",
-                json=settings,
-                timeout=60.0
+                f"{self.varia_baseurl}/api/randomize", json=settings, timeout=60.0
             )
             response.raise_for_status()
             result = response.json()
 
         # Extract data from response
-        slug_id = result.get('slug', result.get('id', 'unknown'))
-        guid = result.get('guid', slug_id)
+        slug_id = result.get("slug", result.get("id", "unknown"))
+        guid = result.get("guid", slug_id)
 
         seed_url = f"{self.varia_baseurl}/seed/{slug_id}"
 
         # Construct spoiler URL if applicable
         spoiler_url = None
         if spoilers and spoiler_key and guid:
-            spoiler_url = f"{self.varia_baseurl}/api/spoiler/{guid}?key={spoiler_key}&yaml=true"
+            spoiler_url = (
+                f"{self.varia_baseurl}/api/spoiler/{guid}?key={spoiler_key}&yaml=true"
+            )
 
         logger.info("Generated VARIA seed with slug %s", slug_id)
 
@@ -90,22 +90,14 @@ class SMService:
             url=seed_url,
             hash_id=slug_id,
             settings=settings,
-            randomizer='sm-varia',
+            randomizer="sm-varia",
             permalink=seed_url,
             spoiler_url=spoiler_url,
-            metadata={
-                'guid': guid,
-                'slug': slug_id,
-                'type': 'varia',
-                **result
-            }
+            metadata={"guid": guid, "slug": slug_id, "type": "varia", **result},
         )
 
     async def generate_dash(
-        self,
-        settings: Dict[str, Any],
-        tournament: bool = True,
-        spoilers: bool = False
+        self, settings: Dict[str, Any], tournament: bool = True, spoilers: bool = False
     ) -> RandomizerResult:
         """
         Generate a DASH Super Metroid randomizer seed.
@@ -122,31 +114,26 @@ class SMService:
             httpx.HTTPError: If the API request fails
         """
         # DASH API expects boolean for 'race' (unlike VARIA which uses string)
-        payload = {
-            **settings,
-            'race': tournament
-        }
+        payload = {**settings, "race": tournament}
 
         logger.info("Generating DASH seed with race=%s", tournament)
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.dash_baseurl}/api/generate",
-                json=payload,
-                timeout=60.0
+                f"{self.dash_baseurl}/api/generate", json=payload, timeout=60.0
             )
             response.raise_for_status()
             result = response.json()
 
         # Extract data from response
-        seed_id = result.get('id', result.get('seed', 'unknown'))
-        hash_value = result.get('hash', seed_id)
+        seed_id = result.get("id", result.get("seed", "unknown"))
+        hash_value = result.get("hash", seed_id)
 
         seed_url = f"{self.dash_baseurl}/seed/{seed_id}"
 
         # DASH spoiler log handling
         spoiler_url = None
-        if spoilers and result.get('spoiler_url'):
+        if spoilers and result.get("spoiler_url"):
             spoiler_url = f"{self.dash_baseurl}{result['spoiler_url']}"
 
         logger.info("Generated DASH seed with ID %s", seed_id)
@@ -155,24 +142,19 @@ class SMService:
             url=seed_url,
             hash_id=hash_value,
             settings=settings,
-            randomizer='sm-dash',
+            randomizer="sm-dash",
             permalink=seed_url,
             spoiler_url=spoiler_url,
-            metadata={
-                'id': seed_id,
-                'hash': hash_value,
-                'type': 'dash',
-                **result
-            }
+            metadata={"id": seed_id, "hash": hash_value, "type": "dash", **result},
         )
 
     async def generate(
         self,
         settings: Dict[str, Any],
-        randomizer_type: SMRandomizerType = 'varia',
+        randomizer_type: SMRandomizerType = "varia",
         tournament: bool = True,
         spoilers: bool = False,
-        spoiler_key: Optional[str] = None
+        spoiler_key: Optional[str] = None,
     ) -> RandomizerResult:
         """
         Generate a Super Metroid randomizer seed.
@@ -193,26 +175,27 @@ class SMService:
             httpx.HTTPError: If the API request fails
             ValueError: If randomizer_type is not recognized
         """
-        if randomizer_type == 'varia':
-            return await self.generate_varia(settings, tournament, spoilers, spoiler_key)
-        elif randomizer_type == 'dash':
+        if randomizer_type == "varia":
+            return await self.generate_varia(
+                settings, tournament, spoilers, spoiler_key
+            )
+        elif randomizer_type == "dash":
             return await self.generate_dash(settings, tournament, spoilers)
-        elif randomizer_type == 'total':
+        elif randomizer_type == "total":
             # Total randomization uses DASH with all options enabled
             total_settings = {
                 **settings,
-                'area_rando': True,
-                'major_minor_split': True,
-                'boss_rando': True
+                "area_rando": True,
+                "major_minor_split": True,
+                "boss_rando": True,
             }
             return await self.generate_dash(total_settings, tournament, spoilers)
-        elif randomizer_type == 'multiworld':
+        elif randomizer_type == "multiworld":
             # Multiworld uses VARIA with multiworld settings
-            multiworld_settings = {
-                **settings,
-                'multiworld': True
-            }
-            return await self.generate_varia(multiworld_settings, tournament, spoilers, spoiler_key)
+            multiworld_settings = {**settings, "multiworld": True}
+            return await self.generate_varia(
+                multiworld_settings, tournament, spoilers, spoiler_key
+            )
         else:
             raise ValueError(
                 f"Unknown SM randomizer type: {randomizer_type}. "

@@ -24,7 +24,9 @@ class PresetNamespaceRepository:
         Returns:
             PresetNamespace if found, None otherwise
         """
-        return await PresetNamespace.get_or_none(id=namespace_id).prefetch_related('user', 'organization')
+        return await PresetNamespace.get_or_none(id=namespace_id).prefetch_related(
+            "user", "organization"
+        )
 
     async def get_by_name(self, name: str) -> Optional[PresetNamespace]:
         """
@@ -36,7 +38,9 @@ class PresetNamespaceRepository:
         Returns:
             PresetNamespace if found, None otherwise
         """
-        return await PresetNamespace.get_or_none(name=name).prefetch_related('user', 'organization')
+        return await PresetNamespace.get_or_none(name=name).prefetch_related(
+            "user", "organization"
+        )
 
     async def get_user_namespace(self, user: User) -> Optional[PresetNamespace]:
         """
@@ -48,9 +52,13 @@ class PresetNamespaceRepository:
         Returns:
             PresetNamespace if found, None otherwise
         """
-        return await PresetNamespace.get_or_none(user=user).prefetch_related('user', 'organization')
+        return await PresetNamespace.get_or_none(user=user).prefetch_related(
+            "user", "organization"
+        )
 
-    async def get_organization_namespace(self, organization: Organization) -> Optional[PresetNamespace]:
+    async def get_organization_namespace(
+        self, organization: Organization
+    ) -> Optional[PresetNamespace]:
         """
         Get an organization's namespace.
 
@@ -60,7 +68,9 @@ class PresetNamespaceRepository:
         Returns:
             PresetNamespace if found, None otherwise
         """
-        return await PresetNamespace.get_or_none(organization=organization).prefetch_related('user', 'organization')
+        return await PresetNamespace.get_or_none(
+            organization=organization
+        ).prefetch_related("user", "organization")
 
     async def list_public_namespaces(self) -> list[PresetNamespace]:
         """
@@ -69,9 +79,15 @@ class PresetNamespaceRepository:
         Returns:
             List of public namespaces
         """
-        return await PresetNamespace.filter(is_public=True).prefetch_related('user', 'organization').order_by('name')
+        return (
+            await PresetNamespace.filter(is_public=True)
+            .prefetch_related("user", "organization")
+            .order_by("name")
+        )
 
-    async def list_user_accessible_namespaces(self, user: User) -> list[PresetNamespace]:
+    async def list_user_accessible_namespaces(
+        self, user: User
+    ) -> list[PresetNamespace]:
         """
         List all namespaces accessible to a user.
 
@@ -87,13 +103,13 @@ class PresetNamespaceRepository:
             List of accessible namespaces
         """
         # Get user's own namespace + public ones
-        namespaces = await PresetNamespace.filter(
-            user_id=user.id
-        ).prefetch_related('user', 'organization')
+        namespaces = await PresetNamespace.filter(user_id=user.id).prefetch_related(
+            "user", "organization"
+        )
 
         public_namespaces = await PresetNamespace.filter(
             is_public=True
-        ).prefetch_related('user', 'organization')
+        ).prefetch_related("user", "organization")
 
         # Combine and deduplicate
         all_namespaces = {ns.id: ns for ns in namespaces + public_namespaces}
@@ -105,7 +121,7 @@ class PresetNamespaceRepository:
         name: str,
         display_name: str,
         description: Optional[str] = None,
-        is_public: bool = True
+        is_public: bool = True,
     ) -> PresetNamespace:
         """
         Create a personal namespace for a user.
@@ -125,14 +141,10 @@ class PresetNamespaceRepository:
             name=name,
             display_name=display_name,
             description=description,
-            is_public=is_public
+            is_public=is_public,
         )
-        await namespace.fetch_related('user', 'organization')
-        logger.info(
-            "Created user namespace '%s' for user %s",
-            name,
-            user.id
-        )
+        await namespace.fetch_related("user", "organization")
+        logger.info("Created user namespace '%s' for user %s", name, user.id)
         return namespace
 
     async def create_organization_namespace(
@@ -141,7 +153,7 @@ class PresetNamespaceRepository:
         name: str,
         display_name: str,
         description: Optional[str] = None,
-        is_public: bool = True
+        is_public: bool = True,
     ) -> PresetNamespace:
         """
         Create a namespace for an organization.
@@ -161,13 +173,13 @@ class PresetNamespaceRepository:
             name=name,
             display_name=display_name,
             description=description,
-            is_public=is_public
+            is_public=is_public,
         )
-        await namespace.fetch_related('user', 'organization')
+        await namespace.fetch_related("user", "organization")
         logger.info(
             "Created organization namespace '%s' for organization %s",
             name,
-            organization.id
+            organization.id,
         )
         return namespace
 
@@ -187,7 +199,7 @@ class PresetNamespaceRepository:
             return None
 
         # Only allow updating specific fields
-        allowed_fields = {'display_name', 'description', 'is_public'}
+        allowed_fields = {"display_name", "description", "is_public"}
         update_fields = {k: v for k, v in fields.items() if k in allowed_fields}
 
         if update_fields:
@@ -197,7 +209,7 @@ class PresetNamespaceRepository:
                 "Updated namespace '%s' (id=%s) fields: %s",
                 namespace.name,
                 namespace_id,
-                list(update_fields.keys())
+                list(update_fields.keys()),
             )
 
         return namespace
@@ -209,7 +221,11 @@ class PresetNamespaceRepository:
         Returns:
             List of all namespaces
         """
-        return await PresetNamespace.all().prefetch_related('user', 'organization', 'presets').order_by('-created_at')
+        return (
+            await PresetNamespace.all()
+            .prefetch_related("user", "organization", "presets")
+            .order_by("-created_at")
+        )
 
     async def delete(self, namespace_id: int) -> bool:
         """

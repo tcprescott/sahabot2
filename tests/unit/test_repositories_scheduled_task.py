@@ -103,9 +103,10 @@ class TestScheduledTaskRepository:
     async def test_list_by_org(self, db, sample_organization):
         """Test listing tasks by organization."""
         repo = ScheduledTaskRepository()
-        
+
         # Create second organization for testing
         from models.organizations import Organization
+
         org2 = await Organization.create(name="Test Org 2", slug="test-org-2")
 
         # Create tasks for different orgs
@@ -158,7 +159,9 @@ class TestScheduledTaskRepository:
             is_active=False,
         )
 
-        active_tasks = await repo.list_by_org(organization_id=sample_organization.id, active_only=True)
+        active_tasks = await repo.list_by_org(
+            organization_id=sample_organization.id, active_only=True
+        )
 
         assert len(active_tasks) == 1
         assert active_tasks[0].name == "Active Task"
@@ -220,13 +223,13 @@ class TestScheduledTaskRepository:
 
         updated_task = await repo.update_run_status(
             task_id=task.id,
-            status='success',
+            status="success",
             last_run_at=now,
             next_run_at=next_run,
         )
 
         assert updated_task is not None
-        assert updated_task.last_run_status == 'success'
+        assert updated_task.last_run_status == "success"
         assert updated_task.last_run_at is not None
         assert updated_task.next_run_at == next_run
 

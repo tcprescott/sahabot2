@@ -6,8 +6,17 @@ Tests the data access layer for Discord scheduled event operations.
 
 import pytest
 from datetime import datetime, timezone
-from application.repositories.discord_scheduled_event_repository import DiscordScheduledEventRepository
-from models import DiscordScheduledEvent, Organization, Tournament, Match, User, Permission
+from application.repositories.discord_scheduled_event_repository import (
+    DiscordScheduledEventRepository,
+)
+from models import (
+    DiscordScheduledEvent,
+    Organization,
+    Tournament,
+    Match,
+    User,
+    Permission,
+)
 
 
 @pytest.fixture
@@ -125,7 +134,9 @@ class TestDiscordScheduledEventRepository:
         assert event.id == sample_event.id
         assert event.scheduled_event_id == 1234567890
 
-    async def test_list_for_tournament(self, db, sample_org, sample_tournament, sample_match, sample_event):
+    async def test_list_for_tournament(
+        self, db, sample_org, sample_tournament, sample_match, sample_event
+    ):
         """Test listing events for a tournament."""
         repo = DiscordScheduledEventRepository()
 

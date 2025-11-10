@@ -27,9 +27,7 @@ class TwitchUnlinkDialog(BaseDialog):
     async def show(self):
         """Display the dialog."""
         self.create_dialog(
-            title='Unlink Twitch Account',
-            icon='link_off',
-            max_width='500px'
+            title="Unlink Twitch Account", icon="link_off", max_width="500px"
         )
 
         await super().show()
@@ -37,63 +35,60 @@ class TwitchUnlinkDialog(BaseDialog):
     def _render_body(self):
         """Render dialog content."""
         # Warning message
-        with ui.element('div').classes('w-full'):
-            ui.label('⚠️ Administrative Account Unlinking').classes(
-                'text-lg font-bold text-orange-600'
+        with ui.element("div").classes("w-full"):
+            ui.label("⚠️ Administrative Account Unlinking").classes(
+                "text-lg font-bold text-orange-600"
             )
             ui.separator()
 
             # User info
-            self.create_section_title('User Information')
-            self.create_info_row('Discord Username', self.user.discord_username)
-            self.create_info_row('Discord ID', str(self.user.discord_id))
+            self.create_section_title("User Information")
+            self.create_info_row("Discord Username", self.user.discord_username)
+            self.create_info_row("Discord ID", str(self.user.discord_id))
 
             ui.separator()
 
             # Twitch info
-            self.create_section_title('Twitch Account')
-            self.create_info_row('Twitch Display Name', self.user.twitch_display_name)
-            self.create_info_row('Twitch Username', self.user.twitch_name)
-            self.create_info_row('Twitch ID', self.user.twitch_id)
+            self.create_section_title("Twitch Account")
+            self.create_info_row("Twitch Display Name", self.user.twitch_display_name)
+            self.create_info_row("Twitch Username", self.user.twitch_name)
+            self.create_info_row("Twitch ID", self.user.twitch_id)
 
             ui.separator()
 
             # Confirmation message
-            with ui.element('div').classes('w-full bg-red-50 p-3 rounded'):
+            with ui.element("div").classes("w-full bg-red-50 p-3 rounded"):
+                ui.label("This will unlink the Twitch account from this user.").classes(
+                    "text-sm"
+                )
                 ui.label(
-                    'This will unlink the Twitch account from this user.'
-                ).classes('text-sm')
-                ui.label(
-                    'The user will need to re-link their account if they '
-                    'want to use Twitch features.'
-                ).classes('text-sm text-gray-600 mt-2')
+                    "The user will need to re-link their account if they "
+                    "want to use Twitch features."
+                ).classes("text-sm text-gray-600 mt-2")
 
         ui.separator()
 
         # Actions
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button(
-                'Unlink Account',
-                on_click=self._unlink,
-                icon='link_off'
-            ).classes('btn').props('color=negative')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Unlink Account", on_click=self._unlink, icon="link_off").classes(
+                "btn"
+            ).props("color=negative")
 
     async def _unlink(self):
         """Unlink the account."""
         # Call service
         result = await self.user_service.admin_unlink_twitch_account(
-            user_id=self.user.id,
-            admin_user=self.admin_user
+            user_id=self.user.id, admin_user=self.admin_user
         )
 
         if not result:
-            ui.notify('Failed to unlink account', type='negative')
+            ui.notify("Failed to unlink account", type="negative")
             return
 
         ui.notify(
-            f'Twitch account unlinked from {self.user.discord_username}',
-            type='positive'
+            f"Twitch account unlinked from {self.user.discord_username}",
+            type="positive",
         )
 
         # Call callback

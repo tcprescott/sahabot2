@@ -3,6 +3,7 @@ RaceTime Bot service.
 
 Business logic for managing RaceTime bots and their organization assignments.
 """
+
 import logging
 from typing import Optional
 from models import User, Permission, RacetimeBot, RacetimeBotOrganization, Organization
@@ -91,7 +92,7 @@ class RacetimeBotService:
         description: Optional[str],
         is_active: bool,
         current_user: User,
-        handler_class: str = 'SahaRaceHandler',
+        handler_class: str = "SahaRaceHandler",
     ) -> Optional[RacetimeBot]:
         """
         Create a new RaceTime bot.
@@ -114,7 +115,7 @@ class RacetimeBotService:
         if not current_user or not current_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "Unauthorized attempt to create RaceTime bot by user %s",
-                getattr(current_user, 'id', None),
+                getattr(current_user, "id", None),
             )
             return None
 
@@ -169,7 +170,7 @@ class RacetimeBotService:
             logger.warning(
                 "Unauthorized attempt to update RaceTime bot %s by user %s",
                 bot_id,
-                getattr(current_user, 'id', None),
+                getattr(current_user, "id", None),
             )
             return None
 
@@ -179,8 +180,8 @@ class RacetimeBotService:
             return None
 
         # If updating category, check for duplicates
-        if 'category' in updates:
-            existing = await self.repository.get_bot_by_category(updates['category'])
+        if "category" in updates:
+            existing = await self.repository.get_bot_by_category(updates["category"])
             if existing and existing.id != bot_id:
                 raise ValueError(
                     f"Bot for category '{updates['category']}' already exists"
@@ -192,40 +193,50 @@ class RacetimeBotService:
             return None
 
         # Handle bot lifecycle changes when is_active is modified
-        logger.debug("Checking for is_active change. updates keys: %s", list(updates.keys()))
-        if 'is_active' in updates:
+        logger.debug(
+            "Checking for is_active change. updates keys: %s", list(updates.keys())
+        )
+        if "is_active" in updates:
             # Import here to avoid circular dependency
             from racetime.client import start_racetime_bot, stop_racetime_bot
-            
+
             was_active = old_bot.is_active
-            is_now_active = updates['is_active']
+            is_now_active = updates["is_active"]
             logger.info(
                 "Bot is_active changed: was_active=%s, is_now_active=%s",
                 was_active,
-                is_now_active
+                is_now_active,
             )
 
             if was_active and not is_now_active:
                 # Bot was deactivated - stop it
-                logger.info("Stopping RaceTime bot for category %s (deactivated)", bot.category)
+                logger.info(
+                    "Stopping RaceTime bot for category %s (deactivated)", bot.category
+                )
                 try:
                     await stop_racetime_bot(bot.category)
                 except Exception as e:
-                    logger.error("Failed to stop bot %s: %s", bot.category, e, exc_info=True)
+                    logger.error(
+                        "Failed to stop bot %s: %s", bot.category, e, exc_info=True
+                    )
 
             elif not was_active and is_now_active:
                 # Bot was activated - start it
-                logger.info("Starting RaceTime bot for category %s (activated)", bot.category)
+                logger.info(
+                    "Starting RaceTime bot for category %s (activated)", bot.category
+                )
                 try:
                     await start_racetime_bot(
                         bot.category,
                         bot.client_id,
                         bot.client_secret,
                         bot_id=bot.id,
-                        handler_class_name=bot.handler_class
+                        handler_class_name=bot.handler_class,
                     )
                 except Exception as e:
-                    logger.error("Failed to start bot %s: %s", bot.category, e, exc_info=True)
+                    logger.error(
+                        "Failed to start bot %s: %s", bot.category, e, exc_info=True
+                    )
 
         # Emit event
         await EventBus.emit(
@@ -296,7 +307,7 @@ class RacetimeBotService:
             logger.warning(
                 "Unauthorized attempt to restart RaceTime bot %s by user %s",
                 bot_id,
-                getattr(current_user, 'id', None),
+                getattr(current_user, "id", None),
             )
             return False
 
@@ -321,6 +332,7 @@ class RacetimeBotService:
 
             # Small delay to ensure cleanup completes
             import asyncio
+
             await asyncio.sleep(0.5)
 
             # Start the bot again
@@ -330,7 +342,7 @@ class RacetimeBotService:
                 bot.client_id,
                 bot.client_secret,
                 bot_id=bot.id,
-                handler_class_name=bot.handler_class
+                handler_class_name=bot.handler_class,
             )
 
             logger.info("Successfully restarted bot %s", bot.category)
@@ -359,7 +371,10 @@ class RacetimeBotService:
             return []
 
         # Check if user has access to this organization
-        is_member = await self.org_repository.get_member(organization_id, current_user.id) is not None
+        is_member = (
+            await self.org_repository.get_member(organization_id, current_user.id)
+            is not None
+        )
 
         if not is_member and not current_user.has_permission(Permission.ADMIN):
             logger.warning(
@@ -392,13 +407,11 @@ class RacetimeBotService:
                 "Unauthorized attempt to assign bot %s to org %s by user %s",
                 bot_id,
                 organization_id,
-                getattr(current_user, 'id', None),
+                getattr(current_user, "id", None),
             )
             return None
 
-        return await self.repository.assign_bot_to_organization(
-            bot_id, organization_id
-        )
+        return await self.repository.assign_bot_to_organization(bot_id, organization_id)
 
     async def unassign_bot_from_organization(
         self, bot_id: int, organization_id: int, current_user: User
@@ -421,7 +434,7 @@ class RacetimeBotService:
                 "Unauthorized attempt to unassign bot %s from org %s by user %s",
                 bot_id,
                 organization_id,
-                getattr(current_user, 'id', None),
+                getattr(current_user, "id", None),
             )
             return False
 
@@ -448,7 +461,7 @@ class RacetimeBotService:
             logger.warning(
                 "Unauthorized attempt to view orgs for bot %s by user %s",
                 bot_id,
-                getattr(current_user, 'id', None),
+                getattr(current_user, "id", None),
             )
             return []
 

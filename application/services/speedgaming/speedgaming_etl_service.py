@@ -80,23 +80,19 @@ class SpeedGamingETLService:
                 logger.info(
                     "Matched player '%s' to existing user %s by Discord ID",
                     sg_player.display_name,
-                    user.id
+                    user.id,
                 )
 
                 # Ensure user is a member of the organization
                 member = await OrganizationMember.get_or_none(
-                    organization_id=organization_id,
-                    user_id=user.id
+                    organization_id=organization_id, user_id=user.id
                 )
                 if not member:
                     await OrganizationMember.create(
-                        organization_id=organization_id,
-                        user_id=user.id
+                        organization_id=organization_id, user_id=user.id
                     )
                     logger.info(
-                        "Added user %s to organization %s",
-                        user.id,
-                        organization_id
+                        "Added user %s to organization %s", user.id, organization_id
                     )
 
                 return user
@@ -104,8 +100,12 @@ class SpeedGamingETLService:
         # Try to find user by Discord username (from discord_tag)
         if sg_player.discord_tag:
             # Parse username from discord_tag (format: "username#discriminator")
-            discord_username = sg_player.discord_tag.split("#")[0] if "#" in sg_player.discord_tag else sg_player.discord_tag
-            
+            discord_username = (
+                sg_player.discord_tag.split("#")[0]
+                if "#" in sg_player.discord_tag
+                else sg_player.discord_tag
+            )
+
             if discord_username:
                 user = await User.get_or_none(discord_username=discord_username)
                 if user:
@@ -113,42 +113,34 @@ class SpeedGamingETLService:
                         "Matched player '%s' to existing user %s by Discord username '%s'",
                         sg_player.display_name,
                         user.id,
-                        discord_username
+                        discord_username,
                     )
 
                     # Ensure user is a member of the organization
                     member = await OrganizationMember.get_or_none(
-                        organization_id=organization_id,
-                        user_id=user.id
+                        organization_id=organization_id, user_id=user.id
                     )
                     if not member:
                         await OrganizationMember.create(
-                            organization_id=organization_id,
-                            user_id=user.id
+                            organization_id=organization_id, user_id=user.id
                         )
                         logger.info(
-                            "Added user %s to organization %s",
-                            user.id,
-                            organization_id
+                            "Added user %s to organization %s", user.id, organization_id
                         )
 
                     return user
 
         # Try to find placeholder user by SpeedGaming ID (might need to upgrade to full user)
-        user = await User.get_or_none(
-            is_placeholder=True,
-            speedgaming_id=sg_player.id
-        )
-        
+        user = await User.get_or_none(is_placeholder=True, speedgaming_id=sg_player.id)
+
         if user:
             # If we now have a Discord ID, check if a real user with that ID already exists
             if sg_player.discord_id_int:
                 # Check if there's already a real user with this Discord ID
                 existing_real_user = await User.get_or_none(
-                    discord_id=sg_player.discord_id_int,
-                    is_placeholder=False
+                    discord_id=sg_player.discord_id_int, is_placeholder=False
                 )
-                
+
                 if existing_real_user:
                     # A real user with this Discord ID exists - use that instead
                     logger.info(
@@ -156,43 +148,46 @@ class SpeedGamingETLService:
                         existing_real_user.id,
                         sg_player.discord_id_int,
                         user.id,
-                        sg_player.id
+                        sg_player.id,
                     )
-                    
+
                     # TODO: In the future, we could merge the placeholder into the real user
                     # For now, we'll use the real user and leave the placeholder
-                    
+
                     # Ensure real user is a member of the organization
                     member = await OrganizationMember.get_or_none(
-                        organization_id=organization_id,
-                        user_id=existing_real_user.id
+                        organization_id=organization_id, user_id=existing_real_user.id
                     )
                     if not member:
                         await OrganizationMember.create(
                             organization_id=organization_id,
-                            user_id=existing_real_user.id
+                            user_id=existing_real_user.id,
                         )
                         logger.info(
                             "Added existing real user %s to organization %s",
                             existing_real_user.id,
-                            organization_id
+                            organization_id,
                         )
-                    
+
                     return existing_real_user
-                
+
                 # No existing real user - upgrade the placeholder
                 if not user.discord_id:
                     logger.info(
                         "Upgrading placeholder user %s to full user with Discord ID %s",
                         user.id,
-                        sg_player.discord_id_int
+                        sg_player.discord_id_int,
                     )
-                    
+
                     # Best-effort username from discord_tag
                     discord_username = None
                     if sg_player.discord_tag:
-                        discord_username = sg_player.discord_tag.split("#")[0] if "#" in sg_player.discord_tag else sg_player.discord_tag
-                    
+                        discord_username = (
+                            sg_player.discord_tag.split("#")[0]
+                            if "#" in sg_player.discord_tag
+                            else sg_player.discord_tag
+                        )
+
                     if not discord_username:
                         # Fallback: use display name or streaming username
                         discord_username = (
@@ -200,26 +195,25 @@ class SpeedGamingETLService:
                             or sg_player.display_name
                             or f"user_{sg_player.discord_id_int}"
                         )
-                    
+
                     user.discord_id = sg_player.discord_id_int
                     user.discord_username = discord_username
                     user.is_placeholder = False  # No longer a placeholder
                     await user.save()
-                    
+
                     logger.info(
                         "Upgraded user %s: discord_id=%s, username=%s",
                         user.id,
                         user.discord_id,
-                        user.discord_username
+                        user.discord_username,
                     )
                     return user
-            
+
             # Still a placeholder (no Discord ID provided), just update display name if needed
             logger.info(
-                "Found existing placeholder user for SG player %s",
-                sg_player.id
+                "Found existing placeholder user for SG player %s", sg_player.id
             )
-            
+
             # Update display name if it has changed
             new_display_name = (
                 sg_player.streaming_from
@@ -227,30 +221,34 @@ class SpeedGamingETLService:
                 or sg_player.display_name
                 or f"sg_{sg_player.id}"
             )
-            
+
             if user.display_name != new_display_name:
                 logger.info(
                     "Updating placeholder user %s display name: %s -> %s",
                     user.id,
                     user.display_name,
-                    new_display_name
+                    new_display_name,
                 )
                 user.display_name = new_display_name
                 await user.save()
-            
+
             return user
 
         # Create new user
         # If we have a Discord ID, create full user; otherwise create placeholder
-        
+
         # Determine username
         if sg_player.discord_id_int:
             # We have Discord ID - create full user with best-effort username
             discord_id = sg_player.discord_id_int
-            
+
             # Try to extract username from discord_tag
             if sg_player.discord_tag:
-                discord_username = sg_player.discord_tag.split("#")[0] if "#" in sg_player.discord_tag else sg_player.discord_tag
+                discord_username = (
+                    sg_player.discord_tag.split("#")[0]
+                    if "#" in sg_player.discord_tag
+                    else sg_player.discord_tag
+                )
             else:
                 # Best effort: use streaming name, display name, or generic fallback
                 discord_username = (
@@ -258,13 +256,13 @@ class SpeedGamingETLService:
                     or sg_player.display_name
                     or f"user_{discord_id}"
                 )
-            
+
             is_placeholder = False
             logger.info(
                 "Creating full user with Discord ID %s (username: %s) for SpeedGaming player '%s'",
                 discord_id,
                 discord_username,
-                sg_player.display_name
+                sg_player.display_name,
             )
         else:
             # No Discord ID - create placeholder
@@ -273,7 +271,7 @@ class SpeedGamingETLService:
             is_placeholder = True
             logger.info(
                 "Creating placeholder user for SpeedGaming player '%s' (no Discord ID available)",
-                sg_player.display_name
+                sg_player.display_name,
             )
 
         # Determine best display name
@@ -289,14 +287,18 @@ class SpeedGamingETLService:
         user = await User.create(
             discord_id=discord_id,
             discord_username=discord_username,
-            discord_discriminator="0000" if sg_player.discord_tag and "#" in sg_player.discord_tag else None,
+            discord_discriminator=(
+                "0000"
+                if sg_player.discord_tag and "#" in sg_player.discord_tag
+                else None
+            ),
             discord_avatar=None,
             discord_email=None,
             display_name=display_name,
             is_placeholder=is_placeholder,
             speedgaming_id=sg_player.id,  # Store SpeedGaming ID for tracking
         )
-        
+
         user_type = "placeholder" if is_placeholder else "full"
         logger.info(
             "Created %s user %s for SpeedGaming player '%s' "
@@ -306,19 +308,14 @@ class SpeedGamingETLService:
             sg_player.display_name,
             sg_player.id,
             discord_id,
-            display_name
+            display_name,
         )
 
         # Add to organization
         await OrganizationMember.create(
-            organization_id=organization_id,
-            user_id=user.id
+            organization_id=organization_id, user_id=user.id
         )
-        logger.info(
-            "Added user %s to organization %s",
-            user.id,
-            organization_id
-        )
+        logger.info("Added user %s to organization %s", user.id, organization_id)
 
         return user
 
@@ -350,23 +347,21 @@ class SpeedGamingETLService:
                 logger.info(
                     "Matched crew '%s' to existing user %s by Discord ID",
                     sg_crew.display_name,
-                    user.id
+                    user.id,
                 )
 
                 # Ensure user is a member of the organization
                 member = await OrganizationMember.get_or_none(
-                    organization_id=organization_id,
-                    user_id=user.id
+                    organization_id=organization_id, user_id=user.id
                 )
                 if not member:
                     await OrganizationMember.create(
-                        organization_id=organization_id,
-                        user_id=user.id
+                        organization_id=organization_id, user_id=user.id
                     )
                     logger.info(
                         "Added crew user %s to organization %s",
                         user.id,
-                        organization_id
+                        organization_id,
                     )
 
                 return user
@@ -374,8 +369,12 @@ class SpeedGamingETLService:
         # Try to find user by Discord username (from discord_tag)
         if sg_crew.discord_tag:
             # Parse username from discord_tag (format: "username#discriminator")
-            discord_username = sg_crew.discord_tag.split("#")[0] if "#" in sg_crew.discord_tag else sg_crew.discord_tag
-            
+            discord_username = (
+                sg_crew.discord_tag.split("#")[0]
+                if "#" in sg_crew.discord_tag
+                else sg_crew.discord_tag
+            )
+
             if discord_username:
                 user = await User.get_or_none(discord_username=discord_username)
                 if user:
@@ -383,42 +382,36 @@ class SpeedGamingETLService:
                         "Matched crew '%s' to existing user %s by Discord username '%s'",
                         sg_crew.display_name,
                         user.id,
-                        discord_username
+                        discord_username,
                     )
 
                     # Ensure user is a member of the organization
                     member = await OrganizationMember.get_or_none(
-                        organization_id=organization_id,
-                        user_id=user.id
+                        organization_id=organization_id, user_id=user.id
                     )
                     if not member:
                         await OrganizationMember.create(
-                            organization_id=organization_id,
-                            user_id=user.id
+                            organization_id=organization_id, user_id=user.id
                         )
                         logger.info(
                             "Added crew user %s to organization %s",
                             user.id,
-                            organization_id
+                            organization_id,
                         )
 
                     return user
 
         # Try to find placeholder user by SpeedGaming ID (might need to upgrade to full user)
-        user = await User.get_or_none(
-            is_placeholder=True,
-            speedgaming_id=sg_crew.id
-        )
-        
+        user = await User.get_or_none(is_placeholder=True, speedgaming_id=sg_crew.id)
+
         if user:
             # If we now have a Discord ID, check if a real user with that ID already exists
             if sg_crew.discord_id_int:
                 # Check if there's already a real user with this Discord ID
                 existing_real_user = await User.get_or_none(
-                    discord_id=sg_crew.discord_id_int,
-                    is_placeholder=False
+                    discord_id=sg_crew.discord_id_int, is_placeholder=False
                 )
-                
+
                 if existing_real_user:
                     # A real user with this Discord ID exists - use that instead
                     logger.info(
@@ -426,43 +419,46 @@ class SpeedGamingETLService:
                         existing_real_user.id,
                         sg_crew.discord_id_int,
                         user.id,
-                        sg_crew.id
+                        sg_crew.id,
                     )
-                    
+
                     # TODO: In the future, we could merge the placeholder into the real user
                     # For now, we'll use the real user and leave the placeholder
-                    
+
                     # Ensure real user is a member of the organization
                     member = await OrganizationMember.get_or_none(
-                        organization_id=organization_id,
-                        user_id=existing_real_user.id
+                        organization_id=organization_id, user_id=existing_real_user.id
                     )
                     if not member:
                         await OrganizationMember.create(
                             organization_id=organization_id,
-                            user_id=existing_real_user.id
+                            user_id=existing_real_user.id,
                         )
                         logger.info(
                             "Added existing real user %s to organization %s",
                             existing_real_user.id,
-                            organization_id
+                            organization_id,
                         )
-                    
+
                     return existing_real_user
-                
+
                 # No existing real user - upgrade the placeholder
                 if not user.discord_id:
                     logger.info(
                         "Upgrading placeholder crew user %s to full user with Discord ID %s",
                         user.id,
-                        sg_crew.discord_id_int
+                        sg_crew.discord_id_int,
                     )
-                    
+
                     # Best-effort username from discord_tag
                     discord_username = None
                     if sg_crew.discord_tag:
-                        discord_username = sg_crew.discord_tag.split("#")[0] if "#" in sg_crew.discord_tag else sg_crew.discord_tag
-                    
+                        discord_username = (
+                            sg_crew.discord_tag.split("#")[0]
+                            if "#" in sg_crew.discord_tag
+                            else sg_crew.discord_tag
+                        )
+
                     if not discord_username:
                         # Fallback: use display name or streaming username
                         discord_username = (
@@ -470,56 +466,57 @@ class SpeedGamingETLService:
                             or sg_crew.display_name
                             or f"user_{sg_crew.discord_id_int}"
                         )
-                    
+
                     user.discord_id = sg_crew.discord_id_int
                     user.discord_username = discord_username
                     user.is_placeholder = False  # No longer a placeholder
                     await user.save()
-                    
+
                     logger.info(
                         "Upgraded crew user %s: discord_id=%s, username=%s",
                         user.id,
                         user.discord_id,
-                        user.discord_username
+                        user.discord_username,
                     )
                     return user
-            
+
             # Still a placeholder (no Discord ID provided), just update display name if needed
             logger.info(
-                "Found existing placeholder crew user for SG crew %s",
-                sg_crew.id
+                "Found existing placeholder crew user for SG crew %s", sg_crew.id
             )
-            
+
             # Update display name if it has changed
             new_display_name = (
-                sg_crew.public_stream
-                or sg_crew.display_name
-                or f"sg_crew_{sg_crew.id}"
+                sg_crew.public_stream or sg_crew.display_name or f"sg_crew_{sg_crew.id}"
             )
-            
+
             if user.display_name != new_display_name:
                 logger.info(
                     "Updating placeholder crew user %s display name: %s -> %s",
                     user.id,
                     user.display_name,
-                    new_display_name
+                    new_display_name,
                 )
                 user.display_name = new_display_name
                 await user.save()
-            
+
             return user
 
         # Create new user
         # If we have a Discord ID, create full user; otherwise create placeholder
-        
+
         # Determine username
         if sg_crew.discord_id_int:
             # We have Discord ID - create full user with best-effort username
             discord_id = sg_crew.discord_id_int
-            
+
             # Try to extract username from discord_tag
             if sg_crew.discord_tag:
-                discord_username = sg_crew.discord_tag.split("#")[0] if "#" in sg_crew.discord_tag else sg_crew.discord_tag
+                discord_username = (
+                    sg_crew.discord_tag.split("#")[0]
+                    if "#" in sg_crew.discord_tag
+                    else sg_crew.discord_tag
+                )
             else:
                 # Best effort: use streaming name, display name, or generic fallback
                 discord_username = (
@@ -527,13 +524,13 @@ class SpeedGamingETLService:
                     or sg_crew.display_name
                     or f"user_{discord_id}"
                 )
-            
+
             is_placeholder = False
             logger.info(
                 "Creating full crew user with Discord ID %s (username: %s) for SpeedGaming crew '%s'",
                 discord_id,
                 discord_username,
-                sg_crew.display_name
+                sg_crew.display_name,
             )
         else:
             # No Discord ID - create placeholder
@@ -542,29 +539,27 @@ class SpeedGamingETLService:
             is_placeholder = True
             logger.info(
                 "Creating placeholder crew user for SpeedGaming crew '%s' (no Discord ID available)",
-                sg_crew.display_name
+                sg_crew.display_name,
             )
 
         # Determine best display name
         # Priority: public_stream (Twitch), display_name
-        display_name = (
-            sg_crew.public_stream
-            or sg_crew.display_name
-            or discord_username
-        )
+        display_name = sg_crew.public_stream or sg_crew.display_name or discord_username
 
         # Create user
         user = await User.create(
             discord_id=discord_id,
             discord_username=discord_username,
-            discord_discriminator="0000" if sg_crew.discord_tag and "#" in sg_crew.discord_tag else None,
+            discord_discriminator=(
+                "0000" if sg_crew.discord_tag and "#" in sg_crew.discord_tag else None
+            ),
             discord_avatar=None,
             discord_email=None,
             display_name=display_name,
             is_placeholder=is_placeholder,
             speedgaming_id=sg_crew.id,  # Store SpeedGaming ID for tracking
         )
-        
+
         user_type = "placeholder" if is_placeholder else "full"
         logger.info(
             "Created %s crew user %s for SpeedGaming crew '%s' "
@@ -574,19 +569,14 @@ class SpeedGamingETLService:
             sg_crew.display_name,
             sg_crew.id,
             discord_id,
-            display_name
+            display_name,
         )
 
         # Add to organization
         await OrganizationMember.create(
-            organization_id=organization_id,
-            user_id=user.id
+            organization_id=organization_id, user_id=user.id
         )
-        logger.info(
-            "Added crew user %s to organization %s",
-            user.id,
-            organization_id
-        )
+        logger.info("Added crew user %s to organization %s", user.id, organization_id)
 
         return user
 
@@ -610,15 +600,14 @@ class SpeedGamingETLService:
         """
         # Try to find existing channel by name
         channel = await self.stream_channel_repo.get_by_name(
-            organization_id=organization_id,
-            name=sg_channel.name
+            organization_id=organization_id, name=sg_channel.name
         )
 
         if channel:
             logger.info(
                 "Matched SpeedGaming channel '%s' to existing stream channel %s",
                 sg_channel.name,
-                channel.id
+                channel.id,
             )
             return channel
 
@@ -629,22 +618,19 @@ class SpeedGamingETLService:
             organization_id=organization_id,
             name=sg_channel.name,
             stream_url=None,  # SpeedGaming API doesn't provide stream URLs
-            is_active=True
+            is_active=True,
         )
         logger.info(
             "Created stream channel %s for SpeedGaming channel '%s' (ID: %s)",
             channel.id,
             sg_channel.name,
-            sg_channel.id
+            sg_channel.id,
         )
 
         return channel
 
     async def _sync_match_players(
-        self,
-        match: Match,
-        sg_players: List[SpeedGamingPlayer],
-        organization_id: int
+        self, match: Match, sg_players: List[SpeedGamingPlayer], organization_id: int
     ) -> None:
         """
         Sync match players with SpeedGaming data.
@@ -657,14 +643,14 @@ class SpeedGamingETLService:
             organization_id: Organization ID
         """
         # Get current players
-        current_players = await MatchPlayers.filter(
-            match=match
-        ).prefetch_related('user').all()
+        current_players = (
+            await MatchPlayers.filter(match=match).prefetch_related("user").all()
+        )
 
         # Build set of current user IDs (both real and placeholder via SG ID)
         current_user_ids = set()
         current_sg_ids = set()
-        
+
         for mp in current_players:
             current_user_ids.add(mp.user_id)
             if mp.user.is_placeholder and mp.user.speedgaming_id:
@@ -675,53 +661,57 @@ class SpeedGamingETLService:
 
         # Build set of new player SpeedGaming IDs and Discord IDs
         new_sg_ids = {p.id for p in sg_players}
-        new_discord_ids = {
-            p.discord_id_int for p in sg_players if p.discord_id_int
-        }
+        new_discord_ids = {p.discord_id_int for p in sg_players if p.discord_id_int}
 
         # Find players to add (in SG but not in current)
         for sg_player in sg_players:
             # Check if this player is already in the match
             already_exists = False
-            
+
             # Check by Discord ID first
             if sg_player.discord_id_int:
                 for mp in current_players:
-                    if (not mp.user.is_placeholder and 
-                        mp.user.discord_id == sg_player.discord_id_int):
+                    if (
+                        not mp.user.is_placeholder
+                        and mp.user.discord_id == sg_player.discord_id_int
+                    ):
                         already_exists = True
                         break
-            
+
             # Check by SpeedGaming ID for placeholders
             if not already_exists and sg_player.id in current_sg_ids:
                 already_exists = True
-            
+
             if not already_exists:
                 # Add new player
                 user = await self._find_or_create_user(organization_id, sg_player)
-                
+
                 # Register player with tournament (if not already registered)
                 # Skip RaceTime account requirement - register all players
-                await match.fetch_related('tournament')
+                await match.fetch_related("tournament")
                 await self.tournament_repo.register_user_for_tournament(
                     organization_id=organization_id,
                     tournament_id=match.tournament_id,
-                    user_id=user.id
+                    user_id=user.id,
                 )
-                logger.info("Registered player %s with tournament %s", user.id, match.tournament_id)
-                
+                logger.info(
+                    "Registered player %s with tournament %s",
+                    user.id,
+                    match.tournament_id,
+                )
+
                 await MatchPlayers.create(match=match, user=user)
                 logger.info(
                     "Added new player %s to match %s (SG player %s)",
                     user.id,
                     match.id,
-                    sg_player.id
+                    sg_player.id,
                 )
 
         # Find players to remove (in current but not in SG)
         for mp in current_players:
             should_remove = False
-            
+
             if mp.user.is_placeholder and mp.user.speedgaming_id:
                 # Placeholder user - check by SG ID
                 if mp.user.speedgaming_id not in new_sg_ids:
@@ -730,12 +720,12 @@ class SpeedGamingETLService:
                 # Real user - check by Discord ID
                 if mp.user.discord_id not in new_discord_ids:
                     should_remove = True
-            
+
             if should_remove:
                 logger.info(
                     "Removing player %s from match %s (no longer in SG episode)",
                     mp.user_id,
-                    match.id
+                    match.id,
                 )
                 await mp.delete()
 
@@ -744,7 +734,7 @@ class SpeedGamingETLService:
         match: Match,
         sg_commentators: List[SpeedGamingCrewMember],
         sg_trackers: List[SpeedGamingCrewMember],
-        organization_id: int
+        organization_id: int,
     ) -> None:
         """
         Sync match crew with SpeedGaming data.
@@ -759,15 +749,13 @@ class SpeedGamingETLService:
             organization_id: Organization ID
         """
         # Get current crew
-        current_crew = await Crew.filter(
-            match=match
-        ).prefetch_related('user').all()
+        current_crew = await Crew.filter(match=match).prefetch_related("user").all()
 
         # Build current crew sets by role and SG ID
         current_commentator_sg_ids = set()
         current_tracker_sg_ids = set()
         current_crew_by_user = {}
-        
+
         for crew in current_crew:
             current_crew_by_user[crew.user_id] = crew
             if crew.user.is_placeholder and crew.user.speedgaming_id:
@@ -781,31 +769,30 @@ class SpeedGamingETLService:
         for sg_comm in approved_commentators:
             # Check if already exists
             already_exists = False
-            
+
             if sg_comm.discord_id_int:
                 for crew in current_crew:
-                    if (crew.role == CrewRole.COMMENTATOR and
-                        not crew.user.is_placeholder and
-                        crew.user.discord_id == sg_comm.discord_id_int):
+                    if (
+                        crew.role == CrewRole.COMMENTATOR
+                        and not crew.user.is_placeholder
+                        and crew.user.discord_id == sg_comm.discord_id_int
+                    ):
                         already_exists = True
                         break
-            
+
             if not already_exists and sg_comm.id in current_commentator_sg_ids:
                 already_exists = True
-            
+
             if not already_exists:
                 user = await self._find_or_create_crew_user(organization_id, sg_comm)
                 await Crew.create(
-                    match=match,
-                    user=user,
-                    role=CrewRole.COMMENTATOR,
-                    approved=True
+                    match=match, user=user, role=CrewRole.COMMENTATOR, approved=True
                 )
                 logger.info(
                     "Added new commentator %s to match %s (SG crew %s)",
                     user.id,
                     match.id,
-                    sg_comm.id
+                    sg_comm.id,
                 )
 
         # Sync trackers (approved only)
@@ -813,31 +800,30 @@ class SpeedGamingETLService:
         for sg_tracker in approved_trackers:
             # Check if already exists
             already_exists = False
-            
+
             if sg_tracker.discord_id_int:
                 for crew in current_crew:
-                    if (crew.role == CrewRole.TRACKER and
-                        not crew.user.is_placeholder and
-                        crew.user.discord_id == sg_tracker.discord_id_int):
+                    if (
+                        crew.role == CrewRole.TRACKER
+                        and not crew.user.is_placeholder
+                        and crew.user.discord_id == sg_tracker.discord_id_int
+                    ):
                         already_exists = True
                         break
-            
+
             if not already_exists and sg_tracker.id in current_tracker_sg_ids:
                 already_exists = True
-            
+
             if not already_exists:
                 user = await self._find_or_create_crew_user(organization_id, sg_tracker)
                 await Crew.create(
-                    match=match,
-                    user=user,
-                    role=CrewRole.TRACKER,
-                    approved=True
+                    match=match, user=user, role=CrewRole.TRACKER, approved=True
                 )
                 logger.info(
                     "Added new tracker %s to match %s (SG crew %s)",
                     user.id,
                     match.id,
-                    sg_tracker.id
+                    sg_tracker.id,
                 )
 
         # Remove crew no longer in SpeedGaming
@@ -849,10 +835,10 @@ class SpeedGamingETLService:
         approved_tracker_discord_ids = {
             t.discord_id_int for t in approved_trackers if t.discord_id_int
         }
-        
+
         for crew in current_crew:
             should_remove = False
-            
+
             if crew.role == CrewRole.COMMENTATOR:
                 if crew.user.is_placeholder and crew.user.speedgaming_id:
                     if crew.user.speedgaming_id not in approved_comm_sg_ids:
@@ -860,7 +846,7 @@ class SpeedGamingETLService:
                 elif not crew.user.is_placeholder and crew.user.discord_id:
                     if crew.user.discord_id not in approved_comm_discord_ids:
                         should_remove = True
-            
+
             elif crew.role == CrewRole.TRACKER:
                 if crew.user.is_placeholder and crew.user.speedgaming_id:
                     if crew.user.speedgaming_id not in approved_tracker_sg_ids:
@@ -868,13 +854,13 @@ class SpeedGamingETLService:
                 elif not crew.user.is_placeholder and crew.user.discord_id:
                     if crew.user.discord_id not in approved_tracker_discord_ids:
                         should_remove = True
-            
+
             if should_remove:
                 logger.info(
                     "Removing crew %s (role: %s) from match %s (no longer in SG episode)",
                     crew.user_id,
                     crew.role,
-                    match.id
+                    match.id,
                 )
                 await crew.delete()
 
@@ -899,21 +885,19 @@ class SpeedGamingETLService:
             Match object if successful, None if episode should be skipped
         """
         # Check if match already exists
-        existing_match = await Match.get_or_none(
-            speedgaming_episode_id=episode.id
-        )
+        existing_match = await Match.get_or_none(speedgaming_episode_id=episode.id)
 
         # If match is already finished, skip it (don't touch completed matches)
         if existing_match and existing_match.finished_at is not None:
             logger.debug(
                 "Match %s (episode %s) is already finished, skipping update",
                 existing_match.id,
-                episode.id
+                episode.id,
             )
             return existing_match
 
         # Get organization ID from tournament
-        await tournament.fetch_related('organization')
+        await tournament.fetch_related("organization")
         organization_id = tournament.organization_id
 
         # Check if match should be auto-finished (more than 4 hours in the past)
@@ -922,12 +906,12 @@ class SpeedGamingETLService:
         if existing_match and existing_match.scheduled_at:
             # Check if any manual status has been set
             has_manual_status = bool(
-                existing_match.checked_in_at or
-                existing_match.started_at or
-                existing_match.finished_at or
-                existing_match.confirmed_at
+                existing_match.checked_in_at
+                or existing_match.started_at
+                or existing_match.finished_at
+                or existing_match.confirmed_at
             )
-            
+
             if not has_manual_status:
                 time_since_scheduled = current_time - existing_match.scheduled_at
                 # 4 hours = 14400 seconds
@@ -935,7 +919,7 @@ class SpeedGamingETLService:
                     logger.info(
                         "Match %s (episode %s) is more than 4 hours past scheduled time, auto-finishing",
                         existing_match.id,
-                        episode.id
+                        episode.id,
                     )
                     existing_match.finished_at = current_time
                     await existing_match.save()
@@ -944,7 +928,7 @@ class SpeedGamingETLService:
                 logger.debug(
                     "Match %s (episode %s) has manual status set, skipping auto-finish",
                     existing_match.id,
-                    episode.id
+                    episode.id,
                 )
 
         # Collect all players from match1 and match2
@@ -969,8 +953,7 @@ class SpeedGamingETLService:
             # Use the first channel (SpeedGaming episodes typically have one primary channel)
             sg_channel = episode.channels[0]
             stream_channel = await self._find_or_create_stream_channel(
-                organization_id=organization_id,
-                sg_channel=sg_channel
+                organization_id=organization_id, sg_channel=sg_channel
             )
 
         if existing_match:
@@ -978,7 +961,7 @@ class SpeedGamingETLService:
             logger.info(
                 "Episode %s already exists as match %s, checking for updates",
                 episode.id,
-                existing_match.id
+                existing_match.id,
             )
 
             # Check if anything changed
@@ -990,7 +973,7 @@ class SpeedGamingETLService:
                     "Episode %s schedule changed: %s -> %s",
                     episode.id,
                     existing_match.scheduled_at,
-                    episode.when
+                    episode.when,
                 )
 
             if existing_match.title != match_title:
@@ -1000,7 +983,7 @@ class SpeedGamingETLService:
                     "Episode %s title changed: %s -> %s",
                     episode.id,
                     existing_match.title,
-                    match_title
+                    match_title,
                 )
 
             # Check if stream channel changed
@@ -1012,26 +995,21 @@ class SpeedGamingETLService:
                     "Episode %s stream channel changed: %s -> %s",
                     episode.id,
                     existing_match.stream_channel_id,
-                    new_stream_channel_id
+                    new_stream_channel_id,
                 )
 
             if needs_update:
                 await existing_match.save()
-                logger.info("Updated match %s for episode %s", existing_match.id, episode.id)
+                logger.info(
+                    "Updated match %s for episode %s", existing_match.id, episode.id
+                )
 
             # Check for player changes
-            await self._sync_match_players(
-                existing_match,
-                all_players,
-                organization_id
-            )
+            await self._sync_match_players(existing_match, all_players, organization_id)
 
             # Check for crew changes
             await self._sync_match_crew(
-                existing_match,
-                episode.commentators,
-                episode.trackers,
-                organization_id
+                existing_match, episode.commentators, episode.trackers, organization_id
             )
 
             return existing_match
@@ -1057,9 +1035,11 @@ class SpeedGamingETLService:
             await self.tournament_repo.register_user_for_tournament(
                 organization_id=organization_id,
                 tournament_id=tournament.id,
-                user_id=user.id
+                user_id=user.id,
             )
-            logger.info("Registered player %s with tournament %s", user.id, tournament.id)
+            logger.info(
+                "Registered player %s with tournament %s", user.id, tournament.id
+            )
 
             await MatchPlayers.create(
                 match=match,
@@ -1074,14 +1054,11 @@ class SpeedGamingETLService:
                 logger.info(
                     "Skipping unapproved commentator '%s' for match %s",
                     sg_commentator.display_name,
-                    match.id
+                    match.id,
                 )
                 continue
 
-            user = await self._find_or_create_crew_user(
-                organization_id,
-                sg_commentator
-            )
+            user = await self._find_or_create_crew_user(organization_id, sg_commentator)
 
             await Crew.create(
                 match=match,
@@ -1099,14 +1076,11 @@ class SpeedGamingETLService:
                 logger.info(
                     "Skipping unapproved tracker '%s' for match %s",
                     sg_tracker.display_name,
-                    match.id
+                    match.id,
                 )
                 continue
 
-            user = await self._find_or_create_crew_user(
-                organization_id,
-                sg_tracker
-            )
+            user = await self._find_or_create_crew_user(organization_id, sg_tracker)
 
             await Crew.create(
                 match=match,
@@ -1125,14 +1099,13 @@ class SpeedGamingETLService:
             len(all_players),
             approved_commentators,
             approved_trackers,
-            f", stream channel: {stream_channel.name}" if stream_channel else ""
+            f", stream channel: {stream_channel.name}" if stream_channel else "",
         )
 
         return match
 
     async def import_episodes_for_tournament(
-        self,
-        tournament_id: int
+        self, tournament_id: int
     ) -> Tuple[int, int, int]:
         """
         Import all upcoming SpeedGaming episodes for a tournament.
@@ -1154,28 +1127,26 @@ class SpeedGamingETLService:
                 None,
                 success=False,
                 error="Tournament not found",
-                start_time=start_time
+                start_time=start_time,
             )
             return (0, 0, 0)
 
         if not tournament.speedgaming_enabled:
             logger.info(
-                "SpeedGaming integration disabled for tournament %s",
-                tournament_id
+                "SpeedGaming integration disabled for tournament %s", tournament_id
             )
             return (0, 0, 0)
 
         if not tournament.speedgaming_event_slug:
             logger.warning(
-                "Tournament %s has no SpeedGaming event slug configured",
-                tournament_id
+                "Tournament %s has no SpeedGaming event slug configured", tournament_id
             )
             await self._log_sync_result(
                 tournament_id,
                 tournament.organization_id,
                 success=False,
                 error="No event slug configured",
-                start_time=start_time
+                start_time=start_time,
             )
             return (0, 0, 0)
 
@@ -1186,16 +1157,14 @@ class SpeedGamingETLService:
             )
         except Exception as e:
             logger.error(
-                "Failed to fetch episodes for tournament %s: %s",
-                tournament_id,
-                e
+                "Failed to fetch episodes for tournament %s: %s", tournament_id, e
             )
             await self._log_sync_result(
                 tournament_id,
                 tournament.organization_id,
                 success=False,
                 error=f"API error: {str(e)}",
-                start_time=start_time
+                start_time=start_time,
             )
             return (0, 0, 0)
 
@@ -1210,9 +1179,7 @@ class SpeedGamingETLService:
         for episode in episodes:
             try:
                 # Check if episode already exists
-                existing = await Match.get_or_none(
-                    speedgaming_episode_id=episode.id
-                )
+                existing = await Match.get_or_none(speedgaming_episode_id=episode.id)
 
                 match = await self.import_episode(tournament, episode)
 
@@ -1227,10 +1194,7 @@ class SpeedGamingETLService:
                 errors.append(f"Episode {episode.id}: {str(e)}")
 
         # Detect deleted episodes
-        deleted_count = await self._detect_deleted_episodes(
-            tournament,
-            sg_episode_ids
-        )
+        deleted_count = await self._detect_deleted_episodes(tournament, sg_episode_ids)
 
         logger.info(
             "Completed import for tournament %s: %s imported, "
@@ -1238,7 +1202,7 @@ class SpeedGamingETLService:
             tournament_id,
             imported_count,
             updated_count,
-            deleted_count
+            deleted_count,
         )
 
         # Log sync result
@@ -1250,7 +1214,7 @@ class SpeedGamingETLService:
             updated=updated_count,
             deleted=deleted_count,
             error="; ".join(errors) if errors else None,
-            start_time=start_time
+            start_time=start_time,
         )
 
         return (imported_count, updated_count, deleted_count)
@@ -1264,7 +1228,7 @@ class SpeedGamingETLService:
         updated: int = 0,
         deleted: int = 0,
         error: Optional[str] = None,
-        start_time: Optional[datetime] = None
+        start_time: Optional[datetime] = None,
     ):
         """
         Log SpeedGaming sync result to audit log.
@@ -1296,7 +1260,7 @@ class SpeedGamingETLService:
                 "deleted": deleted,
                 "error": error,
                 "duration_ms": duration_ms,
-            }
+            },
         )
 
     async def _log_aggregated_sync_result(
@@ -1306,7 +1270,7 @@ class SpeedGamingETLService:
         updated: int = 0,
         deleted: int = 0,
         error: Optional[str] = None,
-        start_time: Optional[datetime] = None
+        start_time: Optional[datetime] = None,
     ):
         """
         Log aggregated SpeedGaming sync result across all tournaments to audit log.
@@ -1336,17 +1300,15 @@ class SpeedGamingETLService:
                 "deleted": deleted,
                 "error": error,
                 "duration_ms": duration_ms,
-            }
+            },
         )
 
     async def _detect_deleted_episodes(
-        self,
-        tournament: Tournament,
-        current_episode_ids: set[int]
+        self, tournament: Tournament, current_episode_ids: set[int]
     ) -> int:
         """
         Detect and delete matches for episodes no longer in SpeedGaming.
-        
+
         Also auto-finishes matches that are more than 4 hours past their scheduled time
         before deletion to preserve match data.
 
@@ -1359,8 +1321,7 @@ class SpeedGamingETLService:
         """
         # Find all matches for this tournament that came from SpeedGaming
         existing_matches = await Match.filter(
-            tournament=tournament,
-            speedgaming_episode_id__isnull=False
+            tournament=tournament, speedgaming_episode_id__isnull=False
         ).all()
 
         if not existing_matches:
@@ -1369,7 +1330,7 @@ class SpeedGamingETLService:
         deleted_count = 0
         current_time = datetime.now(timezone.utc)
         four_hours_ago = current_time - timedelta(hours=4)
-        
+
         # Batch collect matches that need auto-finishing
         matches_to_finish = []
         matches_to_check_deletion = []
@@ -1377,18 +1338,20 @@ class SpeedGamingETLService:
         for match in existing_matches:
             # Check if match should be auto-finished (more than 4 hours past scheduled time)
             # Do NOT auto-finish if match has a RaceTime room linked
-            if (match.scheduled_at and 
-                not match.finished_at and 
-                match.scheduled_at < four_hours_ago):
-                
+            if (
+                match.scheduled_at
+                and not match.finished_at
+                and match.scheduled_at < four_hours_ago
+            ):
+
                 # Check if match has a RaceTime room
                 has_racetime_room = await RacetimeRoom.exists(match_id=match.id)
-                
+
                 if has_racetime_room:
                     logger.info(
                         "Match %s (episode %s) has RaceTime room linked, skipping auto-finish",
                         match.id,
-                        match.speedgaming_episode_id
+                        match.speedgaming_episode_id,
                     )
                 else:
                     match.finished_at = current_time
@@ -1396,23 +1359,25 @@ class SpeedGamingETLService:
                     logger.info(
                         "Match %s (episode %s) is more than 4 hours past scheduled time, marking for auto-finish",
                         match.id,
-                        match.speedgaming_episode_id
+                        match.speedgaming_episode_id,
                     )
-            
+
             # If episode ID is not in current list and match is not finished, check for deletion
-            if (match.speedgaming_episode_id not in current_episode_ids and 
-                not match.finished_at):
+            if (
+                match.speedgaming_episode_id not in current_episode_ids
+                and not match.finished_at
+            ):
                 matches_to_check_deletion.append(match)
-        
+
         # Batch save all auto-finished matches
         if matches_to_finish:
             for match in matches_to_finish:
                 await match.save()
             logger.info(
                 "Auto-finished %s matches that were >4 hours past scheduled time",
-                len(matches_to_finish)
+                len(matches_to_finish),
             )
-        
+
         # Check deletion for unfinished matches not in current schedule
         for match in matches_to_check_deletion:
             try:
@@ -1426,7 +1391,7 @@ class SpeedGamingETLService:
                         "Episode %s no longer exists in SpeedGaming, "
                         "deleting match %s",
                         match.speedgaming_episode_id,
-                        match.id
+                        match.id,
                     )
                     await match.delete()
                     deleted_count += 1
@@ -1435,14 +1400,12 @@ class SpeedGamingETLService:
                         "Episode %s still exists but not in event schedule, "
                         "keeping match %s",
                         match.speedgaming_episode_id,
-                        match.id
+                        match.id,
                     )
 
             except Exception as e:
                 logger.error(
-                    "Error checking episode %s: %s",
-                    match.speedgaming_episode_id,
-                    e
+                    "Error checking episode %s: %s", match.speedgaming_episode_id, e
                 )
 
         return deleted_count
@@ -1456,8 +1419,7 @@ class SpeedGamingETLService:
         """
         start_time = datetime.now(timezone.utc)
         tournaments = await Tournament.filter(
-            speedgaming_enabled=True,
-            is_active=True
+            speedgaming_enabled=True, is_active=True
         ).all()
 
         total_imported = 0
@@ -1475,9 +1437,7 @@ class SpeedGamingETLService:
                 total_deleted += deleted
             except Exception as e:
                 logger.error(
-                    "Error importing episodes for tournament %s: %s",
-                    tournament.id,
-                    e
+                    "Error importing episodes for tournament %s: %s", tournament.id, e
                 )
                 errors.append(f"Tournament {tournament.id}: {str(e)}")
 
@@ -1486,7 +1446,7 @@ class SpeedGamingETLService:
             "%s updated, %s deleted",
             total_imported,
             total_updated,
-            total_deleted
+            total_deleted,
         )
 
         # Log aggregated sync result
@@ -1496,7 +1456,7 @@ class SpeedGamingETLService:
             updated=total_updated,
             deleted=total_deleted,
             error="; ".join(errors) if errors else None,
-            start_time=start_time
+            start_time=start_time,
         )
 
         return (total_imported, total_updated, total_deleted)

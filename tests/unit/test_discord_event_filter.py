@@ -1,11 +1,14 @@
 """Tests for Discord event filter functionality."""
+
 import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 import discord
 
 from models import Tournament, Match, DiscordEventFilter, StreamChannel, User
-from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import (
+    DiscordScheduledEventService,
+)
 
 
 @pytest.fixture
@@ -23,6 +26,7 @@ async def sample_user(db):
 async def sample_tournament(db):
     """Create a sample tournament for testing."""
     from models import Organization
+
     org = await Organization.create(name="Test Org", slug="test-org")
     tournament = await Tournament.create(
         organization_id=org.id,
@@ -54,7 +58,7 @@ async def sample_match_with_stream(db, sample_tournament, sample_stream_channel)
         stream_channel_id=sample_stream_channel.id,
         title="Finals",
     )
-    await match.fetch_related('tournament', 'stream_channel')
+    await match.fetch_related("tournament", "stream_channel")
     return match
 
 
@@ -66,7 +70,7 @@ async def sample_match_no_stream(db, sample_tournament):
         scheduled_at=datetime.now(timezone.utc) + timedelta(hours=2),
         title="Qualifier",
     )
-    await match.fetch_related('tournament', 'stream_channel')
+    await match.fetch_related("tournament", "stream_channel")
     return match
 
 
@@ -78,40 +82,78 @@ class TestDiscordEventFilter:
         self.service = DiscordScheduledEventService()
 
     @pytest.mark.asyncio
-    async def test_filter_all_includes_all_matches(self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream):
+    async def test_filter_all_includes_all_matches(
+        self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream
+    ):
         """Test that ALL filter includes matches with and without streams."""
         # Arrange
         sample_tournament.discord_event_filter = DiscordEventFilter.ALL
         await sample_tournament.save()
 
         # Act & Assert - Both should pass the filter
-        assert self.service._should_create_event_for_match(sample_match_with_stream, sample_tournament) is True
-        assert self.service._should_create_event_for_match(sample_match_no_stream, sample_tournament) is True
+        assert (
+            self.service._should_create_event_for_match(
+                sample_match_with_stream, sample_tournament
+            )
+            is True
+        )
+        assert (
+            self.service._should_create_event_for_match(
+                sample_match_no_stream, sample_tournament
+            )
+            is True
+        )
 
     @pytest.mark.asyncio
-    async def test_filter_stream_only_includes_streamed_matches(self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream):
+    async def test_filter_stream_only_includes_streamed_matches(
+        self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream
+    ):
         """Test that STREAM_ONLY filter only includes matches with streams."""
         # Arrange
         sample_tournament.discord_event_filter = DiscordEventFilter.STREAM_ONLY
         await sample_tournament.save()
 
         # Act & Assert
-        assert self.service._should_create_event_for_match(sample_match_with_stream, sample_tournament) is True
-        assert self.service._should_create_event_for_match(sample_match_no_stream, sample_tournament) is False
+        assert (
+            self.service._should_create_event_for_match(
+                sample_match_with_stream, sample_tournament
+            )
+            is True
+        )
+        assert (
+            self.service._should_create_event_for_match(
+                sample_match_no_stream, sample_tournament
+            )
+            is False
+        )
 
     @pytest.mark.asyncio
-    async def test_filter_none_excludes_all_matches(self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream):
+    async def test_filter_none_excludes_all_matches(
+        self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream
+    ):
         """Test that NONE filter excludes all matches."""
         # Arrange
         sample_tournament.discord_event_filter = DiscordEventFilter.NONE
         await sample_tournament.save()
 
         # Act & Assert
-        assert self.service._should_create_event_for_match(sample_match_with_stream, sample_tournament) is False
-        assert self.service._should_create_event_for_match(sample_match_no_stream, sample_tournament) is False
+        assert (
+            self.service._should_create_event_for_match(
+                sample_match_with_stream, sample_tournament
+            )
+            is False
+        )
+        assert (
+            self.service._should_create_event_for_match(
+                sample_match_no_stream, sample_tournament
+            )
+            is False
+        )
 
     @pytest.mark.asyncio
-    async def test_create_event_respects_filter(self, db, sample_tournament, sample_match_no_stream):
+    async def test_create_event_respects_filter(
+        self, db, sample_tournament, sample_match_no_stream
+    ):
         """Test that create_event_for_match respects the filter setting."""
         # Arrange
         sample_tournament.discord_event_filter = DiscordEventFilter.STREAM_ONLY
@@ -119,7 +161,10 @@ class TestDiscordEventFilter:
 
         # Mock Discord bot
         mock_bot = MagicMock()
-        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch(
+            "application.services.discord.discord_scheduled_event_service.get_bot_instance",
+            return_value=mock_bot,
+        ):
             # Act
             result = await self.service.create_event_for_match(
                 user_id=1,
@@ -131,7 +176,9 @@ class TestDiscordEventFilter:
             assert result is None
 
     @pytest.mark.asyncio
-    async def test_create_event_with_stream_passes_filter(self, db, sample_tournament, sample_match_with_stream, sample_user):
+    async def test_create_event_with_stream_passes_filter(
+        self, db, sample_tournament, sample_match_with_stream, sample_user
+    ):
         """Test that matches with streams pass the STREAM_ONLY filter."""
         # Arrange
         sample_tournament.discord_event_filter = DiscordEventFilter.STREAM_ONLY
@@ -152,6 +199,7 @@ class TestDiscordEventFilter:
 
         # Mock DiscordGuild
         from models import DiscordGuild
+
         discord_guild = await DiscordGuild.create(
             organization_id=sample_tournament.organization_id,
             guild_id=123456789,
@@ -161,7 +209,10 @@ class TestDiscordEventFilter:
         )
         await sample_tournament.discord_event_guilds.add(discord_guild)
 
-        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch(
+            "application.services.discord.discord_scheduled_event_service.get_bot_instance",
+            return_value=mock_bot,
+        ):
             # Act
             result = await self.service.create_event_for_match(
                 user_id=1,
@@ -174,7 +225,9 @@ class TestDiscordEventFilter:
             mock_guild.create_scheduled_event.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_update_deletes_events_when_filter_changes(self, db, sample_tournament, sample_match_no_stream):
+    async def test_update_deletes_events_when_filter_changes(
+        self, db, sample_tournament, sample_match_no_stream
+    ):
         """Test that update_event_for_match deletes events when match no longer passes filter."""
         # Arrange - Create event first with ALL filter
         sample_tournament.discord_event_filter = DiscordEventFilter.ALL
@@ -182,6 +235,7 @@ class TestDiscordEventFilter:
 
         # Create a mock event in the database
         from models import DiscordScheduledEvent
+
         event = await DiscordScheduledEvent.create(
             scheduled_event_id=111111,
             match_id=sample_match_no_stream.id,
@@ -194,7 +248,10 @@ class TestDiscordEventFilter:
 
         # Mock Discord bot
         mock_bot = MagicMock()
-        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch(
+            "application.services.discord.discord_scheduled_event_service.get_bot_instance",
+            return_value=mock_bot,
+        ):
             # Act
             result = await self.service.update_event_for_match(
                 user_id=1,
@@ -210,7 +267,14 @@ class TestDiscordEventFilter:
             assert deleted_event is None
 
     @pytest.mark.asyncio
-    async def test_sync_respects_filter(self, db, sample_tournament, sample_match_with_stream, sample_match_no_stream, sample_user):
+    async def test_sync_respects_filter(
+        self,
+        db,
+        sample_tournament,
+        sample_match_with_stream,
+        sample_match_no_stream,
+        sample_user,
+    ):
         """Test that sync_tournament_events respects the filter setting."""
         # Arrange
         sample_tournament.discord_event_filter = DiscordEventFilter.STREAM_ONLY
@@ -229,6 +293,7 @@ class TestDiscordEventFilter:
         mock_guild.create_scheduled_event = AsyncMock(return_value=mock_event)
 
         from models import DiscordGuild
+
         discord_guild = await DiscordGuild.create(
             organization_id=sample_tournament.organization_id,
             guild_id=123456789,
@@ -238,7 +303,10 @@ class TestDiscordEventFilter:
         )
         await sample_tournament.discord_event_guilds.add(discord_guild)
 
-        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance', return_value=mock_bot):
+        with patch(
+            "application.services.discord.discord_scheduled_event_service.get_bot_instance",
+            return_value=mock_bot,
+        ):
             # Act
             stats = await self.service.sync_tournament_events(
                 user_id=1,
@@ -248,5 +316,5 @@ class TestDiscordEventFilter:
 
             # Assert - Only match with stream should create event
             # (1 created for match_with_stream, 0 for match_no_stream which is filtered out)
-            assert stats['created'] == 1
-            assert stats['errors'] == 0
+            assert stats["created"] == 1
+            assert stats["errors"] == 0

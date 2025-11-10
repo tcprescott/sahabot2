@@ -17,7 +17,11 @@ class UserMenu:
     Displays username and dropdown menu with customizable menu items.
     """
 
-    def __init__(self, user: Optional[User] = None, menu_items: Optional[List[Dict[str, Any]]] = None):
+    def __init__(
+        self,
+        user: Optional[User] = None,
+        menu_items: Optional[List[Dict[str, Any]]] = None,
+    ):
         """
         Initialize user menu.
 
@@ -37,20 +41,23 @@ class UserMenu:
     async def _handle_logout(self) -> None:
         """Handle user logout."""
         await DiscordAuthService.clear_current_user()
-        ui.notify('Logged out successfully', type='positive')
-        ui.navigate.to('/')
+        ui.notify("Logged out successfully", type="positive")
+        ui.navigate.to("/")
 
     async def _handle_login(self) -> None:
         """Handle user login - capture current URL and redirect to login page."""
         # Get current URL using JavaScript and redirect to login with it
-        current_url = await ui.run_javascript('window.location.pathname + window.location.search + window.location.hash')
-        
+        current_url = await ui.run_javascript(
+            "window.location.pathname + window.location.search + window.location.hash"
+        )
+
         # Store the redirect URL
         from nicegui import app
-        app.storage.user['redirect_after_login'] = current_url or '/'
-        
+
+        app.storage.user["redirect_after_login"] = current_url or "/"
+
         # Navigate to login page
-        ui.navigate.to('/auth/login')
+        ui.navigate.to("/auth/login")
 
     async def _handle_stop_impersonation(self) -> None:
         """Handle stopping impersonation."""
@@ -66,14 +73,14 @@ class UserMenu:
             await user_service.stop_impersonation(
                 original_user=original_user,
                 impersonated_user=impersonated_user,
-                ip_address=None
+                ip_address=None,
             )
 
         # Clear impersonation from session
         await DiscordAuthService.stop_impersonation()
 
-        ui.notify('Stopped impersonation', type='info')
-        ui.navigate.to('/')
+        ui.notify("Stopped impersonation", type="info")
+        ui.navigate.to("/")
 
     def _get_avatar_url(self) -> Optional[str]:
         """
@@ -95,15 +102,16 @@ class UserMenu:
         Returns:
             List of menu item dictionaries
         """
+
         def toggle_dark_mode():
             """Toggle dark mode using the external DarkMode API."""
-            ui.run_javascript('window.DarkMode.toggle()')
+            ui.run_javascript("window.DarkMode.toggle()")
 
         items = [
             {
-                'name': 'Toggle Dark Mode',
-                'icon': 'dark_mode',
-                'on_click': toggle_dark_mode
+                "name": "Toggle Dark Mode",
+                "icon": "dark_mode",
+                "on_click": toggle_dark_mode,
             }
         ]
 
@@ -112,53 +120,51 @@ class UserMenu:
             is_impersonating = DiscordAuthService.is_impersonating()
 
             # Authenticated user items
-            items.extend([
-                {
-                    'separator': True
-                }
-            ])
+            items.extend([{"separator": True}])
 
             # Add stop impersonation option if active
             if is_impersonating:
-                items.append({
-                    'name': 'Stop Impersonation',
-                    'icon': 'person_off',
-                    'on_click': self._handle_stop_impersonation
-                })
-                items.append({
-                    'separator': True
-                })
+                items.append(
+                    {
+                        "name": "Stop Impersonation",
+                        "icon": "person_off",
+                        "on_click": self._handle_stop_impersonation,
+                    }
+                )
+                items.append({"separator": True})
 
-            items.extend([
-                {
-                    'name': 'My Profile',
-                    'icon': 'person',
-                    'on_click': lambda: ui.navigate.to('/profile')
-                },
-                {
-                    'name': 'Admin Panel',
-                    'icon': 'admin_panel_settings',
-                    'on_click': lambda: ui.navigate.to('/admin'),
-                    'condition': lambda: self.user.is_admin()
-                },
-                {
-                    'name': 'Logout',
-                    'icon': 'logout',
-                    'on_click': self._handle_logout
-                }
-            ])
+            items.extend(
+                [
+                    {
+                        "name": "My Profile",
+                        "icon": "person",
+                        "on_click": lambda: ui.navigate.to("/profile"),
+                    },
+                    {
+                        "name": "Admin Panel",
+                        "icon": "admin_panel_settings",
+                        "on_click": lambda: ui.navigate.to("/admin"),
+                        "condition": lambda: self.user.is_admin(),
+                    },
+                    {
+                        "name": "Logout",
+                        "icon": "logout",
+                        "on_click": self._handle_logout,
+                    },
+                ]
+            )
         else:
             # Guest user items
-            items.extend([
-                {
-                    'separator': True
-                },
-                {
-                    'name': 'Login with Discord',
-                    'icon': 'login',
-                    'on_click': self._handle_login
-                }
-            ])
+            items.extend(
+                [
+                    {"separator": True},
+                    {
+                        "name": "Login with Discord",
+                        "icon": "login",
+                        "on_click": self._handle_login,
+                    },
+                ]
+            )
 
         return items
 
@@ -169,24 +175,32 @@ class UserMenu:
             # Use full display name with pronouns in italics
             display_text = self.user.get_display_name()
             if self.user.show_pronouns and self.user.pronouns:
-                with ui.row().classes('items-center gap-1 header-username-row'):
-                    ui.label(display_text).classes('header-username')
-                    ui.label(f'({self.user.pronouns})').classes('header-username-pronouns')
+                with ui.row().classes("items-center gap-1 header-username-row"):
+                    ui.label(display_text).classes("header-username")
+                    ui.label(f"({self.user.pronouns})").classes(
+                        "header-username-pronouns"
+                    )
             else:
-                ui.label(display_text).classes('header-username')
+                ui.label(display_text).classes("header-username")
 
         # Render menu button with avatar or generic icon
         avatar_url = self._get_avatar_url()
 
         if avatar_url:
             # Use Discord avatar
-            with ui.button().props('flat round aria-label="Open user menu"').classes('header-menu-button'):
-                ui.image(avatar_url).classes('w-8 h-8 rounded-full').props('alt="User avatar"')
+            with ui.button().props('flat round aria-label="Open user menu"').classes(
+                "header-menu-button"
+            ):
+                ui.image(avatar_url).classes("w-8 h-8 rounded-full").props(
+                    'alt="User avatar"'
+                )
                 with ui.menu():
                     self._render_menu_items()
         else:
             # Use generic account_circle icon
-            with ui.button(icon='account_circle').props('flat round aria-label="Open user menu"').classes('header-menu-button'):
+            with ui.button(icon="account_circle").props(
+                'flat round aria-label="Open user menu"'
+            ).classes("header-menu-button"):
                 with ui.menu():
                     self._render_menu_items()
 
@@ -194,17 +208,17 @@ class UserMenu:
         """Render the menu items."""
         for item in self.menu_items:
             # Check if this is a separator
-            if item.get('separator'):
+            if item.get("separator"):
                 ui.separator()
                 continue
 
             # Check condition if specified
-            condition = item.get('condition')
+            condition = item.get("condition")
             if condition and callable(condition) and not condition():
                 continue
 
             # Render menu item
-            with ui.menu_item(on_click=item['on_click']):
-                with ui.row().classes('items-center'):
-                    ui.icon(item['icon']).classes('q-mr-sm')
-                    ui.label(item['name'])
+            with ui.menu_item(on_click=item["on_click"]):
+                with ui.row().classes("items-center"):
+                    ui.icon(item["icon"]).classes("q-mr-sm")
+                    ui.label(item["name"])

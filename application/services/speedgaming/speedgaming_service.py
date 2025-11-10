@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class SpeedGamingPlayer:
     """SpeedGaming player data from API."""
+
     id: int
     display_name: str
     discord_id: Optional[str]  # Discord ID as string from API
@@ -49,6 +50,7 @@ class SpeedGamingPlayer:
 @dataclass
 class SpeedGamingCrewMember:
     """SpeedGaming crew member (commentator, tracker, etc.) from API."""
+
     id: int
     display_name: str
     discord_id: Optional[str]
@@ -86,6 +88,7 @@ class SpeedGamingCrewMember:
 @dataclass
 class SpeedGamingMatch:
     """SpeedGaming match data from API."""
+
     id: int
     title: str
     players: List[SpeedGamingPlayer]
@@ -108,6 +111,7 @@ class SpeedGamingMatch:
 @dataclass
 class SpeedGamingEvent:
     """SpeedGaming event data from API."""
+
     id: int
     name: str
     slug: str
@@ -129,6 +133,7 @@ class SpeedGamingEvent:
 @dataclass
 class SpeedGamingChannel:
     """SpeedGaming broadcast channel data from API."""
+
     id: int
     name: str
     slug: str
@@ -152,6 +157,7 @@ class SpeedGamingEpisode:
 
     Represents a scheduled match/episode on SpeedGaming.
     """
+
     id: int
     title: str
     when: datetime  # Scheduled time in UTC
@@ -175,8 +181,16 @@ class SpeedGamingEpisode:
             when = when.replace(tzinfo=timezone.utc)
 
         # Parse matches
-        match1 = SpeedGamingMatch.from_dict(data.get("match1")) if data.get("match1") else None
-        match2 = SpeedGamingMatch.from_dict(data.get("match2")) if data.get("match2") else None
+        match1 = (
+            SpeedGamingMatch.from_dict(data.get("match1"))
+            if data.get("match1")
+            else None
+        )
+        match2 = (
+            SpeedGamingMatch.from_dict(data.get("match2"))
+            if data.get("match2")
+            else None
+        )
 
         # Parse event
         event = SpeedGamingEvent.from_dict(data.get("event", {}))
@@ -185,9 +199,15 @@ class SpeedGamingEpisode:
         channels = [SpeedGamingChannel.from_dict(c) for c in data.get("channels", [])]
 
         # Parse crew
-        commentators = [SpeedGamingCrewMember.from_dict(c) for c in data.get("commentators", [])]
-        trackers = [SpeedGamingCrewMember.from_dict(t) for t in data.get("trackers", [])]
-        broadcasters = [SpeedGamingCrewMember.from_dict(b) for b in data.get("broadcasters", [])]
+        commentators = [
+            SpeedGamingCrewMember.from_dict(c) for c in data.get("commentators", [])
+        ]
+        trackers = [
+            SpeedGamingCrewMember.from_dict(t) for t in data.get("trackers", [])
+        ]
+        broadcasters = [
+            SpeedGamingCrewMember.from_dict(b) for b in data.get("broadcasters", [])
+        ]
 
         return cls(
             id=data.get("id", 0),
@@ -244,21 +264,21 @@ class SpeedGamingService:
                     logger.error(
                         "SpeedGaming API request failed: GET %s - status %s",
                         url,
-                        response.status_code
+                        response.status_code,
                     )
                     response.raise_for_status()
 
                 data = response.json()
-                
+
                 # Check if response contains an error (deleted episode)
                 if isinstance(data, dict) and "error" in data:
                     logger.info(
                         "Episode %s not found (API returned error: %s)",
                         episode_id,
-                        data.get("error")
+                        data.get("error"),
                     )
                     return None
-                
+
                 episode = SpeedGamingEpisode.from_dict(data)
                 logger.info("Fetched episode %s: %s", episode_id, episode.title)
                 return episode
@@ -271,7 +291,7 @@ class SpeedGamingService:
         self,
         event_slug: str,
         from_datetime: Optional[datetime] = None,
-        to_datetime: Optional[datetime] = None
+        to_datetime: Optional[datetime] = None,
     ) -> List[SpeedGamingEpisode]:
         """
         Fetch episodes for a specific event within a date range.
@@ -309,7 +329,7 @@ class SpeedGamingService:
                     logger.error(
                         "SpeedGaming API request failed: GET %s - status %s",
                         url,
-                        response.status_code
+                        response.status_code,
                     )
                     response.raise_for_status()
 
@@ -327,7 +347,7 @@ class SpeedGamingService:
                     len(episodes),
                     event_slug,
                     from_datetime.isoformat(),
-                    to_datetime.isoformat()
+                    to_datetime.isoformat(),
                 )
                 return episodes
 

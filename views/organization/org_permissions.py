@@ -32,22 +32,26 @@ class OrganizationPermissionsView:
         """Render the available permission types."""
         available_types = self.service.list_available_permission_types()
 
-        with Card.create(title='Available Permission Types'):
-            ui.label('These permission types can be assigned to organization members.').classes('mb-4 text-secondary')
+        with Card.create(title="Available Permission Types"):
+            ui.label(
+                "These permission types can be assigned to organization members."
+            ).classes("mb-4 text-secondary")
 
             # Display permissions as a list
             for ptype in available_types:
-                with ui.element('div').classes('mb-3 p-3 border rounded'):
-                    with ui.row().classes('items-center gap-2 mb-1'):
-                        ui.icon('verified_user').classes('text-primary')
-                        ui.label(ptype['name']).classes('text-lg font-bold')
-                    ui.label(ptype['description']).classes('text-secondary')
+                with ui.element("div").classes("mb-3 p-3 border rounded"):
+                    with ui.row().classes("items-center gap-2 mb-1"):
+                        ui.icon("verified_user").classes("text-primary")
+                        ui.label(ptype["name"]).classes("text-lg font-bold")
+                    ui.label(ptype["description"]).classes("text-secondary")
 
-            ui.separator().classes('my-4')
-            ui.label('To assign permissions to members, go to the Members tab.').classes('text-sm text-secondary italic')
+            ui.separator().classes("my-4")
+            ui.label(
+                "To assign permissions to members, go to the Members tab."
+            ).classes("text-sm text-secondary italic")
 
     async def render(self) -> None:
         """Render the permissions view."""
-        self.container = ui.column().classes('full-width')
+        self.container = ui.column().classes("full-width")
         with self.container:
             await self._render_content()

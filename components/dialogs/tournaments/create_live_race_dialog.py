@@ -57,115 +57,145 @@ class CreateLiveRaceDialog(BaseDialog):
     async def show(self):
         """Display the create live race dialog."""
         self.create_dialog(
-            title='Schedule Live Race',
-            icon='event',
+            title="Schedule Live Race",
+            icon="event",
         )
         await super().show()
 
     def _render_body(self) -> None:
         """Render dialog content."""
         # Error message area
-        with ui.row().classes('w-full'):
-            self.error_label = ui.label('').classes('text-negative')
+        with ui.row().classes("w-full"):
+            self.error_label = ui.label("").classes("text-negative")
             self.error_label.set_visibility(False)
 
         ui.separator()
 
         # Form section
-        self.create_section_title('Race Details')
+        self.create_section_title("Race Details")
 
         with self.create_form_grid(columns=2):
             # Pool selection (required)
-            with ui.element('div'):
+            with ui.element("div"):
                 pool_options = {p.id: p.name for p in self.pools}
-                self.pool_select = ui.select(
-                    label='Pool *',
-                    options=pool_options,
-                ).classes('w-full').props('outlined')
+                self.pool_select = (
+                    ui.select(
+                        label="Pool *",
+                        options=pool_options,
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
 
             # Match title (optional)
-            with ui.element('div'):
-                self.match_title = ui.input(
-                    label='Match Title',
-                    placeholder='Optional descriptive title',
-                ).classes('w-full').props('outlined')
+            with ui.element("div"):
+                self.match_title = (
+                    ui.input(
+                        label="Match Title",
+                        placeholder="Optional descriptive title",
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
 
         ui.separator()
 
         # Date and time section
-        self.create_section_title('Schedule')
+        self.create_section_title("Schedule")
 
         with self.create_form_grid(columns=2):
             # Date picker
-            with ui.element('div'):
+            with ui.element("div"):
                 # Default to tomorrow
                 tomorrow = datetime.now(timezone.utc) + timedelta(days=1)
-                self.scheduled_date = ui.date(
-                    value=tomorrow.strftime('%Y-%m-%d'),
-                ).classes('w-full').props('outlined')
-                ui.label('Scheduled Date *').classes('text-sm text-caption mt-1')
+                self.scheduled_date = (
+                    ui.date(
+                        value=tomorrow.strftime("%Y-%m-%d"),
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
+                ui.label("Scheduled Date *").classes("text-sm text-caption mt-1")
 
             # Time picker
-            with ui.element('div'):
+            with ui.element("div"):
                 # Default to 20:00 UTC
-                self.scheduled_time = ui.time(
-                    value='20:00',
-                ).classes('w-full').props('outlined')
-                ui.label('Scheduled Time (UTC) *').classes('text-sm text-caption mt-1')
+                self.scheduled_time = (
+                    ui.time(
+                        value="20:00",
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
+                ui.label("Scheduled Time (UTC) *").classes("text-sm text-caption mt-1")
 
         ui.separator()
 
         # Settings section
-        self.create_section_title('Settings')
+        self.create_section_title("Settings")
 
         with self.create_form_grid(columns=2):
             # Permalink selection (optional)
-            with ui.element('div'):
-                permalink_options = {0: 'None (Use pool default)'}
+            with ui.element("div"):
+                permalink_options = {0: "None (Use pool default)"}
                 permalink_options.update({p.id: p.permalink for p in self.permalinks})
-                self.permalink_select = ui.select(
-                    label='Permalink',
-                    options=permalink_options,
-                    value=0,
-                ).classes('w-full').props('outlined')
+                self.permalink_select = (
+                    ui.select(
+                        label="Permalink",
+                        options=permalink_options,
+                        value=0,
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
 
             # Episode ID (optional)
-            with ui.element('div'):
-                self.episode_id = ui.input(
-                    label='Episode ID',
-                    placeholder='Optional episode number',
-                ).classes('w-full').props('outlined')
+            with ui.element("div"):
+                self.episode_id = (
+                    ui.input(
+                        label="Episode ID",
+                        placeholder="Optional episode number",
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
 
         # Race room profile (optional)
-        with ui.element('div').classes('w-full'):
-            profile_options = {0: 'None (Use tournament default)'}
+        with ui.element("div").classes("w-full"):
+            profile_options = {0: "None (Use tournament default)"}
             profile_options.update({p.id: p.name for p in self.profiles})
-            self.profile_select = ui.select(
-                label='Race Room Profile',
-                options=profile_options,
-                value=0,
-            ).classes('w-full').props('outlined')
+            self.profile_select = (
+                ui.select(
+                    label="Race Room Profile",
+                    options=profile_options,
+                    value=0,
+                )
+                .classes("w-full")
+                .props("outlined")
+            )
 
         ui.separator()
 
         # Actions
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Create', on_click=self._save).classes('btn').props('color=positive')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Create", on_click=self._save).classes("btn").props(
+                "color=positive"
+            )
 
     async def _save(self):
         """Validate and create the live race."""
         # Validation
         if not self.pool_select or not self.pool_select.value:
-            self._show_error('Please select a pool')
+            self._show_error("Please select a pool")
             return
 
         if not self.scheduled_date or not self.scheduled_date.value:
-            self._show_error('Please select a date')
+            self._show_error("Please select a date")
             return
 
         if not self.scheduled_time or not self.scheduled_time.value:
-            self._show_error('Please select a time')
+            self._show_error("Please select a time")
             return
 
         try:
@@ -175,47 +205,56 @@ class CreateLiveRaceDialog(BaseDialog):
 
             # Parse the date and time
             scheduled_dt = datetime.strptime(
-                f"{date_str} {time_str}",
-                '%Y-%m-%d %H:%M'
+                f"{date_str} {time_str}", "%Y-%m-%d %H:%M"
             ).replace(tzinfo=timezone.utc)
 
             # Check if in the past
             if scheduled_dt < datetime.now(timezone.utc):
-                self._show_error('Scheduled time must be in the future')
+                self._show_error("Scheduled time must be in the future")
                 return
 
             # Build request data
-            from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
+            from application.services.tournaments.async_live_race_service import (
+                AsyncLiveRaceService,
+            )
             from middleware.auth import DiscordAuthService
 
             service = AsyncLiveRaceService()
             current_user = DiscordAuthService.get_current_user()
 
             if not current_user:
-                self._show_error('Not authenticated')
+                self._show_error("Not authenticated")
                 return
 
             # Create the live race
             data = {
-                'pool_id': int(self.pool_select.value),
-                'scheduled_at': scheduled_dt,
+                "pool_id": int(self.pool_select.value),
+                "scheduled_at": scheduled_dt,
             }
 
             if self.match_title and self.match_title.value:
-                data['match_title'] = self.match_title.value
+                data["match_title"] = self.match_title.value
 
-            if self.permalink_select and self.permalink_select.value and int(self.permalink_select.value) > 0:
-                data['permalink_id'] = int(self.permalink_select.value)
+            if (
+                self.permalink_select
+                and self.permalink_select.value
+                and int(self.permalink_select.value) > 0
+            ):
+                data["permalink_id"] = int(self.permalink_select.value)
 
             if self.episode_id and self.episode_id.value:
                 try:
-                    data['episode_id'] = int(self.episode_id.value)
+                    data["episode_id"] = int(self.episode_id.value)
                 except ValueError:
-                    self._show_error('Episode ID must be a number')
+                    self._show_error("Episode ID must be a number")
                     return
 
-            if self.profile_select and self.profile_select.value and int(self.profile_select.value) > 0:
-                data['race_room_profile_id'] = int(self.profile_select.value)
+            if (
+                self.profile_select
+                and self.profile_select.value
+                and int(self.profile_select.value) > 0
+            ):
+                data["race_room_profile_id"] = int(self.profile_select.value)
 
             live_race = await service.create_live_race(
                 current_user=current_user,

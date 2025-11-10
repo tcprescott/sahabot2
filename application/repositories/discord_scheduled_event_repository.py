@@ -3,6 +3,7 @@ Repository for Discord Scheduled Event data access.
 
 Handles database operations for Discord scheduled events linked to matches.
 """
+
 import logging
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -129,7 +130,7 @@ class DiscordScheduledEventRepository:
         events = await DiscordScheduledEvent.filter(
             organization_id=organization_id,
             match__tournament_id=tournament_id,
-        ).prefetch_related('match', 'match__tournament')
+        ).prefetch_related("match", "match__tournament")
 
         logger.debug(
             "Found %d Discord scheduled events for tournament %s in org %s",
@@ -152,9 +153,13 @@ class DiscordScheduledEventRepository:
         Returns:
             List of DiscordScheduledEvent instances
         """
-        events = await DiscordScheduledEvent.filter(
-            organization_id=organization_id,
-        ).prefetch_related('match', 'match__tournament').order_by('-created_at')
+        events = (
+            await DiscordScheduledEvent.filter(
+                organization_id=organization_id,
+            )
+            .prefetch_related("match", "match__tournament")
+            .order_by("-created_at")
+        )
 
         logger.debug(
             "Found %d Discord scheduled events in org %s",
@@ -277,7 +282,7 @@ class DiscordScheduledEventRepository:
             organization_id=organization_id,
             match__scheduled_at__lte=future_cutoff,
             match__finished_at__isnull=True,  # Only unfinished matches
-        ).prefetch_related('match', 'match__tournament')
+        ).prefetch_related("match", "match__tournament")
 
         logger.debug(
             "Found %d upcoming Discord scheduled events in org %s (next %d hours)",
@@ -306,7 +311,7 @@ class DiscordScheduledEventRepository:
         events = await DiscordScheduledEvent.filter(
             organization_id=organization_id,
             match__finished_at__isnull=False,
-        ).prefetch_related('match')
+        ).prefetch_related("match")
 
         logger.debug(
             "Found %d orphaned Discord scheduled events in org %s",
@@ -334,13 +339,13 @@ class DiscordScheduledEventRepository:
         events = await DiscordScheduledEvent.filter(
             organization_id=organization_id,
             match__tournament__scheduled_events_enabled=False,
-        ).prefetch_related('match', 'match__tournament')
+        ).prefetch_related("match", "match__tournament")
 
         # Also check for tournaments with create_scheduled_events=False
         more_events = await DiscordScheduledEvent.filter(
             organization_id=organization_id,
             match__tournament__create_scheduled_events=False,
-        ).prefetch_related('match', 'match__tournament')
+        ).prefetch_related("match", "match__tournament")
 
         # Combine and deduplicate
         all_event_ids = set()
@@ -379,7 +384,9 @@ class DiscordScheduledEventRepository:
         finished_events = await self.list_orphaned_events(organization_id)
 
         # Get events for disabled tournaments
-        disabled_events = await self.list_events_for_disabled_tournaments(organization_id)
+        disabled_events = await self.list_events_for_disabled_tournaments(
+            organization_id
+        )
 
         # Combine and deduplicate
         all_event_ids = set()

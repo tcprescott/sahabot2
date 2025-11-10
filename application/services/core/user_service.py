@@ -31,7 +31,7 @@ class UserService:
         discord_id: int,
         discord_username: str,
         discord_discriminator: Optional[str] = None,
-        discord_avatar: Optional[str] = None
+        discord_avatar: Optional[str] = None,
     ) -> User:
         """
         Get or create a user from Discord OAuth data.
@@ -53,7 +53,10 @@ class UserService:
             if user.discord_username != discord_username:
                 user.discord_username = discord_username
                 updated = True
-            if discord_discriminator and user.discord_discriminator != discord_discriminator:
+            if (
+                discord_discriminator
+                and user.discord_discriminator != discord_discriminator
+            ):
                 user.discord_discriminator = discord_discriminator
                 updated = True
             if discord_avatar and user.discord_avatar != discord_avatar:
@@ -71,7 +74,7 @@ class UserService:
             discord_username=discord_username,
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
-            permission=Permission.USER
+            permission=Permission.USER,
         )
 
         # Emit user created event
@@ -155,7 +158,7 @@ class UserService:
         self,
         user_id: int,
         new_permission: Permission,
-        acting_user_id: Optional[int] = None
+        acting_user_id: Optional[int] = None,
     ) -> User:
         """
         Update a user's permission level.
@@ -192,7 +195,7 @@ class UserService:
             "Emitted UserPermissionChangedEvent for user %s: %s -> %s",
             user.id,
             old_permission.name,
-            new_permission.name
+            new_permission.name,
         )
 
         return user
@@ -253,7 +256,9 @@ class UserService:
         """
         return await self.user_repository.get_by_id(user_id)
 
-    async def get_all_users(self, current_user: Optional[User], include_inactive: bool = False) -> list[User]:
+    async def get_all_users(
+        self, current_user: Optional[User], include_inactive: bool = False
+    ) -> list[User]:
         """
         Get all users (requires ADMIN permission).
 
@@ -266,12 +271,17 @@ class UserService:
         """
         # Check authorization
         if not current_user or not current_user.has_permission(Permission.ADMIN):
-            logger.warning("Unauthorized get_all_users attempt by user %s", getattr(current_user, 'id', None))
+            logger.warning(
+                "Unauthorized get_all_users attempt by user %s",
+                getattr(current_user, "id", None),
+            )
             return []
-        
+
         return await self.user_repository.get_all(include_inactive=include_inactive)
 
-    async def search_users(self, current_user: Optional[User], query: str) -> list[User]:
+    async def search_users(
+        self, current_user: Optional[User], query: str
+    ) -> list[User]:
         """
         Search users by username (requires MODERATOR permission).
 
@@ -284,9 +294,12 @@ class UserService:
         """
         # Check authorization
         if not current_user or not current_user.has_permission(Permission.MODERATOR):
-            logger.warning("Unauthorized search_users attempt by user %s", getattr(current_user, 'id', None))
+            logger.warning(
+                "Unauthorized search_users attempt by user %s",
+                getattr(current_user, "id", None),
+            )
             return []
-        
+
         return await self.user_repository.search_by_username(query)
 
     async def link_racetime_account(
@@ -296,7 +309,7 @@ class UserService:
         racetime_name: str,
         access_token: str,
         refresh_token: Optional[str] = None,
-        expires_at: Optional[datetime] = None
+        expires_at: Optional[datetime] = None,
     ) -> User:
         """
         Link RaceTime.gg account to a user.
@@ -322,9 +335,11 @@ class UserService:
                 "RaceTime account %s already linked to user %s, attempted by user %s",
                 racetime_id,
                 existing_user.id,
-                user.id
+                user.id,
             )
-            raise ValueError("This RaceTime.gg account is already linked to another user")
+            raise ValueError(
+                "This RaceTime.gg account is already linked to another user"
+            )
 
         # Update user with RaceTime information
         user.racetime_id = racetime_id
@@ -357,21 +372,23 @@ class UserService:
             raise ValueError("User has no linked RaceTime account or refresh token")
 
         oauth_service = RacetimeOAuthService()
-        token_response = await oauth_service.refresh_access_token(user.racetime_refresh_token)
+        token_response = await oauth_service.refresh_access_token(
+            user.racetime_refresh_token
+        )
 
         # Update user with new token information
-        user.racetime_access_token = token_response.get('access_token')
-        
+        user.racetime_access_token = token_response.get("access_token")
+
         # Update refresh token if provided (some OAuth providers rotate refresh tokens)
-        if 'refresh_token' in token_response:
-            user.racetime_refresh_token = token_response['refresh_token']
-        
+        if "refresh_token" in token_response:
+            user.racetime_refresh_token = token_response["refresh_token"]
+
         # Calculate expiration if provided
-        if 'expires_in' in token_response:
+        if "expires_in" in token_response:
             user.racetime_token_expires_at = oauth_service.calculate_token_expiry(
-                token_response['expires_in']
+                token_response["expires_in"]
             )
-        
+
         await user.save()
 
         logger.info("Refreshed RaceTime token for user %s", user.id)
@@ -398,9 +415,7 @@ class UserService:
         return user
 
     async def admin_unlink_racetime_account(
-        self,
-        user_id: int,
-        admin_user: User
+        self, user_id: int, admin_user: User
     ) -> Optional[User]:
         """
         Administratively unlink RaceTime.gg account from a user.
@@ -416,7 +431,7 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to admin unlink RaceTime account without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return None
 
@@ -431,6 +446,7 @@ class UserService:
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
@@ -438,23 +454,17 @@ class UserService:
             details={
                 "target_user_id": user_id,
                 "racetime_id": user.racetime_id,
-                "racetime_name": user.racetime_name
-            }
+                "racetime_name": user.racetime_name,
+            },
         )
 
         logger.info(
-            "Admin %s unlinked RaceTime account for user %s",
-            admin_user.id,
-            user_id
+            "Admin %s unlinked RaceTime account for user %s", admin_user.id, user_id
         )
         return user
 
     async def update_discord_tokens(
-        self,
-        user: User,
-        access_token: str,
-        refresh_token: str,
-        expires_at: datetime
+        self, user: User, access_token: str, refresh_token: str, expires_at: datetime
     ) -> User:
         """
         Update Discord OAuth2 tokens for a user.
@@ -496,18 +506,22 @@ class UserService:
             raise ValueError("User has no Discord refresh token")
 
         auth_service = DiscordAuthService()
-        token_response = await auth_service.refresh_discord_token(user.discord_refresh_token)
+        token_response = await auth_service.refresh_discord_token(
+            user.discord_refresh_token
+        )
 
         # Update user with new token information
-        user.discord_access_token = token_response.get('access_token')
+        user.discord_access_token = token_response.get("access_token")
 
         # Update refresh token if provided (Discord rotates refresh tokens)
-        if 'refresh_token' in token_response:
-            user.discord_refresh_token = token_response['refresh_token']
+        if "refresh_token" in token_response:
+            user.discord_refresh_token = token_response["refresh_token"]
 
         # Calculate expiration if provided
-        if 'expires_in' in token_response:
-            expires_at = DiscordAuthService.calculate_token_expiry(token_response['expires_in'])
+        if "expires_in" in token_response:
+            expires_at = DiscordAuthService.calculate_token_expiry(
+                token_response["expires_in"]
+            )
             user.discord_token_expires_at = expires_at
 
         await user.save()
@@ -516,10 +530,7 @@ class UserService:
         return user
 
     async def get_all_racetime_accounts(
-        self,
-        admin_user: User,
-        limit: Optional[int] = None,
-        offset: int = 0
+        self, admin_user: User, limit: Optional[int] = None, offset: int = 0
     ) -> list[User]:
         """
         Get all users with linked RaceTime accounts (admin only).
@@ -536,29 +547,26 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to view RaceTime accounts without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return []
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
             action="admin_view_racetime_accounts",
-            details={"limit": limit, "offset": offset}
+            details={"limit": limit, "offset": offset},
         )
 
         return await self.user_repository.get_users_with_racetime(
-            include_inactive=False,
-            limit=limit,
-            offset=offset
+            include_inactive=False, limit=limit, offset=offset
         )
 
     async def search_racetime_accounts(
-        self,
-        admin_user: User,
-        query: str
+        self, admin_user: User, query: str
     ) -> list[User]:
         """
         Search users by RaceTime username (admin only).
@@ -574,17 +582,18 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to search RaceTime accounts without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return []
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
             action="admin_search_racetime_accounts",
-            details={"query": query}
+            details={"query": query},
         )
 
         return await self.user_repository.search_by_racetime_name(query)
@@ -603,7 +612,7 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to view RaceTime stats without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return {}
 
@@ -618,16 +627,15 @@ class UserService:
             "total_users": total_users,
             "linked_users": linked_users,
             "unlinked_users": total_users - linked_users,
-            "link_percentage": round(link_percentage, 2)
+            "link_percentage": round(link_percentage, 2),
         }
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
-            user=admin_user,
-            action="admin_view_racetime_stats",
-            details=stats
+            user=admin_user, action="admin_view_racetime_stats", details=stats
         )
 
         logger.info("Admin %s viewed RaceTime link statistics", admin_user.id)
@@ -641,7 +649,7 @@ class UserService:
         twitch_display_name: str,
         access_token: str,
         refresh_token: Optional[str] = None,
-        expires_at: Optional[datetime] = None
+        expires_at: Optional[datetime] = None,
     ) -> User:
         """
         Link Twitch account to a user.
@@ -668,7 +676,7 @@ class UserService:
                 "Twitch account %s already linked to user %s, attempted by user %s",
                 twitch_id,
                 existing_user.id,
-                user.id
+                user.id,
             )
             raise ValueError("This Twitch account is already linked to another user")
 
@@ -704,19 +712,21 @@ class UserService:
             raise ValueError("User has no linked Twitch account or refresh token")
 
         oauth_service = TwitchOAuthService()
-        token_response = await oauth_service.refresh_access_token(user.twitch_refresh_token)
+        token_response = await oauth_service.refresh_access_token(
+            user.twitch_refresh_token
+        )
 
         # Update user with new token information
-        user.twitch_access_token = token_response.get('access_token')
+        user.twitch_access_token = token_response.get("access_token")
 
         # Update refresh token if provided (some OAuth providers rotate refresh tokens)
-        if 'refresh_token' in token_response:
-            user.twitch_refresh_token = token_response['refresh_token']
+        if "refresh_token" in token_response:
+            user.twitch_refresh_token = token_response["refresh_token"]
 
         # Calculate expiration if provided
-        if 'expires_in' in token_response:
+        if "expires_in" in token_response:
             user.twitch_token_expires_at = oauth_service.calculate_token_expiry(
-                token_response['expires_in']
+                token_response["expires_in"]
             )
 
         await user.save()
@@ -746,9 +756,7 @@ class UserService:
         return user
 
     async def admin_unlink_twitch_account(
-        self,
-        user_id: int,
-        admin_user: User
+        self, user_id: int, admin_user: User
     ) -> Optional[User]:
         """
         Administratively unlink Twitch account from a user.
@@ -764,7 +772,7 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to admin unlink Twitch account without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return None
 
@@ -783,6 +791,7 @@ class UserService:
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
@@ -790,22 +799,17 @@ class UserService:
             details={
                 "target_user_id": user_id,
                 "twitch_id": twitch_id,
-                "twitch_name": twitch_name
-            }
+                "twitch_name": twitch_name,
+            },
         )
 
         logger.info(
-            "Admin %s unlinked Twitch account for user %s",
-            admin_user.id,
-            user_id
+            "Admin %s unlinked Twitch account for user %s", admin_user.id, user_id
         )
         return user
 
     async def get_all_twitch_accounts(
-        self,
-        admin_user: User,
-        limit: Optional[int] = None,
-        offset: int = 0
+        self, admin_user: User, limit: Optional[int] = None, offset: int = 0
     ) -> list[User]:
         """
         Get all users with linked Twitch accounts (admin only).
@@ -822,30 +826,25 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to view Twitch accounts without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return []
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
             action="admin_view_twitch_accounts",
-            details={"limit": limit, "offset": offset}
+            details={"limit": limit, "offset": offset},
         )
 
         return await self.user_repository.get_users_with_twitch(
-            include_inactive=False,
-            limit=limit,
-            offset=offset
+            include_inactive=False, limit=limit, offset=offset
         )
 
-    async def search_twitch_accounts(
-        self,
-        admin_user: User,
-        query: str
-    ) -> list[User]:
+    async def search_twitch_accounts(self, admin_user: User, query: str) -> list[User]:
         """
         Search users by Twitch username (admin only).
 
@@ -860,17 +859,18 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to search Twitch accounts without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return []
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
             action="admin_search_twitch_accounts",
-            details={"query": query}
+            details={"query": query},
         )
 
         return await self.user_repository.search_by_twitch_name(query)
@@ -889,7 +889,7 @@ class UserService:
         if not admin_user or not admin_user.has_permission(Permission.ADMIN):
             logger.warning(
                 "User %s attempted to view Twitch stats without permission",
-                getattr(admin_user, 'id', None)
+                getattr(admin_user, "id", None),
             )
             return {}
 
@@ -904,16 +904,15 @@ class UserService:
             "total_users": total_users,
             "linked_users": linked_users,
             "unlinked_users": total_users - linked_users,
-            "link_percentage": round(link_percentage, 2)
+            "link_percentage": round(link_percentage, 2),
         }
 
         # Audit log
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
-            user=admin_user,
-            action="admin_view_twitch_stats",
-            details=stats
+            user=admin_user, action="admin_view_twitch_stats", details=stats
         )
 
         logger.info("Admin %s viewed Twitch link statistics", admin_user.id)
@@ -924,7 +923,7 @@ class UserService:
         user: User,
         display_name: Optional[str] = None,
         pronouns: Optional[str] = None,
-        show_pronouns: Optional[bool] = None
+        show_pronouns: Optional[bool] = None,
     ) -> User:
         """
         Update a user's profile settings.
@@ -940,10 +939,10 @@ class UserService:
         """
         if display_name is not None:
             user.display_name = display_name.strip() if display_name else None
-        
+
         if pronouns is not None:
             user.pronouns = pronouns.strip() if pronouns else None
-        
+
         if show_pronouns is not None:
             user.show_pronouns = show_pronouns
 
@@ -952,10 +951,7 @@ class UserService:
         return user
 
     async def start_impersonation(
-        self,
-        admin_user: User,
-        target_user_id: int,
-        ip_address: Optional[str] = None
+        self, admin_user: User, target_user_id: int, ip_address: Optional[str] = None
     ) -> Optional[User]:
         """
         Start impersonating another user.
@@ -976,16 +972,13 @@ class UserService:
         if not admin_user.has_permission(Permission.SUPERADMIN):
             logger.warning(
                 "User %s attempted to impersonate without SUPERADMIN permission",
-                admin_user.id
+                admin_user.id,
             )
             return None
 
         # Cannot impersonate yourself
         if admin_user.id == target_user_id:
-            logger.warning(
-                "User %s attempted to impersonate themselves",
-                admin_user.id
-            )
+            logger.warning("User %s attempted to impersonate themselves", admin_user.id)
             return None
 
         # Get target user
@@ -994,12 +987,13 @@ class UserService:
             logger.warning(
                 "User %s attempted to impersonate non-existent user %s",
                 admin_user.id,
-                target_user_id
+                target_user_id,
             )
             return None
 
         # Audit log the impersonation start
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=admin_user,
@@ -1009,13 +1003,13 @@ class UserService:
                 "target_username": target_user.discord_username,
                 "target_permission": target_user.permission.name,
             },
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
         logger.info(
             "User %s (SUPERADMIN) started impersonating user %s",
             admin_user.id,
-            target_user.id
+            target_user.id,
         )
 
         return target_user
@@ -1024,7 +1018,7 @@ class UserService:
         self,
         original_user: User,
         impersonated_user: User,
-        ip_address: Optional[str] = None
+        ip_address: Optional[str] = None,
     ) -> None:
         """
         Stop impersonating and return to original user.
@@ -1038,6 +1032,7 @@ class UserService:
         """
         # Audit log the impersonation stop
         from application.services.core.audit_service import AuditService
+
         audit_service = AuditService()
         await audit_service.log_action(
             user=original_user,
@@ -1046,11 +1041,11 @@ class UserService:
                 "impersonated_user_id": impersonated_user.id,
                 "impersonated_username": impersonated_user.discord_username,
             },
-            ip_address=ip_address
+            ip_address=ip_address,
         )
 
         logger.info(
             "User %s stopped impersonating user %s",
             original_user.id,
-            impersonated_user.id
+            impersonated_user.id,
         )

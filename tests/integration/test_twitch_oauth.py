@@ -56,48 +56,52 @@ class TestTwitchOAuth2Flow:
 
         # Mock token exchange
         mock_token_data = {
-            'access_token': 'test_twitch_token',
-            'refresh_token': 'test_refresh_token',
-            'expires_in': 14400  # 4 hours (Twitch default)
+            "access_token": "test_twitch_token",
+            "refresh_token": "test_refresh_token",
+            "expires_in": 14400,  # 4 hours (Twitch default)
         }
 
         # Mock user info from Twitch
         mock_user_info = {
-            'id': '123456789',
-            'login': 'teststreamer',
-            'display_name': 'TestStreamer',
-            'type': '',
-            'broadcaster_type': '',
-            'description': 'Test user',
-            'profile_image_url': 'https://example.com/profile.jpg',
-            'offline_image_url': '',
-            'view_count': 0,
-            'created_at': '2020-01-01T00:00:00Z'
+            "id": "123456789",
+            "login": "teststreamer",
+            "display_name": "TestStreamer",
+            "type": "",
+            "broadcaster_type": "",
+            "description": "Test user",
+            "profile_image_url": "https://example.com/profile.jpg",
+            "offline_image_url": "",
+            "view_count": 0,
+            "created_at": "2020-01-01T00:00:00Z",
         }
 
-        with patch.object(service, 'exchange_code_for_token', AsyncMock(return_value=mock_token_data)):
-            with patch.object(service, 'get_user_info', AsyncMock(return_value=mock_user_info)):
+        with patch.object(
+            service, "exchange_code_for_token", AsyncMock(return_value=mock_token_data)
+        ):
+            with patch.object(
+                service, "get_user_info", AsyncMock(return_value=mock_user_info)
+            ):
                 # Link account
-                token_data = await service.exchange_code_for_token('test_code')
-                user_info = await service.get_user_info(token_data['access_token'])
-                expires_at = service.calculate_token_expiry(token_data['expires_in'])
+                token_data = await service.exchange_code_for_token("test_code")
+                user_info = await service.get_user_info(token_data["access_token"])
+                expires_at = service.calculate_token_expiry(token_data["expires_in"])
 
                 linked_user = await user_service.link_twitch_account(
                     user=sample_user,
-                    twitch_id=user_info['id'],
-                    twitch_name=user_info['login'],
-                    twitch_display_name=user_info['display_name'],
-                    access_token=token_data['access_token'],
-                    refresh_token=token_data['refresh_token'],
-                    expires_at=expires_at
+                    twitch_id=user_info["id"],
+                    twitch_name=user_info["login"],
+                    twitch_display_name=user_info["display_name"],
+                    access_token=token_data["access_token"],
+                    refresh_token=token_data["refresh_token"],
+                    expires_at=expires_at,
                 )
 
                 # Verify account was linked
-                assert linked_user.twitch_id == '123456789'
-                assert linked_user.twitch_name == 'teststreamer'
-                assert linked_user.twitch_display_name == 'TestStreamer'
-                assert linked_user.twitch_access_token == 'test_twitch_token'
-                assert linked_user.twitch_refresh_token == 'test_refresh_token'
+                assert linked_user.twitch_id == "123456789"
+                assert linked_user.twitch_name == "teststreamer"
+                assert linked_user.twitch_display_name == "TestStreamer"
+                assert linked_user.twitch_access_token == "test_twitch_token"
+                assert linked_user.twitch_refresh_token == "test_refresh_token"
 
     async def test_link_callback_invalid_state(self):
         """Test OAuth callback with invalid state (CSRF protection)."""
@@ -127,28 +131,28 @@ class TestTwitchOAuth2Flow:
             discord_id=999999999,
             discord_username="OtherUser",
             permission=0,
-            is_active=True
+            is_active=True,
         )
 
         # Link Twitch account to other_user
         await user_service.link_twitch_account(
             user=other_user,
-            twitch_id='already_linked_123',
-            twitch_name='linkedstreamer',
-            twitch_display_name='LinkedStreamer',
-            access_token='token',
-            refresh_token='refresh'
+            twitch_id="already_linked_123",
+            twitch_name="linkedstreamer",
+            twitch_display_name="LinkedStreamer",
+            access_token="token",
+            refresh_token="refresh",
         )
 
         # Try to link same Twitch account to sample_user
         with pytest.raises(ValueError, match="already linked to another user"):
             await user_service.link_twitch_account(
                 user=sample_user,
-                twitch_id='already_linked_123',
-                twitch_name='linkedstreamer',
-                twitch_display_name='LinkedStreamer',
-                access_token='token2',
-                refresh_token='refresh2'
+                twitch_id="already_linked_123",
+                twitch_name="linkedstreamer",
+                twitch_display_name="LinkedStreamer",
+                access_token="token2",
+                refresh_token="refresh2",
             )
 
     async def test_unlink_account(self, db, sample_user):
@@ -158,13 +162,13 @@ class TestTwitchOAuth2Flow:
         # Link account first
         linked_user = await user_service.link_twitch_account(
             user=sample_user,
-            twitch_id='twitch_123',
-            twitch_name='testuser',
-            twitch_display_name='TestUser',
-            access_token='token',
-            refresh_token='refresh'
+            twitch_id="twitch_123",
+            twitch_name="testuser",
+            twitch_display_name="TestUser",
+            access_token="token",
+            refresh_token="refresh",
         )
-        assert linked_user.twitch_id == 'twitch_123'
+        assert linked_user.twitch_id == "twitch_123"
 
         # Unlink account
         unlinked_user = await user_service.unlink_twitch_account(linked_user)
@@ -184,22 +188,23 @@ class TestTwitchOAuth2Flow:
         # Link account first
         linked_user = await user_service.link_twitch_account(
             user=sample_user,
-            twitch_id='twitch_123',
-            twitch_name='testuser',
-            twitch_display_name='TestUser',
-            access_token='old_token',
-            refresh_token='refresh_token'
+            twitch_id="twitch_123",
+            twitch_name="testuser",
+            twitch_display_name="TestUser",
+            access_token="old_token",
+            refresh_token="refresh_token",
         )
 
         # Mock token refresh - mock the httpx response
         mock_new_token_data = {
-            'access_token': 'new_access_token',
-            'refresh_token': 'new_refresh_token',
-            'expires_in': 14400
+            "access_token": "new_access_token",
+            "refresh_token": "new_refresh_token",
+            "expires_in": 14400,
         }
 
         # Create a mock response - json() is SYNC in httpx, not async
         from unittest.mock import Mock
+
         mock_response = Mock()
         mock_response.status_code = 200
         mock_response.json = Mock(return_value=mock_new_token_data)  # Sync method
@@ -210,12 +215,12 @@ class TestTwitchOAuth2Flow:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch('httpx.AsyncClient', return_value=mock_client):
+        with patch("httpx.AsyncClient", return_value=mock_client):
             refreshed_user = await user_service.refresh_twitch_token(linked_user)
 
             # Verify tokens were updated
-            assert refreshed_user.twitch_access_token == 'new_access_token'
-            assert refreshed_user.twitch_refresh_token == 'new_refresh_token'
+            assert refreshed_user.twitch_access_token == "new_access_token"
+            assert refreshed_user.twitch_refresh_token == "new_refresh_token"
 
     async def test_admin_unlink_account(self, db, sample_user):
         """Test admin unlinking a Twitch account."""
@@ -226,23 +231,22 @@ class TestTwitchOAuth2Flow:
             discord_id=888888888,
             discord_username="AdminUser",
             permission=100,  # ADMIN
-            is_active=True
+            is_active=True,
         )
 
         # Link account to sample_user
         await user_service.link_twitch_account(
             user=sample_user,
-            twitch_id='twitch_123',
-            twitch_name='testuser',
-            twitch_display_name='TestUser',
-            access_token='token',
-            refresh_token='refresh'
+            twitch_id="twitch_123",
+            twitch_name="testuser",
+            twitch_display_name="TestUser",
+            access_token="token",
+            refresh_token="refresh",
         )
 
         # Admin unlinks the account
         result = await user_service.admin_unlink_twitch_account(
-            user_id=sample_user.id,
-            admin_user=admin_user
+            user_id=sample_user.id, admin_user=admin_user
         )
 
         # Verify account was unlinked
@@ -258,13 +262,12 @@ class TestTwitchOAuth2Flow:
             discord_id=777777777,
             discord_username="NormalUser",
             permission=0,  # USER
-            is_active=True
+            is_active=True,
         )
 
         # Try to admin unlink (should fail)
         result = await user_service.admin_unlink_twitch_account(
-            user_id=sample_user.id,
-            admin_user=normal_user
+            user_id=sample_user.id, admin_user=normal_user
         )
 
         # Should return None for unauthorized
@@ -279,25 +282,25 @@ class TestTwitchOAuth2Flow:
             discord_id=888888888,
             discord_username="AdminUser",
             permission=100,  # ADMIN
-            is_active=True
+            is_active=True,
         )
 
         # Link account to sample_user
         await user_service.link_twitch_account(
             user=sample_user,
-            twitch_id='twitch_123',
-            twitch_name='testuser',
-            twitch_display_name='TestUser',
-            access_token='token',
-            refresh_token='refresh'
+            twitch_id="twitch_123",
+            twitch_name="testuser",
+            twitch_display_name="TestUser",
+            access_token="token",
+            refresh_token="refresh",
         )
 
         # Get statistics
         stats = await user_service.get_twitch_link_statistics(admin_user)
 
         # Verify stats structure
-        assert 'total_users' in stats
-        assert 'linked_users' in stats
-        assert 'unlinked_users' in stats
-        assert 'link_percentage' in stats
-        assert stats['linked_users'] >= 1  # At least sample_user is linked
+        assert "total_users" in stats
+        assert "linked_users" in stats
+        assert "unlinked_users" in stats
+        assert "link_percentage" in stats
+        assert stats["linked_users"] >= 1  # At least sample_user is linked

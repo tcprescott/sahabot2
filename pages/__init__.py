@@ -17,20 +17,20 @@ from pages import (
     twitch_oauth,
     discord_guild_callback,
     privacy,
-    test
+    test,
 )
 
 __all__ = [
-    'home',
-    'auth',
-    'admin',
-    'organization_admin',
-    'tournament_admin',
-    'async_tournament_admin',
-    'user_profile',
-    'racetime_oauth',
-    'twitch_oauth',
-    'discord_guild_callback',
-    'privacy',
-    'test',
+    "home",
+    "auth",
+    "admin",
+    "organization_admin",
+    "tournament_admin",
+    "async_tournament_admin",
+    "user_profile",
+    "racetime_oauth",
+    "twitch_oauth",
+    "discord_guild_callback",
+    "privacy",
+    "test",
 ]

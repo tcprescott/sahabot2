@@ -60,7 +60,9 @@ class OrganizationSetting(Model):
     """
 
     id = fields.IntField(pk=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='settings', index=True)
+    organization = fields.ForeignKeyField(
+        "models.Organization", related_name="settings", index=True
+    )
     key = fields.CharField(max_length=255, index=True)
     value = fields.TextField()
     description = fields.TextField(null=True)
@@ -74,5 +76,5 @@ class OrganizationSetting(Model):
 
     def __str__(self) -> str:
         """String representation."""
-        org_id = self.organization.id if hasattr(self, 'organization') else 'unknown'
+        org_id = self.organization.id if hasattr(self, "organization") else "unknown"
         return f"Org {org_id}.{self.key}: {self.value}"

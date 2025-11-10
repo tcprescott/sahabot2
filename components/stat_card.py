@@ -23,7 +23,7 @@ class StatCard:
         label: str,
         color: Optional[str] = None,
         icon: Optional[str] = None,
-        classes: str = ""
+        classes: str = "",
     ):
         """
         Render a single statistic card.
@@ -39,16 +39,16 @@ class StatCard:
             StatCard.render("42", "Active Users", color="success")
             StatCard.render("15", "Pending", color="warning", icon="hourglass_empty")
         """
-        card_classes = f'stat-card {classes}'
-        value_classes = 'stat-value'
+        card_classes = f"stat-card {classes}"
+        value_classes = "stat-value"
         if color:
-            value_classes += f' text-{color}'
+            value_classes += f" text-{color}"
 
-        with ui.element('div').classes(card_classes):
+        with ui.element("div").classes(card_classes):
             if icon:
-                ui.icon(icon).classes('text-2xl mb-2')
+                ui.icon(icon).classes("text-2xl mb-2")
             ui.label(value).classes(value_classes)
-            ui.label(label).classes('stat-label')
+            ui.label(label).classes("stat-label")
 
     @staticmethod
     def simple(value: str, label: str, color: Optional[str] = None):
@@ -63,13 +63,13 @@ class StatCard:
         Example:
             StatCard.simple("50", "Participants", color="primary")
         """
-        value_classes = 'stat-value text-lg'
+        value_classes = "stat-value text-lg"
         if color:
-            value_classes += f' text-{color}'
+            value_classes += f" text-{color}"
 
-        with ui.element('div').classes('text-center'):
+        with ui.element("div").classes("text-center"):
             ui.label(value).classes(value_classes)
-            ui.label(label).classes('stat-label text-xs')
+            ui.label(label).classes("stat-label text-xs")
 
 
 class StatGrid:
@@ -101,21 +101,21 @@ class StatGrid:
             ], columns=3)
         """
         grid_class_map = {
-            2: 'grid grid-cols-1 md:grid-cols-2 gap-md',
-            3: 'grid grid-cols-1 md:grid-cols-3 gap-md',
-            4: 'grid grid-cols-2 md:grid-cols-4 gap-md',
+            2: "grid grid-cols-1 md:grid-cols-2 gap-md",
+            3: "grid grid-cols-1 md:grid-cols-3 gap-md",
+            4: "grid grid-cols-2 md:grid-cols-4 gap-md",
         }
 
         grid_classes = grid_class_map.get(columns, grid_class_map[4])
 
-        with ui.element('div').classes(grid_classes):
+        with ui.element("div").classes(grid_classes):
             for stat in stats:
                 StatCard.render(
-                    value=stat.get('value', '0'),
-                    label=stat.get('label', ''),
-                    color=stat.get('color'),
-                    icon=stat.get('icon'),
-                    classes=stat.get('classes', '')
+                    value=stat.get("value", "0"),
+                    label=stat.get("label", ""),
+                    color=stat.get("color"),
+                    icon=stat.get("icon"),
+                    classes=stat.get("classes", ""),
                 )
 
     @staticmethod
@@ -135,12 +135,12 @@ class StatGrid:
                 {'value': '3', 'label': 'Runs/Pool'},
             ])
         """
-        with ui.element('div').classes('flex gap-md'):
+        with ui.element("div").classes("flex gap-md"):
             for stat in stats:
                 StatCard.simple(
-                    value=stat.get('value', '0'),
-                    label=stat.get('label', ''),
-                    color=stat.get('color')
+                    value=stat.get("value", "0"),
+                    label=stat.get("label", ""),
+                    color=stat.get("color"),
                 )
 
 
@@ -157,7 +157,7 @@ class StatsSection:
         title: str,
         stats: List[Dict[str, Any]],
         columns: int = 4,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ):
         """
         Render a complete statistics section with title and stats grid.
@@ -183,5 +183,5 @@ class StatsSection:
 
         with Card.create(title=title):
             if description:
-                ui.label(description).classes('text-secondary mb-4')
+                ui.label(description).classes("text-secondary mb-4")
             StatGrid.render(stats, columns=columns)

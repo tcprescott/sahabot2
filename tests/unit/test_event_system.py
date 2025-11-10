@@ -37,10 +37,7 @@ class TestEventBus:
 
         # Create and emit event
         event = UserCreatedEvent(
-            entity_id=123,
-            user_id=456,
-            discord_id=789,
-            discord_username="testuser"
+            entity_id=123, user_id=456, discord_id=789, discord_username="testuser"
         )
 
         await EventBus.emit(event)
@@ -202,9 +199,7 @@ class TestEventBus:
     def test_event_immutability(self):
         """Test that events are immutable."""
         event = UserCreatedEvent(
-            entity_id=123,
-            discord_id=456,
-            discord_username="testuser"
+            entity_id=123, discord_id=456, discord_username="testuser"
         )
 
         # Should not be able to modify frozen dataclass
@@ -237,7 +232,7 @@ class TestEventBus:
             user_id=456,
             organization_id=789,
             discord_id=111,
-            discord_username="testuser"
+            discord_username="testuser",
         )
 
         data = event.to_dict()

@@ -24,11 +24,24 @@ class SettingsService:
         item = await self.repo.get_global(key)
         if not item:
             return None
-        return {"key": item.key, "value": item.value, "description": item.description, "is_public": item.is_public}
+        return {
+            "key": item.key,
+            "value": item.value,
+            "description": item.description,
+            "is_public": item.is_public,
+        }
 
-    async def set_global(self, key: str, value: str, description: Optional[str] = None, is_public: bool = False) -> None:
+    async def set_global(
+        self,
+        key: str,
+        value: str,
+        description: Optional[str] = None,
+        is_public: bool = False,
+    ) -> None:
         # Hook for validation/normalization per key can be added here
-        await self.repo.set_global(key=key, value=value, description=description, is_public=is_public)
+        await self.repo.set_global(
+            key=key, value=value, description=description, is_public=is_public
+        )
         logger.info("Global setting updated: key=%s, is_public=%s", key, is_public)
 
     async def delete_global(self, key: str) -> None:
@@ -45,16 +58,33 @@ class SettingsService:
             return None
         return {"key": item.key, "value": item.value, "description": item.description}
 
-    async def set_org(self, organization_id: int, key: str, value: str, description: Optional[str] = None) -> None:
+    async def set_org(
+        self,
+        organization_id: int,
+        key: str,
+        value: str,
+        description: Optional[str] = None,
+    ) -> None:
         # Hook for per-org validation can be added here
-        await self.repo.set_org(organization_id=organization_id, key=key, value=value, description=description)
-        logger.info("Organization setting updated: org_id=%s, key=%s", organization_id, key)
+        await self.repo.set_org(
+            organization_id=organization_id,
+            key=key,
+            value=value,
+            description=description,
+        )
+        logger.info(
+            "Organization setting updated: org_id=%s, key=%s", organization_id, key
+        )
 
     async def delete_org(self, organization_id: int, key: str) -> None:
         await self.repo.delete_org(organization_id=organization_id, key=key)
-        logger.info("Organization setting deleted: org_id=%s, key=%s", organization_id, key)
+        logger.info(
+            "Organization setting deleted: org_id=%s, key=%s", organization_id, key
+        )
 
-    async def get_effective(self, key: str, organization_id: Optional[int] = None) -> Optional[str]:
+    async def get_effective(
+        self, key: str, organization_id: Optional[int] = None
+    ) -> Optional[str]:
         """Get effective value: org override first, then global setting."""
         if organization_id is not None:
             org_item = await self.repo.get_org(organization_id, key)

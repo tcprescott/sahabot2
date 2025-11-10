@@ -3,6 +3,7 @@ RaceTime Bot repository.
 
 Data access layer for RaceTime bot management.
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -21,7 +22,7 @@ class RacetimeBotRepository:
         Returns:
             List of all RaceTime bots ordered by category
         """
-        return await RacetimeBot.all().order_by('category')
+        return await RacetimeBot.all().order_by("category")
 
     async def get_active_bots(self) -> list[RacetimeBot]:
         """
@@ -30,7 +31,7 @@ class RacetimeBotRepository:
         Returns:
             List of active RaceTime bots ordered by category
         """
-        return await RacetimeBot.filter(is_active=True).order_by('category')
+        return await RacetimeBot.filter(is_active=True).order_by("category")
 
     async def get_bot_by_id(self, bot_id: int) -> Optional[RacetimeBot]:
         """
@@ -64,7 +65,7 @@ class RacetimeBotRepository:
         name: str,
         description: Optional[str] = None,
         is_active: bool = True,
-        handler_class: str = 'SahaRaceHandler',
+        handler_class: str = "SahaRaceHandler",
     ) -> RacetimeBot:
         """
         Create a new RaceTime bot.
@@ -91,10 +92,10 @@ class RacetimeBotRepository:
             handler_class=handler_class,
         )
         logger.info(
-            "Created RaceTime bot: %s (category: %s, handler: %s)", 
-            name, 
+            "Created RaceTime bot: %s (category: %s, handler: %s)",
+            name,
             category,
-            handler_class
+            handler_class,
         )
         return bot
 
@@ -159,7 +160,7 @@ class RacetimeBotRepository:
         if active_only:
             query = query.filter(is_active=True, bot__is_active=True)
 
-        assignments = await query.prefetch_related('bot')
+        assignments = await query.prefetch_related("bot")
         return [assignment.bot for assignment in assignments]
 
     async def get_organizations_for_bot(self, bot_id: int) -> list[Organization]:
@@ -174,7 +175,7 @@ class RacetimeBotRepository:
         """
         assignments = await RacetimeBotOrganization.filter(
             bot_id=bot_id, is_active=True
-        ).prefetch_related('organization')
+        ).prefetch_related("organization")
         return [assignment.organization for assignment in assignments]
 
     async def assign_bot_to_organization(
@@ -194,7 +195,7 @@ class RacetimeBotRepository:
         assignment, created = await RacetimeBotOrganization.get_or_create(
             bot_id=bot_id,
             organization_id=organization_id,
-            defaults={'is_active': is_active},
+            defaults={"is_active": is_active},
         )
 
         if not created and assignment.is_active != is_active:
@@ -325,6 +326,8 @@ class RacetimeBotRepository:
         Returns:
             List of bots that are not CONNECTED
         """
-        return await RacetimeBot.filter(
-            is_active=True
-        ).exclude(status=BotStatus.CONNECTED).order_by('category')
+        return (
+            await RacetimeBot.filter(is_active=True)
+            .exclude(status=BotStatus.CONNECTED)
+            .order_by("category")
+        )

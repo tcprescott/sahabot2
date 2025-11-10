@@ -31,7 +31,10 @@ class TournamentUsage(Model):
 
     id = fields.IntField(pk=True)
     user: fields.ForeignKeyRelation[User] = fields.ForeignKeyField(
-        "models.User", related_name="tournament_usage", on_delete=fields.CASCADE, index=True
+        "models.User",
+        related_name="tournament_usage",
+        on_delete=fields.CASCADE,
+        index=True,
     )
     tournament: fields.ForeignKeyRelation[Tournament] = fields.ForeignKeyField(
         "models.Tournament", related_name="usage_tracking", on_delete=fields.CASCADE

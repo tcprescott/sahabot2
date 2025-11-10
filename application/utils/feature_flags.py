@@ -69,4 +69,4 @@ async def get_enabled_features(organization_id: int) -> list[FeatureFlag]:
 
 
 # Re-export FeatureFlag for convenience
-__all__ = ['is_enabled', 'get_enabled_features', 'FeatureFlag']
+__all__ = ["is_enabled", "get_enabled_features", "FeatureFlag"]

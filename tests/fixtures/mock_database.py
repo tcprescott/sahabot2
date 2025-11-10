@@ -15,11 +15,11 @@ def user_data(
     discord_avatar: str = "test_avatar_hash",
     discord_email: str = "testuser@example.com",
     permission: Permission = Permission.USER,
-    is_active: bool = True
+    is_active: bool = True,
 ) -> Dict[str, Any]:
     """
     Create user data dict for database insertion.
-    
+
     Args:
         discord_id: Discord user ID
         discord_username: Discord username
@@ -28,7 +28,7 @@ def user_data(
         discord_email: Email address
         permission: User permission level
         is_active: Whether user is active
-        
+
     Returns:
         User data dict
     """
@@ -46,7 +46,7 @@ def user_data(
 def admin_user_data() -> Dict[str, Any]:
     """
     Create admin user data dict.
-    
+
     Returns:
         Admin user data dict
     """
@@ -55,14 +55,14 @@ def admin_user_data() -> Dict[str, Any]:
         discord_username="admin",
         discord_discriminator="0002",
         discord_email="admin@example.com",
-        permission=Permission.ADMIN
+        permission=Permission.ADMIN,
     )
 
 
 def moderator_user_data() -> Dict[str, Any]:
     """
     Create moderator user data dict.
-    
+
     Returns:
         Moderator user data dict
     """
@@ -71,7 +71,7 @@ def moderator_user_data() -> Dict[str, Any]:
         discord_username="moderator",
         discord_discriminator="0003",
         discord_email="moderator@example.com",
-        permission=Permission.MODERATOR
+        permission=Permission.MODERATOR,
     )
 
 
@@ -79,17 +79,17 @@ def audit_log_data(
     user_id: int,
     action: str = "test_action",
     details: Dict[str, Any] = None,
-    ip_address: str = "127.0.0.1"
+    ip_address: str = "127.0.0.1",
 ) -> Dict[str, Any]:
     """
     Create audit log data dict.
-    
+
     Args:
         user_id: User ID
         action: Action performed
         details: JSON details
         ip_address: IP address
-        
+
     Returns:
         Audit log data dict
     """

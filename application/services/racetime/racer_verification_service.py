@@ -14,7 +14,9 @@ from application.repositories.racer_verification_repository import (
     UserRacerVerificationRepository,
 )
 from application.repositories.organization_repository import OrganizationRepository
-from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
+from application.services.authorization.authorization_service_v2 import (
+    AuthorizationServiceV2,
+)
 from application.services.racetime.racetime_api_service import RacetimeApiService
 from application.services.core.audit_service import AuditService
 from discordbot.client import get_bot_instance
@@ -67,12 +69,12 @@ class RacerVerificationService:
             current_user,
             action="member:manage",
             resource=self.auth_service.get_resource_identifier("member", "*"),
-            organization_id=organization_id
+            organization_id=organization_id,
         ):
             logger.warning(
                 "User %s attempted to create racer verification for org %s without permission",
                 current_user.id,
-                organization_id
+                organization_id,
             )
             return None
 
@@ -97,22 +99,20 @@ class RacerVerificationService:
                 "organization_id": organization_id,
                 "categories": categories,
                 "minimum_races": minimum_races,
-            }
+            },
         )
 
         logger.info(
             "Created racer verification %s for org %s by user %s",
             verification.id,
             organization_id,
-            current_user.id
+            current_user.id,
         )
 
         return verification
 
     async def get_verifications_for_organization(
-        self,
-        current_user: User,
-        organization_id: int
+        self, current_user: User, organization_id: int
     ) -> list[RacerVerification]:
         """
         Get all racer verifications for an organization.
@@ -130,17 +130,14 @@ class RacerVerificationService:
             logger.warning(
                 "User %s attempted to view racer verifications for org %s without membership",
                 current_user.id,
-                organization_id
+                organization_id,
             )
             return []
 
         return await self.repository.list_by_organization(organization_id)
 
     async def update_verification(
-        self,
-        current_user: User,
-        verification_id: int,
-        **updates
+        self, current_user: User, verification_id: int, **updates
     ) -> Optional[RacerVerification]:
         """
         Update racer verification configuration.
@@ -163,12 +160,12 @@ class RacerVerificationService:
             current_user,
             action="member:manage",
             resource=self.auth_service.get_resource_identifier("member", "*"),
-            organization_id=verification.organization_id
+            organization_id=verification.organization_id,
         ):
             logger.warning(
                 "User %s attempted to update racer verification %s without permission",
                 current_user.id,
-                verification_id
+                verification_id,
             )
             return None
 
@@ -182,15 +179,13 @@ class RacerVerificationService:
             details={
                 "verification_id": verification_id,
                 "updated_fields": list(updates.keys()),
-            }
+            },
         )
 
         return updated_verification
 
     async def delete_verification(
-        self,
-        current_user: User,
-        verification_id: int
+        self, current_user: User, verification_id: int
     ) -> bool:
         """
         Delete racer verification configuration.
@@ -212,12 +207,12 @@ class RacerVerificationService:
             current_user,
             action="member:manage",
             resource=self.auth_service.get_resource_identifier("member", "*"),
-            organization_id=verification.organization_id
+            organization_id=verification.organization_id,
         ):
             logger.warning(
                 "User %s attempted to delete racer verification %s without permission",
                 current_user.id,
-                verification_id
+                verification_id,
             )
             return False
 
@@ -229,16 +224,12 @@ class RacerVerificationService:
             await self.audit.log_action(
                 user=current_user,
                 action="racer_verification_deleted",
-                details={"verification_id": verification_id}
+                details={"verification_id": verification_id},
             )
 
         return result
 
-    async def check_user_eligibility(
-        self,
-        user: User,
-        verification_id: int
-    ) -> dict:
+    async def check_user_eligibility(self, user: User, verification_id: int) -> dict:
         """
         Check if a user is eligible for racer verification.
 
@@ -262,7 +253,7 @@ class RacerVerificationService:
                 "race_count": 0,
                 "minimum_required": 0,
                 "has_racetime_account": False,
-                "error": "Verification configuration not found"
+                "error": "Verification configuration not found",
             }
 
         # Check if user has linked RaceTime account
@@ -272,7 +263,7 @@ class RacerVerificationService:
                 "race_count": 0,
                 "minimum_required": verification.minimum_races,
                 "has_racetime_account": False,
-                "error": "No RaceTime account linked"
+                "error": "No RaceTime account linked",
             }
 
         # Fetch race data from RaceTime.gg (from all categories)
@@ -280,9 +271,7 @@ class RacerVerificationService:
             all_races = []
             for category in verification.categories:
                 races = await self.racetime_api.get_user_races(
-                    user=user,
-                    category=category,
-                    show_entrants=False
+                    user=user, category=category, show_entrants=False
                 )
                 all_races.extend(races)
 
@@ -291,21 +280,25 @@ class RacerVerificationService:
             for race in all_races:
                 # Get user's entrant data from the race
                 entrant = next(
-                    (e for e in race.get('entrants', []) if e.get('user', {}).get('id') == user.racetime_id),
-                    None
+                    (
+                        e
+                        for e in race.get("entrants", [])
+                        if e.get("user", {}).get("id") == user.racetime_id
+                    ),
+                    None,
                 )
 
                 if not entrant:
                     continue
 
-                status = entrant.get('status', {}).get('value', '')
+                status = entrant.get("status", {}).get("value", "")
 
                 # Count based on configuration
-                if status == 'done':
+                if status == "done":
                     qualifying_races += 1
-                elif status == 'dnf' and verification.count_forfeits:
+                elif status == "dnf" and verification.count_forfeits:
                     qualifying_races += 1
-                elif status == 'dq' and verification.count_dq:
+                elif status == "dq" and verification.count_dq:
                     qualifying_races += 1
 
             is_eligible = qualifying_races >= verification.minimum_races
@@ -315,7 +308,7 @@ class RacerVerificationService:
                 "race_count": qualifying_races,
                 "minimum_required": verification.minimum_races,
                 "has_racetime_account": True,
-                "error": None
+                "error": None,
             }
 
         except Exception as e:
@@ -323,20 +316,18 @@ class RacerVerificationService:
                 "Error checking race eligibility for user %s: %s",
                 user.id,
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return {
                 "is_eligible": False,
                 "race_count": 0,
                 "minimum_required": verification.minimum_races,
                 "has_racetime_account": True,
-                "error": f"Error fetching race data: {str(e)}"
+                "error": f"Error fetching race data: {str(e)}",
             }
 
     async def verify_user(
-        self,
-        user: User,
-        verification_id: int
+        self, user: User, verification_id: int
     ) -> Optional[UserRacerVerification]:
         """
         Verify a user and grant Discord role if eligible.
@@ -356,7 +347,7 @@ class RacerVerificationService:
                 "User %s is not eligible for verification %s: %s",
                 user.id,
                 verification_id,
-                eligibility.get("error", "insufficient races")
+                eligibility.get("error", "insufficient races"),
             )
             return None
 
@@ -366,9 +357,10 @@ class RacerVerificationService:
             return None
 
         # Get or create user verification record
-        user_verification = await self.user_verification_repository.get_by_verification_and_user(
-            verification_id=verification_id,
-            user_id=user.id
+        user_verification = (
+            await self.user_verification_repository.get_by_verification_and_user(
+                verification_id=verification_id, user_id=user.id
+            )
         )
 
         if not user_verification:
@@ -376,7 +368,7 @@ class RacerVerificationService:
                 verification_id=verification_id,
                 user_id=user.id,
                 is_verified=True,
-                race_count=eligibility["race_count"]
+                race_count=eligibility["race_count"],
             )
         else:
             # Update existing record
@@ -390,9 +382,7 @@ class RacerVerificationService:
 
         # Grant Discord role
         role_granted = await self._grant_discord_role(
-            user=user,
-            guild_id=verification.guild_id,
-            role_id=verification.role_id
+            user=user, guild_id=verification.guild_id, role_id=verification.role_id
         )
 
         if role_granted:
@@ -410,7 +400,7 @@ class RacerVerificationService:
                 "verification_id": verification_id,
                 "race_count": eligibility["race_count"],
                 "role_granted": role_granted,
-            }
+            },
         )
 
         logger.info(
@@ -418,16 +408,13 @@ class RacerVerificationService:
             user.id,
             verification_id,
             eligibility["race_count"],
-            role_granted
+            role_granted,
         )
 
         return user_verification
 
     async def _grant_discord_role(
-        self,
-        user: User,
-        guild_id: int,
-        role_id: int
+        self, user: User, guild_id: int, role_id: int
     ) -> bool:
         """
         Grant Discord role to user.
@@ -460,7 +447,7 @@ class RacerVerificationService:
                     "User %s (discord_id=%s) not found in guild %s",
                     user.id,
                     user.discord_id,
-                    guild_id
+                    guild_id,
                 )
                 return False
 
@@ -476,23 +463,18 @@ class RacerVerificationService:
                 "Granted role %s to user %s in guild %s",
                 role.name,
                 user.discord_username,
-                guild.name
+                guild.name,
             )
             return True
 
         except Exception as e:
             logger.error(
-                "Error granting Discord role to user %s: %s",
-                user.id,
-                e,
-                exc_info=True
+                "Error granting Discord role to user %s: %s", user.id, e, exc_info=True
             )
             return False
 
     async def get_user_verification_status(
-        self,
-        user: User,
-        verification_id: int
+        self, user: User, verification_id: int
     ) -> Optional[UserRacerVerification]:
         """
         Get user's verification status.
@@ -505,6 +487,5 @@ class RacerVerificationService:
             UserRacerVerification instance or None if not found
         """
         return await self.user_verification_repository.get_by_verification_and_user(
-            verification_id=verification_id,
-            user_id=user.id
+            verification_id=verification_id, user_id=user.id
         )

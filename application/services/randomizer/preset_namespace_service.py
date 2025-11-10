@@ -9,7 +9,9 @@ import logging
 import re
 from typing import Optional
 from models import User, PresetNamespace
-from application.repositories.preset_namespace_repository import PresetNamespaceRepository
+from application.repositories.preset_namespace_repository import (
+    PresetNamespaceRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ class PresetNamespaceService:
     """Service for managing preset namespaces."""
 
     # Namespace name validation: lowercase alphanumeric, hyphens, underscores
-    NAMESPACE_NAME_PATTERN = re.compile(r'^[a-z0-9_-]+$')
+    NAMESPACE_NAME_PATTERN = re.compile(r"^[a-z0-9_-]+$")
     MIN_NAME_LENGTH = 3
     MAX_NAME_LENGTH = 50
 
@@ -59,14 +61,22 @@ class PresetNamespaceService:
             )
 
         # Reserved names
-        reserved = {'admin', 'api', 'public', 'private', 'system', 'root', 'user', 'org', 'organization'}
+        reserved = {
+            "admin",
+            "api",
+            "public",
+            "private",
+            "system",
+            "root",
+            "user",
+            "org",
+            "organization",
+        }
         if name in reserved:
             raise NamespaceValidationError(f"Namespace name '{name}' is reserved")
 
     async def get_or_create_user_namespace(
-        self,
-        user: User,
-        auto_create: bool = True
+        self, user: User, auto_create: bool = True
     ) -> Optional[PresetNamespace]:
         """
         Get or create a user's personal namespace.
@@ -95,9 +105,9 @@ class PresetNamespaceService:
         # Auto-create namespace using Discord username
         # Sanitize username to be namespace-compatible
         base_name = user.discord_username.lower()
-        base_name = re.sub(r'[^a-z0-9_-]', '-', base_name)
-        base_name = re.sub(r'-+', '-', base_name)  # Collapse multiple hyphens
-        base_name = base_name.strip('-')
+        base_name = re.sub(r"[^a-z0-9_-]", "-", base_name)
+        base_name = re.sub(r"-+", "-", base_name)  # Collapse multiple hyphens
+        base_name = base_name.strip("-")
 
         # Ensure it meets length requirements
         if len(base_name) < self.MIN_NAME_LENGTH:
@@ -117,20 +127,16 @@ class PresetNamespaceService:
                 name=name,
                 display_name=user.discord_username,
                 description=f"Personal preset namespace for {user.discord_username}",
-                is_public=True
+                is_public=True,
             )
-            logger.info(
-                "Auto-created namespace '%s' for user %s",
-                name,
-                user.id
-            )
+            logger.info("Auto-created namespace '%s' for user %s", name, user.id)
             return namespace
         except Exception as e:
             logger.error(
                 "Failed to auto-create namespace for user %s: %s",
                 user.id,
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return None
 
@@ -158,7 +164,9 @@ class PresetNamespaceService:
         """
         return await self.repository.get_by_name(name)
 
-    async def list_accessible_namespaces(self, user: Optional[User] = None) -> list[PresetNamespace]:
+    async def list_accessible_namespaces(
+        self, user: Optional[User] = None
+    ) -> list[PresetNamespace]:
         """
         List namespaces accessible to a user.
 
@@ -178,7 +186,7 @@ class PresetNamespaceService:
         name: str,
         display_name: str,
         description: Optional[str] = None,
-        is_public: bool = True
+        is_public: bool = True,
     ) -> PresetNamespace:
         """
         Create a personal namespace for a user.
@@ -215,7 +223,7 @@ class PresetNamespaceService:
             name=name,
             display_name=display_name,
             description=description,
-            is_public=is_public
+            is_public=is_public,
         )
 
     async def update_namespace(
@@ -224,7 +232,7 @@ class PresetNamespaceService:
         user: User,
         display_name: Optional[str] = None,
         description: Optional[str] = None,
-        is_public: Optional[bool] = None
+        is_public: Optional[bool] = None,
     ) -> PresetNamespace:
         """
         Update a namespace.
@@ -252,11 +260,11 @@ class PresetNamespaceService:
 
         updates = {}
         if display_name is not None:
-            updates['display_name'] = display_name
+            updates["display_name"] = display_name
         if description is not None:
-            updates['description'] = description
+            updates["description"] = description
         if is_public is not None:
-            updates['is_public'] = is_public
+            updates["is_public"] = is_public
 
         if not updates:
             return namespace
@@ -266,15 +274,11 @@ class PresetNamespaceService:
             "User %s updated namespace '%s' (id=%s)",
             user.id,
             namespace.name,
-            namespace_id
+            namespace_id,
         )
         return updated_namespace
 
-    async def can_user_edit_namespace(
-        self,
-        namespace_id: int,
-        user: User
-    ) -> bool:
+    async def can_user_edit_namespace(self, namespace_id: int, user: User) -> bool:
         """
         Check if user can edit a namespace.
 
@@ -311,10 +315,7 @@ class PresetNamespaceService:
         return []
 
     async def create_namespace(
-        self,
-        user: User,
-        name: str,
-        description: Optional[str] = None
+        self, user: User, name: str, description: Optional[str] = None
     ) -> Optional[PresetNamespace]:
         """
         Create a new namespace for a user.
@@ -346,14 +347,10 @@ class PresetNamespaceService:
             name=name,
             display_name=name.title(),  # Convert name to title case for display
             description=description,
-            is_public=True
+            is_public=True,
         )
 
-    async def delete_namespace(
-        self,
-        user: User,
-        namespace_id: int
-    ) -> bool:
+    async def delete_namespace(self, user: User, namespace_id: int) -> bool:
         """
         Delete a namespace if user has permission.
 
@@ -374,9 +371,8 @@ class PresetNamespaceService:
                 "User %s attempted to delete namespace %s (owner: %s)",
                 user.id,
                 namespace_id,
-                namespace.user_id
+                namespace.user_id,
             )
             return False
 
         return await self.repository.delete(namespace_id)
-

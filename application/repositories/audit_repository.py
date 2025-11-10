@@ -53,7 +53,7 @@ class AuditRepository:
         Returns:
             list[AuditLog]: Recent audit log entries
         """
-        return await AuditLog.all().prefetch_related('user').limit(limit)
+        return await AuditLog.all().prefetch_related("user").limit(limit)
 
     async def get_by_user(self, user_id: int, limit: int = 100) -> list[AuditLog]:
         """
@@ -66,9 +66,13 @@ class AuditRepository:
         Returns:
             list[AuditLog]: User's audit log entries
         """
-        return await AuditLog.filter(user_id=user_id).prefetch_related('user').limit(limit)
+        return (
+            await AuditLog.filter(user_id=user_id).prefetch_related("user").limit(limit)
+        )
 
-    async def get_recent_for_org(self, organization_id: int, limit: int = 100) -> list[AuditLog]:
+    async def get_recent_for_org(
+        self, organization_id: int, limit: int = 100
+    ) -> list[AuditLog]:
         """
         Get recent audit logs for a specific organization.
 
@@ -81,11 +85,13 @@ class AuditRepository:
         """
         return await (
             AuditLog.filter(organization_id=organization_id)
-            .prefetch_related('user')
+            .prefetch_related("user")
             .limit(limit)
         )
 
-    async def get_by_user_in_org(self, user_id: int, organization_id: int, limit: int = 100) -> list[AuditLog]:
+    async def get_by_user_in_org(
+        self, user_id: int, organization_id: int, limit: int = 100
+    ) -> list[AuditLog]:
         """
         Get audit logs for a user within a specific organization.
 
@@ -99,7 +105,7 @@ class AuditRepository:
         """
         return await (
             AuditLog.filter(user_id=user_id, organization_id=organization_id)
-            .prefetch_related('user')
+            .prefetch_related("user")
             .limit(limit)
         )
 
@@ -114,7 +120,9 @@ class AuditRepository:
         Returns:
             list[AuditLog]: Audit log entries for the action
         """
-        return await AuditLog.filter(action=action).prefetch_related('user').limit(limit)
+        return (
+            await AuditLog.filter(action=action).prefetch_related("user").limit(limit)
+        )
 
     async def list_with_filters(
         self,
@@ -147,15 +155,17 @@ class AuditRepository:
             query = query.filter(organization_id=organization_id)
 
         total = await query.count()
-        logs = await query.prefetch_related('user').order_by('-created_at').offset(offset).limit(limit)
+        logs = (
+            await query.prefetch_related("user")
+            .order_by("-created_at")
+            .offset(offset)
+            .limit(limit)
+        )
 
         return logs, total
 
     async def get_speedgaming_sync_logs_for_tournament(
-        self,
-        organization_id: int,
-        tournament_id: int,
-        limit: int = 10
+        self, organization_id: int, tournament_id: int, limit: int = 10
     ) -> list[AuditLog]:
         """
         Get SpeedGaming sync logs for a specific tournament.
@@ -173,15 +183,20 @@ class AuditRepository:
             list[AuditLog]: SpeedGaming sync logs for the tournament
         """
         # Fetch recent sync logs for the organization (fetch more to account for filtering)
-        all_sync_logs = await AuditLog.filter(
-            action="speedgaming_sync",
-            organization_id=organization_id
-        ).order_by('-created_at').limit(50).all()
+        all_sync_logs = (
+            await AuditLog.filter(
+                action="speedgaming_sync", organization_id=organization_id
+            )
+            .order_by("-created_at")
+            .limit(50)
+            .all()
+        )
 
         # Filter for this tournament in Python
         tournament_logs = [
-            log for log in all_sync_logs
-            if log.details and log.details.get('tournament_id') == tournament_id
+            log
+            for log in all_sync_logs
+            if log.details and log.details.get("tournament_id") == tournament_id
         ][:limit]
 
         return tournament_logs

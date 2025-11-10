@@ -42,7 +42,7 @@ class Z1RService:
         return RandomizerResult(
             url=f"https://zeldarandomizer.com/seed/{seed}",
             hash_id=str(seed),
-            settings={'flags': flags} if flags else {},
-            randomizer='z1r',
-            metadata={'seed': seed, 'flags': flags}
+            settings={"flags": flags} if flags else {},
+            randomizer="z1r",
+            metadata={"seed": seed, "flags": flags},
         )

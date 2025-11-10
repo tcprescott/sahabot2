@@ -6,7 +6,7 @@ RUN_IN_TRANSACTION = True
 async def upgrade(db: BaseDBAsyncClient) -> str:
     """
     Convert feature_key from VARCHAR(100) to SMALLINT.
-    
+
     Maps string keys to enum integers:
     - 'live_races' -> 1 (FeatureFlag.LIVE_RACES)
     - 'advanced_presets' -> 2 (FeatureFlag.ADVANCED_PRESETS)
@@ -29,7 +29,7 @@ async def upgrade(db: BaseDBAsyncClient) -> str:
 async def downgrade(db: BaseDBAsyncClient) -> str:
     """
     Revert feature_key from SMALLINT to VARCHAR(100).
-    
+
     Maps enum integers back to string keys.
     """
     return """

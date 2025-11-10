@@ -15,7 +15,7 @@ class CheckInDialog(BaseDialog):
         self,
         match_title: str,
         players: list[dict],
-        on_checkin: Callable[[dict[int, str]], None]
+        on_checkin: Callable[[dict[int, str]], None],
     ):
         """
         Initialize check-in dialog.
@@ -33,11 +33,7 @@ class CheckInDialog(BaseDialog):
 
     async def show(self):
         """Display the check-in dialog."""
-        self.create_dialog(
-            title='Check In Match',
-            icon='how_to_reg',
-            max_width='600px'
-        )
+        self.create_dialog(title="Check In Match", icon="how_to_reg", max_width="600px")
 
         await super().show()
 
@@ -49,36 +45,40 @@ class CheckInDialog(BaseDialog):
         ui.separator()
 
         # Info message
-        with ui.column().classes('gap-sm w-full'):
-            ui.label('Assign station numbers for each player:').classes('text-weight-bold')
-            ui.label('Station numbers are used to identify where players are seated during the match.').classes('text-secondary text-sm')
+        with ui.column().classes("gap-sm w-full"):
+            ui.label("Assign station numbers for each player:").classes(
+                "text-weight-bold"
+            )
+            ui.label(
+                "Station numbers are used to identify where players are seated during the match."
+            ).classes("text-secondary text-sm")
 
         ui.separator()
 
         # Station inputs for each player
         with self.create_form_grid(columns=1):
             for player in self.players:
-                with ui.row().classes('gap-2 w-full items-center'):
+                with ui.row().classes("gap-2 w-full items-center"):
                     # Player name label (fixed width)
-                    ui.label(player['username']).classes('text-weight-medium').style('min-width: 150px')
-                    
+                    ui.label(player["username"]).classes("text-weight-medium").style(
+                        "min-width: 150px"
+                    )
+
                     # Station number input
                     station_input = ui.input(
-                        label='Station Number',
-                        placeholder='e.g., 5'
-                    ).classes('flex-grow')
-                    
-                    self.station_inputs[player['match_player_id']] = station_input
+                        label="Station Number", placeholder="e.g., 5"
+                    ).classes("flex-grow")
+
+                    self.station_inputs[player["match_player_id"]] = station_input
 
         ui.separator()
 
         # Actions row at root level
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button(
-                'Check In',
-                on_click=self._check_in
-            ).classes('btn').props('color=positive')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Check In", on_click=self._check_in).classes("btn").props(
+                "color=positive"
+            )
 
     async def _check_in(self):
         """Handle check-in submission."""
@@ -87,7 +87,7 @@ class CheckInDialog(BaseDialog):
         has_empty = False
 
         for match_player_id, input_field in self.station_inputs.items():
-            station = input_field.value.strip() if input_field.value else ''
+            station = input_field.value.strip() if input_field.value else ""
             if not station:
                 has_empty = True
             else:
@@ -95,13 +95,13 @@ class CheckInDialog(BaseDialog):
 
         # Validate that all stations are provided
         if has_empty:
-            ui.notify('Please provide station numbers for all players', type='warning')
+            ui.notify("Please provide station numbers for all players", type="warning")
             return
 
         # Validate station numbers are unique
         station_numbers = list(station_assignments.values())
         if len(station_numbers) != len(set(station_numbers)):
-            ui.notify('Station numbers must be unique', type='warning')
+            ui.notify("Station numbers must be unique", type="warning")
             return
 
         # Call the callback with station assignments
@@ -110,4 +110,4 @@ class CheckInDialog(BaseDialog):
             await self.close()
         except Exception as e:
             logger.error("Error during check-in callback: %s", e)
-            ui.notify(f'Check-in failed: {str(e)}', type='negative')
+            ui.notify(f"Check-in failed: {str(e)}", type="negative")

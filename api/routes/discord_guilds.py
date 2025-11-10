@@ -17,6 +17,7 @@ router = APIRouter(prefix="/discord-guilds", tags=["discord-guilds"])
 
 class DiscordGuildResponse(BaseModel):
     """Response model for Discord guild."""
+
     id: int
     guild_id: int
     guild_name: str
@@ -31,6 +32,7 @@ class DiscordGuildResponse(BaseModel):
 
 class GuildListResponse(BaseModel):
     """Response for guild list."""
+
     items: List[DiscordGuildResponse]
     count: int
 
@@ -41,7 +43,7 @@ class GuildListResponse(BaseModel):
 )
 async def get_bot_invite_url(
     organization_id: int,
-    _: User = Depends(get_current_user)  # Authentication required, user not used
+    _: User = Depends(get_current_user),  # Authentication required, user not used
 ) -> dict:
     """
     Get Discord bot invite URL for adding bot to a server.
@@ -71,8 +73,7 @@ async def get_bot_invite_url(
     summary="List Discord Guilds",
 )
 async def list_guilds(
-    organization_id: int,
-    current_user: User = Depends(get_current_user)
+    organization_id: int, current_user: User = Depends(get_current_user)
 ) -> GuildListResponse:
     """
     List all Discord guilds linked to an organization.
@@ -85,7 +86,7 @@ async def list_guilds(
     # Convert to response models
     guild_responses = []
     for guild in guilds:
-        await guild.fetch_related('linked_by')
+        await guild.fetch_related("linked_by")
         guild_responses.append(
             DiscordGuildResponse(
                 id=guild.id,
@@ -94,14 +95,11 @@ async def list_guilds(
                 guild_icon_url=guild.guild_icon_url,
                 verified_admin=guild.verified_admin,
                 is_active=guild.is_active,
-                linked_by_username=guild.linked_by.discord_username
+                linked_by_username=guild.linked_by.discord_username,
             )
         )
 
-    return GuildListResponse(
-        items=guild_responses,
-        count=len(guild_responses)
-    )
+    return GuildListResponse(items=guild_responses, count=len(guild_responses))
 
 
 @router.delete(
@@ -109,9 +107,7 @@ async def list_guilds(
     summary="Unlink Discord Guild",
 )
 async def unlink_guild(
-    organization_id: int,
-    guild_id: int,
-    current_user: User = Depends(get_current_user)
+    organization_id: int, guild_id: int, current_user: User = Depends(get_current_user)
 ) -> dict:
     """
     Unlink a Discord guild from an organization.
@@ -124,7 +120,7 @@ async def unlink_guild(
     if not success:
         raise HTTPException(
             status_code=403,
-            detail="Failed to unlink guild. Check permissions and guild ownership."
+            detail="Failed to unlink guild. Check permissions and guild ownership.",
         )
 
     return {"success": True, "message": "Discord server unlinked successfully"}

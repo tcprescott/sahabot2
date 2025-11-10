@@ -23,100 +23,96 @@ logger = logging.getLogger(__name__)
 class DiscordAuthService:
     """
     Service for handling Discord OAuth2 authentication.
-    
+
     This service manages the OAuth2 flow with Discord and user session management.
     """
-    
+
     DISCORD_API_BASE = "https://discord.com/api/v10"
     DISCORD_AUTHORIZE_URL = "https://discord.com/api/oauth2/authorize"
     DISCORD_TOKEN_URL = "https://discord.com/api/oauth2/token"
-    
+
     def __init__(self):
         """Initialize the Discord auth service."""
         self.user_service = UserService()
         self.audit_service = AuditService()
-    
+
     def get_authorization_url(self, state: str) -> str:
         """
         Generate Discord OAuth2 authorization URL.
-        
+
         Args:
             state: CSRF protection state parameter
-            
+
         Returns:
             str: Authorization URL
         """
         params = {
-            'client_id': settings.DISCORD_CLIENT_ID,
-            'redirect_uri': settings.DISCORD_REDIRECT_URI,
-            'response_type': 'code',
-            'scope': 'identify',
-            'state': state
+            "client_id": settings.DISCORD_CLIENT_ID,
+            "redirect_uri": settings.DISCORD_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "identify",
+            "state": state,
         }
-        
+
         query_string = urlencode(params)
         return f"{self.DISCORD_AUTHORIZE_URL}?{query_string}"
-    
+
     async def exchange_code_for_token(self, code: str) -> Dict[str, Any]:
         """
         Exchange authorization code for access token.
-        
+
         Args:
             code: Authorization code from Discord
-            
+
         Returns:
             Dict[str, Any]: Token response from Discord
-            
+
         Raises:
             httpx.HTTPError: If token exchange fails
         """
         data = {
-            'client_id': settings.DISCORD_CLIENT_ID,
-            'client_secret': settings.DISCORD_CLIENT_SECRET,
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': settings.DISCORD_REDIRECT_URI,
+            "client_id": settings.DISCORD_CLIENT_ID,
+            "client_secret": settings.DISCORD_CLIENT_SECRET,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": settings.DISCORD_REDIRECT_URI,
         }
-        
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-        
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                self.DISCORD_TOKEN_URL,
-                data=data,
-                headers=headers
+                self.DISCORD_TOKEN_URL, data=data, headers=headers
             )
-            
+
             # Log error details if request fails
             if response.status_code != 200:
                 error_text = response.text
                 raise httpx.HTTPStatusError(
                     f"Discord token exchange failed: {error_text}",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
-            
+
             return response.json()
-    
+
     async def get_user_info(self, access_token: str) -> Dict[str, Any]:
         """
         Get user information from Discord.
-        
+
         Args:
             access_token: Discord access token
-            
+
         Returns:
             Dict[str, Any]: User information from Discord
-            
+
         Raises:
             httpx.HTTPError: If request fails
         """
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.DISCORD_API_BASE}/users/@me",
-                headers={'Authorization': f"Bearer {access_token}"}
+                headers={"Authorization": f"Bearer {access_token}"},
             )
             response.raise_for_status()
             return response.json()
@@ -135,21 +131,17 @@ class DiscordAuthService:
             httpx.HTTPError: If token refresh fails
         """
         data = {
-            'client_id': settings.DISCORD_CLIENT_ID,
-            'client_secret': settings.DISCORD_CLIENT_SECRET,
-            'grant_type': 'refresh_token',
-            'refresh_token': refresh_token,
+            "client_id": settings.DISCORD_CLIENT_ID,
+            "client_secret": settings.DISCORD_CLIENT_SECRET,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
         }
 
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                self.DISCORD_TOKEN_URL,
-                data=data,
-                headers=headers
+                self.DISCORD_TOKEN_URL, data=data, headers=headers
             )
 
             # Log error details if request fails
@@ -158,7 +150,7 @@ class DiscordAuthService:
                 raise httpx.HTTPStatusError(
                     f"Discord token refresh failed: {error_text}",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             return response.json()
@@ -177,7 +169,7 @@ class DiscordAuthService:
         return datetime.now(timezone.utc) + timedelta(seconds=expires_in)
 
     @staticmethod
-    def is_discord_token_expired(user: 'User', buffer_minutes: int = 5) -> bool:
+    def is_discord_token_expired(user: "User", buffer_minutes: int = 5) -> bool:
         """
         Check if Discord access token is expired or expiring soon.
 
@@ -195,17 +187,19 @@ class DiscordAuthService:
         buffer_time = datetime.now(timezone.utc) + timedelta(minutes=buffer_minutes)
         return user.discord_token_expires_at <= buffer_time
 
-    async def authenticate_user(self, code: str, ip_address: Optional[str] = None) -> User:
+    async def authenticate_user(
+        self, code: str, ip_address: Optional[str] = None
+    ) -> User:
         """
         Authenticate user with Discord OAuth2 code.
-        
+
         Args:
             code: Authorization code from Discord
             ip_address: IP address of the user
-            
+
         Returns:
             User: Authenticated user
-            
+
         Raises:
             Exception: If authentication fails
         """
@@ -213,9 +207,11 @@ class DiscordAuthService:
             # Exchange code for token
             logger.info("Attempting to exchange authorization code for token")
             token_data = await self.exchange_code_for_token(code)
-            access_token = token_data['access_token']
-            refresh_token = token_data.get('refresh_token')
-            expires_in = token_data.get('expires_in', 604800)  # Default 7 days if not provided
+            access_token = token_data["access_token"]
+            refresh_token = token_data.get("refresh_token")
+            expires_in = token_data.get(
+                "expires_in", 604800
+            )  # Default 7 days if not provided
             logger.info("Successfully obtained access token")
 
             # Calculate token expiration
@@ -224,14 +220,17 @@ class DiscordAuthService:
             # Get user info from Discord
             logger.info("Fetching user info from Discord")
             discord_user = await self.get_user_info(access_token)
-            logger.info("Successfully retrieved user info for Discord ID: %s", discord_user['id'])
+            logger.info(
+                "Successfully retrieved user info for Discord ID: %s",
+                discord_user["id"],
+            )
 
             # Get or create user in database
             user = await self.user_service.get_or_create_user_from_discord(
-                discord_id=int(discord_user['id']),
-                discord_username=discord_user['username'],
-                discord_discriminator=discord_user.get('discriminator'),
-                discord_avatar=discord_user.get('avatar')
+                discord_id=int(discord_user["id"]),
+                discord_username=discord_user["username"],
+                discord_discriminator=discord_user.get("discriminator"),
+                discord_avatar=discord_user.get("avatar"),
             )
 
             # Store OAuth2 tokens for automatic refresh
@@ -240,13 +239,13 @@ class DiscordAuthService:
                     user=user,
                     access_token=access_token,
                     refresh_token=refresh_token,
-                    expires_at=expires_at
+                    expires_at=expires_at,
                 )
                 logger.info("Stored Discord OAuth2 tokens for user %s", user.id)
 
             # Log the login
             await self.audit_service.log_login(user, ip_address)
-            
+
             return user
         except httpx.HTTPStatusError as e:
             logger.error("Discord OAuth2 error: Status %s", e.response.status_code)
@@ -256,9 +255,8 @@ class DiscordAuthService:
             logger.error("Authentication error: %s", str(e), exc_info=True)
             raise
 
-        
         return user
-    
+
     @staticmethod
     async def get_current_user() -> Optional[User]:
         """
@@ -275,7 +273,7 @@ class DiscordAuthService:
             Optional[User]: Current user with valid token or None if not authenticated
         """
         # Check if impersonation is active
-        impersonated_user_id = app.storage.user.get('impersonated_user_id')
+        impersonated_user_id = app.storage.user.get("impersonated_user_id")
         if impersonated_user_id:
             # Return the impersonated user
             user_repo = UserRepository()
@@ -287,7 +285,7 @@ class DiscordAuthService:
                 await DiscordAuthService.stop_impersonation()
                 # Fall through to get original user
 
-        user_id = app.storage.user.get('user_id')
+        user_id = app.storage.user.get("user_id")
         if not user_id:
             return None
 
@@ -302,7 +300,9 @@ class DiscordAuthService:
 
         # Check if Discord token needs refresh
         if DiscordAuthService.is_discord_token_expired(user):
-            logger.info("Discord token expired for user %s, attempting refresh", user.id)
+            logger.info(
+                "Discord token expired for user %s, attempting refresh", user.id
+            )
             try:
                 # Refresh the token
                 user_service = UserService()
@@ -311,16 +311,14 @@ class DiscordAuthService:
             except Exception as e:
                 # Token refresh failed (invalid/revoked refresh token)
                 logger.warning(
-                    "Failed to refresh Discord token for user %s: %s",
-                    user.id,
-                    str(e)
+                    "Failed to refresh Discord token for user %s: %s", user.id, str(e)
                 )
                 # Clear session to force re-login
                 await DiscordAuthService.clear_current_user()
                 return None
 
         return user
-    
+
     @staticmethod
     async def get_original_user() -> Optional[User]:
         """
@@ -332,13 +330,13 @@ class DiscordAuthService:
         Returns:
             Optional[User]: Original user or None if not authenticated
         """
-        user_id = app.storage.user.get('user_id')
+        user_id = app.storage.user.get("user_id")
         if not user_id:
             return None
 
         user_repo = UserRepository()
         return await user_repo.get_by_id(user_id)
-    
+
     @staticmethod
     def is_impersonating() -> bool:
         """
@@ -347,21 +345,21 @@ class DiscordAuthService:
         Returns:
             bool: True if impersonation is active
         """
-        return app.storage.user.get('impersonated_user_id') is not None
-    
+        return app.storage.user.get("impersonated_user_id") is not None
+
     @staticmethod
     async def set_current_user(user: User) -> None:
         """
         Set current authenticated user in session.
-        
+
         Args:
             user: User to set as current
         """
         # Only store serializable data (not the ORM object)
-        app.storage.user['user_id'] = user.id
-        app.storage.user['discord_id'] = user.discord_id
-        app.storage.user['permission'] = user.permission.value
-    
+        app.storage.user["user_id"] = user.id
+        app.storage.user["discord_id"] = user.discord_id
+        app.storage.user["permission"] = user.permission.value
+
     @staticmethod
     async def start_impersonation(target_user: User) -> None:
         """
@@ -373,79 +371,81 @@ class DiscordAuthService:
             target_user: User to impersonate
         """
         # Store the impersonated user ID
-        app.storage.user['impersonated_user_id'] = target_user.id
-        app.storage.user['impersonated_discord_id'] = target_user.discord_id
-        app.storage.user['impersonated_permission'] = target_user.permission.value
+        app.storage.user["impersonated_user_id"] = target_user.id
+        app.storage.user["impersonated_discord_id"] = target_user.discord_id
+        app.storage.user["impersonated_permission"] = target_user.permission.value
 
         logger.info(
             "Started impersonation: original_user=%s, impersonated_user=%s",
-            app.storage.user.get('user_id'),
-            target_user.id
+            app.storage.user.get("user_id"),
+            target_user.id,
         )
-    
+
     @staticmethod
     async def stop_impersonation() -> None:
         """
         Stop impersonating and return to original user.
         """
-        impersonated_user_id = app.storage.user.get('impersonated_user_id')
-        
+        impersonated_user_id = app.storage.user.get("impersonated_user_id")
+
         # Clear impersonation data
-        app.storage.user.pop('impersonated_user_id', None)
-        app.storage.user.pop('impersonated_discord_id', None)
-        app.storage.user.pop('impersonated_permission', None)
+        app.storage.user.pop("impersonated_user_id", None)
+        app.storage.user.pop("impersonated_discord_id", None)
+        app.storage.user.pop("impersonated_permission", None)
 
         logger.info(
             "Stopped impersonation: original_user=%s, was_impersonating=%s",
-            app.storage.user.get('user_id'),
-            impersonated_user_id
+            app.storage.user.get("user_id"),
+            impersonated_user_id,
         )
-    
+
     @staticmethod
     async def clear_current_user() -> None:
         """Clear current user from session (logout)."""
         app.storage.user.clear()
-    
+
     @staticmethod
-    async def require_auth(redirect_to: str = '/') -> Optional[User]:
+    async def require_auth(redirect_to: str = "/") -> Optional[User]:
         """
         Require authentication for current page.
-        
+
         Args:
             redirect_to: URL to redirect to after login
-            
+
         Returns:
             Optional[User]: Current user if authenticated
         """
         user = await DiscordAuthService.get_current_user()
         if not user:
-            app.storage.user['redirect_after_login'] = redirect_to
-            ui.navigate.to('/auth/login')
+            app.storage.user["redirect_after_login"] = redirect_to
+            ui.navigate.to("/auth/login")
             return None
         return user
-    
+
     @staticmethod
-    async def require_permission(permission: int, redirect_to: str = '/') -> Optional[User]:
+    async def require_permission(
+        permission: int, redirect_to: str = "/"
+    ) -> Optional[User]:
         """
         Require specific permission level for current page.
-        
+
         Args:
             permission: Required permission level
             redirect_to: URL to redirect to if unauthorized
-            
+
         Returns:
             Optional[User]: Current user if authorized
         """
         user = await DiscordAuthService.get_current_user()
-        
+
         if not user:
-            app.storage.user['redirect_after_login'] = redirect_to
-            ui.navigate.to('/auth/login')
+            app.storage.user["redirect_after_login"] = redirect_to
+            ui.navigate.to("/auth/login")
             return None
-        
+
         if not user.has_permission(permission):
-            ui.navigate.to('/')
-            ui.notify('You do not have permission to access this page', type='negative')
+            ui.navigate.to("/")
+            ui.notify("You do not have permission to access this page", type="negative")
             return None
-        
+
         return user

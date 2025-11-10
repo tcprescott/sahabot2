@@ -160,7 +160,9 @@ async def update_bot(
     try:
         bot = await service.update_bot(bot_id, current_user, **updates)
         if not bot:
-            raise HTTPException(status_code=404, detail="Bot not found or access denied")
+            raise HTTPException(
+                status_code=404, detail="Bot not found or access denied"
+            )
         return RacetimeBotOut.model_validate(bot)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -192,7 +194,9 @@ async def delete_bot(
     service = RacetimeBotService()
     success = await service.delete_bot(bot_id, current_user)
     if not success:
-        raise HTTPException(status_code=404, detail="Bot not found or insufficient permissions")
+        raise HTTPException(
+            status_code=404, detail="Bot not found or insufficient permissions"
+        )
 
 
 @router.get(
@@ -286,4 +290,6 @@ async def unassign_bot_from_organization(
         bot_id, organization_id, current_user
     )
     if not success:
-        raise HTTPException(status_code=404, detail="Assignment not found or insufficient permissions")
+        raise HTTPException(
+            status_code=404, detail="Assignment not found or insufficient permissions"
+        )

@@ -11,12 +11,17 @@ from api.schemas.race_room_profile import (
     RaceRoomProfileResponse,
     RaceRoomProfileListResponse,
 )
-from application.services.racetime.race_room_profile_service import RaceRoomProfileService
+from application.services.racetime.race_room_profile_service import (
+    RaceRoomProfileService,
+)
 from models import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/organizations/{organization_id}/race-room-profiles", tags=["race-room-profiles"])
+router = APIRouter(
+    prefix="/organizations/{organization_id}/race-room-profiles",
+    tags=["race-room-profiles"],
+)
 
 
 @router.get(
@@ -26,8 +31,7 @@ router = APIRouter(prefix="/organizations/{organization_id}/race-room-profiles",
     summary="List Race Room Profiles",
 )
 async def list_profiles(
-    organization_id: int,
-    current_user: User = Depends(get_current_user)
+    organization_id: int, current_user: User = Depends(get_current_user)
 ) -> RaceRoomProfileListResponse:
     """
     List all race room profiles for an organization.
@@ -39,7 +43,7 @@ async def list_profiles(
 
     return RaceRoomProfileListResponse(
         items=[RaceRoomProfileResponse.model_validate(p) for p in profiles],
-        count=len(profiles)
+        count=len(profiles),
     )
 
 
@@ -52,7 +56,7 @@ async def list_profiles(
 async def get_profile(
     organization_id: int,
     profile_id: int,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RaceRoomProfileResponse:
     """
     Get a specific race room profile.
@@ -78,7 +82,7 @@ async def get_profile(
 async def create_profile(
     organization_id: int,
     profile_data: RaceRoomProfileCreate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RaceRoomProfileResponse:
     """
     Create a new race room profile.
@@ -120,7 +124,7 @@ async def update_profile(
     organization_id: int,
     profile_id: int,
     profile_data: RaceRoomProfileUpdate,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RaceRoomProfileResponse:
     """
     Update a race room profile.
@@ -143,7 +147,9 @@ async def update_profile(
     )
 
     if not profile:
-        raise HTTPException(status_code=404, detail="Profile not found or permission denied")
+        raise HTTPException(
+            status_code=404, detail="Profile not found or permission denied"
+        )
 
     return RaceRoomProfileResponse.model_validate(profile)
 
@@ -157,7 +163,7 @@ async def update_profile(
 async def delete_profile(
     organization_id: int,
     profile_id: int,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete a race room profile.
@@ -169,7 +175,9 @@ async def delete_profile(
     success = await service.delete_profile(current_user, organization_id, profile_id)
 
     if not success:
-        raise HTTPException(status_code=404, detail="Profile not found or permission denied")
+        raise HTTPException(
+            status_code=404, detail="Profile not found or permission denied"
+        )
 
 
 @router.post(
@@ -181,7 +189,7 @@ async def delete_profile(
 async def set_default_profile(
     organization_id: int,
     profile_id: int,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RaceRoomProfileResponse:
     """
     Set a race room profile as the default for the organization.
@@ -190,10 +198,14 @@ async def set_default_profile(
     Authorization is enforced at the service layer.
     """
     service = RaceRoomProfileService()
-    success = await service.set_default_profile(current_user, organization_id, profile_id)
+    success = await service.set_default_profile(
+        current_user, organization_id, profile_id
+    )
 
     if not success:
-        raise HTTPException(status_code=404, detail="Profile not found or permission denied")
+        raise HTTPException(
+            status_code=404, detail="Profile not found or permission denied"
+        )
 
     # Fetch and return the updated profile
     profile = await service.get_profile(current_user, organization_id, profile_id)

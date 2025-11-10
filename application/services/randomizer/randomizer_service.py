@@ -25,6 +25,7 @@ class RandomizerResult:
         spoiler_url: Optional URL to spoiler log
         metadata: Additional metadata specific to the randomizer
     """
+
     url: str
     hash_id: str
     settings: Dict[str, Any]
@@ -63,38 +64,49 @@ class RandomizerService:
         name = name.lower()
 
         # Lazy import to avoid circular dependencies
-        if name == 'alttpr':
+        if name == "alttpr":
             from .alttpr_service import ALTTPRService
+
             return ALTTPRService()
-        elif name == 'aosr':
+        elif name == "aosr":
             from .aosr_service import AOSRService
+
             return AOSRService()
-        elif name == 'z1r':
+        elif name == "z1r":
             from .z1r_service import Z1RService
+
             return Z1RService()
-        elif name == 'ootr':
+        elif name == "ootr":
             from .ootr_service import OOTRService
+
             return OOTRService()
-        elif name == 'ffr':
+        elif name == "ffr":
             from .ffr_service import FFRService
+
             return FFRService()
-        elif name == 'smb3r':
+        elif name == "smb3r":
             from .smb3r_service import SMB3RService
+
             return SMB3RService()
-        elif name == 'sm':
+        elif name == "sm":
             from .sm_service import SMService
+
             return SMService()
-        elif name == 'smz3':
+        elif name == "smz3":
             from .smz3_service import SMZ3Service
+
             return SMZ3Service()
-        elif name == 'ctjets' or name == 'ct':
+        elif name == "ctjets" or name == "ct":
             from .ctjets_service import CTJetsService
+
             return CTJetsService()
-        elif name == 'bingosync' or name == 'bingo':
+        elif name == "bingosync" or name == "bingo":
             from .bingosync_service import BingosyncService
+
             return BingosyncService()
-        elif name == 'avianart':
+        elif name == "avianart":
             from .avianart_service import AvianartService
+
             return AvianartService()
         else:
             raise ValueError(f"Unknown randomizer: {name}")
@@ -106,4 +118,16 @@ class RandomizerService:
         Returns:
             list[str]: List of randomizer names
         """
-        return ['alttpr', 'aosr', 'z1r', 'ootr', 'ffr', 'smb3r', 'sm', 'smz3', 'ctjets', 'bingosync', 'avianart']
+        return [
+            "alttpr",
+            "aosr",
+            "z1r",
+            "ootr",
+            "ffr",
+            "smb3r",
+            "sm",
+            "smz3",
+            "ctjets",
+            "bingosync",
+            "avianart",
+        ]

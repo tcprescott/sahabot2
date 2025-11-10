@@ -29,26 +29,23 @@ class PresetNamespacePermission(Model):
 
     id = fields.IntField(pk=True)
     namespace = fields.ForeignKeyField(
-        'models.PresetNamespace',
-        related_name='permissions',
-        description="Namespace these permissions apply to"
+        "models.PresetNamespace",
+        related_name="permissions",
+        description="Namespace these permissions apply to",
     )
     user = fields.ForeignKeyField(
-        'models.User',
-        related_name='namespace_permissions',
-        description="User granted these permissions"
+        "models.User",
+        related_name="namespace_permissions",
+        description="User granted these permissions",
     )
     can_create = fields.BooleanField(
-        default=False,
-        description="Can create presets in namespace"
+        default=False, description="Can create presets in namespace"
     )
     can_update = fields.BooleanField(
-        default=False,
-        description="Can update presets in namespace"
+        default=False, description="Can update presets in namespace"
     )
     can_delete = fields.BooleanField(
-        default=False,
-        description="Can delete presets in namespace"
+        default=False, description="Can delete presets in namespace"
     )
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
@@ -70,5 +67,5 @@ class PresetNamespacePermission(Model):
             perms.append("update")
         if self.can_delete:
             perms.append("delete")
-        perm_str = ', '.join(perms) if perms else 'none'
+        perm_str = ", ".join(perms) if perms else "none"
         return f"Namespace {self.namespace.id} permissions for user {self.user.id}: {perm_str}"  # type: ignore

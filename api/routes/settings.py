@@ -18,6 +18,7 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 
 # ========== Global Settings ==========
 
+
 @router.get(
     "/global",
     response_model=SettingListResponse,
@@ -26,7 +27,7 @@ router = APIRouter(prefix="/settings", tags=["settings"])
     description="List all global settings. Requires SUPERADMIN permission.",
 )
 async def list_global_settings(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingListResponse:
     """
     List all global settings.
@@ -49,10 +50,7 @@ async def list_global_settings(
     settings = await service.list_global()
     items = [
         SettingOut(
-            key=s.key,
-            value=s.value,
-            description=s.description,
-            is_public=s.is_public
+            key=s.key, value=s.value, description=s.description, is_public=s.is_public
         )
         for s in settings
     ]
@@ -68,8 +66,7 @@ async def list_global_settings(
     status_code=201,
 )
 async def create_global_setting(
-    data: GlobalSettingCreateRequest,
-    current_user: User = Depends(get_current_user)
+    data: GlobalSettingCreateRequest, current_user: User = Depends(get_current_user)
 ) -> SettingOut:
     """
     Create a new global setting.
@@ -92,7 +89,7 @@ async def create_global_setting(
         key=data.key,
         value=data.value,
         description=data.description,
-        is_public=data.is_public
+        is_public=data.is_public,
     )
     setting = await service.get_global(data.key)
     if not setting:
@@ -109,7 +106,7 @@ async def create_global_setting(
 )
 async def get_global_setting(
     key: str = Path(..., description="Setting key"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingOut:
     """
     Get global setting.
@@ -144,7 +141,7 @@ async def get_global_setting(
 async def update_global_setting(
     data: GlobalSettingUpdateRequest,
     key: str = Path(..., description="Setting key"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingOut:
     """
     Update global setting.
@@ -173,8 +170,16 @@ async def update_global_setting(
     await service.set_global(
         key=key,
         value=data.value,
-        description=data.description if data.description is not None else existing.get('description'),
-        is_public=data.is_public if data.is_public is not None else existing.get('is_public', False)
+        description=(
+            data.description
+            if data.description is not None
+            else existing.get("description")
+        ),
+        is_public=(
+            data.is_public
+            if data.is_public is not None
+            else existing.get("is_public", False)
+        ),
     )
     setting = await service.get_global(key)
     if not setting:
@@ -191,7 +196,7 @@ async def update_global_setting(
 )
 async def delete_global_setting(
     key: str = Path(..., description="Setting key"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete global setting.
@@ -212,6 +217,7 @@ async def delete_global_setting(
 
 # ========== Organization Settings ==========
 
+
 @router.get(
     "/organizations/{organization_id}",
     response_model=SettingListResponse,
@@ -221,7 +227,7 @@ async def delete_global_setting(
 )
 async def list_organization_settings(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingListResponse:
     """
     List organization settings.
@@ -239,7 +245,10 @@ async def list_organization_settings(
         HTTPException: 403 if not authorized
     """
     # Check authorization via organization service
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -248,11 +257,7 @@ async def list_organization_settings(
     service = SettingsService()
     settings = await service.list_org(organization_id)
     items = [
-        SettingOut(
-            key=s.key,
-            value=s.value,
-            description=s.description
-        )
+        SettingOut(key=s.key, value=s.value, description=s.description)
         for s in settings
     ]
     return SettingListResponse(items=items, count=len(items))
@@ -269,7 +274,7 @@ async def list_organization_settings(
 async def create_organization_setting(
     data: OrganizationSettingCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingOut:
     """
     Create organization setting.
@@ -285,7 +290,10 @@ async def create_organization_setting(
     Raises:
         HTTPException: 403 if not authorized
     """
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -296,7 +304,7 @@ async def create_organization_setting(
         organization_id=organization_id,
         key=data.key,
         value=data.value,
-        description=data.description
+        description=data.description,
     )
     setting = await service.get_org(organization_id, data.key)
     if not setting:
@@ -314,7 +322,7 @@ async def create_organization_setting(
 async def get_organization_setting(
     organization_id: int = Path(..., description="Organization ID"),
     key: str = Path(..., description="Setting key"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingOut:
     """
     Get organization setting.
@@ -330,7 +338,10 @@ async def get_organization_setting(
     Raises:
         HTTPException: 403 if not authorized, 404 if not found
     """
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -354,7 +365,7 @@ async def update_organization_setting(
     data: OrganizationSettingUpdateRequest,
     organization_id: int = Path(..., description="Organization ID"),
     key: str = Path(..., description="Setting key"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SettingOut:
     """
     Update organization setting.
@@ -371,7 +382,10 @@ async def update_organization_setting(
     Raises:
         HTTPException: 403 if not authorized, 404 if not found
     """
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -386,7 +400,11 @@ async def update_organization_setting(
         organization_id=organization_id,
         key=key,
         value=data.value,
-        description=data.description if data.description is not None else existing.get('description')
+        description=(
+            data.description
+            if data.description is not None
+            else existing.get("description")
+        ),
     )
     setting = await service.get_org(organization_id, key)
     if not setting:
@@ -404,7 +422,7 @@ async def update_organization_setting(
 async def delete_organization_setting(
     organization_id: int = Path(..., description="Organization ID"),
     key: str = Path(..., description="Setting key"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete organization setting.
@@ -417,7 +435,10 @@ async def delete_organization_setting(
     Raises:
         HTTPException: 403 if not authorized
     """
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:

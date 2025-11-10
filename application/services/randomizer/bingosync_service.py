@@ -23,7 +23,7 @@ class BingosyncService:
     for public consumption. This could break at any time.
     """
 
-    BASE_URL = 'https://bingosync.com'
+    BASE_URL = "https://bingosync.com"
 
     def __init__(self, nickname: str = "SahaBot2"):
         """
@@ -41,11 +41,11 @@ class BingosyncService:
         passphrase: str,
         game_type: str,
         variant_type: Optional[str] = None,
-        lockout_mode: str = '1',
-        seed: str = '',
-        custom_json: str = '',
-        is_spectator: str = 'on',
-        hide_card: str = 'on'
+        lockout_mode: str = "1",
+        seed: str = "",
+        custom_json: str = "",
+        is_spectator: str = "on",
+        hide_card: str = "on",
     ) -> RandomizerResult:
         """
         Create a new Bingosync room.
@@ -73,38 +73,37 @@ class BingosyncService:
 
         # Prepare form data
         data = {
-            'csrfmiddlewaretoken': csrf_token,
-            'nickname': self.nickname,
-            'room_name': room_name,
-            'passphrase': passphrase,
-            'game_type': game_type,
-            'lockout_mode': lockout_mode,
-            'seed': seed,
-            'custom_json': custom_json,
-            'is_spectator': is_spectator,
-            'hide_card': hide_card
+            "csrfmiddlewaretoken": csrf_token,
+            "nickname": self.nickname,
+            "room_name": room_name,
+            "passphrase": passphrase,
+            "game_type": game_type,
+            "lockout_mode": lockout_mode,
+            "seed": seed,
+            "custom_json": custom_json,
+            "is_spectator": is_spectator,
+            "hide_card": hide_card,
         }
 
         if variant_type is not None:
-            data['variant_type'] = variant_type
+            data["variant_type"] = variant_type
 
         logger.info("Creating Bingosync room: %s", room_name)
 
-        async with httpx.AsyncClient(cookies=self.cookies, follow_redirects=False) as client:
+        async with httpx.AsyncClient(
+            cookies=self.cookies, follow_redirects=False
+        ) as client:
             response = await client.post(
                 self.BASE_URL,
                 data=data,
-                headers={
-                    'Origin': self.BASE_URL,
-                    'Referer': self.BASE_URL
-                }
+                headers={"Origin": self.BASE_URL, "Referer": self.BASE_URL},
             )
 
             # Store cookies for future requests
             self.cookies.update(response.cookies)
 
             if response.status_code == 302:
-                room_id = response.headers['Location'].split("/")[-1]
+                room_id = response.headers["Location"].split("/")[-1]
                 room_url = f"{self.BASE_URL}/room/{room_id}"
 
                 logger.info("Created Bingosync room %s", room_id)
@@ -113,18 +112,18 @@ class BingosyncService:
                     url=room_url,
                     hash_id=room_id,
                     settings={
-                        'game_type': game_type,
-                        'variant_type': variant_type,
-                        'seed': seed,
-                        'lockout_mode': lockout_mode
+                        "game_type": game_type,
+                        "variant_type": variant_type,
+                        "seed": seed,
+                        "lockout_mode": lockout_mode,
                     },
-                    randomizer='bingosync',
+                    randomizer="bingosync",
                     permalink=room_url,
                     metadata={
-                        'room_id': room_id,
-                        'password': passphrase,
-                        'room_name': room_name
-                    }
+                        "room_id": room_id,
+                        "password": passphrase,
+                        "room_name": room_name,
+                    },
                 )
             else:
                 raise ValueError("Failed to create Bingosync room")
@@ -134,10 +133,10 @@ class BingosyncService:
         room_id: str,
         game_type: str,
         variant_type: Optional[str] = None,
-        lockout_mode: str = '1',
-        seed: str = '',
-        custom_json: str = '',
-        hide_card: bool = True
+        lockout_mode: str = "1",
+        seed: str = "",
+        custom_json: str = "",
+        hide_card: bool = True,
     ) -> Dict[str, Any]:
         """
         Generate a new card for an existing room.
@@ -158,22 +157,19 @@ class BingosyncService:
             httpx.HTTPError: If the request fails
         """
         data = {
-            'hide_card': hide_card,
-            'game_type': game_type,
-            'custom_json': custom_json,
-            'lockout_mode': lockout_mode,
-            'seed': seed,
-            'room': room_id
+            "hide_card": hide_card,
+            "game_type": game_type,
+            "custom_json": custom_json,
+            "lockout_mode": lockout_mode,
+            "seed": seed,
+            "room": room_id,
         }
 
         if variant_type is not None:
-            data['variant_type'] = variant_type
+            data["variant_type"] = variant_type
 
         async with httpx.AsyncClient(cookies=self.cookies) as client:
-            response = await client.put(
-                f"{self.BASE_URL}/api/new-card",
-                json=data
-            )
+            response = await client.put(f"{self.BASE_URL}/api/new-card", json=data)
             response.raise_for_status()
             return response.json()
 
@@ -192,7 +188,7 @@ class BingosyncService:
             response.raise_for_status()
 
             soup = BeautifulSoup(response.text, features="html.parser")
-            csrf_input = soup.find('input', {'name': 'csrfmiddlewaretoken'})
+            csrf_input = soup.find("input", {"name": "csrfmiddlewaretoken"})
 
             if not csrf_input:
                 raise ValueError("Could not find CSRF token")
@@ -200,4 +196,4 @@ class BingosyncService:
             # Store cookies for subsequent requests
             self.cookies.update(response.cookies)
 
-            return csrf_input.get('value')
+            return csrf_input.get("value")

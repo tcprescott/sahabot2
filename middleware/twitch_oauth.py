@@ -40,11 +40,11 @@ class TwitchOAuthService:
             str: Authorization URL
         """
         params = {
-            'client_id': self.client_id,
-            'redirect_uri': self.redirect_uri,
-            'response_type': 'code',
-            'state': state,
-            'force_verify': 'true'
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+            "response_type": "code",
+            "state": state,
+            "force_verify": "true",
         }
 
         query_string = urlencode(params)
@@ -64,31 +64,30 @@ class TwitchOAuthService:
             httpx.HTTPError: If token exchange fails
         """
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': self.redirect_uri
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": self.redirect_uri,
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.twitch_auth_url}/token",
                 data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             # Log error details if request fails
             if response.status_code != 200:
                 # Don't log the full error response
                 logger.error(
-                    "Twitch token exchange failed with status %s",
-                    response.status_code
+                    "Twitch token exchange failed with status %s", response.status_code
                 )
                 raise httpx.HTTPStatusError(
                     "Twitch token exchange failed",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             return response.json()
@@ -107,28 +106,27 @@ class TwitchOAuthService:
             httpx.HTTPError: If token refresh fails
         """
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': refresh_token,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.twitch_auth_url}/token",
                 data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             if response.status_code != 200:
                 logger.error(
-                    "Twitch token refresh failed with status %s",
-                    response.status_code
+                    "Twitch token refresh failed with status %s", response.status_code
                 )
                 raise httpx.HTTPStatusError(
                     "Twitch token refresh failed",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             return response.json()
@@ -162,27 +160,27 @@ class TwitchOAuthService:
             response = await client.get(
                 f"{self.twitch_api_url}/users",
                 headers={
-                    'Authorization': f"Bearer {access_token}",
-                    'Client-Id': self.client_id
-                }
+                    "Authorization": f"Bearer {access_token}",
+                    "Client-Id": self.client_id,
+                },
             )
 
             if response.status_code != 200:
                 # Don't log the full error response
                 logger.error(
                     "Twitch userinfo request failed with status %s",
-                    response.status_code
+                    response.status_code,
                 )
                 raise httpx.HTTPStatusError(
                     "Twitch userinfo request failed",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             data = response.json()
             # Twitch returns data in a 'data' array with user info
-            if 'data' in data and len(data['data']) > 0:
-                return data['data'][0]
+            if "data" in data and len(data["data"]) > 0:
+                return data["data"][0]
             else:
                 logger.error("Twitch userinfo response missing data")
                 raise ValueError("Invalid Twitch userinfo response")

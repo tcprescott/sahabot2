@@ -42,39 +42,38 @@ class OrganizationAuditLogsView:
 
     async def render(self):
         """Render the audit logs interface."""
-        with ui.column().classes('full-width gap-md'):
+        with ui.column().classes("full-width gap-md"):
             # Header section
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-header'):
-                    ui.label('Organization Audit Logs').classes('text-xl font-bold')
-                with ui.element('div').classes('card-body'):
+            with ui.element("div").classes("card"):
+                with ui.element("div").classes("card-header"):
+                    ui.label("Organization Audit Logs").classes("text-xl font-bold")
+                with ui.element("div").classes("card-body"):
                     ui.label(
-                        f'View audit events for {self.organization.name}. '
-                        'This includes all actions performed within this organization.'
-                    ).classes('text-secondary')
+                        f"View audit events for {self.organization.name}. "
+                        "This includes all actions performed within this organization."
+                    ).classes("text-secondary")
 
             # Filters and controls
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-body'):
-                    with ui.row().classes('full-width gap-4 items-center'):
+            with ui.element("div").classes("card"):
+                with ui.element("div").classes("card-body"):
+                    with ui.row().classes("full-width gap-4 items-center"):
                         # Action filter
                         action_input = ui.input(
-                            label='Filter by action',
-                            placeholder='e.g., tournament_created, member_added'
-                        ).classes('flex-grow')
+                            label="Filter by action",
+                            placeholder="e.g., tournament_created, member_added",
+                        ).classes("flex-grow")
                         action_input.on(
-                            'update:model-value',
-                            lambda e: self._on_action_filter(e.args)
+                            "update:model-value",
+                            lambda e: self._on_action_filter(e.args),
                         )
 
                         # Refresh button
-                        ui.button(
-                            icon='refresh',
-                            on_click=self._refresh_logs
-                        ).classes('btn').props('flat')
+                        ui.button(icon="refresh", on_click=self._refresh_logs).classes(
+                            "btn"
+                        ).props("flat")
 
             # Audit logs table
-            self.table_container = ui.column().classes('full-width')
+            self.table_container = ui.column().classes("full-width")
             await self._refresh_logs()
 
     async def _refresh_logs(self):
@@ -102,35 +101,33 @@ class OrganizationAuditLogsView:
         """Render the audit logs table."""
         if not self.audit_logs:
             EmptyState.no_items(
-                item_name='audit logs',
-                message='No audit logs match your filters',
-                icon='history',
-                in_card=True
+                item_name="audit logs",
+                message="No audit logs match your filters",
+                icon="history",
+                in_card=True,
             )
             return
 
         columns = [
             TableColumn(
-                label='Timestamp',
+                label="Timestamp",
                 cell_render=lambda log: DateTimeLabel.create(
-                    log.created_at,
-                    format_type='datetime'
-                )
+                    log.created_at, format_type="datetime"
+                ),
             ),
             TableColumn(
-                label='User',
+                label="User",
                 cell_render=lambda log: ui.label(
-                    log.user.get_display_name() if log.user else 'System'
-                )
+                    log.user.get_display_name() if log.user else "System"
+                ),
             ),
             TableColumn(
-                label='Action',
-                cell_render=lambda log: ui.label(log.action).classes('font-mono text-sm')
+                label="Action",
+                cell_render=lambda log: ui.label(log.action).classes(
+                    "font-mono text-sm"
+                ),
             ),
-            TableColumn(
-                label='Details',
-                cell_render=render_audit_log_details
-            ),
+            TableColumn(label="Details", cell_render=render_audit_log_details),
         ]
 
         table = ResponsiveTable(columns=columns, rows=self.audit_logs)
@@ -144,29 +141,31 @@ class OrganizationAuditLogsView:
         total_pages = (self.total_count + self.page_size - 1) // self.page_size
         current_page = self.current_page + 1
 
-        with ui.element('div').classes('card'):
-            with ui.element('div').classes('card-body'):
-                with ui.row().classes('items-center justify-between full-width'):
+        with ui.element("div").classes("card"):
+            with ui.element("div").classes("card-body"):
+                with ui.row().classes("items-center justify-between full-width"):
                     # Page info
                     start = self.current_page * self.page_size + 1
-                    end = min((self.current_page + 1) * self.page_size, self.total_count)
+                    end = min(
+                        (self.current_page + 1) * self.page_size, self.total_count
+                    )
                     ui.label(
-                        f'Showing {start}-{end} of {self.total_count} logs'
-                    ).classes('text-secondary')
+                        f"Showing {start}-{end} of {self.total_count} logs"
+                    ).classes("text-secondary")
 
                     # Navigation buttons
-                    with ui.row().classes('gap-2'):
+                    with ui.row().classes("gap-2"):
                         ui.button(
-                            icon='chevron_left',
-                            on_click=self._previous_page
-                        ).classes('btn').props('flat').set_enabled(self.current_page > 0)
+                            icon="chevron_left", on_click=self._previous_page
+                        ).classes("btn").props("flat").set_enabled(
+                            self.current_page > 0
+                        )
 
-                        ui.label(f'Page {current_page} of {total_pages}')
+                        ui.label(f"Page {current_page} of {total_pages}")
 
                         ui.button(
-                            icon='chevron_right',
-                            on_click=self._next_page
-                        ).classes('btn').props('flat').set_enabled(
+                            icon="chevron_right", on_click=self._next_page
+                        ).classes("btn").props("flat").set_enabled(
                             self.current_page < total_pages - 1
                         )
 

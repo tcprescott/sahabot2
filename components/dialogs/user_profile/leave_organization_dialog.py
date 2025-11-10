@@ -30,27 +30,31 @@ class LeaveOrganizationDialog(BaseDialog):
     async def show(self) -> None:
         """Display the dialog."""
         self.create_dialog(
-            title=f'Leave {self.org_name}?',
-            icon='warning',
-            max_width='dialog-card-sm',
+            title=f"Leave {self.org_name}?",
+            icon="warning",
+            max_width="dialog-card-sm",
         )
         await super().show()
 
     def _render_body(self) -> None:
         """Render dialog content."""
         # Warning message
-        with ui.element('div').classes('alert alert-warning mb-4'):
-            with ui.row().classes('items-center gap-sm'):
-                ui.icon('warning').classes('icon-medium')
-                ui.label('This action cannot be undone').classes('text-bold')
+        with ui.element("div").classes("alert alert-warning mb-4"):
+            with ui.row().classes("items-center gap-sm"):
+                ui.icon("warning").classes("icon-medium")
+                ui.label("This action cannot be undone").classes("text-bold")
 
-        ui.label('Are you sure you want to leave this organization?').classes('mb-2')
-        ui.label('You will lose access to all organization resources and need to be re-invited to rejoin.').classes('text-secondary text-sm')
+        ui.label("Are you sure you want to leave this organization?").classes("mb-2")
+        ui.label(
+            "You will lose access to all organization resources and need to be re-invited to rejoin."
+        ).classes("text-secondary text-sm")
 
         # Actions
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Leave Organization', on_click=self._handle_confirm).props('color=negative').classes('btn')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Leave Organization", on_click=self._handle_confirm).props(
+                "color=negative"
+            ).classes("btn")
 
     async def _handle_confirm(self) -> None:
         """Handle confirm button click."""

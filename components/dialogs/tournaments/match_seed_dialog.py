@@ -35,47 +35,55 @@ class MatchSeedDialog(BaseDialog):
     async def show(self) -> None:
         """Display the dialog."""
         self.create_dialog(
-            title=f'Set Seed for {self._match_title}',
-            icon='file_download',
-            max_width='dialog-card'
+            title=f"Set Seed for {self._match_title}",
+            icon="file_download",
+            max_width="dialog-card",
         )
         await super().show()
 
     def _render_body(self) -> None:
         """Render dialog body with form fields."""
         with self.create_form_grid(columns=1):
-            with ui.element('div'):
+            with ui.element("div"):
                 self._url_input = ui.input(
-                    label='Seed URL',
-                    placeholder='https://example.com/seed.zip',
-                    value=self._initial_url
-                ).classes('w-full')
-            with ui.element('div'):
+                    label="Seed URL",
+                    placeholder="https://example.com/seed.zip",
+                    value=self._initial_url,
+                ).classes("w-full")
+            with ui.element("div"):
                 self._desc_input = ui.textarea(
-                    label='Description (optional)',
-                    placeholder='Additional notes about the seed...',
-                    value=self._initial_description or ""
-                ).classes('w-full')
+                    label="Description (optional)",
+                    placeholder="Additional notes about the seed...",
+                    value=self._initial_description or "",
+                ).classes("w-full")
 
         with self.create_actions_row():
             # Left side - delete button if seed exists (or empty spacer)
             if self._initial_url and self._on_delete:
-                ui.button('Delete', icon='delete', on_click=self._handle_delete).classes('btn').props('color=negative')
+                ui.button(
+                    "Delete", icon="delete", on_click=self._handle_delete
+                ).classes("btn").props("color=negative")
             else:
-                ui.button('Cancel', on_click=self.close).classes('btn')
-            
+                ui.button("Cancel", on_click=self.close).classes("btn")
+
             # Right side - save button
-            ui.button('Save', on_click=self._handle_submit).classes('btn').props('color=positive')
+            ui.button("Save", on_click=self._handle_submit).classes("btn").props(
+                "color=positive"
+            )
 
     async def _handle_submit(self) -> None:
         """Handle Save click and call callback."""
         if not self._url_input or not self._url_input.value:
-            ui.notify('Seed URL is required', type='warning')
+            ui.notify("Seed URL is required", type="warning")
             return
-        
+
         url = self._url_input.value.strip()
-        description = self._desc_input.value.strip() if self._desc_input and self._desc_input.value else None
-        
+        description = (
+            self._desc_input.value.strip()
+            if self._desc_input and self._desc_input.value
+            else None
+        )
+
         if self._on_submit:
             await self._on_submit(url, description)
         await self.close()

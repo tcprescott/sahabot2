@@ -18,65 +18,64 @@ class TournamentMatchSettingsRepository:
 
     async def get_by_id(self, settings_id: int) -> Optional[TournamentMatchSettings]:
         """Get settings submission by ID."""
-        return await TournamentMatchSettings.get_or_none(id=settings_id).prefetch_related('match', 'submitted_by')
+        return await TournamentMatchSettings.get_or_none(
+            id=settings_id
+        ).prefetch_related("match", "submitted_by")
 
     async def get_for_match_and_game(
-        self,
-        match_id: int,
-        game_number: int = 1
+        self, match_id: int, game_number: int = 1
     ) -> Optional[TournamentMatchSettings]:
         """
         Get settings submission for a specific match and game number.
-        
+
         Args:
             match_id: Match ID
             game_number: Game number in the match series (default 1)
-            
+
         Returns:
             Settings submission or None if not found
         """
         return await TournamentMatchSettings.get_or_none(
-            match_id=match_id,
-            game_number=game_number
-        ).prefetch_related('match', 'submitted_by')
+            match_id=match_id, game_number=game_number
+        ).prefetch_related("match", "submitted_by")
 
     async def list_for_match(self, match_id: int) -> List[TournamentMatchSettings]:
         """
         List all settings submissions for a match.
-        
+
         Args:
             match_id: Match ID
-            
+
         Returns:
             List of settings submissions ordered by game number
         """
-        return await TournamentMatchSettings.filter(
-            match_id=match_id
-        ).order_by('game_number').prefetch_related('match', 'submitted_by')
+        return (
+            await TournamentMatchSettings.filter(match_id=match_id)
+            .order_by("game_number")
+            .prefetch_related("match", "submitted_by")
+        )
 
     async def list_for_tournament(
-        self,
-        tournament_id: int,
-        submitted_only: bool = False
+        self, tournament_id: int, submitted_only: bool = False
     ) -> List[TournamentMatchSettings]:
         """
         List all settings submissions for a tournament.
-        
+
         Args:
             tournament_id: Tournament ID
             submitted_only: If True, only return submitted settings
-            
+
         Returns:
             List of settings submissions ordered by match creation date
         """
-        query = TournamentMatchSettings.filter(
-            match__tournament_id=tournament_id
-        )
-        
+        query = TournamentMatchSettings.filter(match__tournament_id=tournament_id)
+
         if submitted_only:
             query = query.filter(submitted=True)
-        
-        return await query.order_by('-submitted_at').prefetch_related('match', 'submitted_by')
+
+        return await query.order_by("-submitted_at").prefetch_related(
+            "match", "submitted_by"
+        )
 
     async def create(
         self,
@@ -90,7 +89,7 @@ class TournamentMatchSettingsRepository:
     ) -> TournamentMatchSettings:
         """
         Create a settings submission.
-        
+
         Args:
             match_id: Match ID
             submitted_by_id: User ID of submitter
@@ -99,7 +98,7 @@ class TournamentMatchSettingsRepository:
             notes: Optional notes from submitter
             is_valid: Whether settings passed validation (default True)
             validation_error: Validation error message if invalid
-            
+
         Returns:
             Created settings submission
         """
@@ -118,22 +117,20 @@ class TournamentMatchSettingsRepository:
             submission.id,
             match_id,
             game_number,
-            submitted_by_id
+            submitted_by_id,
         )
         return submission
 
     async def update(
-        self,
-        settings_id: int,
-        **updates
+        self, settings_id: int, **updates
     ) -> Optional[TournamentMatchSettings]:
         """
         Update a settings submission.
-        
+
         Args:
             settings_id: Settings submission ID
             **updates: Field updates (settings, notes, is_valid, validation_error, applied, applied_at)
-            
+
         Returns:
             Updated settings submission or None if not found
         """
@@ -150,32 +147,27 @@ class TournamentMatchSettingsRepository:
         logger.info("Updated settings submission %s", settings_id)
         return submission
 
-    async def mark_applied(
-        self,
-        settings_id: int
-    ) -> Optional[TournamentMatchSettings]:
+    async def mark_applied(self, settings_id: int) -> Optional[TournamentMatchSettings]:
         """
         Mark settings as applied (used to generate race).
-        
+
         Args:
             settings_id: Settings submission ID
-            
+
         Returns:
             Updated settings submission or None if not found
         """
         return await self.update(
-            settings_id,
-            applied=True,
-            applied_at=datetime.now(timezone.utc)
+            settings_id, applied=True, applied_at=datetime.now(timezone.utc)
         )
 
     async def delete(self, settings_id: int) -> bool:
         """
         Delete a settings submission.
-        
+
         Args:
             settings_id: Settings submission ID
-            
+
         Returns:
             True if deleted, False if not found
         """
@@ -188,22 +180,19 @@ class TournamentMatchSettingsRepository:
         return True
 
     async def exists_for_match_and_game(
-        self,
-        match_id: int,
-        game_number: int = 1
+        self, match_id: int, game_number: int = 1
     ) -> bool:
         """
         Check if settings submission exists for match and game.
-        
+
         Args:
             match_id: Match ID
             game_number: Game number (default 1)
-            
+
         Returns:
             True if submission exists
         """
         count = await TournamentMatchSettings.filter(
-            match_id=match_id,
-            game_number=game_number
+            match_id=match_id, game_number=game_number
         ).count()
         return count > 0

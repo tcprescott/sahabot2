@@ -35,31 +35,43 @@ class StreamChannelDialog(BaseDialog):
 
     async def show(self) -> None:
         """Display the dialog."""
-        self.create_dialog(title=self._title, icon='cast', max_width='dialog-card')
+        self.create_dialog(title=self._title, icon="cast", max_width="dialog-card")
         await super().show()
 
     def _render_body(self) -> None:
         """Render dialog body with form fields."""
         with self.create_form_grid(columns=1):
-            with ui.element('div'):
-                self._name_input = ui.input(label='Channel Name', value=self._initial_name).classes('w-full')
-                with ui.element('div').classes('text-xs text-secondary mt-1'):
-                    ui.label('Unique name for this stream channel (e.g., "Main Stream", "Channel 2")')
-            with ui.element('div'):
-                self._url_input = ui.input(label='Stream URL', value=self._initial_stream_url or "").classes('w-full')
-                with ui.element('div').classes('text-xs text-secondary mt-1'):
-                    ui.label('Full URL to the stream (e.g., "https://twitch.tv/channel")')
-            with ui.element('div'):
-                self._active_toggle = ui.checkbox(text='Active', value=self._initial_is_active)
+            with ui.element("div"):
+                self._name_input = ui.input(
+                    label="Channel Name", value=self._initial_name
+                ).classes("w-full")
+                with ui.element("div").classes("text-xs text-secondary mt-1"):
+                    ui.label(
+                        'Unique name for this stream channel (e.g., "Main Stream", "Channel 2")'
+                    )
+            with ui.element("div"):
+                self._url_input = ui.input(
+                    label="Stream URL", value=self._initial_stream_url or ""
+                ).classes("w-full")
+                with ui.element("div").classes("text-xs text-secondary mt-1"):
+                    ui.label(
+                        'Full URL to the stream (e.g., "https://twitch.tv/channel")'
+                    )
+            with ui.element("div"):
+                self._active_toggle = ui.checkbox(
+                    text="Active", value=self._initial_is_active
+                )
 
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Save', on_click=self._handle_submit).classes('btn').props('color=positive')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Save", on_click=self._handle_submit).classes("btn").props(
+                "color=positive"
+            )
 
     async def _handle_submit(self) -> None:
         """Handle Save click and call callback."""
         if not self._name_input or not self._name_input.value:
-            ui.notify('Channel name is required', type='warning')
+            ui.notify("Channel name is required", type="warning")
             return
         name = self._name_input.value
         stream_url = self._url_input.value if self._url_input else None

@@ -19,7 +19,7 @@ from application.events.base import BaseEvent, EventPriority
 logger = logging.getLogger(__name__)
 
 # Type variable for event types
-TEvent = TypeVar('TEvent', bound=BaseEvent)
+TEvent = TypeVar("TEvent", bound=BaseEvent)
 
 # Type alias for event handlers
 EventHandler = Callable[[TEvent], Awaitable[None]]
@@ -45,7 +45,9 @@ class EventBus:
     """
 
     # Registry of handlers: event_type -> list of (priority, handler)
-    _handlers: Dict[Type[BaseEvent], List[tuple[EventPriority, EventHandler]]] = defaultdict(list)
+    _handlers: Dict[Type[BaseEvent], List[tuple[EventPriority, EventHandler]]] = (
+        defaultdict(list)
+    )
 
     # Lock for thread-safe handler registration
     _registration_lock = asyncio.Lock()
@@ -97,9 +99,7 @@ class EventBus:
         sorted_handlers = sorted(handlers, key=lambda x: x[0], reverse=True)
 
         logger.debug(
-            "Emitting event %s to %d handler(s)",
-            event.event_type,
-            len(sorted_handlers)
+            "Emitting event %s to %d handler(s)", event.event_type, len(sorted_handlers)
         )
 
         # Call handlers asynchronously
@@ -113,10 +113,7 @@ class EventBus:
 
     @classmethod
     async def _call_handler(
-        cls,
-        handler: EventHandler,
-        event: BaseEvent,
-        priority: EventPriority
+        cls, handler: EventHandler, event: BaseEvent, priority: EventPriority
     ) -> None:
         """
         Call a single event handler with error handling.
@@ -132,20 +129,18 @@ class EventBus:
                 "Handler %s completed for event %s (priority=%s)",
                 handler.__name__,
                 event.event_type,
-                priority.name
+                priority.name,
             )
         except Exception:
             logger.exception(
                 "Error in event handler %s for event %s",
                 handler.__name__,
-                event.event_type
+                event.event_type,
             )
 
     @classmethod
     def on(
-        cls,
-        event_type: Type[TEvent],
-        priority: EventPriority = EventPriority.NORMAL
+        cls, event_type: Type[TEvent], priority: EventPriority = EventPriority.NORMAL
     ) -> Callable[[EventHandler], EventHandler]:
         """
         Decorator to register an event handler.
@@ -163,9 +158,11 @@ class EventBus:
                 # Send email...
                 pass
         """
+
         def decorator(handler: EventHandler) -> EventHandler:
             cls.register(event_type, handler, priority)
             return handler
+
         return decorator
 
     @classmethod
@@ -173,7 +170,7 @@ class EventBus:
         cls,
         event_type: Type[BaseEvent],
         handler: EventHandler,
-        priority: EventPriority = EventPriority.NORMAL
+        priority: EventPriority = EventPriority.NORMAL,
     ) -> None:
         """
         Register an event handler programmatically.
@@ -188,14 +185,12 @@ class EventBus:
             "Registered handler %s for event %s (priority=%s)",
             handler.__name__,
             event_type.__name__,
-            priority.name
+            priority.name,
         )
 
     @classmethod
     def unregister(
-        cls,
-        event_type: Type[BaseEvent],
-        handler: Optional[EventHandler] = None
+        cls, event_type: Type[BaseEvent], handler: Optional[EventHandler] = None
     ) -> None:
         """
         Unregister event handler(s).
@@ -212,7 +207,7 @@ class EventBus:
                 logger.info(
                     "Unregistered all %d handler(s) for event %s",
                     count,
-                    event_type.__name__
+                    event_type.__name__,
                 )
         else:
             # Remove specific handler
@@ -223,7 +218,7 @@ class EventBus:
                 logger.info(
                     "Unregistered handler %s for event %s",
                     handler.__name__,
-                    event_type.__name__
+                    event_type.__name__,
                 )
 
     @classmethod

@@ -50,42 +50,44 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
     async def show(self) -> None:
         """Display the organizations dialog using BaseDialog structure."""
         self.create_dialog(
-            title=f'Manage Organizations: {self.bot.name}',
-            icon='groups',
-            max_width='800px',
+            title=f"Manage Organizations: {self.bot.name}",
+            icon="groups",
+            max_width="800px",
         )
         await super().show()
 
     def _render_body(self) -> None:
         """Render the dialog body content."""
         # Bot info
-        with ui.row().classes('items-center gap-2'):
-            ui.icon('category')
-            ui.label(f'Category: {self.bot.category}').classes('font-bold')
+        with ui.row().classes("items-center gap-2"):
+            ui.icon("category")
+            ui.label(f"Category: {self.bot.category}").classes("font-bold")
 
         # Instructions
-        with ui.row().classes('items-center gap-2 p-3 rounded bg-info text-white'):
-            ui.icon('info')
-            ui.label('Select organizations that can use this RaceTime bot.')
+        with ui.row().classes("items-center gap-2 p-3 rounded bg-info text-white"):
+            ui.icon("info")
+            ui.label("Select organizations that can use this RaceTime bot.")
 
         ui.separator()
 
         # Organization list
-        self.org_list_container = ui.column().classes('full-width gap-2')
+        self.org_list_container = ui.column().classes("full-width gap-2")
         self._render_org_list()
 
         ui.separator()
 
         # Actions
         with self.create_actions_row():
-            ui.button('Close', on_click=self._close_and_callback).classes('btn')
-            ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
+            ui.button("Close", on_click=self._close_and_callback).classes("btn")
+            ui.button("Save Changes", on_click=self._save_and_close).classes(
+                "btn"
+            ).props("color=positive")
 
     def _render_org_list(self) -> None:
         """Render the organization checklist (synchronous helper)."""
         # We'll load data asynchronously after dialog is shown
         with self.org_list_container:
-            ui.label('Loading organizations...').classes('text-secondary')
+            ui.label("Loading organizations...").classes("text-secondary")
             # Schedule async load
             ui.timer(0.1, self._load_organizations, once=True)
 
@@ -105,26 +107,32 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
         self.org_list_container.clear()
         with self.org_list_container:
             if not self.all_organizations:
-                with ui.row().classes('items-center gap-2 text-secondary'):
-                    ui.icon('info')
-                    ui.label('No organizations found.')
+                with ui.row().classes("items-center gap-2 text-secondary"):
+                    ui.icon("info")
+                    ui.label("No organizations found.")
             else:
                 for org in self.all_organizations:
                     is_assigned = org.id in self.assigned_org_ids
-                    with ui.row().classes('items-center gap-2 p-2 rounded').style('background: #f5f5f5;' if org.id in self.selected_orgs else ''):
+                    with ui.row().classes("items-center gap-2 p-2 rounded").style(
+                        "background: #f5f5f5;" if org.id in self.selected_orgs else ""
+                    ):
                         checkbox = ui.checkbox(
-                            text='',
-                            value=org.id in self.selected_orgs
+                            text="", value=org.id in self.selected_orgs
                         )
-                        checkbox.on('update:model-value', lambda e, org_id=org.id: self._toggle_org(org_id, e.args))
+                        checkbox.on(
+                            "update:model-value",
+                            lambda e, org_id=org.id: self._toggle_org(org_id, e.args),
+                        )
 
-                        with ui.column().classes('gap-0'):
-                            ui.label(org.name).classes('font-bold')
+                        with ui.column().classes("gap-0"):
+                            ui.label(org.name).classes("font-bold")
                             if org.description:
-                                ui.label(org.description).classes('text-sm text-secondary')
+                                ui.label(org.description).classes(
+                                    "text-sm text-secondary"
+                                )
 
                         if is_assigned:
-                            ui.badge('Currently Assigned', color='positive')
+                            ui.badge("Currently Assigned", color="positive")
 
     def _toggle_org(self, org_id: int, checked: bool) -> None:
         """Toggle organization selection."""
@@ -140,7 +148,7 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
         to_remove = self.assigned_org_ids - self.selected_orgs
 
         if not to_add and not to_remove:
-            ui.notify('No changes to save', type='info')
+            ui.notify("No changes to save", type="info")
             await self._close_and_callback()
             return
 
@@ -157,12 +165,14 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
                     self.bot.id, org_id, self.current_user
                 )
 
-            ui.notify('Organization assignments updated successfully', type='positive')
+            ui.notify("Organization assignments updated successfully", type="positive")
             await self._close_and_callback()
 
         except Exception as e:
-            logger.error("Error updating bot organization assignments: %s", e, exc_info=True)
-            ui.notify('An error occurred while updating assignments', type='negative')
+            logger.error(
+                "Error updating bot organization assignments: %s", e, exc_info=True
+            )
+            ui.notify("An error occurred while updating assignments", type="negative")
 
     async def _close_and_callback(self) -> None:
         """Close dialog and trigger callback."""

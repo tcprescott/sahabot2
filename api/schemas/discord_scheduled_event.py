@@ -22,7 +22,9 @@ class DiscordScheduledEventOut(BaseModel):
 class DiscordScheduledEventListResponse(BaseModel):
     """Response schema for lists of Discord scheduled events."""
 
-    items: list[DiscordScheduledEventOut] = Field(..., description="List of Discord scheduled event objects")
+    items: list[DiscordScheduledEventOut] = Field(
+        ..., description="List of Discord scheduled event objects"
+    )
     count: int = Field(..., description="Total number of events in the result")
 
 
@@ -36,5 +38,7 @@ class SyncEventsResponse(BaseModel):
     """Response schema for event sync operation."""
 
     success: bool = Field(..., description="Whether the sync was successful")
-    stats: dict = Field(..., description="Sync statistics (created, updated, deleted, skipped, errors)")
+    stats: dict = Field(
+        ..., description="Sync statistics (created, updated, deleted, skipped, errors)"
+    )
     message: str = Field(..., description="Human-readable result message")

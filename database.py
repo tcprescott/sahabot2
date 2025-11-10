@@ -7,20 +7,23 @@ from config import settings
 from migrations.tortoise_config import TORTOISE_ORM, get_model_modules
 from aerich import Command
 
+
 async def init_db() -> None:
     """
     Initialize database connection.
 
     This should be called during application startup.
     """
-    command = Command(tortoise_config=TORTOISE_ORM, app='models', location='./migrations')
+    command = Command(
+        tortoise_config=TORTOISE_ORM, app="models", location="./migrations"
+    )
     await command.init()
     await command.upgrade()
     await Tortoise.init(
         db_url=settings.database_url,
-        modules={'models': get_model_modules()},
+        modules={"models": get_model_modules()},
         use_tz=True,
-        timezone='UTC'
+        timezone="UTC",
     )
 
 

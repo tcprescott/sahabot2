@@ -25,11 +25,17 @@ class AsyncTournamentRepository:
 
     async def list_active_by_org(self, organization_id: int) -> List[AsyncTournament]:
         """List active async tournaments for an organization."""
-        return await AsyncTournament.filter(organization_id=organization_id, is_active=True).all()
+        return await AsyncTournament.filter(
+            organization_id=organization_id, is_active=True
+        ).all()
 
-    async def get_by_id(self, tournament_id: int, organization_id: int) -> Optional[AsyncTournament]:
+    async def get_by_id(
+        self, tournament_id: int, organization_id: int
+    ) -> Optional[AsyncTournament]:
         """Get an async tournament by ID, scoped to organization."""
-        return await AsyncTournament.get_or_none(id=tournament_id, organization_id=organization_id)
+        return await AsyncTournament.get_or_none(
+            id=tournament_id, organization_id=organization_id
+        )
 
     async def create(
         self,
@@ -53,14 +59,13 @@ class AsyncTournamentRepository:
             runs_per_pool=runs_per_pool,
             require_racetime_for_async_runs=require_racetime_for_async_runs,
         )
-        logger.info("Created async tournament %s for org %s", tournament.id, organization_id)
+        logger.info(
+            "Created async tournament %s for org %s", tournament.id, organization_id
+        )
         return tournament
 
     async def update(
-        self,
-        tournament_id: int,
-        organization_id: int,
-        **fields
+        self, tournament_id: int, organization_id: int, **fields
     ) -> Optional[AsyncTournament]:
         """Update an async tournament."""
         tournament = await self.get_by_id(tournament_id, organization_id)
@@ -87,7 +92,9 @@ class AsyncTournamentRepository:
 
     # Pool methods
 
-    async def list_pools(self, tournament_id: int, organization_id: int) -> List[AsyncTournamentPool]:
+    async def list_pools(
+        self, tournament_id: int, organization_id: int
+    ) -> List[AsyncTournamentPool]:
         """List pools for a tournament."""
         tournament = await self.get_by_id(tournament_id, organization_id)
         if not tournament:
@@ -115,12 +122,12 @@ class AsyncTournamentRepository:
         return pool
 
     async def get_pool_by_id(
-        self,
-        pool_id: int,
-        organization_id: int
+        self, pool_id: int, organization_id: int
     ) -> Optional[AsyncTournamentPool]:
         """Get a pool by ID, verifying organization ownership."""
-        pool = await AsyncTournamentPool.get_or_none(id=pool_id).prefetch_related('tournament')
+        pool = await AsyncTournamentPool.get_or_none(id=pool_id).prefetch_related(
+            "tournament"
+        )
         if not pool:
             return None
 
@@ -131,10 +138,7 @@ class AsyncTournamentRepository:
         return pool
 
     async def update_pool(
-        self,
-        pool_id: int,
-        organization_id: int,
-        **fields
+        self, pool_id: int, organization_id: int, **fields
     ) -> Optional[AsyncTournamentPool]:
         """Update a pool."""
         pool = await self.get_pool_by_id(pool_id, organization_id)
@@ -149,11 +153,7 @@ class AsyncTournamentRepository:
         logger.info("Updated pool %s", pool_id)
         return pool
 
-    async def delete_pool(
-        self,
-        pool_id: int,
-        organization_id: int
-    ) -> bool:
+    async def delete_pool(self, pool_id: int, organization_id: int) -> bool:
         """Delete a pool and all associated permalinks and races."""
         pool = await self.get_pool_by_id(pool_id, organization_id)
         if not pool:
@@ -166,7 +166,9 @@ class AsyncTournamentRepository:
 
     # Permalink methods
 
-    async def list_permalinks(self, pool_id: int, organization_id: int) -> List[AsyncTournamentPermalink]:
+    async def list_permalinks(
+        self, pool_id: int, organization_id: int
+    ) -> List[AsyncTournamentPermalink]:
         """List permalinks for a pool."""
         pool = await AsyncTournamentPool.get_or_none(id=pool_id)
         if not pool:
@@ -205,12 +207,12 @@ class AsyncTournamentRepository:
         return permalink
 
     async def get_permalink_by_id(
-        self,
-        permalink_id: int,
-        organization_id: int
+        self, permalink_id: int, organization_id: int
     ) -> Optional[AsyncTournamentPermalink]:
         """Get a permalink by ID, verifying organization ownership."""
-        permalink = await AsyncTournamentPermalink.get_or_none(id=permalink_id).prefetch_related('pool__tournament')
+        permalink = await AsyncTournamentPermalink.get_or_none(
+            id=permalink_id
+        ).prefetch_related("pool__tournament")
         if not permalink:
             return None
 
@@ -221,10 +223,7 @@ class AsyncTournamentRepository:
         return permalink
 
     async def update_permalink(
-        self,
-        permalink_id: int,
-        organization_id: int,
-        **fields
+        self, permalink_id: int, organization_id: int, **fields
     ) -> Optional[AsyncTournamentPermalink]:
         """Update a permalink."""
         permalink = await self.get_permalink_by_id(permalink_id, organization_id)
@@ -239,11 +238,7 @@ class AsyncTournamentRepository:
         logger.info("Updated permalink %s", permalink_id)
         return permalink
 
-    async def delete_permalink(
-        self,
-        permalink_id: int,
-        organization_id: int
-    ) -> bool:
+    async def delete_permalink(self, permalink_id: int, organization_id: int) -> bool:
         """Delete a permalink and all associated races."""
         permalink = await self.get_permalink_by_id(permalink_id, organization_id)
         if not permalink:
@@ -268,21 +263,25 @@ class AsyncTournamentRepository:
         if not tournament:
             return []
 
-        filters = {'tournament_id': tournament_id}
+        filters = {"tournament_id": tournament_id}
         if user_id is not None:
-            filters['user_id'] = user_id
+            filters["user_id"] = user_id
         if status is not None:
-            filters['status'] = status
+            filters["status"] = status
 
-        return await AsyncTournamentRace.filter(**filters).prefetch_related('permalink').all()
+        return (
+            await AsyncTournamentRace.filter(**filters)
+            .prefetch_related("permalink")
+            .all()
+        )
 
     async def get_race_by_id(
-        self,
-        race_id: int,
-        organization_id: int
+        self, race_id: int, organization_id: int
     ) -> Optional[AsyncTournamentRace]:
         """Get a race by ID, verifying organization ownership."""
-        race = await AsyncTournamentRace.get_or_none(id=race_id).prefetch_related('tournament')
+        race = await AsyncTournamentRace.get_or_none(id=race_id).prefetch_related(
+            "tournament"
+        )
         if not race:
             return None
 
@@ -293,13 +292,12 @@ class AsyncTournamentRepository:
         return race
 
     async def get_race_by_thread_id(
-        self,
-        discord_thread_id: int
+        self, discord_thread_id: int
     ) -> Optional[AsyncTournamentRace]:
         """Get a race by Discord thread ID."""
         race = await AsyncTournamentRace.get_or_none(
             discord_thread_id=discord_thread_id
-        ).prefetch_related('user', 'tournament')
+        ).prefetch_related("user", "tournament")
         return race
 
     async def create_race(
@@ -322,14 +320,16 @@ class AsyncTournamentRepository:
             discord_thread_id=discord_thread_id,
             thread_open_time=datetime.now(timezone.utc) if discord_thread_id else None,
         )
-        logger.info("Created race %s for user %s in tournament %s", race.id, user_id, tournament_id)
+        logger.info(
+            "Created race %s for user %s in tournament %s",
+            race.id,
+            user_id,
+            tournament_id,
+        )
         return race
 
     async def update_race(
-        self,
-        race_id: int,
-        organization_id: int,
-        **fields
+        self, race_id: int, organization_id: int, **fields
     ) -> Optional[AsyncTournamentRace]:
         """Update a race."""
         race = await self.get_race_by_id(race_id, organization_id)
@@ -345,7 +345,7 @@ class AsyncTournamentRepository:
 
         # Refetch with all related fields to avoid N+1 queries
         race = await AsyncTournamentRace.get(id=race_id).prefetch_related(
-            'user', 'reviewed_by', 'permalink__pool', 'tournament'
+            "user", "reviewed_by", "permalink__pool", "tournament"
         )
         return race
 
@@ -365,7 +365,12 @@ class AsyncTournamentRepository:
             details=details,
             user_id=user_id,
         )
-        logger.info("Created audit log %s for tournament %s: %s", audit_log.id, tournament_id, action)
+        logger.info(
+            "Created audit log %s for tournament %s: %s",
+            audit_log.id,
+            tournament_id,
+            action,
+        )
         return audit_log
 
     # Review methods
@@ -402,8 +407,8 @@ class AsyncTournamentRepository:
 
         query = AsyncTournamentRace.filter(
             tournament_id=tournament_id,
-            reattempted=False  # Don't include reattempted races
-        ).prefetch_related('user', 'reviewed_by', 'permalink', 'permalink__pool')
+            reattempted=False,  # Don't include reattempted races
+        ).prefetch_related("user", "reviewed_by", "permalink", "permalink__pool")
 
         if status:
             query = query.filter(status=status)
@@ -417,7 +422,7 @@ class AsyncTournamentRepository:
             else:
                 query = query.filter(reviewed_by_id=reviewed_by_id)
 
-        races = await query.offset(skip).limit(limit).order_by('-created_at')
+        races = await query.offset(skip).limit(limit).order_by("-created_at")
         return list(races)
 
     async def update_race_review(
@@ -460,5 +465,10 @@ class AsyncTournamentRepository:
             race.start_time = race.end_time - elapsed_time_override
 
         await race.save()
-        logger.info("Updated review for race %s: %s by user %s", race_id, review_status, reviewer_id)
+        logger.info(
+            "Updated review for race %s: %s by user %s",
+            race_id,
+            review_status,
+            reviewer_id,
+        )
         return race

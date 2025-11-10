@@ -8,6 +8,7 @@ rather than using the client module directly.
 Note: Bot configurations are now loaded from the database (RacetimeBot model)
 rather than from environment settings.
 """
+
 from __future__ import annotations
 
 import logging
@@ -39,7 +40,7 @@ class RacetimeService:
         """
         # Lazy import to avoid circular dependency
         from racetime.client import start_racetime_bot
-        
+
         started = 0
 
         # Load configs from database if not provided
@@ -47,12 +48,20 @@ class RacetimeService:
             bots = await RacetimeBot.filter(is_active=True).all()
             # Build configs with bot_id and handler_class included
             cfgs = [
-                (bot.category, bot.client_id, bot.client_secret, bot.id, bot.handler_class) 
+                (
+                    bot.category,
+                    bot.client_id,
+                    bot.client_secret,
+                    bot.id,
+                    bot.handler_class,
+                )
                 for bot in bots
             ]
         else:
             # Legacy mode: configs without bot_id or handler_class
-            cfgs = [(cat, cid, csec, None, 'SahaRaceHandler') for cat, cid, csec in configs]
+            cfgs = [
+                (cat, cid, csec, None, "SahaRaceHandler") for cat, cid, csec in configs
+            ]
 
         if not cfgs:
             logger.info("No racetime bots configured")
@@ -63,17 +72,17 @@ class RacetimeService:
         for category, client_id, client_secret, bot_id, handler_class_name in cfgs:
             try:
                 await start_racetime_bot(
-                    category, 
-                    client_id, 
-                    client_secret, 
+                    category,
+                    client_id,
+                    client_secret,
                     bot_id=bot_id,
-                    handler_class_name=handler_class_name
+                    handler_class_name=handler_class_name,
                 )
                 logger.info(
-                    "Racetime bot started for category: %s (bot_id=%s, handler=%s)", 
-                    category, 
+                    "Racetime bot started for category: %s (bot_id=%s, handler=%s)",
+                    category,
                     bot_id,
-                    handler_class_name
+                    handler_class_name,
                 )
                 started += 1
             except Exception as e:
@@ -94,7 +103,7 @@ class RacetimeService:
         """Stop all running racetime bots (best-effort)."""
         # Lazy import to avoid circular dependency
         from racetime.client import stop_all_racetime_bots
-        
+
         try:
             await stop_all_racetime_bots()
         except Exception as e:

@@ -29,38 +29,30 @@ class OrganizationRequest(Model):
 
     class RequestStatus(str):
         """Organization request status enum."""
+
         PENDING = "pending"
         APPROVED = "approved"
         REJECTED = "rejected"
 
     id = fields.IntField(pk=True)
-    name = fields.CharField(
-        200,
-        description="Requested organization name"
-    )
-    description = fields.TextField(
-        null=True,
-        description="Organization description"
-    )
+    name = fields.CharField(200, description="Requested organization name")
+    description = fields.TextField(null=True, description="Organization description")
     requested_by = fields.ForeignKeyField(
-        'models.User',
-        related_name='organization_requests',
-        description="User who requested the organization"
+        "models.User",
+        related_name="organization_requests",
+        description="User who requested the organization",
     )
     status = fields.CharField(
-        20,
-        default=RequestStatus.PENDING,
-        description="Request status"
+        20, default=RequestStatus.PENDING, description="Request status"
     )
     reviewed_by = fields.ForeignKeyField(
-        'models.User',
-        related_name='reviewed_org_requests',
+        "models.User",
+        related_name="reviewed_org_requests",
         null=True,
-        description="SUPERADMIN who reviewed the request"
+        description="SUPERADMIN who reviewed the request",
     )
     review_notes = fields.TextField(
-        null=True,
-        description="Optional notes from reviewer"
+        null=True, description="Optional notes from reviewer"
     )
     requested_at = fields.DatetimeField(auto_now_add=True)
     reviewed_at = fields.DatetimeField(null=True)

@@ -20,7 +20,7 @@ class OOTRService:
     Generates seeds for Ocarina of Time randomizer via the official API.
     """
 
-    BASE_URL = 'https://ootrandomizer.com'
+    BASE_URL = "https://ootrandomizer.com"
 
     def __init__(self):
         """Initialize the OOTR service."""
@@ -29,8 +29,8 @@ class OOTRService:
     async def generate(
         self,
         settings_dict: Dict[str, Any],
-        version: str = '6.1.0',
-        encrypt: bool = True
+        version: str = "6.1.0",
+        encrypt: bool = True,
     ) -> RandomizerResult:
         """
         Generate an Ocarina of Time randomizer seed.
@@ -46,14 +46,11 @@ class OOTRService:
         Raises:
             httpx.HTTPError: If the API request fails
         """
-        api_key = getattr(settings, 'OOTR_API_KEY', None)
+        api_key = getattr(settings, "OOTR_API_KEY", None)
         if not api_key:
             logger.warning("OOTR_API_KEY not configured, seed generation may fail")
 
-        params = {
-            "version": version,
-            "encrypt": str(encrypt).lower()
-        }
+        params = {"version": version, "encrypt": str(encrypt).lower()}
 
         if api_key:
             params["key"] = api_key
@@ -63,7 +60,7 @@ class OOTRService:
                 f"{self.BASE_URL}/api/sglive/seed/create",
                 json=settings_dict,
                 params=params,
-                timeout=30.0
+                timeout=30.0,
             )
             response.raise_for_status()
             result = response.json()
@@ -71,13 +68,13 @@ class OOTRService:
         logger.info("Generated OOTR seed with version %s", version)
 
         # Extract relevant data from result
-        seed_id = result.get('id', result.get('seed_id', 'unknown'))
+        seed_id = result.get("id", result.get("seed_id", "unknown"))
 
         return RandomizerResult(
-            url=result.get('url', f"{self.BASE_URL}/seed/{seed_id}"),
+            url=result.get("url", f"{self.BASE_URL}/seed/{seed_id}"),
             hash_id=str(seed_id),
             settings=settings_dict,
-            randomizer='ootr',
-            permalink=result.get('permalink'),
-            metadata=result
+            randomizer="ootr",
+            permalink=result.get("permalink"),
+            metadata=result,
         )

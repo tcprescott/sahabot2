@@ -12,8 +12,12 @@ class ApiTokenOut(BaseModel):
     name: Optional[str] = Field(None, description="Token name/description")
     is_active: bool = Field(..., description="Whether the token is active")
     created_at: datetime = Field(..., description="Token creation timestamp")
-    last_used_at: Optional[datetime] = Field(None, description="Last time token was used")
-    expires_at: Optional[datetime] = Field(None, description="Token expiration timestamp (null = never expires)")
+    last_used_at: Optional[datetime] = Field(
+        None, description="Last time token was used"
+    )
+    expires_at: Optional[datetime] = Field(
+        None, description="Token expiration timestamp (null = never expires)"
+    )
 
     class Config:
         from_attributes = True
@@ -36,5 +40,9 @@ class ApiTokenListResponse(BaseModel):
 class ApiTokenCreateRequest(BaseModel):
     """Request schema for creating an API token."""
 
-    name: Optional[str] = Field(None, max_length=100, description="Token name/description")
-    expires_at: Optional[datetime] = Field(None, description="Token expiration timestamp (null = never expires)")
+    name: Optional[str] = Field(
+        None, max_length=100, description="Token name/description"
+    )
+    expires_at: Optional[datetime] = Field(
+        None, description="Token expiration timestamp (null = never expires)"
+    )

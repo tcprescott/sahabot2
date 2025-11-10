@@ -13,7 +13,9 @@ from slugify import slugify
 
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
-from application.services.tournaments.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import (
+    AsyncTournamentService,
+)
 from application.services.organizations.organization_service import OrganizationService
 from config import settings
 
@@ -30,24 +32,24 @@ class AsyncTournamentMainView(ui.View):
         label="Start New Async Run",
         style=discord.ButtonStyle.green,
         emoji="🏁",
-        custom_id="async_tournament:new_race"
+        custom_id="async_tournament:new_race",
     )
     async def new_race(self, interaction: discord.Interaction, button: ui.Button):
         """Handle new race button click."""
         # Get tournament for this channel
-        tournament = await AsyncTournament.get_or_none(discord_channel_id=interaction.channel_id)
+        tournament = await AsyncTournament.get_or_none(
+            discord_channel_id=interaction.channel_id
+        )
 
         if not tournament:
             await interaction.response.send_message(
-                "This channel is not configured for async tournaments.",
-                ephemeral=True
+                "This channel is not configured for async tournaments.", ephemeral=True
             )
             return
 
         if not tournament.is_active:
             await interaction.response.send_message(
-                "This tournament is not currently active.",
-                ephemeral=True
+                "This tournament is not currently active.", ephemeral=True
             )
             return
 
@@ -56,7 +58,7 @@ class AsyncTournamentMainView(ui.View):
         if not user:
             await interaction.response.send_message(
                 "You must link your account first. Please log in to the web application.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
@@ -69,7 +71,7 @@ class AsyncTournamentMainView(ui.View):
                     f"This tournament requires you to link your RaceTime.gg account before starting async runs.\n\n"
                     f"Please visit your profile page to link your account:\n{profile_url}\n\n"
                     f"After linking, you'll be able to start async runs.",
-                    ephemeral=True
+                    ephemeral=True,
                 )
                 return
 
@@ -83,43 +85,48 @@ class AsyncTournamentMainView(ui.View):
         if not is_member:
             await interaction.response.send_message(
                 "You must be a member of this tournament's organization to participate.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
         # Get user's race history
-        user_races = await service.get_user_races(user, tournament.organization_id, tournament.id)
+        user_races = await service.get_user_races(
+            user, tournament.organization_id, tournament.id
+        )
 
         # Get pools
-        await tournament.fetch_related('pools')
+        await tournament.fetch_related("pools")
         pools = list(tournament.pools)
 
         if not pools:
             await interaction.response.send_message(
-                "This tournament has no pools configured yet.",
-                ephemeral=True
+                "This tournament has no pools configured yet.", ephemeral=True
             )
             return
 
         # Check how many races completed from each pool
         pool_counts = {}
         for pool in pools:
-            count = len([
-                r for r in user_races
-                if not r.reattempted and r.permalink.pool_id == pool.id
-            ])
+            count = len(
+                [
+                    r
+                    for r in user_races
+                    if not r.reattempted and r.permalink.pool_id == pool.id
+                ]
+            )
             pool_counts[pool.id] = count
 
         # Find pools with available slots
         available_pools = [
-            pool for pool in pools
+            pool
+            for pool in pools
             if pool_counts.get(pool.id, 0) < tournament.runs_per_pool
         ]
 
         if not available_pools:
             await interaction.response.send_message(
                 "You have completed all available pools for this tournament.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
@@ -131,7 +138,7 @@ class AsyncTournamentMainView(ui.View):
             "**Please be absolutely certain you're ready to begin.**\n\n"
             "Select a pool to race:",
             view=view,
-            ephemeral=True
+            ephemeral=True,
         )
 
 
@@ -147,20 +154,17 @@ class PoolSelectionView(ui.View):
 
         # Add pool select menu
         options = [
-            discord.SelectOption(label=pool.name, value=str(pool.id))
-            for pool in pools
+            discord.SelectOption(label=pool.name, value=str(pool.id)) for pool in pools
         ]
         select = ui.Select(
-            placeholder="Select a pool",
-            options=options,
-            custom_id="pool_select"
+            placeholder="Select a pool", options=options, custom_id="pool_select"
         )
         select.callback = self.pool_selected
         self.add_item(select)
 
     async def pool_selected(self, interaction: discord.Interaction):
         """Handle pool selection."""
-        pool_id = int(interaction.data['values'][0])
+        pool_id = int(interaction.data["values"][0])
         self.selected_pool = next(p for p in self.pools if p.id == pool_id)
 
         # Enable confirm button
@@ -170,8 +174,8 @@ class PoolSelectionView(ui.View):
 
         await interaction.response.edit_message(
             content=f"Selected pool: **{self.selected_pool.name}**\n\n"
-                    f"Click 'Confirm' to create your race thread.",
-            view=self
+            f"Click 'Confirm' to create your race thread.",
+            view=self,
         )
 
     @ui.button(
@@ -180,12 +184,14 @@ class PoolSelectionView(ui.View):
         emoji="✅",
         custom_id="confirm_race",
         disabled=True,
-        row=1
+        row=1,
     )
     async def confirm_race(self, interaction: discord.Interaction, button: ui.Button):
         """Confirm race creation."""
         if not self.selected_pool:
-            await interaction.response.send_message("Please select a pool first.", ephemeral=True)
+            await interaction.response.send_message(
+                "Please select a pool first.", ephemeral=True
+            )
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -195,21 +201,23 @@ class PoolSelectionView(ui.View):
         existing_races = await service.get_active_races_for_user(
             user=self.user,
             organization_id=self.tournament.organization_id,
-            tournament_id=self.tournament.id
+            tournament_id=self.tournament.id,
         )
 
         if existing_races:
             await interaction.followup.send(
                 "You already have an active race. Please complete or forfeit it first.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
         # Get a random eligible permalink from the selected pool
         import random
-        from application.services.tournaments.async_tournament_service import MAX_POOL_IMBALANCE
+        from application.services.tournaments.async_tournament_service import (
+            MAX_POOL_IMBALANCE,
+        )
 
-        await self.selected_pool.fetch_related('permalinks')
+        await self.selected_pool.fetch_related("permalinks")
         all_permalinks = list(self.selected_pool.permalinks)
 
         # Get user's race history for this pool
@@ -217,16 +225,17 @@ class PoolSelectionView(ui.View):
             user_id=self.user.id,
             tournament_id=self.tournament.id,
             permalink__pool_id=self.selected_pool.id,
-            reattempted=False
-        ).prefetch_related('permalink')
+            reattempted=False,
+        ).prefetch_related("permalink")
 
         played_permalinks = {r.permalink_id for r in user_pool_races}
-        eligible_permalinks = [p for p in all_permalinks if p.id not in played_permalinks]
+        eligible_permalinks = [
+            p for p in all_permalinks if p.id not in played_permalinks
+        ]
 
         if not eligible_permalinks:
             await interaction.followup.send(
-                "No eligible permalinks available in this pool.",
-                ephemeral=True
+                "No eligible permalinks available in this pool.", ephemeral=True
             )
             return
 
@@ -236,7 +245,7 @@ class PoolSelectionView(ui.View):
         # Create private thread
         thread = await interaction.channel.create_thread(
             name=f"{slugify(interaction.user.name, lowercase=False, max_length=20)} - {self.selected_pool.name}",
-            type=discord.ChannelType.private_thread
+            type=discord.ChannelType.private_thread,
         )
 
         # Create race record
@@ -275,7 +284,7 @@ Good luck and have fun!"""
 
         await interaction.followup.send(
             f"Successfully created {thread.mention}. Please join that thread for more details.",
-            ephemeral=True
+            ephemeral=True,
         )
 
     @ui.button(
@@ -283,13 +292,12 @@ Good luck and have fun!"""
         style=discord.ButtonStyle.red,
         emoji="❌",
         custom_id="cancel_race",
-        row=1
+        row=1,
     )
     async def cancel_race(self, interaction: discord.Interaction, button: ui.Button):
         """Cancel race creation."""
         await interaction.response.edit_message(
-            content="Race creation cancelled.",
-            view=None
+            content="Race creation cancelled.", view=None
         )
 
 
@@ -303,31 +311,30 @@ class RaceReadyView(ui.View):
         label="Ready (start countdown)",
         style=discord.ButtonStyle.green,
         emoji="✅",
-        custom_id="async_race:ready"
+        custom_id="async_race:ready",
     )
     async def ready(self, interaction: discord.Interaction, button: ui.Button):
         """Start the race countdown."""
         # Get race for this thread
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user')
+        race = await AsyncTournamentRace.get_or_none(
+            discord_thread_id=interaction.channel.id
+        ).prefetch_related("user")
 
         if not race:
             await interaction.response.send_message(
-                "This thread is not a valid race thread.",
-                ephemeral=True
+                "This thread is not a valid race thread.", ephemeral=True
             )
             return
 
         if race.user.discord_id != interaction.user.id:
             await interaction.response.send_message(
-                "Only the race participant can start this race.",
-                ephemeral=True
+                "Only the race participant can start this race.", ephemeral=True
             )
             return
 
-        if race.status != 'pending':
+        if race.status != "pending":
             await interaction.response.send_message(
-                "This race must be in pending state to start.",
-                ephemeral=True
+                "This race must be in pending state to start.", ephemeral=True
             )
             return
 
@@ -336,7 +343,9 @@ class RaceReadyView(ui.View):
         # Disable buttons
         for item in self.children:
             item.disabled = True
-        await interaction.followup.edit_message(message_id=interaction.message.id, view=self)
+        await interaction.followup.edit_message(
+            message_id=interaction.message.id, view=self
+        )
 
         # Start countdown
         service = AsyncTournamentService()
@@ -364,7 +373,7 @@ class RaceReadyView(ui.View):
         label="Forfeit",
         style=discord.ButtonStyle.red,
         emoji="🏳️",
-        custom_id="async_race:forfeit_ready"
+        custom_id="async_race:forfeit_ready",
     )
     async def forfeit(self, interaction: discord.Interaction, button: ui.Button):
         """Forfeit the race."""
@@ -372,21 +381,27 @@ class RaceReadyView(ui.View):
 
     async def _handle_forfeit(self, interaction: discord.Interaction):
         """Common forfeit logic."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user')
+        race = await AsyncTournamentRace.get_or_none(
+            discord_thread_id=interaction.channel.id
+        ).prefetch_related("user")
 
         if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread.", ephemeral=True
+            )
             return
 
         if race.user.discord_id != interaction.user.id:
-            await interaction.response.send_message("Only the race participant can forfeit.", ephemeral=True)
+            await interaction.response.send_message(
+                "Only the race participant can forfeit.", ephemeral=True
+            )
             return
 
         await interaction.response.send_message(
             "Are you sure you wish to forfeit? This action **cannot be undone**. "
             "This race will be scored as **zero**.",
             view=ForfeitConfirmView(),
-            ephemeral=True
+            ephemeral=True,
         )
 
 
@@ -400,22 +415,30 @@ class RaceInProgressView(ui.View):
         label="Finish",
         style=discord.ButtonStyle.green,
         emoji="✅",
-        custom_id="async_race:finish"
+        custom_id="async_race:finish",
     )
     async def finish(self, interaction: discord.Interaction, button: ui.Button):
         """Finish the race."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user', 'tournament')
+        race = await AsyncTournamentRace.get_or_none(
+            discord_thread_id=interaction.channel.id
+        ).prefetch_related("user", "tournament")
 
         if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread.", ephemeral=True
+            )
             return
 
         if race.user.discord_id != interaction.user.id:
-            await interaction.response.send_message("Only the race participant can finish.", ephemeral=True)
+            await interaction.response.send_message(
+                "Only the race participant can finish.", ephemeral=True
+            )
             return
 
-        if race.status != 'in_progress':
-            await interaction.response.send_message("Race must be in progress to finish.", ephemeral=True)
+        if race.status != "in_progress":
+            await interaction.response.send_message(
+                "Race must be in progress to finish.", ephemeral=True
+            )
             return
 
         await interaction.response.defer()
@@ -431,20 +454,22 @@ class RaceInProgressView(ui.View):
         # Disable buttons
         for item in self.children:
             item.disabled = True
-        await interaction.followup.edit_message(message_id=interaction.message.id, view=self)
+        await interaction.followup.edit_message(
+            message_id=interaction.message.id, view=self
+        )
 
         # Send completion message with submission view
         await interaction.followup.send(
             f"Your finish time of **{race.elapsed_time_formatted}** has been recorded. Thank you for playing!\n\n"
             f"You may submit additional information using the buttons below:",
-            view=RaceCompletedView()
+            view=RaceCompletedView(),
         )
 
     @ui.button(
         label="Forfeit",
         style=discord.ButtonStyle.red,
         emoji="🏳️",
-        custom_id="async_race:forfeit_progress"
+        custom_id="async_race:forfeit_progress",
     )
     async def forfeit(self, interaction: discord.Interaction, button: ui.Button):
         """Forfeit the race."""
@@ -454,24 +479,30 @@ class RaceInProgressView(ui.View):
         label="Get Timer",
         style=discord.ButtonStyle.gray,
         emoji="⏱️",
-        custom_id="async_race:timer"
+        custom_id="async_race:timer",
     )
     async def get_timer(self, interaction: discord.Interaction, button: ui.Button):
         """Get current elapsed time."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id)
+        race = await AsyncTournamentRace.get_or_none(
+            discord_thread_id=interaction.channel.id
+        )
 
         if not race or not race.start_time:
-            await interaction.response.send_message("Timer not available.", ephemeral=True)
+            await interaction.response.send_message(
+                "Timer not available.", ephemeral=True
+            )
             return
 
         # Calculate elapsed time for in-progress races
-        if race.status == 'in_progress':
+        if race.status == "in_progress":
             elapsed = datetime.now(timezone.utc) - race.start_time
         else:
             elapsed = race.elapsed_time
 
         if not elapsed:
-            await interaction.response.send_message("Timer not available.", ephemeral=True)
+            await interaction.response.send_message(
+                "Timer not available.", ephemeral=True
+            )
             return
 
         # Format elapsed time as H:MM:SS
@@ -484,8 +515,7 @@ class RaceInProgressView(ui.View):
         formatted = format_timedelta(elapsed)
 
         await interaction.response.send_message(
-            f"Timer: **{formatted}**",
-            ephemeral=True
+            f"Timer: **{formatted}**", ephemeral=True
         )
 
 
@@ -495,21 +525,23 @@ class ForfeitConfirmView(ui.View):
     def __init__(self):
         super().__init__(timeout=60)
 
-    @ui.button(
-        label="Confirm Forfeit",
-        style=discord.ButtonStyle.red,
-        emoji="🏳️"
-    )
+    @ui.button(label="Confirm Forfeit", style=discord.ButtonStyle.red, emoji="🏳️")
     async def confirm(self, interaction: discord.Interaction, button: ui.Button):
         """Confirm forfeit."""
-        race = await AsyncTournamentRace.get_or_none(discord_thread_id=interaction.channel.id).prefetch_related('user', 'tournament')
+        race = await AsyncTournamentRace.get_or_none(
+            discord_thread_id=interaction.channel.id
+        ).prefetch_related("user", "tournament")
 
         if not race:
-            await interaction.response.send_message("Invalid race thread.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread.", ephemeral=True
+            )
             return
 
         if race.user.discord_id != interaction.user.id:
-            await interaction.response.send_message("Only the race participant can forfeit.", ephemeral=True)
+            await interaction.response.send_message(
+                "Only the race participant can forfeit.", ephemeral=True
+            )
             return
 
         # Forfeit the race
@@ -540,14 +572,17 @@ class RaceCompletedView(ui.View):
         label="Submit VOD & Notes",
         style=discord.ButtonStyle.green,
         emoji="🗒️",
-        custom_id="async_race:submit_vod"
+        custom_id="async_race:submit_vod",
     )
     async def submit_vod(self, interaction: discord.Interaction, button: ui.Button):
         """Open modal to submit VOD and notes."""
         # Get user from database
         user = await User.get_or_none(discord_id=interaction.user.id)
         if not user:
-            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
+            await interaction.response.send_message(
+                "User not found. Please log in to the web application first.",
+                ephemeral=True,
+            )
             return
 
         # Get race via service (validates user is participant)
@@ -555,7 +590,9 @@ class RaceCompletedView(ui.View):
         race = await service.get_race_by_thread_id(user, interaction.channel.id)
 
         if not race:
-            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread or you are not the participant.", ephemeral=True
+            )
             return
 
         await interaction.response.send_modal(SubmitVODModal())
@@ -564,14 +601,17 @@ class RaceCompletedView(ui.View):
         label="Flag for Review",
         style=discord.ButtonStyle.blurple,
         emoji="🚩",
-        custom_id="async_race:flag_review"
+        custom_id="async_race:flag_review",
     )
     async def flag_review(self, interaction: discord.Interaction, button: ui.Button):
         """Open modal to flag run for review."""
         # Get user from database
         user = await User.get_or_none(discord_id=interaction.user.id)
         if not user:
-            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
+            await interaction.response.send_message(
+                "User not found. Please log in to the web application first.",
+                ephemeral=True,
+            )
             return
 
         # Get race via service (validates user is participant)
@@ -579,7 +619,9 @@ class RaceCompletedView(ui.View):
         race = await service.get_race_by_thread_id(user, interaction.channel.id)
 
         if not race:
-            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread or you are not the participant.", ephemeral=True
+            )
             return
 
         await interaction.response.send_modal(FlagForReviewModal())
@@ -592,7 +634,7 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
         label="VOD URL",
         placeholder="https://www.twitch.tv/videos/...",
         style=discord.TextStyle.short,
-        required=False
+        required=False,
     )
 
     runner_notes = ui.TextInput(
@@ -600,7 +642,7 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
         placeholder="Add any notes or comments about your run...",
         style=discord.TextStyle.long,
         required=False,
-        max_length=10000
+        max_length=10000,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -608,7 +650,10 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
         # Get user from database
         user = await User.get_or_none(discord_id=interaction.user.id)
         if not user:
-            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
+            await interaction.response.send_message(
+                "User not found. Please log in to the web application first.",
+                ephemeral=True,
+            )
             return
 
         # Get race via service (validates user is participant)
@@ -616,7 +661,9 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
         race = await service.get_race_by_thread_id(user, interaction.channel.id)
 
         if not race:
-            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread or you are not the participant.", ephemeral=True
+            )
             return
 
         # Update race submission via service
@@ -624,12 +671,16 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
             user=user,
             organization_id=race.tournament.organization_id,
             race_id=race.id,
-            runner_vod_url=self.runner_vod_url.value if self.runner_vod_url.value else None,
+            runner_vod_url=(
+                self.runner_vod_url.value if self.runner_vod_url.value else None
+            ),
             runner_notes=self.runner_notes.value if self.runner_notes.value else None,
         )
 
         if not updated_race:
-            await interaction.response.send_message("Failed to update submission.", ephemeral=True)
+            await interaction.response.send_message(
+                "Failed to update submission.", ephemeral=True
+            )
             return
 
         # Build response message
@@ -642,8 +693,7 @@ class SubmitVODModal(ui.Modal, title="Submit VOD and Notes"):
             response_parts.append(f"**Notes:**\n{self.runner_notes.value}")
 
         await interaction.response.send_message(
-            "\n".join(response_parts),
-            ephemeral=False
+            "\n".join(response_parts), ephemeral=False
         )
 
 
@@ -655,7 +705,7 @@ class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
         placeholder="Please explain why you want this run reviewed...",
         style=discord.TextStyle.long,
         required=True,
-        max_length=5000
+        max_length=5000,
     )
 
     async def on_submit(self, interaction: discord.Interaction):
@@ -663,7 +713,10 @@ class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
         # Get user from database
         user = await User.get_or_none(discord_id=interaction.user.id)
         if not user:
-            await interaction.response.send_message("User not found. Please log in to the web application first.", ephemeral=True)
+            await interaction.response.send_message(
+                "User not found. Please log in to the web application first.",
+                ephemeral=True,
+            )
             return
 
         # Get race via service (validates user is participant)
@@ -671,7 +724,9 @@ class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
         race = await service.get_race_by_thread_id(user, interaction.channel.id)
 
         if not race:
-            await interaction.response.send_message("Invalid race thread or you are not the participant.", ephemeral=True)
+            await interaction.response.send_message(
+                "Invalid race thread or you are not the participant.", ephemeral=True
+            )
             return
 
         # Update race to flag for review
@@ -684,12 +739,14 @@ class FlagForReviewModal(ui.Modal, title="Flag Run for Review"):
         )
 
         if not updated_race:
-            await interaction.response.send_message("Failed to flag run for review.", ephemeral=True)
+            await interaction.response.send_message(
+                "Failed to flag run for review.", ephemeral=True
+            )
             return
 
         await interaction.response.send_message(
             f"✅ **Run flagged for review**\n\n"
             f"**Reason:**\n{self.review_request_reason.value}\n\n"
             f"A reviewer will look at your run and may contact you if they need more information.",
-            ephemeral=False
+            ephemeral=False,
         )

@@ -37,7 +37,7 @@ class SMB3RService:
         return RandomizerResult(
             url=f"https://smb3randomizer.com/seed/{seed}",
             hash_id=str(seed),
-            settings={'seed': seed},
-            randomizer='smb3r',
-            metadata={'seed': seed}
+            settings={"seed": seed},
+            randomizer="smb3r",
+            metadata={"seed": seed},
         )

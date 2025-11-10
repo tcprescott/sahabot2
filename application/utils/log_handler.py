@@ -21,7 +21,7 @@ class LogRecord:
         level: str,
         logger_name: str,
         message: str,
-        exc_info: Optional[str] = None
+        exc_info: Optional[str] = None,
     ):
         """
         Initialize a log record.
@@ -42,11 +42,11 @@ class LogRecord:
     def to_dict(self):
         """Convert to dictionary for serialization."""
         return {
-            'timestamp': self.timestamp.isoformat(),
-            'level': self.level,
-            'logger_name': self.logger_name,
-            'message': self.message,
-            'exc_info': self.exc_info,
+            "timestamp": self.timestamp.isoformat(),
+            "level": self.level,
+            "logger_name": self.logger_name,
+            "message": self.message,
+            "exc_info": self.exc_info,
         }
 
 
@@ -84,7 +84,7 @@ class InMemoryLogHandler(logging.Handler):
             # Get exception info if available
             exc_info = None
             if record.exc_info:
-                exc_info = ''.join(traceback.format_exception(*record.exc_info))
+                exc_info = "".join(traceback.format_exception(*record.exc_info))
 
             # Create structured log record
             log_record = LogRecord(
@@ -92,7 +92,7 @@ class InMemoryLogHandler(logging.Handler):
                 level=record.levelname,
                 logger_name=record.name,
                 message=message,
-                exc_info=exc_info
+                exc_info=exc_info,
             )
 
             # Add to buffer - no manual locking needed as logging.Handler
@@ -110,7 +110,7 @@ class InMemoryLogHandler(logging.Handler):
         self,
         level: Optional[str] = None,
         search: Optional[str] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ) -> List[LogRecord]:
         """
         Get log records with optional filtering.
@@ -137,8 +137,10 @@ class InMemoryLogHandler(logging.Handler):
         if search:
             search_lower = search.lower()
             records = [
-                r for r in records
-                if search_lower in r.message.lower() or search_lower in r.logger_name.lower()
+                r
+                for r in records
+                if search_lower in r.message.lower()
+                or search_lower in r.logger_name.lower()
             ]
 
         # Limit results
@@ -179,7 +181,9 @@ def get_log_handler() -> InMemoryLogHandler:
         RuntimeError: If the log handler has not been initialized
     """
     if _log_handler is None:
-        raise RuntimeError("Log handler not initialized. Call init_log_handler() first.")
+        raise RuntimeError(
+            "Log handler not initialized. Call init_log_handler() first."
+        )
     return _log_handler
 
 
@@ -203,7 +207,7 @@ def init_log_handler(max_records: int = 1000) -> InMemoryLogHandler:
 
     # Set formatter to match main.py format
     formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
     _log_handler.setFormatter(formatter)
 

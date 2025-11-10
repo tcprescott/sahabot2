@@ -4,14 +4,23 @@ Service for managing Discord scheduled events for tournament matches.
 Handles creation, updates, and deletion of Discord's native scheduled events
 that appear in the Events section of Discord servers.
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import discord
 
-from models import Match, Tournament, DiscordScheduledEvent, SYSTEM_USER_ID, DiscordEventFilter
-from application.repositories.discord_scheduled_event_repository import DiscordScheduledEventRepository
+from models import (
+    Match,
+    Tournament,
+    DiscordScheduledEvent,
+    SYSTEM_USER_ID,
+    DiscordEventFilter,
+)
+from application.repositories.discord_scheduled_event_repository import (
+    DiscordScheduledEventRepository,
+)
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.discord.discord_guild_service import DiscordGuildService
 from discordbot.client import get_bot_instance
@@ -48,7 +57,7 @@ class DiscordScheduledEventService:
         match = await Match.get_or_none(
             id=match_id,
             tournament__organization_id=organization_id,
-        ).prefetch_related('tournament', 'players__user', 'stream_channel')
+        ).prefetch_related("tournament", "players__user", "stream_channel")
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -56,12 +65,17 @@ class DiscordScheduledEventService:
 
         # Check if match has a scheduled time
         if not match.scheduled_at:
-            logger.debug("Match %s has no scheduled_at time, skipping event creation", match_id)
+            logger.debug(
+                "Match %s has no scheduled_at time, skipping event creation", match_id
+            )
             return None
 
         # Check if tournament has Discord events enabled
         tournament = match.tournament
-        if not tournament.create_scheduled_events or not tournament.scheduled_events_enabled:
+        if (
+            not tournament.create_scheduled_events
+            or not tournament.scheduled_events_enabled
+        ):
             logger.debug(
                 "Discord events not enabled for tournament %s (create=%s, enabled=%s)",
                 tournament.id,
@@ -86,18 +100,25 @@ class DiscordScheduledEventService:
             return existing_event
 
         # Get Discord guild for organization
-        await tournament.fetch_related('discord_event_guilds')
-        
+        await tournament.fetch_related("discord_event_guilds")
+
         # Use configured guilds if any, otherwise fall back to all active guilds for the organization
         if tournament.discord_event_guilds:
             discord_guilds = list(tournament.discord_event_guilds)
         else:
             # Fallback to all active guilds for backwards compatibility
             from models import DiscordGuild
-            discord_guilds = await DiscordGuild.filter(organization_id=organization_id, is_active=True).all()
-        
+
+            discord_guilds = await DiscordGuild.filter(
+                organization_id=organization_id, is_active=True
+            ).all()
+
         if not discord_guilds:
-            logger.warning("No Discord guilds configured for tournament %s in org %s", tournament.id, organization_id)
+            logger.warning(
+                "No Discord guilds configured for tournament %s in org %s",
+                tournament.id,
+                organization_id,
+            )
             return None
 
         # Get Discord bot instance
@@ -111,9 +132,13 @@ class DiscordScheduledEventService:
         description = self._format_event_description(match, tournament)
         location = await self._format_event_location(match)
         start_time = match.scheduled_at
-        
+
         # Use tournament's configured event duration (default 120 minutes = 2 hours)
-        duration_minutes = tournament.event_duration_minutes if hasattr(tournament, 'event_duration_minutes') else 120
+        duration_minutes = (
+            tournament.event_duration_minutes
+            if hasattr(tournament, "event_duration_minutes")
+            else 120
+        )
         end_time = start_time + timedelta(minutes=duration_minutes)
 
         # Track results
@@ -126,12 +151,17 @@ class DiscordScheduledEventService:
                 # Get guild from Discord
                 guild = bot.get_guild(discord_guild.guild_id)
                 if not guild:
-                    logger.warning("Discord guild %s not found in bot cache", discord_guild.guild_id)
+                    logger.warning(
+                        "Discord guild %s not found in bot cache",
+                        discord_guild.guild_id,
+                    )
                     continue
 
                 # Check bot permissions
                 if not await self._check_permissions(guild):
-                    logger.warning("Bot lacks MANAGE_EVENTS permission in guild %s", guild.id)
+                    logger.warning(
+                        "Bot lacks MANAGE_EVENTS permission in guild %s", guild.id
+                    )
                     continue
 
                 # Create Discord scheduled event
@@ -164,11 +194,23 @@ class DiscordScheduledEventService:
                 )
 
             except discord.Forbidden as e:
-                logger.error("Permission denied creating Discord event in guild %s: %s", discord_guild.guild_id, e)
+                logger.error(
+                    "Permission denied creating Discord event in guild %s: %s",
+                    discord_guild.guild_id,
+                    e,
+                )
             except discord.HTTPException as e:
-                logger.error("HTTP error creating Discord event in guild %s: %s", discord_guild.guild_id, e)
+                logger.error(
+                    "HTTP error creating Discord event in guild %s: %s",
+                    discord_guild.guild_id,
+                    e,
+                )
             except Exception as e:
-                logger.exception("Unexpected error creating Discord event in guild %s: %s", discord_guild.guild_id, e)
+                logger.exception(
+                    "Unexpected error creating Discord event in guild %s: %s",
+                    discord_guild.guild_id,
+                    e,
+                )
 
         # Return the first created event (for backwards compatibility)
         # In the future, we might want to return all created events
@@ -194,16 +236,20 @@ class DiscordScheduledEventService:
         # Get all existing event records for this match
         db_events = await self.repo.list_for_match(organization_id, match_id)
         if not db_events:
-            logger.debug("No Discord events found for match %s, creating new ones", match_id)
+            logger.debug(
+                "No Discord events found for match %s, creating new ones", match_id
+            )
             # Try to create if they don't exist
-            result = await self.create_event_for_match(user_id, organization_id, match_id)
+            result = await self.create_event_for_match(
+                user_id, organization_id, match_id
+            )
             return result is not None
 
         # Fetch the match with related data
         match = await Match.get_or_none(
             id=match_id,
             tournament__organization_id=organization_id,
-        ).prefetch_related('tournament', 'players__user', 'stream_channel')
+        ).prefetch_related("tournament", "players__user", "stream_channel")
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -233,43 +279,55 @@ class DiscordScheduledEventService:
         description = self._format_event_description(match, tournament)
         location = await self._format_event_location(match)
         start_time = match.scheduled_at
-        
+
         # Use tournament's configured event duration (default 120 minutes = 2 hours)
         if start_time:
-            duration_minutes = tournament.event_duration_minutes if hasattr(tournament, 'event_duration_minutes') else 120
+            duration_minutes = (
+                tournament.event_duration_minutes
+                if hasattr(tournament, "event_duration_minutes")
+                else 120
+            )
             end_time = start_time + timedelta(minutes=duration_minutes)
         else:
             end_time = None
 
         # Track success
         updated_count = 0
-        
+
         # Update each Discord event
         for db_event in db_events:
             # Find which guild this event belongs to by querying Discord
             discord_event = None
             guild = None
-            
+
             # Try to find the event in all guilds
             from models import DiscordGuild
-            guilds = await DiscordGuild.filter(organization_id=organization_id, is_active=True).all()
-            
+
+            guilds = await DiscordGuild.filter(
+                organization_id=organization_id, is_active=True
+            ).all()
+
             for discord_guild in guilds:
                 try:
                     guild = bot.get_guild(discord_guild.guild_id)
                     if not guild:
                         continue
-                    
-                    discord_event = await guild.fetch_scheduled_event(db_event.scheduled_event_id)
+
+                    discord_event = await guild.fetch_scheduled_event(
+                        db_event.scheduled_event_id
+                    )
                     if discord_event:
                         break
                 except discord.NotFound:
                     continue
                 except Exception:
                     continue
-            
+
             if not discord_event:
-                logger.warning("Discord event %s no longer exists, cleaning up", db_event.scheduled_event_id)
+                logger.warning(
+                    "Discord event %s no longer exists, cleaning up",
+                    db_event.scheduled_event_id,
+                )
                 await self.repo.delete_by_id(db_event.id)
                 continue
 
@@ -288,16 +346,28 @@ class DiscordScheduledEventService:
                     "Updated Discord event %s for match %s in guild %s (user %s)",
                     discord_event.id,
                     match_id,
-                    guild.id if guild else 'unknown',
+                    guild.id if guild else "unknown",
                     user_id or SYSTEM_USER_ID,
                 )
 
             except discord.Forbidden as e:
-                logger.error("Permission denied updating Discord event %s: %s", db_event.scheduled_event_id, e)
+                logger.error(
+                    "Permission denied updating Discord event %s: %s",
+                    db_event.scheduled_event_id,
+                    e,
+                )
             except discord.HTTPException as e:
-                logger.error("HTTP error updating Discord event %s: %s", db_event.scheduled_event_id, e)
+                logger.error(
+                    "HTTP error updating Discord event %s: %s",
+                    db_event.scheduled_event_id,
+                    e,
+                )
             except Exception as e:
-                logger.exception("Unexpected error updating Discord event %s: %s", db_event.scheduled_event_id, e)
+                logger.exception(
+                    "Unexpected error updating Discord event %s: %s",
+                    db_event.scheduled_event_id,
+                    e,
+                )
 
         return updated_count > 0
 
@@ -338,25 +408,30 @@ class DiscordScheduledEventService:
             # Find which guild this event belongs to
             discord_event = None
             guild = None
-            
+
             # Try to find the event in all guilds
             from models import DiscordGuild
-            guilds = await DiscordGuild.filter(organization_id=organization_id, is_active=True).all()
-            
+
+            guilds = await DiscordGuild.filter(
+                organization_id=organization_id, is_active=True
+            ).all()
+
             for discord_guild in guilds:
                 try:
                     guild = bot.get_guild(discord_guild.guild_id)
                     if not guild:
                         continue
-                    
-                    discord_event = await guild.fetch_scheduled_event(db_event.scheduled_event_id)
+
+                    discord_event = await guild.fetch_scheduled_event(
+                        db_event.scheduled_event_id
+                    )
                     if discord_event:
                         break
                 except discord.NotFound:
                     continue
                 except Exception:
                     continue
-            
+
             try:
                 # Delete the Discord event if found
                 if discord_event:
@@ -365,18 +440,32 @@ class DiscordScheduledEventService:
                         "Deleted Discord event %s for match %s in guild %s (user %s)",
                         db_event.scheduled_event_id,
                         match_id,
-                        guild.id if guild else 'unknown',
+                        guild.id if guild else "unknown",
                         user_id or SYSTEM_USER_ID,
                     )
                 else:
-                    logger.debug("Discord event %s already deleted", db_event.scheduled_event_id)
+                    logger.debug(
+                        "Discord event %s already deleted", db_event.scheduled_event_id
+                    )
 
             except discord.Forbidden as e:
-                logger.error("Permission denied deleting Discord event %s: %s", db_event.scheduled_event_id, e)
+                logger.error(
+                    "Permission denied deleting Discord event %s: %s",
+                    db_event.scheduled_event_id,
+                    e,
+                )
             except discord.HTTPException as e:
-                logger.error("HTTP error deleting Discord event %s: %s", db_event.scheduled_event_id, e)
+                logger.error(
+                    "HTTP error deleting Discord event %s: %s",
+                    db_event.scheduled_event_id,
+                    e,
+                )
             except Exception as e:
-                logger.exception("Unexpected error deleting Discord event %s: %s", db_event.scheduled_event_id, e)
+                logger.exception(
+                    "Unexpected error deleting Discord event %s: %s",
+                    db_event.scheduled_event_id,
+                    e,
+                )
 
             # Clean up database record regardless
             await self.repo.delete_by_id(db_event.id)
@@ -404,8 +493,8 @@ class DiscordScheduledEventService:
             Dictionary with cleanup statistics
         """
         stats = {
-            'deleted': 0,
-            'errors': 0,
+            "deleted": 0,
+            "errors": 0,
         }
 
         # Get all orphaned events
@@ -426,9 +515,9 @@ class DiscordScheduledEventService:
                     match_id=event.match_id,
                 )
                 if success:
-                    stats['deleted'] += 1
+                    stats["deleted"] += 1
                 else:
-                    stats['errors'] += 1
+                    stats["errors"] += 1
             except Exception as e:
                 logger.exception(
                     "Error cleaning up orphaned event %s (match %s): %s",
@@ -436,13 +525,13 @@ class DiscordScheduledEventService:
                     event.match_id,
                     e,
                 )
-                stats['errors'] += 1
+                stats["errors"] += 1
 
         logger.info(
             "Orphaned event cleanup complete for org %s: %d deleted, %d errors",
             organization_id,
-            stats['deleted'],
-            stats['errors'],
+            stats["deleted"],
+            stats["errors"],
         )
         return stats
 
@@ -466,20 +555,27 @@ class DiscordScheduledEventService:
             Dictionary with sync statistics
         """
         stats = {
-            'created': 0,
-            'updated': 0,
-            'deleted': 0,
-            'skipped': 0,
-            'errors': 0,
+            "created": 0,
+            "updated": 0,
+            "deleted": 0,
+            "skipped": 0,
+            "errors": 0,
         }
 
         # Get tournament
-        tournament = await self.tournament_repo.get_for_org(organization_id, tournament_id)
+        tournament = await self.tournament_repo.get_for_org(
+            organization_id, tournament_id
+        )
         if not tournament:
-            logger.warning("Tournament %s not found in org %s", tournament_id, organization_id)
+            logger.warning(
+                "Tournament %s not found in org %s", tournament_id, organization_id
+            )
             return stats
 
-        if not tournament.create_scheduled_events or not tournament.scheduled_events_enabled:
+        if (
+            not tournament.create_scheduled_events
+            or not tournament.scheduled_events_enabled
+        ):
             logger.debug("Discord events not enabled for tournament %s", tournament_id)
             return stats
 
@@ -491,17 +587,17 @@ class DiscordScheduledEventService:
             tournament_id=tournament_id,
             scheduled_at__lte=future_cutoff,
             finished_at__isnull=True,
-        ).prefetch_related('players__user', 'stream_channel')
+        ).prefetch_related("players__user", "stream_channel")
 
         # Process each match
         for match in matches:
             if not match.scheduled_at:
-                stats['skipped'] += 1
+                stats["skipped"] += 1
                 continue
 
             # Check if match passes the event creation filter
             if not self._should_create_event_for_match(match, tournament):
-                stats['skipped'] += 1
+                stats["skipped"] += 1
                 continue
 
             # Check if events exist for this match
@@ -509,29 +605,35 @@ class DiscordScheduledEventService:
 
             if existing_events:
                 # Update existing events
-                success = await self.update_event_for_match(user_id, organization_id, match.id)
+                success = await self.update_event_for_match(
+                    user_id, organization_id, match.id
+                )
                 if success:
-                    stats['updated'] += 1
+                    stats["updated"] += 1
                 else:
-                    stats['errors'] += 1
+                    stats["errors"] += 1
             else:
                 # Create new events
-                result = await self.create_event_for_match(user_id, organization_id, match.id)
+                result = await self.create_event_for_match(
+                    user_id, organization_id, match.id
+                )
                 if result:
-                    stats['created'] += 1
+                    stats["created"] += 1
                 else:
                     # If result is None, it might be skipped due to missing data (e.g., no guilds configured)
                     # This is not necessarily an error, so we'll count it as skipped
-                    stats['skipped'] += 1
+                    stats["skipped"] += 1
 
         # Clean up orphaned events (for finished matches)
         orphaned_events = await self.repo.list_orphaned_events(organization_id)
         for event in orphaned_events:
-            success = await self.delete_event_for_match(user_id, organization_id, event.match_id)
+            success = await self.delete_event_for_match(
+                user_id, organization_id, event.match_id
+            )
             if success:
-                stats['deleted'] += 1
+                stats["deleted"] += 1
             else:
-                stats['errors'] += 1
+                stats["errors"] += 1
 
         logger.info(
             "Synced Discord events for tournament %s in org %s: %s",
@@ -556,10 +658,12 @@ class DiscordScheduledEventService:
             match_part = match.title[:65]
         else:
             # Build versus string from players
-            players = getattr(match, 'players', [])
+            players = getattr(match, "players", [])
             if players:
-                player_names = [p.user.get_display_name() for p in players[:4]]  # Max 4 players
-                match_part = ' vs '.join(player_names[:2])  # Simplify for long names
+                player_names = [
+                    p.user.get_display_name() for p in players[:4]
+                ]  # Max 4 players
+                match_part = " vs ".join(player_names[:2])  # Simplify for long names
             else:
                 match_part = "Match"
 
@@ -574,7 +678,7 @@ class DiscordScheduledEventService:
         if match.title:
             parts.append(f"**Match:** {match.title}")
         else:
-            players = getattr(match, 'players', [])
+            players = getattr(match, "players", [])
             if players:
                 player_names = [p.user.get_display_name() for p in players]
                 parts.append(f"**Players:** {', '.join(player_names)}")
@@ -590,7 +694,7 @@ class DiscordScheduledEventService:
         if match.comment:
             parts.append(f"\n{match.comment}")
 
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     async def _format_event_location(self, match: Match) -> str:
         """
@@ -628,7 +732,9 @@ class DiscordScheduledEventService:
         # Check for MANAGE_EVENTS permission (bit 33)
         return bot_member.guild_permissions.manage_events
 
-    def _should_create_event_for_match(self, match: Match, tournament: Tournament) -> bool:
+    def _should_create_event_for_match(
+        self, match: Match, tournament: Tournament
+    ) -> bool:
         """
         Check if a match should create a Discord event based on tournament filter.
 
@@ -654,7 +760,9 @@ class DiscordScheduledEventService:
             return False
 
         # Default to ALL if unknown filter (shouldn't happen)
-        logger.warning("Unknown discord_event_filter: %s, defaulting to ALL", event_filter)
+        logger.warning(
+            "Unknown discord_event_filter: %s, defaulting to ALL", event_filter
+        )
         return True
 
     async def update_event_status(
@@ -675,21 +783,19 @@ class DiscordScheduledEventService:
         try:
             # Update database record
             db_event.discord_status = new_status
-            await db_event.save(update_fields=['discord_status', 'updated_at'])
-            
+            await db_event.save(update_fields=["discord_status", "updated_at"])
+
             logger.info(
-                "Updated event %s status to %s",
-                db_event.scheduled_event_id,
-                new_status
+                "Updated event %s status to %s", db_event.scheduled_event_id, new_status
             )
             return True
-            
+
         except Exception as e:
             logger.exception(
                 "Error updating event %s status to %s: %s",
                 db_event.scheduled_event_id,
                 new_status,
-                e
+                e,
             )
             return False
 
@@ -713,92 +819,124 @@ class DiscordScheduledEventService:
         """
         from models import Match
         from datetime import datetime, timezone
-        
+
         stats = {
-            'activated': 0,
-            'completed': 0,
-            'cancelled': 0,
-            'errors': 0,
+            "activated": 0,
+            "completed": 0,
+            "cancelled": 0,
+            "errors": 0,
         }
-        
+
         bot = get_bot_instance()
         if not bot:
             logger.warning("Bot not running, skipping auto-update event statuses")
             return stats
-        
+
         try:
             # Find all events for this organization that might need status updates
-            db_events = await DiscordScheduledEvent.filter(
-                organization_id=organization_id,
-                discord_status__in=['scheduled', 'active']
-            ).prefetch_related('match').all()
-            
+            db_events = (
+                await DiscordScheduledEvent.filter(
+                    organization_id=organization_id,
+                    discord_status__in=["scheduled", "active"],
+                )
+                .prefetch_related("match")
+                .all()
+            )
+
             now = datetime.now(timezone.utc)
-            
+
             for db_event in db_events:
                 match = db_event.match
-                
+
                 # Check if match is cancelled
-                if hasattr(match, 'status') and match.status == 'cancelled':
-                    if await self.update_event_status(db_event, 'cancelled'):
-                        stats['cancelled'] += 1
-                        
+                if hasattr(match, "status") and match.status == "cancelled":
+                    if await self.update_event_status(db_event, "cancelled"):
+                        stats["cancelled"] += 1
+
                         # Try to cancel the Discord event
                         try:
-                            discord_event = await self._find_discord_event(bot, db_event.scheduled_event_id)
+                            discord_event = await self._find_discord_event(
+                                bot, db_event.scheduled_event_id
+                            )
                             if discord_event:
-                                await discord_event.edit(status=discord.EventStatus.cancelled)
+                                await discord_event.edit(
+                                    status=discord.EventStatus.cancelled
+                                )
                         except Exception as e:
-                            logger.exception("Error cancelling Discord event %s: %s", db_event.scheduled_event_id, e)
+                            logger.exception(
+                                "Error cancelling Discord event %s: %s",
+                                db_event.scheduled_event_id,
+                                e,
+                            )
                     continue
-                
+
                 # Check if event should be activated (match has started)
-                if db_event.discord_status == 'scheduled' and match.scheduled_at and match.scheduled_at <= now:
-                    if await self.update_event_status(db_event, 'active'):
-                        stats['activated'] += 1
-                        
+                if (
+                    db_event.discord_status == "scheduled"
+                    and match.scheduled_at
+                    and match.scheduled_at <= now
+                ):
+                    if await self.update_event_status(db_event, "active"):
+                        stats["activated"] += 1
+
                         # Try to activate the Discord event
                         try:
-                            discord_event = await self._find_discord_event(bot, db_event.scheduled_event_id)
+                            discord_event = await self._find_discord_event(
+                                bot, db_event.scheduled_event_id
+                            )
                             if discord_event:
-                                await discord_event.edit(status=discord.EventStatus.active)
+                                await discord_event.edit(
+                                    status=discord.EventStatus.active
+                                )
                         except Exception as e:
-                            logger.exception("Error activating Discord event %s: %s", db_event.scheduled_event_id, e)
-                
+                            logger.exception(
+                                "Error activating Discord event %s: %s",
+                                db_event.scheduled_event_id,
+                                e,
+                            )
+
                 # Check if event should be completed (match is reported/finished)
-                elif db_event.discord_status == 'active':
+                elif db_event.discord_status == "active":
                     # Check if match has a result reported
                     is_complete = False
-                    if hasattr(match, 'status'):
-                        is_complete = match.status in ['completed', 'reported']
-                    elif hasattr(match, 'winner') and match.winner is not None:
+                    if hasattr(match, "status"):
+                        is_complete = match.status in ["completed", "reported"]
+                    elif hasattr(match, "winner") and match.winner is not None:
                         is_complete = True
-                    
+
                     if is_complete:
-                        if await self.update_event_status(db_event, 'completed'):
-                            stats['completed'] += 1
-                            
+                        if await self.update_event_status(db_event, "completed"):
+                            stats["completed"] += 1
+
                             # Try to complete the Discord event
                             try:
-                                discord_event = await self._find_discord_event(bot, db_event.scheduled_event_id)
+                                discord_event = await self._find_discord_event(
+                                    bot, db_event.scheduled_event_id
+                                )
                                 if discord_event:
-                                    await discord_event.edit(status=discord.EventStatus.completed)
+                                    await discord_event.edit(
+                                        status=discord.EventStatus.completed
+                                    )
                             except Exception as e:
-                                logger.exception("Error completing Discord event %s: %s", db_event.scheduled_event_id, e)
-        
+                                logger.exception(
+                                    "Error completing Discord event %s: %s",
+                                    db_event.scheduled_event_id,
+                                    e,
+                                )
+
         except Exception as e:
             logger.exception("Error in auto_update_event_statuses: %s", e)
-            stats['errors'] += 1
-        
+            stats["errors"] += 1
+
         logger.info(
             "Auto-updated event statuses for org %s: %d activated, %d completed, %d cancelled, %d errors",
             organization_id,
-            stats['activated'],
-            stats['completed'],
-            stats['cancelled'],
-            stats['errors']
+            stats["activated"],
+            stats["completed"],
+            stats["cancelled"],
+            stats["errors"],
         )
-        
+
         return stats
 
     async def _find_discord_event(
@@ -824,8 +962,9 @@ class DiscordScheduledEventService:
             except discord.NotFound:
                 continue
             except Exception as e:
-                logger.debug("Error fetching event %s from guild %s: %s", event_id, guild.id, e)
+                logger.debug(
+                    "Error fetching event %s from guild %s: %s", event_id, guild.id, e
+                )
                 continue
-        
-        return None
 
+        return None

@@ -36,7 +36,9 @@ class TestNotificationOrganizationScoping:
         """Create notification repository."""
         return NotificationRepository()
 
-    async def test_global_subscription_matches_all_organizations(self, service, repository, user):
+    async def test_global_subscription_matches_all_organizations(
+        self, service, repository, user
+    ):
         """Verify global subscription (org_id=None) matches events from any organization."""
         # Create global subscription
         await repository.create_subscription(
@@ -69,7 +71,9 @@ class TestNotificationOrganizationScoping:
         # Should also create notification
         assert len(log_ids) == 1
 
-    async def test_org_scoped_subscription_only_matches_that_org(self, service, repository, user):
+    async def test_org_scoped_subscription_only_matches_that_org(
+        self, service, repository, user
+    ):
         """Verify org-scoped subscription only matches events from that organization."""
         from models.organizations import Organization
 
@@ -108,7 +112,9 @@ class TestNotificationOrganizationScoping:
         # Should NOT create notification
         assert len(log_ids) == 0
 
-    async def test_multiple_subscriptions_different_scopes(self, service, repository, user):
+    async def test_multiple_subscriptions_different_scopes(
+        self, service, repository, user
+    ):
         """Verify user can have both global and org-scoped subscriptions."""
         from models.organizations import Organization
 

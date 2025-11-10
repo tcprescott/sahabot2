@@ -8,6 +8,6 @@ as a singleton service within the NiceGUI application.
 from discordbot.client import DiscordBot, get_bot_instance
 
 __all__ = [
-    'DiscordBot',
-    'get_bot_instance',
+    "DiscordBot",
+    "get_bot_instance",
 ]

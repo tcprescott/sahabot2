@@ -3,6 +3,7 @@ Race room profile service.
 
 Business logic for race room profile management.
 """
+
 import logging
 from typing import Optional
 from models import User, RaceRoomProfile
@@ -10,7 +11,9 @@ from application.repositories.race_room_profile_repository import (
     RaceRoomProfileRepository,
 )
 from application.services.organizations.organization_service import OrganizationService
-from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
+from application.services.authorization.authorization_service_v2 import (
+    AuthorizationServiceV2,
+)
 from application.events import EventBus, PresetCreatedEvent, PresetUpdatedEvent
 
 logger = logging.getLogger(__name__)
@@ -142,14 +145,16 @@ class RaceRoomProfileService:
         """
         # Check permission
         if not current_user:
-            logger.warning("Unauthenticated create profile attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated create profile attempt for org %s", organization_id
+            )
             return None
-        
+
         can_manage = await self.auth.can(
             current_user,
             action=self.auth.get_action_for_operation("race_room_profile", "create"),
             resource=self.auth.get_resource_identifier("race_room_profile", "*"),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
         if not can_manage:
             logger.warning(
@@ -208,14 +213,18 @@ class RaceRoomProfileService:
         """
         # Check permission
         if not current_user:
-            logger.warning("Unauthenticated update profile attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated update profile attempt for org %s", organization_id
+            )
             return None
-        
+
         can_manage = await self.auth.can(
             current_user,
             action=self.auth.get_action_for_operation("race_room_profile", "update"),
-            resource=self.auth.get_resource_identifier("race_room_profile", str(profile_id)),
-            organization_id=organization_id
+            resource=self.auth.get_resource_identifier(
+                "race_room_profile", str(profile_id)
+            ),
+            organization_id=organization_id,
         )
         if not can_manage:
             logger.warning(
@@ -258,14 +267,18 @@ class RaceRoomProfileService:
         """
         # Check permission
         if not current_user:
-            logger.warning("Unauthenticated delete profile attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated delete profile attempt for org %s", organization_id
+            )
             return False
-        
+
         can_manage = await self.auth.can(
             current_user,
             action=self.auth.get_action_for_operation("race_room_profile", "delete"),
-            resource=self.auth.get_resource_identifier("race_room_profile", str(profile_id)),
-            organization_id=organization_id
+            resource=self.auth.get_resource_identifier(
+                "race_room_profile", str(profile_id)
+            ),
+            organization_id=organization_id,
         )
         if not can_manage:
             logger.warning(
@@ -294,14 +307,19 @@ class RaceRoomProfileService:
         """
         # Check permission
         if not current_user:
-            logger.warning("Unauthenticated set_default_profile attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated set_default_profile attempt for org %s",
+                organization_id,
+            )
             return False
-        
+
         can_manage = await self.auth.can(
             current_user,
             action=self.auth.get_action_for_operation("race_room_profile", "update"),
-            resource=self.auth.get_resource_identifier("race_room_profile", str(profile_id)),
-            organization_id=organization_id
+            resource=self.auth.get_resource_identifier(
+                "race_room_profile", str(profile_id)
+            ),
+            organization_id=organization_id,
         )
         if not can_manage:
             logger.warning(

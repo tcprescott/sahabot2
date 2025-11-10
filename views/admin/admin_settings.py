@@ -38,28 +38,38 @@ class AdminSettingsView:
         dialog = MOTDDialog(on_save=self._refresh)
         await dialog.show()
 
-    async def _open_edit(self, key: str, value: Any, description: str, is_public: bool) -> None:
-        dialog = GlobalSettingDialog(key=key, value=value, description=description, is_public=is_public, on_save=self._refresh)
+    async def _open_edit(
+        self, key: str, value: Any, description: str, is_public: bool
+    ) -> None:
+        dialog = GlobalSettingDialog(
+            key=key,
+            value=value,
+            description=description,
+            is_public=is_public,
+            on_save=self._refresh,
+        )
         await dialog.show()
 
     async def _delete_setting(self, key: str) -> None:
         """Confirm and delete a setting by key."""
         confirm = ui.dialog()
         with confirm:
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-header'):
-                    ui.label('Delete Setting').classes('text-lg font-bold')
-                with ui.element('div').classes('card-body'):
+            with ui.element("div").classes("card"):
+                with ui.element("div").classes("card-header"):
+                    ui.label("Delete Setting").classes("text-lg font-bold")
+                with ui.element("div").classes("card-body"):
                     ui.label(f"Are you sure you want to delete '{key}'?")
-                    with ui.row().classes('dialog-actions'):
-                        ui.button('Cancel', on_click=confirm.close).classes('btn')
+                    with ui.row().classes("dialog-actions"):
+                        ui.button("Cancel", on_click=confirm.close).classes("btn")
 
                         async def do_delete() -> None:
                             await self.service.delete_global(key)
                             confirm.close()
                             await self._refresh()
 
-                        ui.button('Delete', on_click=do_delete).props('color=negative').classes('btn')
+                        ui.button("Delete", on_click=do_delete).props(
+                            "color=negative"
+                        ).classes("btn")
         confirm.open()
 
     async def _render_content(self) -> None:
@@ -67,38 +77,63 @@ class AdminSettingsView:
         settings = await self.service.list_global()
 
         # MOTD Management Card
-        with Card.create(title='Message of the Day'):
-            with ui.row().classes('w-full justify-between items-center'):
-                ui.label('Manage the banner message displayed at the top of pages.')
-                ui.button('Edit MOTD', icon='campaign', on_click=self._open_motd_dialog).props('color=primary').classes('btn')
+        with Card.create(title="Message of the Day"):
+            with ui.row().classes("w-full justify-between items-center"):
+                ui.label("Manage the banner message displayed at the top of pages.")
+                ui.button(
+                    "Edit MOTD", icon="campaign", on_click=self._open_motd_dialog
+                ).props("color=primary").classes("btn")
 
         # Global Settings Card
-        with Card.create(title='Global Settings'):
-            with ui.row().classes('w-full justify-between'):
-                ui.label('Manage application-wide configuration settings.')
-                ui.button('Create Setting', icon='add', on_click=self._open_create).props('color=positive').classes('btn')
+        with Card.create(title="Global Settings"):
+            with ui.row().classes("w-full justify-between"):
+                ui.label("Manage application-wide configuration settings.")
+                ui.button(
+                    "Create Setting", icon="add", on_click=self._open_create
+                ).props("color=positive").classes("btn")
 
             def render_public(s):
-                return ui.icon('public').classes('text-positive') if getattr(s, 'is_public', False) else ui.icon('lock').classes('text-secondary')
+                return (
+                    ui.icon("public").classes("text-positive")
+                    if getattr(s, "is_public", False)
+                    else ui.icon("lock").classes("text-secondary")
+                )
 
             def render_actions(s):
-                with ui.element('div').classes('flex gap-2'):
-                    ui.button('Edit', icon='edit', on_click=lambda s=s: self._open_edit(s.key, s.value, s.description or '', getattr(s, 'is_public', False))).classes('btn')
-                    ui.button('Delete', icon='delete', on_click=lambda s=s: self._delete_setting(s.key)).classes('btn')
+                with ui.element("div").classes("flex gap-2"):
+                    ui.button(
+                        "Edit",
+                        icon="edit",
+                        on_click=lambda s=s: self._open_edit(
+                            s.key,
+                            s.value,
+                            s.description or "",
+                            getattr(s, "is_public", False),
+                        ),
+                    ).classes("btn")
+                    ui.button(
+                        "Delete",
+                        icon="delete",
+                        on_click=lambda s=s: self._delete_setting(s.key),
+                    ).classes("btn")
 
             columns = [
-                TableColumn('Key', key='key'),
-                TableColumn('Value', cell_render=lambda s: ui.label(str(getattr(s, 'value', '') or '')).classes('truncate max-w-64')),
-                TableColumn('Public', cell_render=render_public),
-                TableColumn('Updated', key='updated_at'),
-                TableColumn('Actions', cell_render=render_actions),
+                TableColumn("Key", key="key"),
+                TableColumn(
+                    "Value",
+                    cell_render=lambda s: ui.label(
+                        str(getattr(s, "value", "") or "")
+                    ).classes("truncate max-w-64"),
+                ),
+                TableColumn("Public", cell_render=render_public),
+                TableColumn("Updated", key="updated_at"),
+                TableColumn("Actions", cell_render=render_actions),
             ]
             table = ResponsiveTable(columns, settings)
             await table.render()
 
-
     async def render(self) -> None:
         """Render the global settings admin UI."""
-        self.container = ui.column().classes('full-width')
+        self.container = ui.column().classes("full-width")
         with self.container:
             await self._render_content()

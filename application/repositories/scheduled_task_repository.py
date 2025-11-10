@@ -3,6 +3,7 @@ Repository layer for ScheduledTask data access.
 
 Handles all database operations for scheduled tasks.
 """
+
 from __future__ import annotations
 from typing import Optional, List
 from datetime import datetime
@@ -62,7 +63,9 @@ class ScheduledTaskRepository:
             is_active=is_active,
             created_by_id=created_by_id,
         )
-        scope = "global" if organization_id is None else f"organization {organization_id}"
+        scope = (
+            "global" if organization_id is None else f"organization {organization_id}"
+        )
         logger.info("Created scheduled task %s for %s", task.id, scope)
         return task
 
@@ -78,7 +81,9 @@ class ScheduledTaskRepository:
         """
         return await ScheduledTask.filter(id=task_id).first()
 
-    async def list_by_org(self, organization_id: int, active_only: bool = False) -> List[ScheduledTask]:
+    async def list_by_org(
+        self, organization_id: int, active_only: bool = False
+    ) -> List[ScheduledTask]:
         """
         List all scheduled tasks for an organization.
 
@@ -92,7 +97,7 @@ class ScheduledTaskRepository:
         query = ScheduledTask.filter(organization_id=organization_id)
         if active_only:
             query = query.filter(is_active=True)
-        return await query.order_by('-created_at')
+        return await query.order_by("-created_at")
 
     async def list_global_tasks(self, active_only: bool = False) -> List[ScheduledTask]:
         """
@@ -107,7 +112,7 @@ class ScheduledTaskRepository:
         query = ScheduledTask.filter(organization_id=None)
         if active_only:
             query = query.filter(is_active=True)
-        return await query.order_by('-created_at')
+        return await query.order_by("-created_at")
 
     async def list_active_tasks(self) -> List[ScheduledTask]:
         """
@@ -116,7 +121,7 @@ class ScheduledTaskRepository:
         Returns:
             List of active ScheduledTask instances
         """
-        return await ScheduledTask.filter(is_active=True).order_by('next_run_at')
+        return await ScheduledTask.filter(is_active=True).order_by("next_run_at")
 
     async def list_tasks_due_to_run(self, before_time: datetime) -> List[ScheduledTask]:
         """
@@ -131,13 +136,9 @@ class ScheduledTaskRepository:
         return await ScheduledTask.filter(
             is_active=True,
             next_run_at__lte=before_time,
-        ).order_by('next_run_at')
+        ).order_by("next_run_at")
 
-    async def update(
-        self,
-        task_id: int,
-        **kwargs
-    ) -> Optional[ScheduledTask]:
+    async def update(self, task_id: int, **kwargs) -> Optional[ScheduledTask]:
         """
         Update a scheduled task.
 

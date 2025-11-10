@@ -39,15 +39,19 @@ class BaseDialog:
         """
         self.dialog = ui.dialog()
         with self.dialog:
-            with ui.element('div').classes(f'card {max_width}').props('role="dialog" aria-modal="true"'):
+            with ui.element("div").classes(f"card {max_width}").props(
+                'role="dialog" aria-modal="true"'
+            ):
                 # Header
-                with ui.element('div').classes('card-header'):
-                    with ui.row().classes('items-center gap-sm'):
-                        ui.icon(icon).classes('icon-medium').props('aria-hidden="true"')
-                        ui.element('h2').classes('text-xl text-bold').add_slot('default', title)
+                with ui.element("div").classes("card-header"):
+                    with ui.row().classes("items-center gap-sm"):
+                        ui.icon(icon).classes("icon-medium").props('aria-hidden="true"')
+                        ui.element("h2").classes("text-xl text-bold").add_slot(
+                            "default", title
+                        )
 
                 # Body container - subclasses will populate
-                with ui.element('div').classes('card-body'):
+                with ui.element("div").classes("card-body"):
                     self._render_body()
 
         return self.dialog
@@ -76,10 +80,10 @@ class BaseDialog:
         Returns:
             ui.element: Grid container element
         """
-        classes = 'form-grid'
+        classes = "form-grid"
         if columns == 2:
-            classes += ' form-grid-2'
-        return ui.element('div').classes(classes)
+            classes += " form-grid-2"
+        return ui.element("div").classes(classes)
 
     @staticmethod
     def create_actions_row() -> ui.element:
@@ -93,7 +97,7 @@ class BaseDialog:
         - Place the primary/positive action LAST; it will align to the far right
         This layout is achieved via CSS (justify-content: space-between).
         """
-        return ui.element('div').classes('dialog-actions')
+        return ui.element("div").classes("dialog-actions")
 
     @staticmethod
     def create_permission_select(
@@ -118,7 +122,7 @@ class BaseDialog:
             label=label,
             options={p.value: p.name for p in available},
             value=current_permission.value,
-        ).classes('w-full')
+        ).classes("w-full")
 
         # Normalize the emitted value to a Permission enum
         def normalize_and_callback(e: Any) -> None:
@@ -126,7 +130,7 @@ class BaseDialog:
             val = e.args
             try:
                 if isinstance(val, dict):
-                    val = val.get('value')
+                    val = val.get("value")
                 if isinstance(val, Permission):
                     on_change(val)
                     return
@@ -134,7 +138,7 @@ class BaseDialog:
             except Exception as ex:
                 logger.warning("Failed to parse permission value: %s", ex)
 
-        permission_select.on('update:model-value', normalize_and_callback)
+        permission_select.on("update:model-value", normalize_and_callback)
         return permission_select
 
     @staticmethod
@@ -145,8 +149,8 @@ class BaseDialog:
             label: Label text (will be bolded)
             value: Value text
         """
-        with ui.row().classes('full-width'):
-            ui.label(f'{label}:').classes('font-semibold')
+        with ui.row().classes("full-width"):
+            ui.label(f"{label}:").classes("font-semibold")
             ui.label(value)
 
     @staticmethod
@@ -156,4 +160,4 @@ class BaseDialog:
         Args:
             text: Section title text
         """
-        ui.element('h3').classes('font-bold text-lg').add_slot('default', text)
+        ui.element("h3").classes("font-bold text-lg").add_slot("default", text)

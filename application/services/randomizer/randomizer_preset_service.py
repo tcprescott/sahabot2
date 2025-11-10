@@ -9,8 +9,12 @@ import logging
 import yaml
 from typing import Optional
 from models import User, RandomizerPreset, Permission
-from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
-from application.services.randomizer.preset_namespace_service import PresetNamespaceService
+from application.repositories.randomizer_preset_repository import (
+    RandomizerPresetRepository,
+)
+from application.services.randomizer.preset_namespace_service import (
+    PresetNamespaceService,
+)
 from application.events import EventBus, PresetCreatedEvent, PresetUpdatedEvent
 
 logger = logging.getLogger(__name__)
@@ -24,16 +28,16 @@ class RandomizerPresetService:
     """Service for managing randomizer presets with namespace support."""
 
     SUPPORTED_RANDOMIZERS = [
-        'alttpr',
-        'sm',
-        'smz3',
-        'ootr',
-        'aosr',
-        'z1r',
-        'ffr',
-        'smb3r',
-        'ctjets',
-        'bingosync'
+        "alttpr",
+        "sm",
+        "smz3",
+        "ootr",
+        "aosr",
+        "z1r",
+        "ffr",
+        "smb3r",
+        "ctjets",
+        "bingosync",
     ]
 
     def __init__(self):
@@ -87,9 +91,7 @@ class RandomizerPresetService:
         return self._can_edit_preset(preset, user)
 
     async def get_preset(
-        self,
-        preset_id: int,
-        user: Optional[User] = None
+        self, preset_id: int, user: Optional[User] = None
     ) -> Optional[RandomizerPreset]:
         """
         Get a preset by ID.
@@ -111,7 +113,7 @@ class RandomizerPresetService:
             logger.warning(
                 "User %s attempted to access private preset %s",
                 user.id if user else None,
-                preset_id
+                preset_id,
             )
             return None
 
@@ -122,7 +124,7 @@ class RandomizerPresetService:
         user: Optional[User] = None,
         randomizer: Optional[str] = None,
         mine_only: bool = False,
-        include_global: bool = True
+        include_global: bool = True,
     ) -> list[RandomizerPreset]:
         """
         List presets accessible to a user through their namespaces.
@@ -148,12 +150,13 @@ class RandomizerPresetService:
             if not namespace:
                 return []
             presets = await self.repository.list_in_namespace(
-                namespace_id=namespace.id,
-                randomizer=randomizer
+                namespace_id=namespace.id, randomizer=randomizer
             )
             # Optionally include global presets
             if include_global:
-                global_presets = await self.repository.list_global_presets(randomizer=randomizer)
+                global_presets = await self.repository.list_global_presets(
+                    randomizer=randomizer
+                )
                 presets.extend(global_presets)
             return presets
 
@@ -163,7 +166,7 @@ class RandomizerPresetService:
             namespaces=namespaces,
             randomizer=randomizer,
             include_global=include_global,
-            user_id=user.id
+            user_id=user.id,
         )
 
     async def create_preset(
@@ -174,7 +177,7 @@ class RandomizerPresetService:
         yaml_content: str,
         description: Optional[str] = None,
         is_public: bool = False,
-        is_global: bool = False
+        is_global: bool = False,
     ) -> RandomizerPreset:
         """
         Create a new preset in the user's namespace or as a global preset.
@@ -221,27 +224,24 @@ class RandomizerPresetService:
                 logger.error("Failed to create namespace for user %s", user.id)
                 raise ValueError("Failed to create user namespace")
             namespace_id = namespace.id
-            logger.info("Creating preset in namespace %s for user %s", namespace_id, user.id)
+            logger.info(
+                "Creating preset in namespace %s for user %s", namespace_id, user.id
+            )
         else:
             logger.info("Creating global preset for user %s", user.id)
 
         # Check for duplicate name
         existing = await self.repository.get_by_name(
-            randomizer=randomizer,
-            name=name,
-            namespace_id=namespace_id
+            randomizer=randomizer, name=name, namespace_id=namespace_id
         )
         if existing:
             scope = "globally" if is_global else "in your namespace"
-            raise ValueError(
-                f"Preset '{name}' already exists for {randomizer} {scope}"
-            )
-        
+            raise ValueError(f"Preset '{name}' already exists for {randomizer} {scope}")
+
         # Also check if a global preset exists with this name (to avoid conflicts)
         if not is_global:
             global_existing = await self.repository.get_global_preset(
-                randomizer=randomizer,
-                name=name
+                randomizer=randomizer, name=name
             )
             if global_existing:
                 raise ValueError(
@@ -257,7 +257,7 @@ class RandomizerPresetService:
             settings=settings_dict,
             namespace_id=namespace_id,
             description=description,
-            is_public=is_public
+            is_public=is_public,
         )
 
         scope = "global" if is_global else f"namespace {namespace_id}"
@@ -267,16 +267,18 @@ class RandomizerPresetService:
             name,
             randomizer,
             scope,
-            is_public
+            is_public,
         )
 
         # Emit preset created event
-        await EventBus.emit(PresetCreatedEvent(
-            user_id=user.id,
-            entity_id=preset.id,
-            preset_name=name,
-            namespace=f"namespace:{namespace_id}" if namespace_id else "global",
-        ))
+        await EventBus.emit(
+            PresetCreatedEvent(
+                user_id=user.id,
+                entity_id=preset.id,
+                preset_name=name,
+                namespace=f"namespace:{namespace_id}" if namespace_id else "global",
+            )
+        )
 
         return preset
 
@@ -287,7 +289,7 @@ class RandomizerPresetService:
         yaml_content: Optional[str] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        is_public: Optional[bool] = None
+        is_public: Optional[bool] = None,
     ) -> RandomizerPreset:
         """
         Update a preset.
@@ -319,7 +321,7 @@ class RandomizerPresetService:
         updates = {}
 
         if yaml_content is not None:
-            updates['settings'] = self._validate_yaml(yaml_content)
+            updates["settings"] = self._validate_yaml(yaml_content)
 
         if name is not None:
             # Check for duplicate if name is changing
@@ -327,20 +329,20 @@ class RandomizerPresetService:
                 existing = await self.repository.get_by_name(
                     randomizer=preset.randomizer,
                     name=name,
-                    namespace_id=preset.namespace_id
+                    namespace_id=preset.namespace_id,
                 )
                 if existing and existing.id != preset_id:
                     scope = "globally" if preset.is_global else "in this namespace"
                     raise ValueError(
                         f"Preset '{name}' already exists for {preset.randomizer} {scope}"
                     )
-            updates['name'] = name
+            updates["name"] = name
 
         if description is not None:
-            updates['description'] = description
+            updates["description"] = description
 
         if is_public is not None:
-            updates['is_public'] = is_public
+            updates["is_public"] = is_public
 
         if not updates:
             return preset
@@ -353,16 +355,18 @@ class RandomizerPresetService:
             user.id,
             preset.full_name,
             preset_id,
-            list(updates.keys())
+            list(updates.keys()),
         )
 
         # Emit preset updated event
-        await EventBus.emit(PresetUpdatedEvent(
-            user_id=user.id,
-            entity_id=preset_id,
-            preset_name=updated_preset.name,
-            changed_fields=list(updates.keys()),
-        ))
+        await EventBus.emit(
+            PresetUpdatedEvent(
+                user_id=user.id,
+                entity_id=preset_id,
+                preset_name=updated_preset.name,
+                changed_fields=list(updates.keys()),
+            )
+        )
 
         return updated_preset
 
@@ -391,10 +395,7 @@ class RandomizerPresetService:
         await self.repository.delete(preset_id)
 
         logger.info(
-            "User %s deleted preset %s (id=%s)",
-            user.id,
-            preset.full_name,
-            preset_id
+            "User %s deleted preset %s (id=%s)", user.id, preset.full_name, preset_id
         )
 
         return True
@@ -403,7 +404,7 @@ class RandomizerPresetService:
         self,
         user: User,
         randomizer: Optional[str] = None,
-        namespace_id: Optional[int] = None
+        namespace_id: Optional[int] = None,
     ) -> list[RandomizerPreset]:
         """
         List presets created by a specific user.
@@ -425,14 +426,11 @@ class RandomizerPresetService:
         target_namespace_id = namespace_id if namespace_id is not None else namespace.id
 
         return await self.repository.list_in_namespace(
-            namespace_id=target_namespace_id,
-            randomizer=randomizer
+            namespace_id=target_namespace_id, randomizer=randomizer
         )
 
     async def list_public_presets(
-        self,
-        randomizer: Optional[str] = None,
-        namespace_id: Optional[int] = None
+        self, randomizer: Optional[str] = None, namespace_id: Optional[int] = None
     ) -> list[RandomizerPreset]:
         """
         List all public presets.
@@ -447,8 +445,7 @@ class RandomizerPresetService:
         if namespace_id is not None:
             # Get presets from specific namespace that are public
             presets = await self.repository.list_in_namespace(
-                namespace_id=namespace_id,
-                randomizer=randomizer
+                namespace_id=namespace_id, randomizer=randomizer
             )
             return [p for p in presets if p.is_public]
 
@@ -503,13 +500,13 @@ class RandomizerPresetService:
         if is_mystery:
             self._validate_mystery_preset(parsed)
             # Tag it as mystery preset if not already tagged
-            if 'preset_type' not in parsed:
-                parsed['preset_type'] = 'mystery'
+            if "preset_type" not in parsed:
+                parsed["preset_type"] = "mystery"
 
         # If it has a 'settings' key (SahasrahBot format), extract it
         # Otherwise treat the whole thing as settings
-        if 'settings' in parsed:
-            settings = parsed['settings']
+        if "settings" in parsed:
+            settings = parsed["settings"]
             if not isinstance(settings, dict):
                 raise PresetValidationError("'settings' must be a dictionary")
             return parsed  # Store whole structure with metadata
@@ -531,18 +528,18 @@ class RandomizerPresetService:
             True if mystery preset
         """
         # Explicit mystery type
-        if parsed.get('preset_type') == 'mystery':
+        if parsed.get("preset_type") == "mystery":
             return True
 
         # Has weights or mystery_weights
-        if 'weights' in parsed or 'mystery_weights' in parsed:
+        if "weights" in parsed or "mystery_weights" in parsed:
             return True
 
         # Check in 'settings' sub-dict (SahasrahBot format)
-        if 'settings' in parsed:
-            settings = parsed['settings']
+        if "settings" in parsed:
+            settings = parsed["settings"]
             if isinstance(settings, dict):
-                if 'weights' in settings or 'mystery_weights' in settings:
+                if "weights" in settings or "mystery_weights" in settings:
                     return True
 
         return False
@@ -557,17 +554,19 @@ class RandomizerPresetService:
         Raises:
             PresetValidationError: If mystery preset is invalid
         """
-        from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
+        from application.services.randomizer.alttpr_mystery_service import (
+            ALTTPRMysteryService,
+        )
 
         # Extract mystery weights (could be at root or in 'mystery_weights' key)
-        mystery_weights = parsed.get('mystery_weights', parsed)
+        mystery_weights = parsed.get("mystery_weights", parsed)
 
         # If the expected weight keys are not present in the current mystery_weights,
         # and the preset uses SahasrahBot format (with a 'settings' key), check for weights inside 'settings'.
-        expected_weight_keys = ['weights', 'entrance_weights', 'customizer']
+        expected_weight_keys = ["weights", "entrance_weights", "customizer"]
         has_expected_keys = any(k in mystery_weights for k in expected_weight_keys)
-        if 'settings' in parsed and not has_expected_keys:
-            mystery_weights = parsed['settings']
+        if "settings" in parsed and not has_expected_keys:
+            mystery_weights = parsed["settings"]
 
         # Validate using mystery service
         service = ALTTPRMysteryService()

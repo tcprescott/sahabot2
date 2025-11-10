@@ -33,58 +33,157 @@ from tortoise import Tortoise
 
 # Import models
 from models import (
-    User, Permission, Organization, OrganizationMember, OrganizationPermission,
-    AsyncTournament, AsyncTournamentPool, AsyncTournamentPermalink,
+    User,
+    Permission,
+    Organization,
+    OrganizationMember,
+    OrganizationPermission,
+    AsyncTournament,
+    AsyncTournamentPool,
+    AsyncTournamentPermalink,
     AsyncTournamentRace,
-    Tournament, Match, MatchPlayers, MatchSeed, TournamentPlayers,
-    Crew, CrewRole, SYSTEM_USER_ID
+    Tournament,
+    Match,
+    MatchPlayers,
+    MatchSeed,
+    TournamentPlayers,
+    Crew,
+    CrewRole,
+    SYSTEM_USER_ID,
 )
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 
 # Realistic test data
 FIRST_NAMES = [
-    'Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank', 'Grace', 'Henry',
-    'Iris', 'Jack', 'Kate', 'Leo', 'Mia', 'Noah', 'Olivia', 'Peter',
-    'Quinn', 'Rose', 'Sam', 'Tara', 'Uma', 'Victor', 'Wendy', 'Xander',
-    'Yara', 'Zoe', 'Alex', 'Blake', 'Casey', 'Drew'
+    "Alice",
+    "Bob",
+    "Charlie",
+    "Diana",
+    "Eve",
+    "Frank",
+    "Grace",
+    "Henry",
+    "Iris",
+    "Jack",
+    "Kate",
+    "Leo",
+    "Mia",
+    "Noah",
+    "Olivia",
+    "Peter",
+    "Quinn",
+    "Rose",
+    "Sam",
+    "Tara",
+    "Uma",
+    "Victor",
+    "Wendy",
+    "Xander",
+    "Yara",
+    "Zoe",
+    "Alex",
+    "Blake",
+    "Casey",
+    "Drew",
 ]
 
 LAST_NAMES = [
-    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller',
-    'Davis', 'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez',
-    'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin'
+    "Smith",
+    "Johnson",
+    "Williams",
+    "Brown",
+    "Jones",
+    "Garcia",
+    "Miller",
+    "Davis",
+    "Rodriguez",
+    "Martinez",
+    "Hernandez",
+    "Lopez",
+    "Gonzalez",
+    "Wilson",
+    "Anderson",
+    "Thomas",
+    "Taylor",
+    "Moore",
+    "Jackson",
+    "Martin",
 ]
 
 ORG_TYPES = [
-    'Gaming League', 'Racing Guild', 'Speedrun Community', 'Tournament Series',
-    'Gaming Collective', 'Esports Organization', 'Racing Federation'
+    "Gaming League",
+    "Racing Guild",
+    "Speedrun Community",
+    "Tournament Series",
+    "Gaming Collective",
+    "Esports Organization",
+    "Racing Federation",
 ]
 
 ORG_ADJECTIVES = [
-    'Elite', 'Pro', 'Ultimate', 'Legendary', 'Epic', 'Supreme', 'Prime',
-    'Mythic', 'Grand', 'Royal', 'Champion', 'Master', 'Apex', 'Alpha'
+    "Elite",
+    "Pro",
+    "Ultimate",
+    "Legendary",
+    "Epic",
+    "Supreme",
+    "Prime",
+    "Mythic",
+    "Grand",
+    "Royal",
+    "Champion",
+    "Master",
+    "Apex",
+    "Alpha",
 ]
 
 TOURNAMENT_TYPES = [
-    'Championship', 'Open', 'Invitational', 'Weekly', 'Monthly', 'Seasonal',
-    'Grand Prix', 'Cup', 'Series', 'League', 'Qualifier', 'Masters'
+    "Championship",
+    "Open",
+    "Invitational",
+    "Weekly",
+    "Monthly",
+    "Seasonal",
+    "Grand Prix",
+    "Cup",
+    "Series",
+    "League",
+    "Qualifier",
+    "Masters",
 ]
 
 GAME_CATEGORIES = [
-    'alttpr', 'ootr', 'smz3', 'sm64', 'smw', 'smo', 'zelda',
-    'metroid', 'pokemon', 'ff', 'mario', 'sonic'
+    "alttpr",
+    "ootr",
+    "smz3",
+    "sm64",
+    "smw",
+    "smo",
+    "zelda",
+    "metroid",
+    "pokemon",
+    "ff",
+    "mario",
+    "sonic",
 ]
 
 RACE_GOALS = [
-    'Beat the game', 'Any%', '100%', 'All Dungeons', 'Glitchless',
-    'All Stars', 'All Bosses', 'Low%', 'No Major Glitches', 'Randomizer'
+    "Beat the game",
+    "Any%",
+    "100%",
+    "All Dungeons",
+    "Glitchless",
+    "All Stars",
+    "All Bosses",
+    "Low%",
+    "No Major Glitches",
+    "Randomizer",
 ]
 
 
@@ -98,7 +197,7 @@ class MockDataGenerator:
         num_tournaments: int = 5,
         num_async_tournaments: int = 3,
         num_matches_per_tournament: int = 10,
-        clear_existing: bool = False
+        clear_existing: bool = False,
     ):
         """
         Initialize mock data generator.
@@ -178,10 +277,10 @@ class MockDataGenerator:
         num_user = self.num_users - num_superadmin - num_admin - num_moderator
 
         permissions = (
-            [Permission.SUPERADMIN] * num_superadmin +
-            [Permission.ADMIN] * num_admin +
-            [Permission.MODERATOR] * num_moderator +
-            [Permission.USER] * num_user
+            [Permission.SUPERADMIN] * num_superadmin
+            + [Permission.ADMIN] * num_admin
+            + [Permission.MODERATOR] * num_moderator
+            + [Permission.USER] * num_user
         )
         random.shuffle(permissions)
 
@@ -199,14 +298,18 @@ class MockDataGenerator:
                 discord_discriminator=str(random.randint(1, 9999)).zfill(4),
                 discord_email=f"{username.lower()}@example.com",
                 permission=permissions[i],
-                is_active=True
+                is_active=True,
             )
 
             self.users.append(user)
 
         logger.info(
             "Created %s users: %s SUPERADMIN, %s ADMIN, %s MODERATOR, %s USER",
-            len(self.users), num_superadmin, num_admin, num_moderator, num_user
+            len(self.users),
+            num_superadmin,
+            num_admin,
+            num_moderator,
+            num_user,
         )
 
     async def _generate_organizations(self):
@@ -215,14 +318,14 @@ class MockDataGenerator:
 
         # Standard organization permissions
         org_permission_names = [
-            'ADMIN',
-            'TOURNAMENT_MANAGER',
-            'MEMBER_MANAGER',
-            'ASYNC_REVIEWER',
-            'CREW_APPROVER',
-            'SCHEDULED_TASK_MANAGER',
-            'RACE_ROOM_MANAGER',
-            'LIVE_RACE_MANAGER'
+            "ADMIN",
+            "TOURNAMENT_MANAGER",
+            "MEMBER_MANAGER",
+            "ASYNC_REVIEWER",
+            "CREW_APPROVER",
+            "SCHEDULED_TASK_MANAGER",
+            "RACE_ROOM_MANAGER",
+            "LIVE_RACE_MANAGER",
         ]
 
         for i in range(self.num_orgs):
@@ -233,7 +336,7 @@ class MockDataGenerator:
             org = await Organization.create(
                 name=name,
                 description=f"A {org_type.lower()} for competitive gaming and racing events.",
-                is_active=True
+                is_active=True,
             )
 
             # Create organization permissions
@@ -242,22 +345,18 @@ class MockDataGenerator:
                 perm = await OrganizationPermission.create(
                     organization=org,
                     permission_name=perm_name,
-                    description=f"{perm_name} permission for {name}"
+                    description=f"{perm_name} permission for {name}",
                 )
                 permissions.append(perm)
 
             # Add members (30-70% of users)
             num_members = random.randint(
-                int(self.num_users * 0.3),
-                int(self.num_users * 0.7)
+                int(self.num_users * 0.3), int(self.num_users * 0.7)
             )
             members_to_add = random.sample(self.users, num_members)
 
             for user in members_to_add:
-                member = await OrganizationMember.create(
-                    organization=org,
-                    user=user
-                )
+                member = await OrganizationMember.create(organization=org, user=user)
 
                 # Assign permissions based on user level
                 if user.permission >= Permission.ADMIN:
@@ -275,7 +374,9 @@ class MockDataGenerator:
 
             self.orgs.append(org)
 
-        logger.info("Created %s organizations with members and permissions", len(self.orgs))
+        logger.info(
+            "Created %s organizations with members and permissions", len(self.orgs)
+        )
 
     async def _generate_tournaments(self):
         """Generate scheduled tournaments with matches."""
@@ -298,21 +399,22 @@ class MockDataGenerator:
                     racetime_auto_create_rooms=random.random() > 0.5,
                     room_open_minutes_before=random.choice([30, 60, 90, 120]),
                     require_racetime_link=random.random() > 0.7,
-                    racetime_default_goal=random.choice(RACE_GOALS)
+                    racetime_default_goal=random.choice(RACE_GOALS),
                 )
 
                 # Add tournament players (subset of org members)
-                org_members = await OrganizationMember.filter(
-                    organization=org
-                ).prefetch_related('user').all()
-                
+                org_members = (
+                    await OrganizationMember.filter(organization=org)
+                    .prefetch_related("user")
+                    .all()
+                )
+
                 num_players = min(len(org_members), random.randint(4, 20))
                 players = random.sample(org_members, num_players)
 
                 for member in players:
                     await TournamentPlayers.create(
-                        tournament=tournament,
-                        user=member.user
+                        tournament=tournament, user=member.user
                     )
 
                 # Generate matches
@@ -326,9 +428,11 @@ class MockDataGenerator:
         """Generate matches for a tournament."""
         # Need at least 2 players for matches
         if len(players) < 2:
-            logger.warning("Not enough players for matches in tournament %s", tournament.name)
+            logger.warning(
+                "Not enough players for matches in tournament %s", tournament.name
+            )
             return
-            
+
         num_matches = self.num_matches_per_tournament
 
         for i in range(num_matches):
@@ -336,7 +440,7 @@ class MockDataGenerator:
             scheduled_at = datetime.now(timezone.utc) + timedelta(
                 days=random.randint(0, 30),
                 hours=random.randint(0, 23),
-                minutes=random.choice([0, 15, 30, 45])
+                minutes=random.choice([0, 15, 30, 45]),
             )
 
             # Some matches are in the past (for testing completed states)
@@ -351,7 +455,7 @@ class MockDataGenerator:
                 title=f"Match {i + 1}",
                 racetime_goal=tournament.racetime_default_goal,
                 racetime_invitational=True,
-                racetime_auto_create=tournament.racetime_auto_create_rooms
+                racetime_auto_create=tournament.racetime_auto_create_rooms,
             )
 
             # Add 2-4 players to match (but not more than available)
@@ -364,13 +468,15 @@ class MockDataGenerator:
                     match=match,
                     user=player_member.user,
                     finish_rank=None,  # Not finished yet
-                    assigned_station=f"Station {j + 1}"
+                    assigned_station=f"Station {j + 1}",
                 )
 
             # Some matches are completed (past matches)
             if scheduled_at < datetime.now(timezone.utc):
                 # Set match as started and finished
-                match.started_at = scheduled_at + timedelta(minutes=random.randint(5, 15))
+                match.started_at = scheduled_at + timedelta(
+                    minutes=random.randint(5, 15)
+                )
                 match.finished_at = match.started_at + timedelta(
                     minutes=random.randint(30, 180)
                 )
@@ -387,7 +493,7 @@ class MockDataGenerator:
                     await MatchSeed.create(
                         match=match,
                         url=f"https://example.com/seed/{random.randint(100000, 999999)}",
-                        description="Randomizer seed for this match"
+                        description="Randomizer seed for this match",
                     )
 
                 await match.save()
@@ -398,14 +504,13 @@ class MockDataGenerator:
                 available_users = [p for p in players if p not in match_players]
                 if available_users:
                     crew_members = random.sample(
-                        available_users,
-                        min(num_crew, len(available_users))
+                        available_users, min(num_crew, len(available_users))
                     )
                     for crew_member in crew_members:
                         await Crew.create(
                             match=match,
                             user=crew_member.user,
-                            role=random.choice(list(CrewRole))
+                            role=random.choice(list(CrewRole)),
                         )
 
     async def _generate_async_tournaments(self):
@@ -425,7 +530,7 @@ class MockDataGenerator:
                     description=f"Asynchronous racing tournament for {category}.",
                     is_active=random.random() > 0.2,
                     hide_results=random.random() > 0.6,
-                    runs_per_pool=random.randint(1, 3)
+                    runs_per_pool=random.randint(1, 3),
                 )
 
                 # Generate 2-5 pools
@@ -434,7 +539,7 @@ class MockDataGenerator:
                     pool = await AsyncTournamentPool.create(
                         tournament=async_tournament,
                         name=f"Pool {pool_idx + 1}",
-                        description=f"Collection of seeds for pool {pool_idx + 1}"
+                        description=f"Collection of seeds for pool {pool_idx + 1}",
                     )
 
                     # Generate 3-8 permalinks per pool
@@ -443,13 +548,15 @@ class MockDataGenerator:
                         permalink = await AsyncTournamentPermalink.create(
                             pool=pool,
                             url=f"https://alttpr.com/h/{self._random_hash()}",
-                            notes=f"Seed {perm_idx + 1} for {pool.name}"
+                            notes=f"Seed {perm_idx + 1} for {pool.name}",
                         )
 
                         # Generate races for some permalinks
-                        org_members = await OrganizationMember.filter(
-                            organization=org
-                        ).prefetch_related('user').all()
+                        org_members = (
+                            await OrganizationMember.filter(organization=org)
+                            .prefetch_related("user")
+                            .all()
+                        )
 
                         num_racers = random.randint(0, min(10, len(org_members)))
                         racers = random.sample(org_members, num_racers)
@@ -458,18 +565,17 @@ class MockDataGenerator:
                             # Some races are completed, some are in progress
                             # Status values: 'pending', 'in_progress', 'finished', 'forfeit', 'disqualified'
                             # Review status values: 'pending', 'accepted', 'rejected'
-                            status = random.choice([
-                                'finished',
-                                'finished',
-                                'in_progress',
-                                'pending'
-                            ])
-                            
-                            review_status = 'pending'
-                            if status == 'finished':
-                                review_status = random.choice(['pending', 'accepted', 'rejected'])
+                            status = random.choice(
+                                ["finished", "finished", "in_progress", "pending"]
+                            )
 
-                            if status == 'finished' and review_status == 'accepted':
+                            review_status = "pending"
+                            if status == "finished":
+                                review_status = random.choice(
+                                    ["pending", "accepted", "rejected"]
+                                )
+
+                            if status == "finished" and review_status == "accepted":
                                 # Completed and accepted races have times
                                 start_time = datetime.now(timezone.utc) - timedelta(
                                     days=random.randint(1, 30)
@@ -477,7 +583,7 @@ class MockDataGenerator:
                                 elapsed = timedelta(
                                     hours=random.randint(1, 3),
                                     minutes=random.randint(0, 59),
-                                    seconds=random.randint(0, 59)
+                                    seconds=random.randint(0, 59),
                                 )
                                 end_time = start_time + elapsed
                                 vod_url = f"https://twitch.tv/videos/{random.randint(1000000000, 9999999999)}"
@@ -495,22 +601,29 @@ class MockDataGenerator:
                                 start_time=start_time,
                                 end_time=end_time,
                                 runner_vod_url=vod_url,
-                                runner_notes=f"Race by {racer.user.discord_username}" if random.random() > 0.5 else None
+                                runner_notes=(
+                                    f"Race by {racer.user.discord_username}"
+                                    if random.random() > 0.5
+                                    else None
+                                ),
                             )
 
                 self.async_tournaments.append(async_tournament)
 
-        logger.info("Created %s async tournaments with pools and races", len(self.async_tournaments))
+        logger.info(
+            "Created %s async tournaments with pools and races",
+            len(self.async_tournaments),
+        )
 
     def _random_hash(self) -> str:
         """Generate random hash string for permalinks."""
-        chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        return ''.join(random.choice(chars) for _ in range(10))
+        chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return "".join(random.choice(chars) for _ in range(10))
 
     def _random_seed_code(self) -> str:
         """Generate random seed code."""
-        chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        return ''.join(random.choice(chars) for _ in range(8))
+        chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        return "".join(random.choice(chars) for _ in range(8))
 
     async def _print_summary(self):
         """Print summary of generated data."""
@@ -557,7 +670,7 @@ class MockDataGenerator:
         total_permalinks = await AsyncTournamentPermalink.all().count()
         total_races = await AsyncTournamentRace.all().count()
         approved_races = await AsyncTournamentRace.filter(
-            review_status='accepted'
+            review_status="accepted"
         ).count()
 
         print(f"\nASYNC TOURNAMENTS: {total_async} total ({active_async} active)")
@@ -586,31 +699,33 @@ async def init_db():
 
     await Tortoise.init(
         db_url=settings.database_url,
-        modules={'models': [
-            'models.user',
-            'models.organizations',
-            'models.async_tournament',
-            'models.match_schedule',
-            'models.audit_log',
-            'models.api_token',
-            'models.organization_invite',
-            'models.organization_request',
-            'models.racer_verification',
-            'models.preset_namespace',
-            'models.preset_namespace_permission',
-            'models.randomizer_preset',
-            'models.race_room_profile',
-            'models.racetime_bot',
-            'models.racetime_chat_command',
-            'models.scheduled_task',
-            'models.settings',
-            'models.tournament_usage',
-            'models.notification_subscription',
-            'models.notification_log',
-            'models.discord_guild',
-            'models.discord_scheduled_event',
-            'models.organization_feature_flag'
-        ]}
+        modules={
+            "models": [
+                "models.user",
+                "models.organizations",
+                "models.async_tournament",
+                "models.match_schedule",
+                "models.audit_log",
+                "models.api_token",
+                "models.organization_invite",
+                "models.organization_request",
+                "models.racer_verification",
+                "models.preset_namespace",
+                "models.preset_namespace_permission",
+                "models.randomizer_preset",
+                "models.race_room_profile",
+                "models.racetime_bot",
+                "models.racetime_chat_command",
+                "models.scheduled_task",
+                "models.settings",
+                "models.tournament_usage",
+                "models.notification_subscription",
+                "models.notification_log",
+                "models.discord_guild",
+                "models.discord_scheduled_event",
+                "models.organization_feature_flag",
+            ]
+        },
     )
     await Tortoise.generate_schemas()
 
@@ -622,41 +737,41 @@ async def close_db():
 
 # Preset configurations
 PRESETS = {
-    'tiny': {
-        'num_users': 5,
-        'num_orgs': 1,
-        'num_tournaments': 1,
-        'num_async_tournaments': 1,
-        'num_matches_per_tournament': 3
+    "tiny": {
+        "num_users": 5,
+        "num_orgs": 1,
+        "num_tournaments": 1,
+        "num_async_tournaments": 1,
+        "num_matches_per_tournament": 3,
     },
-    'small': {
-        'num_users': 20,
-        'num_orgs': 3,
-        'num_tournaments': 5,
-        'num_async_tournaments': 3,
-        'num_matches_per_tournament': 10
+    "small": {
+        "num_users": 20,
+        "num_orgs": 3,
+        "num_tournaments": 5,
+        "num_async_tournaments": 3,
+        "num_matches_per_tournament": 10,
     },
-    'medium': {
-        'num_users': 50,
-        'num_orgs': 5,
-        'num_tournaments': 10,
-        'num_async_tournaments': 5,
-        'num_matches_per_tournament': 15
+    "medium": {
+        "num_users": 50,
+        "num_orgs": 5,
+        "num_tournaments": 10,
+        "num_async_tournaments": 5,
+        "num_matches_per_tournament": 15,
     },
-    'large': {
-        'num_users': 100,
-        'num_orgs': 10,
-        'num_tournaments': 20,
-        'num_async_tournaments': 10,
-        'num_matches_per_tournament': 20
-    }
+    "large": {
+        "num_users": 100,
+        "num_orgs": 10,
+        "num_tournaments": 20,
+        "num_async_tournaments": 10,
+        "num_matches_per_tournament": 20,
+    },
 }
 
 
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Generate mock data for testing SahaBot2',
+        description="Generate mock data for testing SahaBot2",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -674,43 +789,27 @@ Available presets:
   small  - 20 users, 3 orgs, moderate data (default)
   medium - 50 users, 5 orgs, substantial data
   large  - 100 users, 10 orgs, extensive data (stress testing)
-        """
+        """,
     )
 
     parser.add_argument(
-        '--preset',
-        choices=['tiny', 'small', 'medium', 'large'],
-        help='Use preset configuration'
+        "--preset",
+        choices=["tiny", "small", "medium", "large"],
+        help="Use preset configuration",
+    )
+    parser.add_argument("--users", type=int, help="Number of users to generate")
+    parser.add_argument("--orgs", type=int, help="Number of organizations to generate")
+    parser.add_argument(
+        "--tournaments", type=int, help="Number of scheduled tournaments to generate"
     )
     parser.add_argument(
-        '--users',
-        type=int,
-        help='Number of users to generate'
+        "--async-tournaments", type=int, help="Number of async tournaments to generate"
     )
+    parser.add_argument("--matches", type=int, help="Number of matches per tournament")
     parser.add_argument(
-        '--orgs',
-        type=int,
-        help='Number of organizations to generate'
-    )
-    parser.add_argument(
-        '--tournaments',
-        type=int,
-        help='Number of scheduled tournaments to generate'
-    )
-    parser.add_argument(
-        '--async-tournaments',
-        type=int,
-        help='Number of async tournaments to generate'
-    )
-    parser.add_argument(
-        '--matches',
-        type=int,
-        help='Number of matches per tournament'
-    )
-    parser.add_argument(
-        '--clear-existing',
-        action='store_true',
-        help='Clear existing data before generating (WARNING: destructive!)'
+        "--clear-existing",
+        action="store_true",
+        help="Clear existing data before generating (WARNING: destructive!)",
     )
 
     args = parser.parse_args()
@@ -719,19 +818,19 @@ Available presets:
     if args.preset:
         config = PRESETS[args.preset]
     else:
-        config = PRESETS['small']  # Default
+        config = PRESETS["small"]  # Default
 
     # Override with command-line arguments
     if args.users is not None:
-        config['num_users'] = args.users
+        config["num_users"] = args.users
     if args.orgs is not None:
-        config['num_orgs'] = args.orgs
+        config["num_orgs"] = args.orgs
     if args.tournaments is not None:
-        config['num_tournaments'] = args.tournaments
+        config["num_tournaments"] = args.tournaments
     if args.async_tournaments is not None:
-        config['num_async_tournaments'] = args.async_tournaments
+        config["num_async_tournaments"] = args.async_tournaments
     if args.matches is not None:
-        config['num_matches_per_tournament'] = args.matches
+        config["num_matches_per_tournament"] = args.matches
 
     # Warning for clear-existing
     if args.clear_existing:
@@ -739,7 +838,7 @@ Available presets:
         print("WARNING: This will DELETE ALL EXISTING DATA!")
         print("!" * 60)
         response = input("\nAre you sure you want to continue? (yes/no): ")
-        if response.lower() != 'yes':
+        if response.lower() != "yes":
             print("Aborted.")
             return
 
@@ -748,12 +847,12 @@ Available presets:
         await init_db()
         try:
             generator = MockDataGenerator(
-                num_users=config['num_users'],
-                num_orgs=config['num_orgs'],
-                num_tournaments=config['num_tournaments'],
-                num_async_tournaments=config['num_async_tournaments'],
-                num_matches_per_tournament=config['num_matches_per_tournament'],
-                clear_existing=args.clear_existing
+                num_users=config["num_users"],
+                num_orgs=config["num_orgs"],
+                num_tournaments=config["num_tournaments"],
+                num_async_tournaments=config["num_async_tournaments"],
+                num_matches_per_tournament=config["num_matches_per_tournament"],
+                clear_existing=args.clear_existing,
             )
             await generator.generate_all()
         finally:
@@ -762,5 +861,5 @@ Available presets:
     asyncio.run(run())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

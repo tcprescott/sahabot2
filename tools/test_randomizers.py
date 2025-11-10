@@ -20,8 +20,8 @@ from application.services.randomizer.randomizer_service import RandomizerService
 async def test_aosr():
     """Test AOSR randomizer."""
     print("\n=== Testing AOSR ===")
-    service = RandomizerService().get_randomizer('aosr')
-    result = await service.generate(enemyRando='on', startingRoom='random')
+    service = RandomizerService().get_randomizer("aosr")
+    result = await service.generate(enemyRando="on", startingRoom="random")
     print(f"URL: {result.url}")
     print(f"Hash: {result.hash_id}")
     print(f"Settings: {result.settings}")
@@ -30,8 +30,8 @@ async def test_aosr():
 async def test_z1r():
     """Test Z1R randomizer."""
     print("\n=== Testing Z1R ===")
-    service = RandomizerService().get_randomizer('z1r')
-    result = await service.generate(flags='test-flags')
+    service = RandomizerService().get_randomizer("z1r")
+    result = await service.generate(flags="test-flags")
     print(f"URL: {result.url}")
     print(f"Hash: {result.hash_id}")
     print(f"Metadata: {result.metadata}")
@@ -40,8 +40,8 @@ async def test_z1r():
 async def test_ffr():
     """Test FFR randomizer."""
     print("\n=== Testing FFR ===")
-    service = RandomizerService().get_randomizer('ffr')
-    result = await service.generate(flags='test')
+    service = RandomizerService().get_randomizer("ffr")
+    result = await service.generate(flags="test")
     print(f"URL: {result.url}")
     print(f"Hash: {result.hash_id}")
 
@@ -49,7 +49,7 @@ async def test_ffr():
 async def test_smb3r():
     """Test SMB3R randomizer."""
     print("\n=== Testing SMB3R ===")
-    service = RandomizerService().get_randomizer('smb3r')
+    service = RandomizerService().get_randomizer("smb3r")
     result = await service.generate()
     print(f"URL: {result.url}")
     print(f"Hash: {result.hash_id}")
@@ -80,5 +80,5 @@ async def main():
     print("require actual API calls and are not included in this basic test.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(main())

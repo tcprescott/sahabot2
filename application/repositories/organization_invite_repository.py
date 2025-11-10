@@ -18,15 +18,21 @@ class OrganizationInviteRepository:
 
     async def list_by_org(self, organization_id: int) -> List[OrganizationInvite]:
         """List all invite links for a specific organization."""
-        return await OrganizationInvite.filter(organization_id=organization_id).order_by('-created_at')
+        return await OrganizationInvite.filter(
+            organization_id=organization_id
+        ).order_by("-created_at")
 
     async def get_by_slug(self, slug: str) -> Optional[OrganizationInvite]:
         """Get an invite by its slug."""
         return await OrganizationInvite.get_or_none(slug=slug)
 
-    async def get_for_org(self, organization_id: int, invite_id: int) -> Optional[OrganizationInvite]:
+    async def get_for_org(
+        self, organization_id: int, invite_id: int
+    ) -> Optional[OrganizationInvite]:
         """Get an invite by id ensuring it belongs to the organization."""
-        return await OrganizationInvite.get_or_none(id=invite_id, organization_id=organization_id)
+        return await OrganizationInvite.get_or_none(
+            id=invite_id, organization_id=organization_id
+        )
 
     async def create(
         self,
@@ -77,7 +83,9 @@ class OrganizationInviteRepository:
         if invite:
             invite.uses_count += 1
             await invite.save()
-            logger.info("Incremented uses for invite %s (now %s)", invite_id, invite.uses_count)
+            logger.info(
+                "Incremented uses for invite %s (now %s)", invite_id, invite.uses_count
+            )
 
     async def delete(self, organization_id: int, invite_id: int) -> bool:
         """Delete an invite within an organization. Returns True if deleted."""

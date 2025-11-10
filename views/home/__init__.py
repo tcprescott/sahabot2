@@ -10,8 +10,8 @@ from views.home.recent_tournaments import RecentTournamentsView
 from views.home.presets import PresetsView
 
 __all__ = [
-    'OverviewView',
-    'WelcomeView',
-    'RecentTournamentsView',
-    'PresetsView',
+    "OverviewView",
+    "WelcomeView",
+    "RecentTournamentsView",
+    "PresetsView",
 ]

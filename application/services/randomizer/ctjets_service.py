@@ -27,10 +27,7 @@ class CTJetsService:
         pass
 
     async def generate(
-        self,
-        settings: Dict[str, Any],
-        version: str = '3_1_0',
-        rom_path: str = None
+        self, settings: Dict[str, Any], version: str = "3_1_0", rom_path: str = None
     ) -> RandomizerResult:
         """
         Generate a Chrono Trigger Jets of Time randomizer seed.
@@ -47,29 +44,25 @@ class CTJetsService:
             ValueError: If ROM file is required but not provided
             httpx.HTTPError: If the API request fails
         """
-        version = version.replace('.', '_')
-        base_url = f'https://ctjot.com/{version}'
+        version = version.replace(".", "_")
+        base_url = f"https://ctjot.com/{version}"
 
         logger.info("Generating CTJets seed with version %s", version)
 
         async with httpx.AsyncClient(follow_redirects=True) as client:
             # Get CSRF token
-            resp = await client.get(f'{base_url}/options/')
+            resp = await client.get(f"{base_url}/options/")
             resp.raise_for_status()
             soup = BeautifulSoup(resp.text, features="html.parser")
 
-            csrf_token = soup.find('input', {'name': 'csrfmiddlewaretoken'})
+            csrf_token = soup.find("input", {"name": "csrfmiddlewaretoken"})
             if not csrf_token:
                 raise ValueError("Could not find CSRF token")
 
-            csrf_value = csrf_token.get('value')
+            csrf_value = csrf_token.get("value")
 
             # Prepare form data
-            form_data = {
-                'csrfmiddlewaretoken': csrf_value,
-                'seed': '',
-                **settings
-            }
+            form_data = {"csrfmiddlewaretoken": csrf_value, "seed": "", **settings}
 
             # Note: ROM file handling requires multipart/form-data upload with the base
             # Chrono Trigger ROM file. This is intentionally not implemented as it would
@@ -82,19 +75,19 @@ class CTJetsService:
 
             # Submit form
             resp = await client.post(
-                f'{base_url}/generate-rom/',
+                f"{base_url}/generate-rom/",
                 data=form_data,
-                headers={'Referer': f'{base_url}/options/'},
-                timeout=60.0
+                headers={"Referer": f"{base_url}/options/"},
+                timeout=60.0,
             )
             resp.raise_for_status()
 
             # Parse response for seed link
             soup = BeautifulSoup(resp.text, features="html.parser")
-            link = soup.find('a', text='Seed share link')
+            link = soup.find("a", text="Seed share link")
 
-            if link and link.get('href'):
-                relative_uri = link['href']
+            if link and link.get("href"):
+                relative_uri = link["href"]
                 seed_url = f"https://ctjot.com{relative_uri}"
             else:
                 # Fallback if we can't find the link
@@ -105,9 +98,9 @@ class CTJetsService:
 
         return RandomizerResult(
             url=seed_url,
-            hash_id=seed_url.split('/')[-1] if '/' in seed_url else 'unknown',
+            hash_id=seed_url.split("/")[-1] if "/" in seed_url else "unknown",
             settings=settings,
-            randomizer='ctjets',
+            randomizer="ctjets",
             permalink=seed_url,
-            metadata={'version': version}
+            metadata={"version": version},
         )

@@ -32,33 +32,26 @@ class PresetNamespace(Model):
 
     id = fields.IntField(pk=True)
     name = fields.CharField(
-        100,
-        unique=True,
-        description="Unique namespace identifier (slug)"
+        100, unique=True, description="Unique namespace identifier (slug)"
     )
-    display_name = fields.CharField(
-        200,
-        description="Human-friendly display name"
-    )
+    display_name = fields.CharField(200, description="Human-friendly display name")
     description = fields.TextField(
-        null=True,
-        description="Optional namespace description"
+        null=True, description="Optional namespace description"
     )
     user = fields.ForeignKeyField(
-        'models.User',
-        related_name='preset_namespaces',
+        "models.User",
+        related_name="preset_namespaces",
         null=True,
-        description="User owner (for personal namespaces)"
+        description="User owner (for personal namespaces)",
     )
     organization = fields.ForeignKeyField(
-        'models.Organization',
-        related_name='preset_namespaces',
+        "models.Organization",
+        related_name="preset_namespaces",
         null=True,
-        description="Organization owner (for org namespaces)"
+        description="Organization owner (for org namespaces)",
     )
     is_public = fields.BooleanField(
-        default=True,
-        description="Whether namespace is publicly visible"
+        default=True, description="Whether namespace is publicly visible"
     )
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)

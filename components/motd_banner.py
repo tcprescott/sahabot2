@@ -18,8 +18,8 @@ class MOTDBanner:
     It will reappear if an admin updates the MOTD text.
     """
 
-    MOTD_KEY = 'motd_text'
-    MOTD_UPDATED_KEY = 'motd_updated_at'
+    MOTD_KEY = "motd_text"
+    MOTD_UPDATED_KEY = "motd_updated_at"
 
     @staticmethod
     async def render() -> None:
@@ -33,15 +33,15 @@ class MOTDBanner:
 
         # Get MOTD text and last updated timestamp
         motd_setting = await service.get_global(MOTDBanner.MOTD_KEY)
-        if not motd_setting or not motd_setting.get('value'):
+        if not motd_setting or not motd_setting.get("value"):
             return  # No MOTD to display
 
-        motd_text = motd_setting['value']
+        motd_text = motd_setting["value"]
         motd_updated_setting = await service.get_global(MOTDBanner.MOTD_UPDATED_KEY)
-        motd_updated = motd_updated_setting['value'] if motd_updated_setting else None
+        motd_updated = motd_updated_setting["value"] if motd_updated_setting else None
 
         # Create banner container with initial visibility controlled by JavaScript
-        banner_id = 'motd-banner'
+        banner_id = "motd-banner"
 
         # Note: ui.html() is used here to support HTML formatting in MOTD.
         # This is acceptable because:
@@ -53,24 +53,31 @@ class MOTDBanner:
         # if MOTD editing permissions are ever expanded to non-admin users.
 
         # Create banner container with initial visibility controlled by JavaScript
-        with ui.element('div').props(f'id="{banner_id}" role="alert" aria-live="polite"').classes('w-full motd-banner'):
-            with ui.row().classes('items-center justify-between w-full gap-4'):
+        with ui.element("div").props(
+            f'id="{banner_id}" role="alert" aria-live="polite"'
+        ).classes("w-full motd-banner"):
+            with ui.row().classes("items-center justify-between w-full gap-4"):
                 # Icon and message
-                with ui.row().classes('items-center gap-3 flex-1'):
-                    ui.icon('campaign').classes('text-2xl').props('aria-hidden="true"')
-                    with ui.element('div').classes('flex-1'):
-                        ui.html(motd_text).classes('text-base')
+                with ui.row().classes("items-center gap-3 flex-1"):
+                    ui.icon("campaign").classes("text-2xl").props('aria-hidden="true"')
+                    with ui.element("div").classes("flex-1"):
+                        ui.html(motd_text).classes("text-base")
 
                 # Dismiss button
                 ui.button(
-                    icon='close',
-                    on_click=None  # Will be handled by JavaScript
-                ).props(f'flat round dense id="{banner_id}-dismiss-btn" aria-label="Dismiss message"')
+                    icon="close", on_click=None  # Will be handled by JavaScript
+                ).props(
+                    f'flat round dense id="{banner_id}-dismiss-btn" aria-label="Dismiss message"'
+                )
 
         # Add JavaScript to handle banner visibility and dismissal
         # Note: motd_updated is server-generated timestamp, but we escape it for safety
-        motd_updated_escaped = (motd_updated or "").replace("'", "\\'").replace('"', '\\"') if motd_updated else ""
-        motd_js = f'''
+        motd_updated_escaped = (
+            (motd_updated or "").replace("'", "\\'").replace('"', '\\"')
+            if motd_updated
+            else ""
+        )
+        motd_js = f"""
         (function() {{
             const bannerId = '{banner_id}';
             const motdUpdated = '{motd_updated_escaped}';
@@ -113,5 +120,5 @@ class MOTDBanner:
                 }});
             }}
         }})();
-        '''
-        ui.add_body_html(f'<script>{motd_js}</script>')
+        """
+        ui.add_body_html(f"<script>{motd_js}</script>")

@@ -38,7 +38,12 @@ class ApiTokenService:
     def __init__(self) -> None:
         self.repo = ApiTokenRepository()
 
-    async def generate_token(self, user: User, name: Optional[str] = None, expires_at: Optional[datetime] = None) -> Tuple[str, ApiToken]:
+    async def generate_token(
+        self,
+        user: User,
+        name: Optional[str] = None,
+        expires_at: Optional[datetime] = None,
+    ) -> Tuple[str, ApiToken]:
         """
         Generate a new token for a user and persist its hash.
 
@@ -47,7 +52,9 @@ class ApiTokenService:
         # 32 bytes ~ 43 chars URL-safe
         token = secrets.token_urlsafe(32)
         token_hash = _hash_token(token)
-        api_token = await self.repo.create(user_id=user.id, token_hash=token_hash, name=name, expires_at=expires_at)
+        api_token = await self.repo.create(
+            user_id=user.id, token_hash=token_hash, name=name, expires_at=expires_at
+        )
         logger.info("Created API token %s for user %s", api_token.id, user.id)
         return token, api_token
 
@@ -66,17 +73,16 @@ class ApiTokenService:
         """List all tokens for a user."""
         return await self.repo.list_by_user(user_id)
 
-    async def create_token(self, user_id: int, name: str, expires_at: Optional[datetime] = None) -> dict:
+    async def create_token(
+        self, user_id: int, name: str, expires_at: Optional[datetime] = None
+    ) -> dict:
         """Create a new token and return it with the plaintext token."""
         user = await User.get_or_none(id=user_id)
         if not user:
             raise ValueError("User not found")
 
         token, api_token = await self.generate_token(user, name, expires_at)
-        return {
-            'token': token,
-            'api_token': api_token
-        }
+        return {"token": token, "api_token": api_token}
 
     async def revoke_token(self, token_id: int) -> None:
         """Revoke a token by ID."""

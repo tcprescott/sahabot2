@@ -4,6 +4,7 @@ Task Scheduler Service for SahaBot2.
 Manages scheduled tasks execution and provides business logic for task scheduling.
 Supports both database-stored tasks and built-in tasks defined in code.
 """
+
 from __future__ import annotations
 import asyncio
 import logging
@@ -14,10 +15,19 @@ from croniter import croniter
 from models import User
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from application.repositories.scheduled_task_repository import ScheduledTaskRepository
-from application.repositories.builtin_task_override_repository import BuiltinTaskOverrideRepository
+from application.repositories.builtin_task_override_repository import (
+    BuiltinTaskOverrideRepository,
+)
 from application.services.organizations.organization_service import OrganizationService
-from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
-from application.services.tasks.builtin_tasks import BuiltInTask, get_active_builtin_tasks, get_all_builtin_tasks, get_builtin_task
+from application.services.authorization.authorization_service_v2 import (
+    AuthorizationServiceV2,
+)
+from application.services.tasks.builtin_tasks import (
+    BuiltInTask,
+    get_active_builtin_tasks,
+    get_all_builtin_tasks,
+    get_builtin_task,
+)
 from application.events import EventBus, BuiltinTaskOverrideUpdatedEvent
 
 logger = logging.getLogger(__name__)
@@ -35,9 +45,15 @@ class TaskSchedulerService:
     _runner_task: Optional[asyncio.Task] = None
     _is_running: bool = False
     _task_handlers: Dict[TaskType, Callable] = {}
-    _builtin_tasks_last_run: Dict[str, datetime] = {}  # Track last run time for built-in tasks
-    _builtin_tasks_status: Dict[str, Dict] = {}  # Track status of built-in tasks (last_status, last_error, next_run)
-    _builtin_task_overrides: Dict[str, bool] = {}  # Cache of builtin task overrides (task_id -> is_active)
+    _builtin_tasks_last_run: Dict[str, datetime] = (
+        {}
+    )  # Track last run time for built-in tasks
+    _builtin_tasks_status: Dict[str, Dict] = (
+        {}
+    )  # Track status of built-in tasks (last_status, last_error, next_run)
+    _builtin_task_overrides: Dict[str, bool] = (
+        {}
+    )  # Cache of builtin task overrides (task_id -> is_active)
 
     def __init__(self) -> None:
         self.repo = ScheduledTaskRepository()
@@ -61,7 +77,7 @@ class TaskSchedulerService:
     def is_running(cls) -> bool:
         """
         Check if the task scheduler is currently running.
-        
+
         Returns:
             True if scheduler is running, False otherwise
         """
@@ -107,26 +123,28 @@ class TaskSchedulerService:
             if not user or not user.is_admin():
                 logger.warning(
                     "Unauthorized create_task (global) by user %s",
-                    getattr(user, 'id', None)
+                    getattr(user, "id", None),
                 )
                 return None
         else:
             # Organization task - require tournament management permission
             if not user:
-                logger.warning("Unauthenticated create_task attempt for org %s", organization_id)
+                logger.warning(
+                    "Unauthenticated create_task attempt for org %s", organization_id
+                )
                 return None
-            
+
             allowed = await self.auth.can(
                 user,
                 action=self.auth.get_action_for_operation("scheduled_task", "create"),
                 resource=self.auth.get_resource_identifier("scheduled_task", "*"),
-                organization_id=organization_id
+                organization_id=organization_id,
             )
             if not allowed:
                 logger.warning(
                     "Unauthorized create_task by user %s for org %s",
                     user.id,
-                    organization_id
+                    organization_id,
                 )
                 return None
 
@@ -179,10 +197,7 @@ class TaskSchedulerService:
         return task
 
     async def list_tasks(
-        self,
-        user: Optional[User],
-        organization_id: int,
-        active_only: bool = False
+        self, user: Optional[User], organization_id: int, active_only: bool = False
     ) -> List[ScheduledTask]:
         """
         List scheduled tasks for an organization.
@@ -196,20 +211,22 @@ class TaskSchedulerService:
             List of ScheduledTask instances
         """
         if not user:
-            logger.warning("Unauthenticated list_tasks attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated list_tasks attempt for org %s", organization_id
+            )
             return []
-        
+
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("scheduled_task", "list"),
             resource=self.auth.get_resource_identifier("scheduled_task", "*"),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
         if not allowed:
             logger.warning(
                 "Unauthorized list_tasks by user %s for org %s",
                 user.id,
-                organization_id
+                organization_id,
             )
             return []
 
@@ -220,7 +237,7 @@ class TaskSchedulerService:
         user: Optional[User],
         organization_id: int | None = None,
         active_only: bool = False,
-        include_builtin: bool = True
+        include_builtin: bool = True,
     ) -> Dict[str, List[Union[ScheduledTask, BuiltInTask]]]:
         """
         List all tasks including built-in tasks.
@@ -234,36 +251,40 @@ class TaskSchedulerService:
         Returns:
             Dict with 'database' and 'builtin' keys containing respective task lists
         """
-        result = {
-            'database': [],
-            'builtin': []
-        }
+        result = {"database": [], "builtin": []}
 
         # Get database tasks
         if organization_id is not None:
             if not user:
-                logger.warning("Unauthenticated list_all_tasks_with_builtin attempt for org %s", organization_id)
+                logger.warning(
+                    "Unauthenticated list_all_tasks_with_builtin attempt for org %s",
+                    organization_id,
+                )
             else:
                 allowed = await self.auth.can(
                     user,
                     action=self.auth.get_action_for_operation("scheduled_task", "list"),
                     resource=self.auth.get_resource_identifier("scheduled_task", "*"),
-                    organization_id=organization_id
+                    organization_id=organization_id,
                 )
                 if allowed:
-                    result['database'] = await self.repo.list_by_org(organization_id, active_only=active_only)
+                    result["database"] = await self.repo.list_by_org(
+                        organization_id, active_only=active_only
+                    )
         else:
             # Global tasks - require admin
             if user and user.is_admin():
                 # Get all global tasks (organization_id is None)
-                result['database'] = await self.repo.list_global_tasks(active_only=active_only)
+                result["database"] = await self.repo.list_global_tasks(
+                    active_only=active_only
+                )
 
         # Get built-in tasks
         if include_builtin:
             if active_only:
-                result['builtin'] = get_active_builtin_tasks()
+                result["builtin"] = get_active_builtin_tasks()
             else:
-                result['builtin'] = get_all_builtin_tasks()
+                result["builtin"] = get_all_builtin_tasks()
 
         return result
 
@@ -271,18 +292,20 @@ class TaskSchedulerService:
     async def reload_builtin_task_overrides(cls) -> None:
         """
         Reload builtin task overrides from database into memory cache.
-        
+
         This should be called at startup and after any override changes.
         """
         repo = BuiltinTaskOverrideRepository()
         cls._builtin_task_overrides = await repo.get_overrides_dict()
-        logger.info("Loaded %s builtin task overrides", len(cls._builtin_task_overrides))
+        logger.info(
+            "Loaded %s builtin task overrides", len(cls._builtin_task_overrides)
+        )
 
     @classmethod
     def clear_builtin_task_overrides_cache(cls) -> None:
         """
         Clear the builtin task overrides cache.
-        
+
         This is primarily for testing purposes to simulate a fresh start.
         """
         cls._builtin_task_overrides = {}
@@ -291,13 +314,13 @@ class TaskSchedulerService:
     def get_effective_active_status(cls, task_id: str, default_is_active: bool) -> bool:
         """
         Get the effective active status for a builtin task.
-        
+
         Checks if there's a database override; if not, returns the default from code.
-        
+
         Args:
             task_id: The built-in task identifier
             default_is_active: The is_active value defined in code
-            
+
         Returns:
             The effective is_active status (override if exists, otherwise default)
         """
@@ -306,19 +329,16 @@ class TaskSchedulerService:
         return default_is_active
 
     async def set_builtin_task_active(
-        self,
-        user: Optional[User],
-        task_id: str,
-        is_active: bool
+        self, user: Optional[User], task_id: str, is_active: bool
     ) -> bool:
         """
         Set the active status for a builtin task (requires admin permission).
-        
+
         Args:
             user: User setting the status (must be admin)
             task_id: The built-in task identifier
             is_active: Whether the task should be active
-            
+
         Returns:
             True if successful, False if unauthorized or task not found
         """
@@ -326,73 +346,77 @@ class TaskSchedulerService:
         if not user or not user.is_admin():
             logger.warning(
                 "Unauthorized set_builtin_task_active by user %s",
-                getattr(user, 'id', None)
+                getattr(user, "id", None),
             )
             return False
-        
+
         # Verify the task exists
         task = get_builtin_task(task_id)
         if not task:
             logger.warning("Builtin task %s not found", task_id)
             return False
-        
+
         # Get previous status for event
         previous_is_active = self.__class__._builtin_task_overrides.get(task_id)
-        
+
         # Save to database
         await self.override_repo.set_active(task_id, is_active)
-        
+
         # Update memory cache
         self.__class__._builtin_task_overrides[task_id] = is_active
-        
+
         logger.info(
             "Builtin task %s active status set to %s by user %s",
             task_id,
             is_active,
-            user.id
+            user.id,
         )
-        
+
         # Emit event for audit logging
-        await EventBus.emit(BuiltinTaskOverrideUpdatedEvent(
-            user_id=user.id,
-            organization_id=None,  # Builtin tasks are global
-            entity_id=task_id,
-            task_id=task_id,
-            is_active=is_active,
-            previous_is_active=previous_is_active,
-        ))
-        
+        await EventBus.emit(
+            BuiltinTaskOverrideUpdatedEvent(
+                user_id=user.id,
+                organization_id=None,  # Builtin tasks are global
+                entity_id=task_id,
+                task_id=task_id,
+                is_active=is_active,
+                previous_is_active=previous_is_active,
+            )
+        )
+
         return True
 
     @classmethod
     def get_builtin_tasks_with_status(cls, active_only: bool = False) -> List[Dict]:
         """
         Get all builtin tasks with their current status information.
-        
+
         Args:
             active_only: If True, only return active tasks
-            
+
         Returns:
             List of dicts containing builtin task info and status
         """
         # Get all builtin tasks first
         builtin_tasks = get_all_builtin_tasks()
-        
+
         result = []
-        
+
         for task in builtin_tasks:
             # Get effective is_active status (check override, fallback to code default)
-            effective_is_active = cls.get_effective_active_status(task.task_id, task.is_active)
-            
+            effective_is_active = cls.get_effective_active_status(
+                task.task_id, task.is_active
+            )
+
             # Filter by active status if requested
             if active_only and not effective_is_active:
                 continue
-            
+
             status_info = cls._builtin_tasks_status.get(task.task_id, {})
             last_run = cls._builtin_tasks_last_run.get(task.task_id)
-            
+
             # Calculate next run if not in status
-            next_run = status_info.get('next_run')
+            next_run = status_info.get("next_run")
             if next_run is None and last_run is not None:
                 next_run = cls._calculate_next_run(
                     schedule_type=task.schedule_type,
@@ -400,29 +424,28 @@ class TaskSchedulerService:
                     cron_expression=task.cron_expression,
                     from_time=last_run,
                 )
-            
-            result.append({
-                'task_id': task.task_id,
-                'name': task.name,
-                'description': task.description,
-                'task_type': task.task_type,
-                'schedule_type': task.schedule_type,
-                'interval_seconds': task.interval_seconds,
-                'cron_expression': task.cron_expression,
-                'is_active': effective_is_active,  # Use effective status (with override applied)
-                'last_run_at': last_run,
-                'last_status': status_info.get('last_status'),
-                'last_error': status_info.get('last_error'),
-                'next_run_at': next_run,
-            })
-        
+
+            result.append(
+                {
+                    "task_id": task.task_id,
+                    "name": task.name,
+                    "description": task.description,
+                    "task_type": task.task_type,
+                    "schedule_type": task.schedule_type,
+                    "interval_seconds": task.interval_seconds,
+                    "cron_expression": task.cron_expression,
+                    "is_active": effective_is_active,  # Use effective status (with override applied)
+                    "last_run_at": last_run,
+                    "last_status": status_info.get("last_status"),
+                    "last_error": status_info.get("last_error"),
+                    "next_run_at": next_run,
+                }
+            )
+
         return result
 
     async def get_task(
-        self,
-        user: Optional[User],
-        organization_id: int,
-        task_id: int
+        self, user: Optional[User], organization_id: int, task_id: int
     ) -> Optional[ScheduledTask]:
         """
         Get a specific scheduled task.
@@ -436,36 +459,34 @@ class TaskSchedulerService:
             ScheduledTask instance or None
         """
         if not user:
-            logger.warning("Unauthenticated get_task attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated get_task attempt for org %s", organization_id
+            )
             return None
-        
+
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("scheduled_task", "view"),
             resource=self.auth.get_resource_identifier("scheduled_task", "*"),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
         if not allowed:
             logger.warning(
-                "Unauthorized get_task by user %s for org %s",
-                user.id,
-                organization_id
+                "Unauthorized get_task by user %s for org %s", user.id, organization_id
             )
             return None
 
         task = await self.repo.get_by_id(task_id)
         if task and task.organization_id != organization_id:
-            logger.warning("Task %s does not belong to org %s", task_id, organization_id)
+            logger.warning(
+                "Task %s does not belong to org %s", task_id, organization_id
+            )
             return None
 
         return task
 
     async def update_task(
-        self,
-        user: Optional[User],
-        organization_id: int,
-        task_id: int,
-        **kwargs
+        self, user: Optional[User], organization_id: int, task_id: int, **kwargs
     ) -> Optional[ScheduledTask]:
         """
         Update a scheduled task.
@@ -480,20 +501,22 @@ class TaskSchedulerService:
             Updated ScheduledTask or None
         """
         if not user:
-            logger.warning("Unauthenticated update_task attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated update_task attempt for org %s", organization_id
+            )
             return None
-        
+
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("scheduled_task", "update"),
             resource=self.auth.get_resource_identifier("scheduled_task", str(task_id)),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
         if not allowed:
             logger.warning(
                 "Unauthorized update_task by user %s for org %s",
                 user.id,
-                organization_id
+                organization_id,
             )
             return None
 
@@ -502,11 +525,19 @@ class TaskSchedulerService:
             return None
 
         # Recalculate next run time if schedule changed
-        if any(k in kwargs for k in ['interval_seconds', 'cron_expression', 'scheduled_time', 'schedule_type']):
-            schedule_type = kwargs.get('schedule_type', task.schedule_type)
-            interval_seconds = kwargs.get('interval_seconds', task.interval_seconds)
-            cron_expression = kwargs.get('cron_expression', task.cron_expression)
-            scheduled_time = kwargs.get('scheduled_time', task.scheduled_time)
+        if any(
+            k in kwargs
+            for k in [
+                "interval_seconds",
+                "cron_expression",
+                "scheduled_time",
+                "schedule_type",
+            ]
+        ):
+            schedule_type = kwargs.get("schedule_type", task.schedule_type)
+            interval_seconds = kwargs.get("interval_seconds", task.interval_seconds)
+            cron_expression = kwargs.get("cron_expression", task.cron_expression)
+            scheduled_time = kwargs.get("scheduled_time", task.scheduled_time)
 
             next_run_at = self._calculate_next_run(
                 schedule_type=schedule_type,
@@ -515,15 +546,12 @@ class TaskSchedulerService:
                 scheduled_time=scheduled_time,
             )
             if next_run_at:
-                kwargs['next_run_at'] = next_run_at
+                kwargs["next_run_at"] = next_run_at
 
         return await self.repo.update(task_id, **kwargs)
 
     async def delete_task(
-        self,
-        user: Optional[User],
-        organization_id: int,
-        task_id: int
+        self, user: Optional[User], organization_id: int, task_id: int
     ) -> bool:
         """
         Delete a scheduled task.
@@ -537,20 +565,22 @@ class TaskSchedulerService:
             True if deleted, False otherwise
         """
         if not user:
-            logger.warning("Unauthenticated delete_task attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated delete_task attempt for org %s", organization_id
+            )
             return False
-        
+
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("scheduled_task", "delete"),
             resource=self.auth.get_resource_identifier("scheduled_task", str(task_id)),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
         if not allowed:
             logger.warning(
                 "Unauthorized delete_task by user %s for org %s",
                 user.id,
-                organization_id
+                organization_id,
             )
             return False
 
@@ -561,10 +591,7 @@ class TaskSchedulerService:
         return await self.repo.delete(task_id)
 
     async def execute_task_now(
-        self,
-        user: Optional[User],
-        organization_id: int | None,
-        task_id: int
+        self, user: Optional[User], organization_id: int | None, task_id: int
     ) -> bool:
         """
         Execute a scheduled task immediately.
@@ -587,7 +614,7 @@ class TaskSchedulerService:
             if not user or not user.is_admin():
                 logger.warning(
                     "Unauthorized execute_task_now (global) by user %s",
-                    getattr(user, 'id', None)
+                    getattr(user, "id", None),
                 )
                 return False
             # Verify task is actually global
@@ -597,28 +624,31 @@ class TaskSchedulerService:
         else:
             # Organization task - check tournament management permission
             if not user:
-                logger.warning("Unauthenticated execute_task_now attempt for org %s", organization_id)
+                logger.warning(
+                    "Unauthenticated execute_task_now attempt for org %s",
+                    organization_id,
+                )
                 return False
-            
+
             allowed = await self.auth.can(
                 user,
                 action=self.auth.get_action_for_operation("scheduled_task", "execute"),
-                resource=self.auth.get_resource_identifier("scheduled_task", str(task_id)),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "scheduled_task", str(task_id)
+                ),
+                organization_id=organization_id,
             )
             if not allowed:
                 logger.warning(
                     "Unauthorized execute_task_now by user %s for org %s",
                     user.id,
-                    organization_id
+                    organization_id,
                 )
                 return False
             # Verify task belongs to this organization
             if task.organization_id != organization_id:
                 logger.warning(
-                    "Task %s does not belong to org %s",
-                    task_id,
-                    organization_id
+                    "Task %s does not belong to org %s", task_id, organization_id
                 )
                 return False
 
@@ -627,7 +657,7 @@ class TaskSchedulerService:
             "Manually triggering task %s (%s) by user %s",
             task_id,
             task.name,
-            getattr(user, 'id', None)
+            getattr(user, "id", None),
         )
         asyncio.create_task(self._execute_task(task))
         return True
@@ -648,12 +678,13 @@ class TaskSchedulerService:
         if not user or not user.is_admin():
             logger.warning(
                 "Unauthorized execute_builtin_task_now by user %s",
-                getattr(user, 'id', None)
+                getattr(user, "id", None),
             )
             return False
 
         # Find the built-in task
         from application.services.tasks.builtin_tasks import get_all_builtin_tasks
+
         builtin_tasks = get_all_builtin_tasks()
         task = next((t for t in builtin_tasks if t.task_id == task_id), None)
 
@@ -662,7 +693,9 @@ class TaskSchedulerService:
             return False
 
         # Check effective active status (with override applied)
-        effective_is_active = cls.get_effective_active_status(task.task_id, task.is_active)
+        effective_is_active = cls.get_effective_active_status(
+            task.task_id, task.is_active
+        )
         if not effective_is_active:
             logger.warning("Built-in task %s is not active", task_id)
             return False
@@ -672,7 +705,7 @@ class TaskSchedulerService:
             "Manually triggering built-in task %s (%s) by user %s",
             task_id,
             task.name,
-            getattr(user, 'id', None)
+            getattr(user, "id", None),
         )
         now = datetime.now(timezone.utc)
         asyncio.create_task(cls._execute_builtin_task(task, now))
@@ -720,7 +753,7 @@ class TaskSchedulerService:
     async def _run_scheduler(cls) -> None:
         """
         Background task that runs scheduled tasks.
-        
+
         Runs both database-stored tasks and built-in tasks.
         """
         logger.info("Task scheduler loop started")
@@ -729,7 +762,7 @@ class TaskSchedulerService:
         while cls._is_running:
             try:
                 now = datetime.now(timezone.utc)
-                
+
                 # Get database tasks due to run
                 db_tasks = await repo.list_tasks_due_to_run(now)
 
@@ -741,8 +774,12 @@ class TaskSchedulerService:
                 builtin_tasks = get_all_builtin_tasks()
                 for builtin in builtin_tasks:
                     # Check effective active status (with override applied)
-                    effective_is_active = cls.get_effective_active_status(builtin.task_id, builtin.is_active)
-                    if effective_is_active and cls._should_run_builtin_task(builtin, now):
+                    effective_is_active = cls.get_effective_active_status(
+                        builtin.task_id, builtin.is_active
+                    )
+                    if effective_is_active and cls._should_run_builtin_task(
+                        builtin, now
+                    ):
                         # Execute built-in task in background
                         asyncio.create_task(cls._execute_builtin_task(builtin, now))
 
@@ -762,17 +799,17 @@ class TaskSchedulerService:
     def _should_run_builtin_task(cls, task: BuiltInTask, now: datetime) -> bool:
         """
         Determine if a built-in task should run now.
-        
+
         Args:
             task: Built-in task to check
             now: Current datetime
-            
+
         Returns:
             True if task should run, False otherwise
         """
         # Get last run time
         last_run = cls._builtin_tasks_last_run.get(task.task_id)
-        
+
         if last_run is None:
             # Never run before
             # For interval tasks, run immediately on first check
@@ -788,7 +825,7 @@ class TaskSchedulerService:
                     from_time=now,
                 )
                 return next_run is not None and next_run <= now
-        
+
         # Calculate next run from last run
         next_run = cls._calculate_next_run(
             schedule_type=task.schedule_type,
@@ -796,38 +833,41 @@ class TaskSchedulerService:
             cron_expression=task.cron_expression,
             from_time=last_run,
         )
-        
+
         return next_run is not None and next_run <= now
 
     @classmethod
     async def _execute_builtin_task(cls, builtin: BuiltInTask, now: datetime) -> None:
         """
         Execute a built-in task.
-        
+
         Args:
             builtin: Built-in task to execute
             now: Current datetime
         """
         logger.info("Executing built-in task: %s", builtin.name)
-        
+
         # Initialize status if not exists
         if builtin.task_id not in cls._builtin_tasks_status:
             cls._builtin_tasks_status[builtin.task_id] = {
-                'last_status': None,
-                'last_error': None,
-                'next_run': None,
+                "last_status": None,
+                "last_error": None,
+                "next_run": None,
             }
-        
+
         try:
             # Get handler for this task type
             handler = cls._task_handlers.get(builtin.task_type)
             if not handler:
-                raise ValueError(f"No handler registered for task type: {builtin.task_type}")
+                raise ValueError(
+                    f"No handler registered for task type: {builtin.task_type}"
+                )
 
             # Create a pseudo-task object for the handler
             # Handlers expect a ScheduledTask, so we create a compatible object
             class PseudoTask:
                 """Pseudo-task that mimics ScheduledTask interface for built-in tasks."""
+
                 def __init__(self, builtin: BuiltInTask):
                     self.id = f"builtin:{builtin.task_id}"
                     self.name = builtin.name
@@ -837,15 +877,15 @@ class TaskSchedulerService:
                     self.task_config = builtin.task_config
                     self.organization_id = None  # Built-in tasks are global
                     self.is_builtin = True
-            
+
             pseudo_task = PseudoTask(builtin)
-            
+
             # Execute the handler
             await handler(pseudo_task)
-            
+
             # Update last run time
             cls._builtin_tasks_last_run[builtin.task_id] = now
-            
+
             # Calculate next run time
             next_run = cls._calculate_next_run(
                 schedule_type=builtin.schedule_type,
@@ -853,24 +893,29 @@ class TaskSchedulerService:
                 cron_expression=builtin.cron_expression,
                 from_time=now,
             )
-            
+
             # Update status
             cls._builtin_tasks_status[builtin.task_id] = {
-                'last_status': 'success',
-                'last_error': None,
-                'next_run': next_run,
+                "last_status": "success",
+                "last_error": None,
+                "next_run": next_run,
             }
-            
+
             logger.info("Built-in task %s executed successfully", builtin.task_id)
 
         except Exception as e:
-            logger.error("Error executing built-in task %s: %s", builtin.task_id, e, exc_info=True)
-            
+            logger.error(
+                "Error executing built-in task %s: %s",
+                builtin.task_id,
+                e,
+                exc_info=True,
+            )
+
             # Update status with error
             cls._builtin_tasks_status[builtin.task_id] = {
-                'last_status': 'failed',
-                'last_error': str(e),
-                'next_run': cls._builtin_tasks_status[builtin.task_id].get('next_run'),
+                "last_status": "failed",
+                "last_error": str(e),
+                "next_run": cls._builtin_tasks_status[builtin.task_id].get("next_run"),
             }
 
     @classmethod
@@ -887,7 +932,7 @@ class TaskSchedulerService:
         # Update status to running
         await repo.update_run_status(
             task_id=task.id,
-            status='running',
+            status="running",
             last_run_at=datetime.now(timezone.utc),
         )
 
@@ -895,7 +940,9 @@ class TaskSchedulerService:
             # Get handler for this task type
             handler = cls._task_handlers.get(task.task_type)
             if not handler:
-                raise ValueError(f"No handler registered for task type: {task.task_type}")
+                raise ValueError(
+                    f"No handler registered for task type: {task.task_type}"
+                )
 
             # Execute the handler
             await handler(task)
@@ -912,7 +959,7 @@ class TaskSchedulerService:
             # Update status to success
             await repo.update_run_status(
                 task_id=task.id,
-                status='success',
+                status="success",
                 last_run_at=datetime.now(timezone.utc),
                 next_run_at=next_run_at,
             )
@@ -927,7 +974,7 @@ class TaskSchedulerService:
             logger.error("Error executing task %s: %s", task.id, e, exc_info=True)
             await repo.update_run_status(
                 task_id=task.id,
-                status='failed',
+                status="failed",
                 last_run_at=datetime.now(timezone.utc),
                 error=str(e),
             )

@@ -43,8 +43,8 @@ class UserAddDialog(BaseDialog):
     async def show(self) -> None:
         """Display the add user dialog using BaseDialog structure."""
         self.create_dialog(
-            title='Add New User',
-            icon='person_add',
+            title="Add New User",
+            icon="person_add",
         )
         await super().show()
 
@@ -53,41 +53,57 @@ class UserAddDialog(BaseDialog):
         # Responsive form grid
         with self.create_form_grid(columns=2):
             # Discord ID
-            with ui.element('div'):
-                discord_id_input = ui.input(label='Discord ID', placeholder='e.g., 123456789012345678').classes('w-full')
-                discord_id_input.on('update:model-value', self._on_discord_id_change)
+            with ui.element("div"):
+                discord_id_input = ui.input(
+                    label="Discord ID", placeholder="e.g., 123456789012345678"
+                ).classes("w-full")
+                discord_id_input.on("update:model-value", self._on_discord_id_change)
 
             # Username
-            with ui.element('div'):
-                username_input = ui.input(label='Username', placeholder='Discord username').classes('w-full')
-                username_input.on('update:model-value', lambda e: setattr(self, 'discord_username', e.args))
+            with ui.element("div"):
+                username_input = ui.input(
+                    label="Username", placeholder="Discord username"
+                ).classes("w-full")
+                username_input.on(
+                    "update:model-value",
+                    lambda e: setattr(self, "discord_username", e.args),
+                )
 
             # Email (optional) spans full width on desktop
-            with ui.element('div').classes('span-2'):
-                email_input = ui.input(label='Email (optional)', placeholder='name@example.com').classes('w-full')
-                email_input.on('update:model-value', lambda e: setattr(self, 'discord_email', e.args))
+            with ui.element("div").classes("span-2"):
+                email_input = ui.input(
+                    label="Email (optional)", placeholder="name@example.com"
+                ).classes("w-full")
+                email_input.on(
+                    "update:model-value",
+                    lambda e: setattr(self, "discord_email", e.args),
+                )
 
             # Permission (cannot assign >= current user's permission)
-            with ui.element('div'):
+            with ui.element("div"):
                 self.create_permission_select(
                     current_permission=self.permission,
                     max_permission=self.current_user_permission,
-                    on_change=lambda p: setattr(self, 'permission', p),
+                    on_change=lambda p: setattr(self, "permission", p),
                 )
 
             # Active switch
-            with ui.element('div'):
-                active_switch = ui.checkbox('Active Account', value=self.is_active)
-                active_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
+            with ui.element("div"):
+                active_switch = ui.checkbox("Active Account", value=self.is_active)
+                active_switch.on(
+                    "update:model-value", lambda e: setattr(self, "is_active", e.args)
+                )
 
         ui.separator()
 
         # Actions
         with self.create_actions_row():
             # Neutral/negative action on the far left
-            ui.button('Cancel', on_click=self.close).classes('btn')
+            ui.button("Cancel", on_click=self.close).classes("btn")
             # Positive action on the far right
-            ui.button('Create User', on_click=self._create_and_close).classes('btn').props('color=positive')
+            ui.button("Create User", on_click=self._create_and_close).classes(
+                "btn"
+            ).props("color=positive")
 
     def _on_discord_id_change(self, e) -> None:
         """Handle Discord ID change and coerce to int when possible."""
@@ -101,7 +117,7 @@ class UserAddDialog(BaseDialog):
         try:
             # Basic validation
             if not self.discord_id or not self.discord_username:
-                ui.notify('Discord ID and Username are required', type='warning')
+                ui.notify("Discord ID and Username are required", type="warning")
                 return
 
             user = await self.user_service.create_user_manual(
@@ -112,10 +128,10 @@ class UserAddDialog(BaseDialog):
                 is_active=self.is_active,
             )
 
-            ui.notify(f'User {user.discord_username} created', type='positive')
+            ui.notify(f"User {user.discord_username} created", type="positive")
             if self.on_save:
                 await self.on_save()
             await self.close()
         except Exception as ex:
-            logger.error('Failed to create user: %s', ex, exc_info=True)
-            ui.notify(str(ex), type='negative')
+            logger.error("Failed to create user: %s", ex, exc_info=True)
+            ui.notify(str(ex), type="negative")

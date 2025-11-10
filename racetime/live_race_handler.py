@@ -53,14 +53,16 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
         await super().race_data(data)
 
         # Import here to avoid circular dependency
-        from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
+        from application.services.tournaments.async_live_race_service import (
+            AsyncLiveRaceService,
+        )
 
-        race_status = data.get('status', {}).get('value')
-        
+        race_status = data.get("status", {}).get("value")
+
         # Process race start (transitions to 'in_progress')
-        if race_status == 'in_progress' and not self._race_started:
+        if race_status == "in_progress" and not self._race_started:
             self._race_started = True
-            race_slug = data.get('name', 'unknown')
+            race_slug = data.get("name", "unknown")
             logger.info(
                 "Live race %s started on RaceTime.gg (slug: %s)",
                 self.live_race_id,
@@ -69,11 +71,11 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
 
             try:
                 # Get entrant racetime IDs
-                entrants = data.get('entrants', [])
+                entrants = data.get("entrants", [])
                 participant_racetime_ids = [
-                    e.get('user', {}).get('id')
+                    e.get("user", {}).get("id")
                     for e in entrants
-                    if e.get('user', {}).get('id')
+                    if e.get("user", {}).get("id")
                 ]
 
                 # Call service to create race records
@@ -91,9 +93,9 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
                 )
 
         # Process race finish (transitions to 'finished')
-        if race_status == 'finished' and not self._race_finished:
+        if race_status == "finished" and not self._race_finished:
             self._race_finished = True
-            race_slug = data.get('name', 'unknown')
+            race_slug = data.get("name", "unknown")
             logger.info(
                 "Live race %s finished on RaceTime.gg (slug: %s)",
                 self.live_race_id,
@@ -102,20 +104,22 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
 
             try:
                 # Extract results from entrants
-                entrants = data.get('entrants', [])
+                entrants = data.get("entrants", [])
                 results = []
-                
+
                 for entrant in entrants:
-                    racetime_id = entrant.get('user', {}).get('id')
-                    status = entrant.get('status', {}).get('value')
-                    finish_time = entrant.get('finish_time')
-                    
+                    racetime_id = entrant.get("user", {}).get("id")
+                    status = entrant.get("status", {}).get("value")
+                    finish_time = entrant.get("finish_time")
+
                     if racetime_id:
-                        results.append({
-                            'racetime_id': racetime_id,
-                            'status': status,
-                            'finish_time': finish_time,
-                        })
+                        results.append(
+                            {
+                                "racetime_id": racetime_id,
+                                "status": status,
+                                "finish_time": finish_time,
+                            }
+                        )
 
                 # Call service to record results
                 service = AsyncLiveRaceService()

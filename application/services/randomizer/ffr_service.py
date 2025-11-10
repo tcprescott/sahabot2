@@ -44,7 +44,7 @@ class FFRService:
         return RandomizerResult(
             url=url,
             hash_id=str(seed),
-            settings={'flags': flags, 'seed': seed},
-            randomizer='ffr',
+            settings={"flags": flags, "seed": seed},
+            randomizer="ffr",
             permalink=url,
         )

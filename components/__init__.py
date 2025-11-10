@@ -14,14 +14,14 @@ from components.empty_state import EmptyState
 from components.stat_card import StatCard, StatGrid, StatsSection
 
 __all__ = [
-    'BasePage',
-    'Card',
-    'UserMenu',
-    'DateTimeLabel',
-    'Badge',
-    'EmptyState',
-    'StatCard',
-    'StatGrid',
-    'StatsSection',
-    'MOTDBanner',
+    "BasePage",
+    "Card",
+    "UserMenu",
+    "DateTimeLabel",
+    "Badge",
+    "EmptyState",
+    "StatCard",
+    "StatGrid",
+    "StatsSection",
+    "MOTDBanner",
 ]
