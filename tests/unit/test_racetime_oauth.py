@@ -29,16 +29,16 @@ class TestRacetimeOAuthService:
         assert "response_type=code" in auth_url
         assert "scope=read" in auth_url
 
-    @patch('httpx.AsyncClient')
+    @patch("httpx.AsyncClient")
     async def test_exchange_code_for_token_success(self, mock_client_class):
         """Test successful code-to-token exchange."""
         # Mock the HTTP client response
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            'access_token': 'test_access_token',
-            'token_type': 'Bearer',
-            'expires_in': 3600
+            "access_token": "test_access_token",
+            "token_type": "Bearer",
+            "expires_in": 3600,
         }
 
         mock_client = AsyncMock()
@@ -49,10 +49,10 @@ class TestRacetimeOAuthService:
         service = RacetimeOAuthService()
         result = await service.exchange_code_for_token("test_code")
 
-        assert result['access_token'] == 'test_access_token'
+        assert result["access_token"] == "test_access_token"
         mock_client.post.assert_called_once()
 
-    @patch('httpx.AsyncClient')
+    @patch("httpx.AsyncClient")
     async def test_exchange_code_for_token_failure(self, mock_client_class):
         """Test failed code-to-token exchange."""
         # Mock the HTTP client response with error
@@ -71,16 +71,16 @@ class TestRacetimeOAuthService:
         with pytest.raises(Exception):
             await service.exchange_code_for_token("invalid_code")
 
-    @patch('httpx.AsyncClient')
+    @patch("httpx.AsyncClient")
     async def test_get_user_info_success(self, mock_client_class):
         """Test successful user info retrieval."""
         # Mock the HTTP client response
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            'id': 'racetime_user_123',
-            'name': 'TestRacer',
-            'url': 'https://racetime.gg/user/TestRacer'
+            "id": "racetime_user_123",
+            "name": "TestRacer",
+            "url": "https://racetime.gg/user/TestRacer",
         }
 
         mock_client = AsyncMock()
@@ -91,8 +91,8 @@ class TestRacetimeOAuthService:
         service = RacetimeOAuthService()
         result = await service.get_user_info("test_token")
 
-        assert result['id'] == 'racetime_user_123'
-        assert result['name'] == 'TestRacer'
+        assert result["id"] == "racetime_user_123"
+        assert result["name"] == "TestRacer"
 
 
 @pytest.mark.unit
@@ -122,17 +122,17 @@ class TestRacetimeAccountLinking:
         # Link account
         result = await service.link_racetime_account(
             user=mock_user,
-            racetime_id='racetime_123',
-            racetime_name='TestRacer',
-            access_token='token_abc',
-            refresh_token='refresh_xyz',
-            expires_at=expires_at
+            racetime_id="racetime_123",
+            racetime_name="TestRacer",
+            access_token="token_abc",
+            refresh_token="refresh_xyz",
+            expires_at=expires_at,
         )
 
-        assert mock_user.racetime_id == 'racetime_123'
-        assert mock_user.racetime_name == 'TestRacer'
-        assert mock_user.racetime_access_token == 'token_abc'
-        assert mock_user.racetime_refresh_token == 'refresh_xyz'
+        assert mock_user.racetime_id == "racetime_123"
+        assert mock_user.racetime_name == "TestRacer"
+        assert mock_user.racetime_access_token == "token_abc"
+        assert mock_user.racetime_refresh_token == "refresh_xyz"
         assert mock_user.racetime_token_expires_at == expires_at
         mock_user.save.assert_called_once()
 
@@ -146,7 +146,7 @@ class TestRacetimeAccountLinking:
 
         mock_existing_user = MagicMock(spec=User)
         mock_existing_user.id = 2
-        mock_existing_user.racetime_id = 'racetime_123'
+        mock_existing_user.racetime_id = "racetime_123"
 
         # Mock repository
         mock_repo = MagicMock()
@@ -159,9 +159,9 @@ class TestRacetimeAccountLinking:
         with pytest.raises(ValueError, match="already linked to another user"):
             await service.link_racetime_account(
                 user=mock_user,
-                racetime_id='racetime_123',
-                racetime_name='TestRacer',
-                access_token='token_abc'
+                racetime_id="racetime_123",
+                racetime_name="TestRacer",
+                access_token="token_abc",
             )
 
     @pytest.mark.asyncio
@@ -170,10 +170,10 @@ class TestRacetimeAccountLinking:
         # Create mock user with linked account
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
-        mock_user.racetime_id = 'racetime_123'
-        mock_user.racetime_name = 'TestRacer'
-        mock_user.racetime_access_token = 'token_abc'
-        mock_user.racetime_refresh_token = 'refresh_xyz'
+        mock_user.racetime_id = "racetime_123"
+        mock_user.racetime_name = "TestRacer"
+        mock_user.racetime_access_token = "token_abc"
+        mock_user.racetime_refresh_token = "refresh_xyz"
         mock_user.racetime_token_expires_at = datetime.now(timezone.utc)
         mock_user.save = AsyncMock()
 
@@ -189,16 +189,16 @@ class TestRacetimeAccountLinking:
         assert mock_user.racetime_token_expires_at is None
         mock_user.save.assert_called_once()
 
-    @patch('httpx.AsyncClient')
+    @patch("httpx.AsyncClient")
     async def test_refresh_access_token_success(self, mock_client_class):
         """Test successful token refresh."""
         # Mock the HTTP client response
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
-            'access_token': 'new_access_token',
-            'refresh_token': 'new_refresh_token',
-            'expires_in': 3600
+            "access_token": "new_access_token",
+            "refresh_token": "new_refresh_token",
+            "expires_in": 3600,
         }
 
         mock_client = AsyncMock()
@@ -209,14 +209,14 @@ class TestRacetimeAccountLinking:
         service = RacetimeOAuthService()
         result = await service.refresh_access_token("old_refresh_token")
 
-        assert result['access_token'] == 'new_access_token'
-        assert result['refresh_token'] == 'new_refresh_token'
-        assert result['expires_in'] == 3600
+        assert result["access_token"] == "new_access_token"
+        assert result["refresh_token"] == "new_refresh_token"
+        assert result["expires_in"] == 3600
 
     def test_calculate_token_expiry(self):
         """Test token expiry calculation."""
         service = RacetimeOAuthService()
-        
+
         # Calculate expiry for 3600 seconds (1 hour)
         before = datetime.now(timezone.utc)
         expires_at = service.calculate_token_expiry(3600)
@@ -232,22 +232,28 @@ class TestRacetimeAccountLinking:
         # Create mock user with expired token
         mock_user = MagicMock(spec=User)
         mock_user.id = 1
-        mock_user.racetime_id = 'racetime_123'
-        mock_user.racetime_refresh_token = 'old_refresh_token'
+        mock_user.racetime_id = "racetime_123"
+        mock_user.racetime_refresh_token = "old_refresh_token"
         mock_user.save = AsyncMock()
 
         # Mock the repository
         mock_repo = MagicMock()
 
         # Mock RacetimeOAuthService
-        with patch('middleware.racetime_oauth.RacetimeOAuthService') as mock_oauth_class:
+        with patch(
+            "middleware.racetime_oauth.RacetimeOAuthService"
+        ) as mock_oauth_class:
             mock_oauth = MagicMock()
-            mock_oauth.refresh_access_token = AsyncMock(return_value={
-                'access_token': 'new_access_token',
-                'refresh_token': 'new_refresh_token',
-                'expires_in': 3600
-            })
-            mock_oauth.calculate_token_expiry = MagicMock(return_value=datetime.now(timezone.utc) + timedelta(hours=1))
+            mock_oauth.refresh_access_token = AsyncMock(
+                return_value={
+                    "access_token": "new_access_token",
+                    "refresh_token": "new_refresh_token",
+                    "expires_in": 3600,
+                }
+            )
+            mock_oauth.calculate_token_expiry = MagicMock(
+                return_value=datetime.now(timezone.utc) + timedelta(hours=1)
+            )
             mock_oauth_class.return_value = mock_oauth
 
             service = UserService()
@@ -256,8 +262,8 @@ class TestRacetimeAccountLinking:
             # Refresh token
             result = await service.refresh_racetime_token(mock_user)
 
-            assert mock_user.racetime_access_token == 'new_access_token'
-            assert mock_user.racetime_refresh_token == 'new_refresh_token'
+            assert mock_user.racetime_access_token == "new_access_token"
+            assert mock_user.racetime_refresh_token == "new_refresh_token"
             assert mock_user.racetime_token_expires_at is not None
             mock_user.save.assert_called_once()
 
@@ -271,7 +277,9 @@ class TestRacetimeAccountLinking:
 
         service = UserService()
 
-        with pytest.raises(ValueError, match="no linked RaceTime account or refresh token"):
+        with pytest.raises(
+            ValueError, match="no linked RaceTime account or refresh token"
+        ):
             await service.refresh_racetime_token(mock_user)
 
 
@@ -294,7 +302,7 @@ class TestAdminRacetimeFeatures:
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
     @pytest.mark.asyncio
-    @patch('application.services.core.audit_service.AuditService')
+    @patch("application.services.core.audit_service.AuditService")
     async def test_get_all_racetime_accounts_authorized(self, mock_audit_class):
         """Test that admin users can get all accounts."""
         mock_user = MagicMock(spec=User)
@@ -312,17 +320,13 @@ class TestAdminRacetimeFeatures:
         service.user_repository.get_users_with_racetime = AsyncMock(return_value=[])
 
         result = await service.get_all_racetime_accounts(
-            admin_user=mock_user,
-            limit=10,
-            offset=0
+            admin_user=mock_user, limit=10, offset=0
         )
 
         assert isinstance(result, list)
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
         service.user_repository.get_users_with_racetime.assert_called_once_with(
-            include_inactive=False,
-            limit=10,
-            offset=0
+            include_inactive=False, limit=10, offset=0
         )
 
     @pytest.mark.asyncio
@@ -335,15 +339,14 @@ class TestAdminRacetimeFeatures:
 
         service = UserService()
         result = await service.search_racetime_accounts(
-            admin_user=mock_user,
-            query="test"
+            admin_user=mock_user, query="test"
         )
 
         assert result == []
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
     @pytest.mark.asyncio
-    @patch('application.services.core.audit_service.AuditService')
+    @patch("application.services.core.audit_service.AuditService")
     async def test_get_racetime_link_statistics_authorized(self, mock_audit_class):
         """Test that admin users can get statistics."""
         mock_user = MagicMock(spec=User)
@@ -363,14 +366,14 @@ class TestAdminRacetimeFeatures:
 
         result = await service.get_racetime_link_statistics(admin_user=mock_user)
 
-        assert result['total_users'] == 100
-        assert result['linked_users'] == 42
-        assert result['unlinked_users'] == 58
-        assert result['link_percentage'] == 42.0
+        assert result["total_users"] == 100
+        assert result["linked_users"] == 42
+        assert result["unlinked_users"] == 58
+        assert result["link_percentage"] == 42.0
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
 
     @pytest.mark.asyncio
-    @patch('application.services.core.audit_service.AuditService')
+    @patch("application.services.core.audit_service.AuditService")
     async def test_admin_unlink_racetime_account_success(self, mock_audit_class):
         """Test successful admin unlink."""
         mock_admin = MagicMock(spec=User)
@@ -397,8 +400,7 @@ class TestAdminRacetimeFeatures:
         service.user_repository.get_by_id = AsyncMock(return_value=mock_target_user)
 
         result = await service.admin_unlink_racetime_account(
-            user_id=2,
-            admin_user=mock_admin
+            user_id=2, admin_user=mock_admin
         )
 
         assert result is not None
@@ -417,10 +419,8 @@ class TestAdminRacetimeFeatures:
 
         service = UserService()
         result = await service.admin_unlink_racetime_account(
-            user_id=2,
-            admin_user=mock_user
+            user_id=2, admin_user=mock_user
         )
 
         assert result is None
         mock_user.has_permission.assert_called_once_with(Permission.ADMIN)
-

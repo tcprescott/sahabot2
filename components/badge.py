@@ -18,7 +18,9 @@ class Badge:
     """
 
     @staticmethod
-    def status(is_active: bool, active_text: str = "Active", inactive_text: str = "Inactive"):
+    def status(
+        is_active: bool, active_text: str = "Active", inactive_text: str = "Inactive"
+    ):
         """
         Render an active/inactive status badge.
 
@@ -34,10 +36,10 @@ class Badge:
             Badge.status(user.is_active)
             Badge.status(tournament.is_active, "Open", "Closed")
         """
-        badge_class = 'badge-success' if is_active else 'badge-danger'
+        badge_class = "badge-success" if is_active else "badge-danger"
         text = active_text if is_active else inactive_text
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(text)
 
     @staticmethod
@@ -55,19 +57,21 @@ class Badge:
             Badge.permission(user.permission)
         """
         badge_class_map = {
-            Permission.SUPERADMIN: 'badge-danger',
-            Permission.ADMIN: 'badge-admin',
-            Permission.MODERATOR: 'badge-moderator',
-            Permission.USER: 'badge-user',
+            Permission.SUPERADMIN: "badge-danger",
+            Permission.ADMIN: "badge-admin",
+            Permission.MODERATOR: "badge-moderator",
+            Permission.USER: "badge-user",
         }
 
-        badge_class = badge_class_map.get(permission, 'badge')
+        badge_class = badge_class_map.get(permission, "badge")
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(permission.name)
 
     @staticmethod
-    def visibility(is_public: bool, public_text: str = "Public", private_text: str = "Private"):
+    def visibility(
+        is_public: bool, public_text: str = "Public", private_text: str = "Private"
+    ):
         """
         Render a public/private visibility badge.
 
@@ -83,10 +87,10 @@ class Badge:
             Badge.visibility(preset.is_public)
             Badge.visibility(namespace.is_public, "Shared", "Personal")
         """
-        badge_class = 'badge-success' if is_public else 'badge-warning'
+        badge_class = "badge-success" if is_public else "badge-warning"
         text = public_text if is_public else private_text
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(text)
 
     @staticmethod
@@ -107,9 +111,9 @@ class Badge:
             Badge.custom("Pending", "warning")
             Badge.custom("Expired", "danger")
         """
-        badge_class = f'badge-{variant}' if variant != "default" else 'badge'
+        badge_class = f"badge-{variant}" if variant != "default" else "badge"
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(text)
 
     @staticmethod
@@ -127,21 +131,23 @@ class Badge:
             Badge.race_status(race.status)
         """
         status_badge_map = {
-            'finished': 'badge-success',
-            'in_progress': 'badge-info',
-            'pending': 'badge-warning',
-            'forfeit': 'badge-danger',
-            'disqualified': 'badge-danger',
+            "finished": "badge-success",
+            "in_progress": "badge-info",
+            "pending": "badge-warning",
+            "forfeit": "badge-danger",
+            "disqualified": "badge-danger",
         }
 
-        badge_class = status_badge_map.get(status, 'badge')
-        display_text = status.replace('_', ' ').title()
+        badge_class = status_badge_map.get(status, "badge")
+        display_text = status.replace("_", " ").title()
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(display_text)
 
     @staticmethod
-    def enabled(is_enabled: bool, enabled_text: str = "Enabled", disabled_text: str = "Disabled"):
+    def enabled(
+        is_enabled: bool, enabled_text: str = "Enabled", disabled_text: str = "Disabled"
+    ):
         """
         Render an enabled/disabled badge.
 
@@ -156,10 +162,10 @@ class Badge:
         Example:
             Badge.enabled(command.is_enabled)
         """
-        badge_class = 'badge-success' if is_enabled else 'badge-warning'
+        badge_class = "badge-success" if is_enabled else "badge-warning"
         text = enabled_text if is_enabled else disabled_text
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(text)
 
     @staticmethod
@@ -183,9 +189,9 @@ class Badge:
         if label:
             text += f" {label}"
 
-        badge_class = f'badge-{variant}'
+        badge_class = f"badge-{variant}"
 
-        with ui.element('span').classes(f'badge {badge_class}'):
+        with ui.element("span").classes(f"badge {badge_class}"):
             ui.label(text)
 
     @staticmethod
@@ -203,5 +209,5 @@ class Badge:
             Badge.placeholder(user.is_placeholder)
         """
         if is_placeholder:
-            with ui.element('span').classes('badge badge-warning'):
-                ui.label('Placeholder')
+            with ui.element("span").classes("badge badge-warning"):
+                ui.label("Placeholder")

@@ -18,9 +18,13 @@ from models.async_tournament import (
     AsyncTournamentRace,
 )
 from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
-from application.repositories.async_tournament_repository import AsyncTournamentRepository
+from application.repositories.async_tournament_repository import (
+    AsyncTournamentRepository,
+)
 from application.services.organizations.organization_service import OrganizationService
-from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
+from application.services.authorization.authorization_service_v2 import (
+    AuthorizationServiceV2,
+)
 from application.events import (
     EventBus,
     AsyncLiveRaceCreatedEvent,
@@ -37,6 +41,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class LiveRaceEligibility:
     """Represents a player's eligibility for a live race."""
+
     user: User
     is_eligible: bool
     reason: Optional[str] = None
@@ -51,7 +56,9 @@ class AsyncLiveRaceService:
         self.org_service = OrganizationService()
         self.auth = AuthorizationServiceV2()
 
-    async def can_manage_live_races(self, user: Optional[User], organization_id: int) -> bool:
+    async def can_manage_live_races(
+        self, user: Optional[User], organization_id: int
+    ) -> bool:
         """
         Check if user can manage live races in the organization.
 
@@ -63,10 +70,12 @@ class AsyncLiveRaceService:
             user,
             action=self.auth.get_action_for_operation("async_live_race", "manage"),
             resource=self.auth.get_resource_identifier("async_live_race", "*"),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
-    async def can_review_races(self, user: Optional[User], organization_id: int) -> bool:
+    async def can_review_races(
+        self, user: Optional[User], organization_id: int
+    ) -> bool:
         """
         Check if user can review/record race results.
 
@@ -124,12 +133,16 @@ class AsyncLiveRaceService:
             raise PermissionError("You do not have permission to create live races")
 
         # Validate tournament belongs to organization
-        tournament = await self.tournament_repo.get_by_id(tournament_id, organization_id)
+        tournament = await self.tournament_repo.get_by_id(
+            tournament_id, organization_id
+        )
         if not tournament:
             raise ValueError("Tournament not found or does not belong to organization")
 
         # Validate pool belongs to tournament
-        pool = await AsyncTournamentPool.get_or_none(id=pool_id, tournament_id=tournament_id)
+        pool = await AsyncTournamentPool.get_or_none(
+            id=pool_id, tournament_id=tournament_id
+        )
         if not pool:
             raise ValueError("Pool not found or does not belong to tournament")
 
@@ -191,20 +204,25 @@ class AsyncLiveRaceService:
             creating_user: User who created the live race (for authorization)
         """
         if not live_race.scheduled_at:
-            logger.warning("Cannot schedule room open task for live race %s - no scheduled_at", live_race.id)
+            logger.warning(
+                "Cannot schedule room open task for live race %s - no scheduled_at",
+                live_race.id,
+            )
             return
 
         # Schedule room open 30 minutes before race time
         room_open_time = live_race.scheduled_at - timedelta(minutes=30)
 
         # Import here to avoid circular dependency
-        from application.services.tasks.task_scheduler_service import TaskSchedulerService
+        from application.services.tasks.task_scheduler_service import (
+            TaskSchedulerService,
+        )
         from models.scheduled_task import TaskType, ScheduleType
 
         task_service = TaskSchedulerService()
 
         # Ensure we have organization_id
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
 
         await task_service.create_task(
             user=creating_user,
@@ -215,8 +233,8 @@ class AsyncLiveRaceService:
             organization_id=live_race.tournament.organization_id,
             scheduled_time=room_open_time,
             task_config={
-                'live_race_id': live_race.id,
-                'organization_id': live_race.tournament.organization_id,
+                "live_race_id": live_race.id,
+                "organization_id": live_race.tournament.organization_id,
             },
         )
 
@@ -264,12 +282,12 @@ class AsyncLiveRaceService:
             raise ValueError("Live race not found")
 
         # Validate organization ownership via tournament
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
         if live_race.tournament.organization_id != organization_id:
             raise ValueError("Live race does not belong to organization")
 
         # Don't allow updates to in-progress or finished races
-        if live_race.status in ['in_progress', 'finished']:
+        if live_race.status in ["in_progress", "finished"]:
             raise ValueError(f"Cannot update race with status: {live_race.status}")
 
         # Update the live race
@@ -333,16 +351,16 @@ class AsyncLiveRaceService:
             raise ValueError("Live race not found")
 
         # Validate organization ownership
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
         if live_race.tournament.organization_id != organization_id:
             raise ValueError("Live race does not belong to organization")
 
         # Don't allow cancelling finished races
-        if live_race.status == 'finished':
+        if live_race.status == "finished":
             raise ValueError("Cannot cancel a finished race")
 
         # Update status to cancelled
-        cancelled = await self.repo.update_live_race(live_race_id, status='cancelled')
+        cancelled = await self.repo.update_live_race(live_race_id, status="cancelled")
 
         logger.info(
             "Live race %s cancelled by user %s: %s",
@@ -399,12 +417,12 @@ class AsyncLiveRaceService:
             raise ValueError("Live race not found")
 
         # Validate organization ownership
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
         if live_race.tournament.organization_id != organization_id:
             raise ValueError("Live race does not belong to organization")
 
         # Only allow deleting scheduled or cancelled races
-        if live_race.status not in ['scheduled', 'cancelled']:
+        if live_race.status not in ["scheduled", "cancelled"]:
             raise ValueError(f"Cannot delete race with status: {live_race.status}")
 
         # Delete the live race
@@ -445,11 +463,13 @@ class AsyncLiveRaceService:
             raise ValueError("Live race not found")
 
         # Check status
-        if live_race.status != 'scheduled':
-            raise ValueError(f"Cannot open room for race with status: {live_race.status}")
+        if live_race.status != "scheduled":
+            raise ValueError(
+                f"Cannot open room for race with status: {live_race.status}"
+            )
 
         # Get tournament and organization for RaceTime.gg integration
-        await live_race.fetch_related('tournament', 'tournament__organization', 'pool')
+        await live_race.fetch_related("tournament", "tournament__organization", "pool")
 
         # Get effective race room profile
         profile = await live_race.get_effective_profile()
@@ -459,7 +479,7 @@ class AsyncLiveRaceService:
         from racetime.live_race_handler import AsyncLiveRaceHandler
 
         # Get category from tournament (async tournaments use alttpr category)
-        category = 'alttpr'  # Could be made configurable per tournament in future
+        category = "alttpr"  # Could be made configurable per tournament in future
 
         # Get bot instance for this category
         bot = get_racetime_bot_instance(category)
@@ -481,15 +501,14 @@ class AsyncLiveRaceService:
             if not isinstance(handler, AsyncLiveRaceHandler):
                 # Replace with live race handler
                 handler.should_stop = True  # Stop the generic handler
-                
+
                 # Create new live race handler
                 handler = AsyncLiveRaceHandler(
-                    live_race_id=live_race_id,
-                    **bot.create_handler_kwargs(handler.data)
+                    live_race_id=live_race_id, **bot.create_handler_kwargs(handler.data)
                 )
                 await handler.begin()
 
-            racetime_slug = handler.data.get('name', '')
+            racetime_slug = handler.data.get("name", "")
         except Exception as e:
             logger.error(
                 "Failed to create RaceTime room for live race %s: %s",
@@ -504,7 +523,7 @@ class AsyncLiveRaceService:
             live_race_id,
             racetime_slug=racetime_slug,
             room_open_time=datetime.now(timezone.utc),
-            status='pending',
+            status="pending",
         )
 
         logger.info(
@@ -522,7 +541,11 @@ class AsyncLiveRaceService:
                 tournament_id=live_race.tournament_id,
                 racetime_slug=racetime_slug,
                 racetime_url=f"https://racetime.gg/{racetime_slug}",
-                scheduled_at=live_race.scheduled_at.isoformat() if live_race.scheduled_at else None,
+                scheduled_at=(
+                    live_race.scheduled_at.isoformat()
+                    if live_race.scheduled_at
+                    else None
+                ),
             )
         )
 
@@ -554,7 +577,7 @@ class AsyncLiveRaceService:
             raise ValueError("Live race not found")
 
         # Get tournament
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
 
         # Map RaceTime.gg IDs to User IDs
         # This will be implemented properly in Phase 3 with RaceTime user mapping
@@ -562,10 +585,12 @@ class AsyncLiveRaceService:
 
         if users:
             # Create race records for all participants
-            await self.repo.create_participant_races(live_race_id, [u.id for u in users])
+            await self.repo.create_participant_races(
+                live_race_id, [u.id for u in users]
+            )
 
         # Update status to in_progress
-        updated = await self.repo.update_live_race(live_race_id, status='in_progress')
+        updated = await self.repo.update_live_race(live_race_id, status="in_progress")
 
         logger.info(
             "Live race %s started with %s participants",
@@ -590,7 +615,9 @@ class AsyncLiveRaceService:
     async def process_race_finish(
         self,
         live_race_id: int,
-        results: List[Tuple[str, int, str]],  # (racetime_id, finish_time_seconds, status)
+        results: List[
+            Tuple[str, int, str]
+        ],  # (racetime_id, finish_time_seconds, status)
     ) -> AsyncTournamentLiveRace:
         """
         Process race finish event from RaceTime.gg.
@@ -612,11 +639,14 @@ class AsyncLiveRaceService:
         if not live_race:
             raise ValueError("Live race not found")
 
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
 
         # Map RaceTime.gg IDs to User IDs
         racetime_ids = [r[0] for r in results]
-        users_map = {u.racetime_id: u for u in await User.filter(racetime_id__in=racetime_ids).all()}
+        users_map = {
+            u.racetime_id: u
+            for u in await User.filter(racetime_id__in=racetime_ids).all()
+        }
 
         # Update race records with results
         finisher_count = 0
@@ -645,11 +675,11 @@ class AsyncLiveRaceService:
             race.status = status  # 'finished', 'forfeit', 'disqualified'
             await race.save()
 
-            if status == 'finished':
+            if status == "finished":
                 finisher_count += 1
 
         # Update live race status to finished
-        updated = await self.repo.update_live_race(live_race_id, status='finished')
+        updated = await self.repo.update_live_race(live_race_id, status="finished")
 
         logger.info(
             "Live race %s finished with %s finishers",
@@ -709,12 +739,12 @@ class AsyncLiveRaceService:
             raise ValueError(f"Live race not found for slug: {racetime_slug}")
 
         # Validate organization ownership
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
         if live_race.tournament.organization_id != organization_id:
             raise ValueError("Live race does not belong to organization")
 
         # Don't allow re-recording finished races
-        if live_race.status == 'finished':
+        if live_race.status == "finished":
             raise ValueError("Race results already recorded")
 
         # Fetch results from RaceTime.gg
@@ -750,7 +780,7 @@ class AsyncLiveRaceService:
             raise ValueError("Live race not found")
 
         # Validate organization ownership
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
         if live_race.tournament.organization_id != organization_id:
             raise ValueError("Live race does not belong to organization")
 
@@ -783,12 +813,16 @@ class AsyncLiveRaceService:
             Tuple of (is_eligible, reason_if_not)
         """
         # Get tournament
-        tournament = await self.tournament_repo.get_by_id(tournament_id, organization_id)
+        tournament = await self.tournament_repo.get_by_id(
+            tournament_id, organization_id
+        )
         if not tournament:
             return False, "Tournament not found"
 
         # Get pool
-        pool = await AsyncTournamentPool.get_or_none(id=pool_id, tournament_id=tournament_id)
+        pool = await AsyncTournamentPool.get_or_none(
+            id=pool_id, tournament_id=tournament_id
+        )
         if not pool:
             return False, "Pool not found"
 
@@ -808,17 +842,20 @@ class AsyncLiveRaceService:
             finished_count = await AsyncTournamentRace.filter(
                 user_id=user_id,
                 permalink__pool_id=pool_id,
-                status='finished',
+                status="finished",
             ).count()
 
             if finished_count >= pool.runs_per_pool:
-                return False, f"Already completed {pool.runs_per_pool} races in this pool"
+                return (
+                    False,
+                    f"Already completed {pool.runs_per_pool} races in this pool",
+                )
 
         # Check for active pending/in_progress races
         active_race = await AsyncTournamentRace.filter(
             user_id=user_id,
             permalink__pool__tournament_id=tournament_id,
-            status__in=['pending', 'in_progress'],
+            status__in=["pending", "in_progress"],
         ).first()
 
         if active_race:
@@ -850,7 +887,7 @@ class AsyncLiveRaceService:
             return None
 
         # Validate organization ownership
-        await live_race.fetch_related('tournament')
+        await live_race.fetch_related("tournament")
         if live_race.tournament.organization_id != organization_id:
             return None
 
@@ -874,36 +911,36 @@ class AsyncLiveRaceService:
             Dictionary of parameters for bot.startrace()
         """
         params = {
-            'goal': goal,
-            'invitational': False,  # Live races are always open
-            'unlisted': False,  # Live races are always public
+            "goal": goal,
+            "invitational": False,  # Live races are always open
+            "unlisted": False,  # Live races are always public
         }
 
         if info_user:
-            params['info_user'] = info_user
+            params["info_user"] = info_user
 
         if profile:
             # Map profile fields to RaceTime API parameters
-            params['streaming_required'] = profile.streaming_required
-            params['auto_start'] = profile.auto_start
-            params['allow_comments'] = profile.allow_comments
-            params['hide_comments'] = profile.hide_comments
-            params['allow_prerace_chat'] = profile.allow_prerace_chat
-            params['allow_midrace_chat'] = profile.allow_midrace_chat
-            params['allow_non_entrant_chat'] = profile.allow_non_entrant_chat
-            params['time_limit'] = profile.time_limit  # hours
-            params['start_delay'] = profile.start_delay  # seconds
+            params["streaming_required"] = profile.streaming_required
+            params["auto_start"] = profile.auto_start
+            params["allow_comments"] = profile.allow_comments
+            params["hide_comments"] = profile.hide_comments
+            params["allow_prerace_chat"] = profile.allow_prerace_chat
+            params["allow_midrace_chat"] = profile.allow_midrace_chat
+            params["allow_non_entrant_chat"] = profile.allow_non_entrant_chat
+            params["time_limit"] = profile.time_limit  # hours
+            params["start_delay"] = profile.start_delay  # seconds
         else:
             # Default values when no profile
-            params['streaming_required'] = False
-            params['auto_start'] = True
-            params['allow_comments'] = True
-            params['hide_comments'] = False
-            params['allow_prerace_chat'] = True
-            params['allow_midrace_chat'] = True
-            params['allow_non_entrant_chat'] = True
-            params['time_limit'] = 24  # 24 hours
-            params['start_delay'] = 15  # 15 seconds
+            params["streaming_required"] = False
+            params["auto_start"] = True
+            params["allow_comments"] = True
+            params["hide_comments"] = False
+            params["allow_prerace_chat"] = True
+            params["allow_midrace_chat"] = True
+            params["allow_non_entrant_chat"] = True
+            params["time_limit"] = 24  # 24 hours
+            params["start_delay"] = 15  # 15 seconds
 
         return params
 
@@ -945,7 +982,9 @@ class AsyncLiveRaceService:
             List of AsyncTournamentLiveRace objects
         """
         # Validate tournament belongs to organization
-        tournament = await self.tournament_repo.get_by_id(tournament_id, organization_id)
+        tournament = await self.tournament_repo.get_by_id(
+            tournament_id, organization_id
+        )
         if not tournament:
             return []
 

@@ -21,6 +21,7 @@ class EventPriority(IntEnum):
     Use NORMAL for standard domain events (e.g., data changes).
     Use LOW for background/analytics events.
     """
+
     CRITICAL = 100
     HIGH = 75
     NORMAL = 50
@@ -93,6 +94,7 @@ class EntityEvent(BaseEvent):
         entity_id: ID of the entity affected
         entity_data: Snapshot of relevant entity data at event time
     """
+
     entity_type: str = ""
     entity_id: Optional[int] = None
     entity_data: Dict[str, Any] = field(default_factory=dict)
@@ -100,9 +102,11 @@ class EntityEvent(BaseEvent):
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary with entity fields."""
         base = super().to_dict()
-        base.update({
-            "entity_type": self.entity_type,
-            "entity_id": self.entity_id,
-            "entity_data": self.entity_data,
-        })
+        base.update(
+            {
+                "entity_type": self.entity_type,
+                "entity_id": self.entity_id,
+                "entity_data": self.entity_data,
+            }
+        )
         return base

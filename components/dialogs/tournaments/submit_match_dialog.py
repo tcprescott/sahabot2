@@ -23,7 +23,7 @@ class SubmitMatchDialog(BaseDialog):
         self,
         user: User,
         organization: Organization,
-        on_save: Optional[Callable[[], Awaitable[None]]] = None
+        on_save: Optional[Callable[[], Awaitable[None]]] = None,
     ) -> None:
         super().__init__()
         self.user = user
@@ -44,9 +44,7 @@ class SubmitMatchDialog(BaseDialog):
     async def show(self) -> None:
         """Display the dialog."""
         self.create_dialog(
-            title='Submit Match',
-            icon='sports_esports',
-            max_width='dialog-card'
+            title="Submit Match", icon="sports_esports", max_width="dialog-card"
         )
         await super().show()
 
@@ -54,52 +52,55 @@ class SubmitMatchDialog(BaseDialog):
         """Render dialog body with form fields."""
         with self.create_form_grid(columns=1):
             # Tournament selection
-            with ui.element('div'):
-                ui.label('Tournament').classes('font-semibold mb-1')
+            with ui.element("div"):
+                ui.label("Tournament").classes("font-semibold mb-1")
                 self.tournament_select = ui.select(
-                    label='Select Tournament',
+                    label="Select Tournament",
                     options={},
                     with_input=True,
-                    on_change=self._on_tournament_change
-                ).classes('w-full')
+                    on_change=self._on_tournament_change,
+                ).classes("w-full")
 
             # Opponent selection (disabled until tournament selected)
-            with ui.element('div'):
-                ui.label('Opponent').classes('font-semibold mb-1')
+            with ui.element("div"):
+                ui.label("Opponent").classes("font-semibold mb-1")
                 self.opponent_select = ui.select(
-                    label='Select Opponent',
+                    label="Select Opponent",
                     options={},
                     with_input=True,
-                ).classes('w-full')
+                ).classes("w-full")
                 self.opponent_select.disable()
 
             # Date and time input
-            with ui.element('div'):
-                ui.label('Date & Time').classes('font-semibold mb-1')
+            with ui.element("div"):
+                ui.label("Date & Time").classes("font-semibold mb-1")
                 # Get current datetime in ISO format for datetime-local input
                 now = datetime.now()
-                default_datetime = now.strftime('%Y-%m-%dT%H:%M')
+                default_datetime = now.strftime("%Y-%m-%dT%H:%M")
 
                 self.datetime_input = ui.input(
-                    label='Match Date & Time',
-                    value=default_datetime
-                ).classes('w-full')
+                    label="Match Date & Time", value=default_datetime
+                ).classes("w-full")
                 # Set input type to datetime-local for browser native picker
-                self.datetime_input.props('type=datetime-local')
+                self.datetime_input.props("type=datetime-local")
 
-                ui.label('Time is in your local timezone').classes('text-sm text-secondary mt-1')
+                ui.label("Time is in your local timezone").classes(
+                    "text-sm text-secondary mt-1"
+                )
 
             # Comment
-            with ui.element('div'):
-                ui.label('Comment (optional)').classes('font-semibold mb-1')
+            with ui.element("div"):
+                ui.label("Comment (optional)").classes("font-semibold mb-1")
                 self.comment_input = ui.textarea(
-                    label='Add any notes or details about this match'
-                ).classes('w-full')
+                    label="Add any notes or details about this match"
+                ).classes("w-full")
 
         # Actions
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Submit Match', on_click=self._handle_submit).classes('btn').props('color=positive')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Submit Match", on_click=self._handle_submit).classes(
+                "btn"
+            ).props("color=positive")
 
         # Load tournaments asynchronously
         ui.timer(0.1, self._load_tournaments, once=True)
@@ -123,11 +124,11 @@ class SubmitMatchDialog(BaseDialog):
                 self.tournament_select.update()
 
             if not active_tournaments:
-                ui.notify('No active tournaments available', type='warning')
+                ui.notify("No active tournaments available", type="warning")
 
         except Exception as e:
             logger.error("Failed to load tournaments: %s", e)
-            ui.notify('Failed to load tournaments', type='negative')
+            ui.notify("Failed to load tournaments", type="negative")
 
     async def _on_tournament_change(self, event) -> None:
         """Handle tournament selection change - load registered players."""
@@ -139,18 +140,18 @@ class SubmitMatchDialog(BaseDialog):
         try:
             # Get all registered players for this tournament
             registrations = await self.tournament_service.list_tournament_players(
-                self.organization.id,
-                tournament_id
+                self.organization.id, tournament_id
             )
 
             # Filter out the current user and build options
             opponents = [
-                reg.user for reg in registrations
-                if reg.user_id != self.user.id
+                reg.user for reg in registrations if reg.user_id != self.user.id
             ]
 
             if not opponents:
-                ui.notify('No other players registered for this tournament', type='warning')
+                ui.notify(
+                    "No other players registered for this tournament", type="warning"
+                )
                 self.opponent_select.options = {}
                 self.opponent_select.disable()
             else:
@@ -162,21 +163,21 @@ class SubmitMatchDialog(BaseDialog):
 
         except Exception as e:
             logger.error("Failed to load tournament players: %s", e)
-            ui.notify('Failed to load players', type='negative')
+            ui.notify("Failed to load players", type="negative")
 
     async def _handle_submit(self) -> None:
         """Handle submit button click."""
         # Validate inputs
         if not self.tournament_select or not self.tournament_select.value:
-            ui.notify('Please select a tournament', type='warning')
+            ui.notify("Please select a tournament", type="warning")
             return
 
         if not self.opponent_select or not self.opponent_select.value:
-            ui.notify('Please select an opponent', type='warning')
+            ui.notify("Please select an opponent", type="warning")
             return
 
         if not self.datetime_input or not self.datetime_input.value:
-            ui.notify('Please select a date and time', type='warning')
+            ui.notify("Please select a date and time", type="warning")
             return
 
         try:
@@ -196,10 +197,10 @@ class SubmitMatchDialog(BaseDialog):
                 tournament_id=tournament_id,
                 player_ids=[self.user.id, opponent_id],
                 scheduled_at=scheduled_at,
-                comment=comment
+                comment=comment,
             )
 
-            ui.notify('Match submitted successfully', type='positive')
+            ui.notify("Match submitted successfully", type="positive")
 
             if self.on_save:
                 await self.on_save()
@@ -208,4 +209,4 @@ class SubmitMatchDialog(BaseDialog):
 
         except Exception as e:
             logger.error("Failed to submit match: %s", e)
-            ui.notify(f'Failed to submit match: {str(e)}', type='negative')
+            ui.notify(f"Failed to submit match: {str(e)}", type="negative")

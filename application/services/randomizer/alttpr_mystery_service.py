@@ -34,7 +34,7 @@ class ALTTPRMysteryService:
         mystery_weights: Dict[str, Any],
         tournament: bool = True,
         spoilers: str = "off",
-        allow_quickswap: bool = False
+        allow_quickswap: bool = False,
     ) -> Tuple[RandomizerResult, Dict[str, str]]:
         """
         Generate a mystery seed from mystery weights.
@@ -62,14 +62,16 @@ class ALTTPRMysteryService:
             settings_dict=rolled_settings,
             tournament=tournament,
             spoilers=spoilers,
-            allow_quickswap=allow_quickswap
+            allow_quickswap=allow_quickswap,
         )
 
         logger.info("Generated mystery seed with description: %s", description)
 
         return result, description
 
-    def _roll_mystery_settings(self, mystery_weights: Dict[str, Any]) -> Tuple[Dict[str, Any], Dict[str, str]]:
+    def _roll_mystery_settings(
+        self, mystery_weights: Dict[str, Any]
+    ) -> Tuple[Dict[str, Any], Dict[str, str]]:
         """
         Roll settings from mystery weights.
 
@@ -89,36 +91,47 @@ class ALTTPRMysteryService:
         settings = {}
 
         # Step 1: Roll preset
-        if 'weights' in mystery_weights:
-            preset_name, preset_settings = self._roll_weighted_preset(mystery_weights['weights'])
+        if "weights" in mystery_weights:
+            preset_name, preset_settings = self._roll_weighted_preset(
+                mystery_weights["weights"]
+            )
             settings.update(preset_settings)
-            description['preset'] = preset_name
+            description["preset"] = preset_name
 
             # Step 2: Roll subweight (if exists for this preset)
-            if 'subweights' in mystery_weights and preset_name in mystery_weights['subweights']:
+            if (
+                "subweights" in mystery_weights
+                and preset_name in mystery_weights["subweights"]
+            ):
                 subweight_name, subweight_settings = self._roll_weighted_preset(
-                    mystery_weights['subweights'][preset_name]
+                    mystery_weights["subweights"][preset_name]
                 )
                 settings.update(subweight_settings)
-                description['subweight'] = subweight_name
+                description["subweight"] = subweight_name
 
         # Step 3: Roll entrance shuffle (if entrance_weights exist)
-        if 'entrance_weights' in mystery_weights:
-            entrance_value = self._roll_weighted_value(mystery_weights['entrance_weights'])
-            if entrance_value and entrance_value != 'none':
-                settings['entrance_shuffle'] = entrance_value
-                description['entrance'] = entrance_value
+        if "entrance_weights" in mystery_weights:
+            entrance_value = self._roll_weighted_value(
+                mystery_weights["entrance_weights"]
+            )
+            if entrance_value and entrance_value != "none":
+                settings["entrance_shuffle"] = entrance_value
+                description["entrance"] = entrance_value
 
         # Step 4: Roll customizer settings
-        if 'customizer' in mystery_weights:
-            customizer_settings = self._roll_customizer_settings(mystery_weights['customizer'])
+        if "customizer" in mystery_weights:
+            customizer_settings = self._roll_customizer_settings(
+                mystery_weights["customizer"]
+            )
             settings.update(customizer_settings)
             if customizer_settings:
-                description['customizer'] = 'yes'
+                description["customizer"] = "yes"
 
         return settings, description
 
-    def _roll_weighted_preset(self, weights: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+    def _roll_weighted_preset(
+        self, weights: Dict[str, Any]
+    ) -> Tuple[str, Dict[str, Any]]:
         """
         Roll a preset from weighted options.
 
@@ -129,7 +142,7 @@ class ALTTPRMysteryService:
             Tuple of (preset_name, settings_dict)
         """
         if not weights:
-            return 'default', {}
+            return "default", {}
 
         # Extract weights and settings
         preset_weights = {}
@@ -138,10 +151,12 @@ class ALTTPRMysteryService:
         for name, value in weights.items():
             if isinstance(value, dict):
                 # Value is the settings dict with optional 'weight' key
-                weight = value.get('weight', 1)
+                weight = value.get("weight", 1)
                 preset_weights[name] = weight
                 # Create a copy without the 'weight' key for settings
-                preset_settings[name] = {k: v for k, v in value.items() if k != 'weight'}
+                preset_settings[name] = {
+                    k: v for k, v in value.items() if k != "weight"
+                }
             else:
                 # Value is just the weight
                 preset_weights[name] = value
@@ -229,7 +244,7 @@ class ALTTPRMysteryService:
         user_id: int,
         tournament: bool = True,
         spoilers: str = "off",
-        allow_quickswap: bool = False
+        allow_quickswap: bool = False,
     ) -> Tuple[RandomizerResult, Dict[str, str]]:
         """
         Generate a mystery seed from a named mystery preset.
@@ -248,15 +263,16 @@ class ALTTPRMysteryService:
             ValueError: If preset is not found
             PermissionError: If user cannot access preset
         """
-        from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
+        from application.repositories.randomizer_preset_repository import (
+            RandomizerPresetRepository,
+        )
 
         # Load mystery preset from database
         preset_repo = RandomizerPresetRepository()
 
         # Get preset by name
         preset = await preset_repo.get_by_name(
-            randomizer='alttpr',
-            name=mystery_preset_name
+            randomizer="alttpr", name=mystery_preset_name
         )
 
         if not preset:
@@ -266,36 +282,45 @@ class ALTTPRMysteryService:
         if not preset.is_public and preset.user_id != user_id:
             logger.warning(
                 "User %s attempted to access private mystery preset %s owned by %s",
-                user_id, mystery_preset_name, preset.user_id
+                user_id,
+                mystery_preset_name,
+                preset.user_id,
             )
-            raise PermissionError(f"Not authorized to access preset '{mystery_preset_name}'")
+            raise PermissionError(
+                f"Not authorized to access preset '{mystery_preset_name}'"
+            )
 
         # Check if this is a mystery preset
-        preset_type = preset.settings.get('preset_type', 'standard')
-        if preset_type != 'mystery':
+        preset_type = preset.settings.get("preset_type", "standard")
+        if preset_type != "mystery":
             raise ValueError(f"Preset '{mystery_preset_name}' is not a mystery preset")
 
         # Extract mystery weights from preset
-        mystery_weights = preset.settings.get('mystery_weights')
+        mystery_weights = preset.settings.get("mystery_weights")
         if not mystery_weights:
             # Fall back to using preset.settings directly (excluding metadata keys)
             # Remove keys that are not part of the weights (e.g., 'preset_type')
             mystery_weights = {
-                k: v for k, v in preset.settings.items()
-                if k not in ('preset_type', 'is_public', 'user_id')
+                k: v
+                for k, v in preset.settings.items()
+                if k not in ("preset_type", "is_public", "user_id")
             }
         if not mystery_weights:
-            raise ValueError(f"Mystery preset '{mystery_preset_name}' has no mystery weights")
+            raise ValueError(
+                f"Mystery preset '{mystery_preset_name}' has no mystery weights"
+            )
 
         # Generate mystery seed
         return await self.generate_from_mystery_weights(
             mystery_weights=mystery_weights,
             tournament=tournament,
             spoilers=spoilers,
-            allow_quickswap=allow_quickswap
+            allow_quickswap=allow_quickswap,
         )
 
-    def validate_mystery_weights(self, mystery_weights: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+    def validate_mystery_weights(
+        self, mystery_weights: Dict[str, Any]
+    ) -> Tuple[bool, Optional[str]]:
         """
         Validate mystery weight structure.
 
@@ -311,32 +336,38 @@ class ALTTPRMysteryService:
                 return False, "Mystery weights must be a dictionary"
 
             # At least one of weights, entrance_weights, or customizer must exist
-            if not any(key in mystery_weights for key in ['weights', 'entrance_weights', 'customizer']):
-                return False, "Mystery weights must contain at least one of: weights, entrance_weights, customizer"
+            if not any(
+                key in mystery_weights
+                for key in ["weights", "entrance_weights", "customizer"]
+            ):
+                return (
+                    False,
+                    "Mystery weights must contain at least one of: weights, entrance_weights, customizer",
+                )
 
             # Validate weights structure
-            if 'weights' in mystery_weights:
-                weights = mystery_weights['weights']
+            if "weights" in mystery_weights:
+                weights = mystery_weights["weights"]
                 if not isinstance(weights, dict):
                     return False, "weights must be a dictionary"
                 if not weights:
                     return False, "weights cannot be empty"
 
             # Validate subweights structure
-            if 'subweights' in mystery_weights:
-                subweights = mystery_weights['subweights']
+            if "subweights" in mystery_weights:
+                subweights = mystery_weights["subweights"]
                 if not isinstance(subweights, dict):
                     return False, "subweights must be a dictionary"
 
             # Validate entrance_weights
-            if 'entrance_weights' in mystery_weights:
-                entrance_weights = mystery_weights['entrance_weights']
+            if "entrance_weights" in mystery_weights:
+                entrance_weights = mystery_weights["entrance_weights"]
                 if not isinstance(entrance_weights, dict):
                     return False, "entrance_weights must be a dictionary"
 
             # Validate customizer
-            if 'customizer' in mystery_weights:
-                customizer = mystery_weights['customizer']
+            if "customizer" in mystery_weights:
+                customizer = mystery_weights["customizer"]
                 if not isinstance(customizer, dict):
                     return False, "customizer must be a dictionary"
 

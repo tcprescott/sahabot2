@@ -34,12 +34,13 @@ def _get_release_version() -> str:
     # Try to get git commit SHA
     try:
         import subprocess
+
         result = subprocess.run(
-            ['git', 'rev-parse', '--short', 'HEAD'],
+            ["git", "rev-parse", "--short", "HEAD"],
             capture_output=True,
             text=True,
             timeout=1,
-            cwd=os.path.dirname(os.path.abspath(__file__))
+            cwd=os.path.dirname(os.path.abspath(__file__)),
         )
         if result.returncode == 0:
             commit_sha = result.stdout.strip()
@@ -47,7 +48,11 @@ def _get_release_version() -> str:
                 return f"sahabot2@{commit_sha}"
     except (subprocess.TimeoutExpired, FileNotFoundError, Exception) as e:
         # Failed to get git commit SHA; falling back to default version.
-        logger.debug("Could not determine git commit SHA for Sentry release version: %s", e, exc_info=True)
+        logger.debug(
+            "Could not determine git commit SHA for Sentry release version: %s",
+            e,
+            exc_info=True,
+        )
 
     # Fallback to default version
     return "sahabot2@0.1.0"
@@ -90,7 +95,7 @@ def init_sentry() -> None:
                 AsyncioIntegration(),
                 LoggingIntegration(
                     level=logging.INFO,  # Capture info and above as breadcrumbs
-                    event_level=logging.ERROR  # Send errors as events
+                    event_level=logging.ERROR,  # Send errors as events
                 ),
             ],
             # Set release version (git commit or default)
@@ -105,7 +110,7 @@ def init_sentry() -> None:
             "Sentry initialized successfully (environment=%s, traces_sample_rate=%s, profiles_sample_rate=%s)",
             environment,
             settings.SENTRY_TRACES_SAMPLE_RATE,
-            settings.SENTRY_PROFILES_SAMPLE_RATE
+            settings.SENTRY_PROFILES_SAMPLE_RATE,
         )
 
     except Exception as e:

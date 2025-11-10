@@ -17,12 +17,14 @@ router = APIRouter(prefix="/audit-logs", tags=["audit-logs"])
     description="List audit logs. Requires SUPERADMIN permission.",
 )
 async def list_audit_logs(
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs to return"),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Maximum number of logs to return"
+    ),
     offset: int = Query(0, ge=0, description="Number of logs to skip"),
     user_id: int | None = Query(None, description="Filter by user ID"),
     action: str | None = Query(None, description="Filter by action"),
     organization_id: int | None = Query(None, description="Filter by organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AuditLogListResponse:
     """
     List audit logs with optional filters.
@@ -52,7 +54,7 @@ async def list_audit_logs(
         offset=offset,
         user_id=user_id,
         action=action,
-        organization_id=organization_id
+        organization_id=organization_id,
     )
 
     items = [AuditLogOut.model_validate(log) for log in logs]
@@ -68,11 +70,13 @@ async def list_audit_logs(
 )
 async def list_organization_audit_logs(
     organization_id: int = Path(..., description="Organization ID"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs to return"),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Maximum number of logs to return"
+    ),
     offset: int = Query(0, ge=0, description="Number of logs to skip"),
     user_id: int | None = Query(None, description="Filter by user ID"),
     action: str | None = Query(None, description="Filter by action"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AuditLogListResponse:
     """
     List audit logs for an organization.
@@ -94,7 +98,10 @@ async def list_organization_audit_logs(
         HTTPException: 403 if not authorized
     """
     # Check authorization
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     can_admin = await org_service.user_can_admin_org(current_user, organization_id)
     if not can_admin:
@@ -106,7 +113,7 @@ async def list_organization_audit_logs(
         offset=offset,
         user_id=user_id,
         action=action,
-        organization_id=organization_id
+        organization_id=organization_id,
     )
 
     items = [AuditLogOut.model_validate(log) for log in logs]
@@ -122,11 +129,13 @@ async def list_organization_audit_logs(
 )
 async def list_user_audit_logs(
     user_id: int = Path(..., description="User ID"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs to return"),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Maximum number of logs to return"
+    ),
     offset: int = Query(0, ge=0, description="Number of logs to skip"),
     action: str | None = Query(None, description="Filter by action"),
     organization_id: int | None = Query(None, description="Filter by organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AuditLogListResponse:
     """
     List audit logs for a specific user.
@@ -148,7 +157,9 @@ async def list_user_audit_logs(
         HTTPException: 403 if not authorized
     """
     # Users can view their own logs, SUPERADMIN can view any
-    if current_user.id != user_id and not current_user.has_permission(Permission.SUPERADMIN):
+    if current_user.id != user_id and not current_user.has_permission(
+        Permission.SUPERADMIN
+    ):
         raise HTTPException(status_code=403, detail="Insufficient permissions")
 
     service = AuditService()
@@ -157,7 +168,7 @@ async def list_user_audit_logs(
         offset=offset,
         user_id=user_id,
         action=action,
-        organization_id=organization_id
+        organization_id=organization_id,
     )
 
     items = [AuditLogOut.model_validate(log) for log in logs]

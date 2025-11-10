@@ -18,16 +18,16 @@ from views.tournaments.async_review_queue import AsyncReviewQueueView
 from views.tournaments.async_live_races import AsyncLiveRacesView
 
 __all__ = [
-    'TournamentOrgSelectView',
-    'EventScheduleView',
-    'MyMatchesView',
-    'MySettingsView',
-    'TournamentManagementView',
-    'AsyncDashboardView',
-    'AsyncLeaderboardView',
-    'AsyncPoolsView',
-    'AsyncPlayerHistoryView',
-    'AsyncPermalinkView',
-    'AsyncReviewQueueView',
-    'AsyncLiveRacesView',
+    "TournamentOrgSelectView",
+    "EventScheduleView",
+    "MyMatchesView",
+    "MySettingsView",
+    "TournamentManagementView",
+    "AsyncDashboardView",
+    "AsyncLeaderboardView",
+    "AsyncPoolsView",
+    "AsyncPlayerHistoryView",
+    "AsyncPermalinkView",
+    "AsyncReviewQueueView",
+    "AsyncLiveRacesView",
 ]

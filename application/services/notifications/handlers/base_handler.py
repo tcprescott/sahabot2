@@ -26,10 +26,7 @@ class BaseNotificationHandler(ABC):
 
     @abstractmethod
     async def send_notification(
-        self,
-        user: User,
-        event_type: NotificationEventType,
-        event_data: dict
+        self, user: User, event_type: NotificationEventType, event_data: dict
     ) -> tuple[NotificationDeliveryStatus, Optional[str]]:
         """
         Send a notification to a user.

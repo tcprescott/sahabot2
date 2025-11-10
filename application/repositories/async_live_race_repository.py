@@ -52,9 +52,11 @@ class AsyncLiveRaceRepository:
             permalink_id=permalink_id,
             race_room_profile_id=race_room_profile_id,
             racetime_goal=racetime_goal,
-            status='scheduled',
+            status="scheduled",
         )
-        logger.info("Created live race %s for tournament %s", live_race.id, tournament_id)
+        logger.info(
+            "Created live race %s for tournament %s", live_race.id, tournament_id
+        )
         return live_race
 
     async def get_by_id(self, live_race_id: int) -> Optional[AsyncTournamentLiveRace]:
@@ -81,14 +83,20 @@ class AsyncLiveRaceRepository:
         Returns:
             Live race with tournament, pool, permalink if found, None otherwise
         """
-        return await AsyncTournamentLiveRace.filter(id=live_race_id).prefetch_related(
-            'tournament',
-            'pool',
-            'permalink',
-            'race_room_profile',
-        ).first()
+        return (
+            await AsyncTournamentLiveRace.filter(id=live_race_id)
+            .prefetch_related(
+                "tournament",
+                "pool",
+                "permalink",
+                "race_room_profile",
+            )
+            .first()
+        )
 
-    async def get_by_episode_id(self, episode_id: int) -> Optional[AsyncTournamentLiveRace]:
+    async def get_by_episode_id(
+        self, episode_id: int
+    ) -> Optional[AsyncTournamentLiveRace]:
         """
         Get live race by SpeedGaming episode ID.
 
@@ -115,9 +123,7 @@ class AsyncLiveRaceRepository:
         return await AsyncTournamentLiveRace.filter(racetime_slug=racetime_slug).first()
 
     async def update_live_race(
-        self,
-        live_race_id: int,
-        **updates
+        self, live_race_id: int, **updates
     ) -> AsyncTournamentLiveRace:
         """
         Update live race fields.
@@ -171,7 +177,7 @@ class AsyncLiveRaceRepository:
         Returns:
             List of upcoming live races
         """
-        query = AsyncTournamentLiveRace.filter(status='scheduled')
+        query = AsyncTournamentLiveRace.filter(status="scheduled")
 
         if tournament_id:
             query = query.filter(tournament_id=tournament_id)
@@ -184,10 +190,10 @@ class AsyncLiveRaceRepository:
             query = query.filter(scheduled_at__gte=now)
 
         return await query.prefetch_related(
-            'tournament',
-            'pool',
-            'permalink',
-        ).order_by('scheduled_at')
+            "tournament",
+            "pool",
+            "permalink",
+        ).order_by("scheduled_at")
 
     async def list_races_for_tournament(
         self,
@@ -210,9 +216,9 @@ class AsyncLiveRaceRepository:
             query = query.filter(status=status)
 
         return await query.prefetch_related(
-            'pool',
-            'permalink',
-        ).order_by('-created_at')
+            "pool",
+            "permalink",
+        ).order_by("-created_at")
 
     async def get_eligible_participants(
         self,
@@ -234,7 +240,7 @@ class AsyncLiveRaceRepository:
             return []
 
         # Get all organization members
-        await live_race.fetch_related('tournament__organization__members__user')
+        await live_race.fetch_related("tournament__organization__members__user")
         members = live_race.tournament.organization.members
 
         eligible_users = []
@@ -249,7 +255,7 @@ class AsyncLiveRaceRepository:
                 tournament_id=live_race.tournament_id,
                 permalink__pool_id=live_race.pool_id,
                 user_id=user.id,
-                status__in=['finished', 'in_progress'],
+                status__in=["finished", "in_progress"],
             ).count()
 
             if pool_race_count >= live_race.tournament.runs_per_pool:
@@ -260,7 +266,7 @@ class AsyncLiveRaceRepository:
             active_race_count = await AsyncTournamentRace.filter(
                 tournament_id=live_race.tournament_id,
                 user_id=user.id,
-                status__in=['pending', 'in_progress'],
+                status__in=["pending", "in_progress"],
             ).count()
 
             if active_race_count > 0 and is_eligible:
@@ -311,12 +317,14 @@ class AsyncLiveRaceRepository:
                 permalink_id=live_race.permalink_id,
                 user_id=user_id,
                 live_race_id=live_race_id,
-                status='pending',
+                status="pending",
             )
             races.append(race)
             logger.info(
                 "Created race %s for user %s in live race %s",
-                race.id, user_id, live_race_id
+                race.id,
+                user_id,
+                live_race_id,
             )
 
         return races

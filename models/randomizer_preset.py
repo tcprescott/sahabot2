@@ -32,17 +32,19 @@ class RandomizerPreset(Model):
 
     id = fields.IntField(pk=True)
     namespace = fields.ForeignKeyField(
-        'models.PresetNamespace',
-        related_name='presets',
+        "models.PresetNamespace",
+        related_name="presets",
         null=True,
-        description="Namespace this preset belongs to (null for global presets)"
+        description="Namespace this preset belongs to (null for global presets)",
     )
     user = fields.ForeignKeyField(
-        'models.User',
-        related_name='created_presets',
-        description="User who created the preset"
+        "models.User",
+        related_name="created_presets",
+        description="User who created the preset",
     )
-    randomizer = fields.CharField(50, description="Randomizer type (alttpr, sm, smz3, etc.)")
+    randomizer = fields.CharField(
+        50, description="Randomizer type (alttpr, sm, smz3, etc.)"
+    )
     name = fields.CharField(100, description="User-friendly preset name")
     description = fields.TextField(null=True, description="Optional preset description")
     settings = fields.JSONField(description="YAML preset content stored as JSON")
@@ -59,7 +61,10 @@ class RandomizerPreset(Model):
             ("namespace_id", "randomizer"),
             ("randomizer", "user_id"),
             ("is_public",),
-            ("randomizer", "name"),  # For global preset lookups (where namespace_id IS NULL)
+            (
+                "randomizer",
+                "name",
+            ),  # For global preset lookups (where namespace_id IS NULL)
         )
 
     def __str__(self):

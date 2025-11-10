@@ -3,5 +3,5 @@
 from application.services.security.api_token_service import ApiTokenService
 
 __all__ = [
-    'ApiTokenService',
+    "ApiTokenService",
 ]

@@ -21,8 +21,11 @@ class RacerVerification(Model):
     Defines requirements for users to receive a verified racer role in Discord.
     Users must have a linked RaceTime.gg account and meet minimum race requirements.
     """
+
     id = fields.IntField(pk=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='racer_verifications')
+    organization = fields.ForeignKeyField(
+        "models.Organization", related_name="racer_verifications"
+    )
 
     # Discord configuration
     guild_id = fields.BigIntField(index=True)  # Discord guild/server ID
@@ -30,9 +33,13 @@ class RacerVerification(Model):
     role_name = fields.CharField(max_length=255)  # Role name (for display)
 
     # Race requirements
-    categories = fields.JSONField(default=list)  # RaceTime categories (e.g., ['alttpr', 'alttprbiweekly'])
+    categories = fields.JSONField(
+        default=list
+    )  # RaceTime categories (e.g., ['alttpr', 'alttprbiweekly'])
     minimum_races = fields.IntField(default=5)  # Minimum completed races required
-    count_forfeits = fields.BooleanField(default=False)  # Whether to count forfeited races
+    count_forfeits = fields.BooleanField(
+        default=False
+    )  # Whether to count forfeited races
     count_dq = fields.BooleanField(default=False)  # Whether to count disqualified races
 
     # Status
@@ -56,15 +63,22 @@ class UserRacerVerification(Model):
 
     Tracks whether a user has been verified and granted the role.
     """
+
     id = fields.IntField(pk=True)
-    verification = fields.ForeignKeyField('models.RacerVerification', related_name='user_verifications')
-    user = fields.ForeignKeyField('models.User', related_name='racer_verifications')
+    verification = fields.ForeignKeyField(
+        "models.RacerVerification", related_name="user_verifications"
+    )
+    user = fields.ForeignKeyField("models.User", related_name="racer_verifications")
 
     # Verification details
     is_verified = fields.BooleanField(default=False)
     verified_at = fields.DatetimeField(null=True)
-    race_count = fields.IntField(default=0)  # Number of qualifying races at verification time
-    role_granted = fields.BooleanField(default=False)  # Whether Discord role was successfully granted
+    race_count = fields.IntField(
+        default=0
+    )  # Number of qualifying races at verification time
+    role_granted = fields.BooleanField(
+        default=False
+    )  # Whether Discord role was successfully granted
     role_granted_at = fields.DatetimeField(null=True)
 
     # Last check

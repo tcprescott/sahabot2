@@ -5,8 +5,8 @@ from components.dialogs.common.tournament_dialogs import TournamentDialog, Confi
 from components.dialogs.common.view_yaml_dialog import ViewYamlDialog
 
 __all__ = [
-    'BaseDialog',
-    'TournamentDialog',
-    'ConfirmDialog',
-    'ViewYamlDialog',
+    "BaseDialog",
+    "TournamentDialog",
+    "ConfirmDialog",
+    "ViewYamlDialog",
 ]

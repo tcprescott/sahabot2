@@ -92,7 +92,11 @@ class TestTaskSchedulerService:
         # Mock the org service check
         from unittest.mock import AsyncMock, patch
 
-        with patch.object(service.org_service, 'user_can_manage_tournaments', new=AsyncMock(return_value=True)):
+        with patch.object(
+            service.org_service,
+            "user_can_manage_tournaments",
+            new=AsyncMock(return_value=True),
+        ):
             task = await service.create_task(
                 user=admin_user,
                 organization_id=sample_organization.id,
@@ -115,7 +119,11 @@ class TestTaskSchedulerService:
         # Mock the org service check to return False
         from unittest.mock import AsyncMock, patch
 
-        with patch.object(service.org_service, 'user_can_manage_tournaments', new=AsyncMock(return_value=False)):
+        with patch.object(
+            service.org_service,
+            "user_can_manage_tournaments",
+            new=AsyncMock(return_value=False),
+        ):
             task = await service.create_task(
                 user=sample_user,
                 organization_id=1,
@@ -134,7 +142,11 @@ class TestTaskSchedulerService:
 
         from unittest.mock import AsyncMock, patch
 
-        with patch.object(service.org_service, 'user_can_manage_tournaments', new=AsyncMock(return_value=True)):
+        with patch.object(
+            service.org_service,
+            "user_can_manage_tournaments",
+            new=AsyncMock(return_value=True),
+        ):
             task = await service.create_task(
                 user=sample_user,
                 organization_id=1,
@@ -153,7 +165,11 @@ class TestTaskSchedulerService:
 
         from unittest.mock import AsyncMock, patch
 
-        with patch.object(service.org_service, 'user_can_manage_tournaments', new=AsyncMock(return_value=True)):
+        with patch.object(
+            service.org_service,
+            "user_can_manage_tournaments",
+            new=AsyncMock(return_value=True),
+        ):
             task = await service.create_task(
                 user=sample_user,
                 organization_id=1,

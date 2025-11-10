@@ -13,7 +13,9 @@ from typing import Optional
 from models import User
 from models.notification_log import NotificationLog, NotificationDeliveryStatus
 from models.notification_subscription import NotificationMethod, NotificationEventType
-from application.services.notifications.handlers.discord_handler import DiscordNotificationHandler
+from application.services.notifications.handlers.discord_handler import (
+    DiscordNotificationHandler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +50,9 @@ class NotificationProcessor:
 
         self._running = True
         self._task = asyncio.create_task(self._process_loop())
-        logger.info("Notification processor started (poll interval: %ds)", self.poll_interval)
+        logger.info(
+            "Notification processor started (poll interval: %ds)", self.poll_interval
+        )
 
     async def stop(self):
         """Stop the background processor."""
@@ -81,12 +85,17 @@ class NotificationProcessor:
     async def _process_pending_notifications(self):
         """Process all pending notifications."""
         # Get pending/retrying notifications
-        pending = await NotificationLog.filter(
-            delivery_status__in=[
-                NotificationDeliveryStatus.PENDING,
-                NotificationDeliveryStatus.RETRYING
-            ]
-        ).prefetch_related('user').order_by('created_at').limit(100)
+        pending = (
+            await NotificationLog.filter(
+                delivery_status__in=[
+                    NotificationDeliveryStatus.PENDING,
+                    NotificationDeliveryStatus.RETRYING,
+                ]
+            )
+            .prefetch_related("user")
+            .order_by("created_at")
+            .limit(100)
+        )
 
         if not pending:
             return
@@ -99,10 +108,12 @@ class NotificationProcessor:
                 logger.warning(
                     "Notification %d exceeded max retries (%d), marking as failed",
                     notification.id,
-                    self.max_retries
+                    self.max_retries,
                 )
                 notification.delivery_status = NotificationDeliveryStatus.FAILED
-                notification.error_message = f"Exceeded max retries ({self.max_retries})"
+                notification.error_message = (
+                    f"Exceeded max retries ({self.max_retries})"
+                )
                 notification.sent_at = datetime.now(timezone.utc)
                 await notification.save()
                 continue
@@ -112,9 +123,7 @@ class NotificationProcessor:
                 await self._dispatch_notification(notification)
             except Exception as e:
                 logger.exception(
-                    "Error dispatching notification %d: %s",
-                    notification.id,
-                    str(e)
+                    "Error dispatching notification %d: %s", notification.id, str(e)
                 )
                 notification.delivery_status = NotificationDeliveryStatus.FAILED
                 notification.error_message = f"Dispatch error: {str(e)}"
@@ -157,18 +166,17 @@ class NotificationProcessor:
             await notification.save()
         else:
             logger.error(
-                "Unknown notification method: %s",
-                notification.notification_method
+                "Unknown notification method: %s", notification.notification_method
             )
             notification.delivery_status = NotificationDeliveryStatus.FAILED
-            notification.error_message = f"Unknown notification method: {notification.notification_method}"
+            notification.error_message = (
+                f"Unknown notification method: {notification.notification_method}"
+            )
             notification.sent_at = datetime.now(timezone.utc)
             await notification.save()
 
     async def _handle_discord_notification(
-        self,
-        notification: NotificationLog,
-        user: User
+        self, notification: NotificationLog, user: User
     ):
         """
         Handle a Discord DM notification.
@@ -189,17 +197,17 @@ class NotificationProcessor:
         notification.delivery_status = status
         notification.error_message = error
         notification.sent_at = datetime.now(timezone.utc)
-        
+
         if status == NotificationDeliveryStatus.RETRYING:
             notification.retry_count += 1
-        
+
         await notification.save()
 
         logger.info(
             "Dispatched Discord notification %d to user %s: %s",
             notification.id,
             user.discord_username,
-            status.name
+            status.name,
         )
 
 

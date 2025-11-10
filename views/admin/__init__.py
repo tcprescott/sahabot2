@@ -17,15 +17,15 @@ from views.admin.audit_logs import AdminAuditLogsView
 from views.admin.admin_logs import AdminLogsView
 
 __all__ = [
-    'AdminUsersView',
-    'AdminOrganizationsView',
-    'AdminSettingsView',
-    'AdminRacetimeBotsView',
-    'PresetsView',
-    'PresetNamespacesView',
-    'OrgRequestsView',
-    'ScheduledTasksView',
-    'RacetimeAccountsView',
-    'AdminAuditLogsView',
-    'AdminLogsView',
+    "AdminUsersView",
+    "AdminOrganizationsView",
+    "AdminSettingsView",
+    "AdminRacetimeBotsView",
+    "PresetsView",
+    "PresetNamespacesView",
+    "OrgRequestsView",
+    "ScheduledTasksView",
+    "RacetimeAccountsView",
+    "AdminAuditLogsView",
+    "AdminLogsView",
 ]

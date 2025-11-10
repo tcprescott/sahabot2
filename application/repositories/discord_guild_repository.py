@@ -19,25 +19,31 @@ class DiscordGuildRepository:
         Note: This returns the first match. Since guilds can be linked to multiple
         organizations, use get_guild(organization_id, guild_id) for organization-specific lookup.
         """
-        return await DiscordGuild.get_or_none(guild_id=guild_id).prefetch_related('organization', 'linked_by')
+        return await DiscordGuild.get_or_none(guild_id=guild_id).prefetch_related(
+            "organization", "linked_by"
+        )
 
-    async def get_guild(self, organization_id: int, guild_id: int) -> Optional[DiscordGuild]:
+    async def get_guild(
+        self, organization_id: int, guild_id: int
+    ) -> Optional[DiscordGuild]:
         """Get a Discord guild for a specific organization."""
         return await DiscordGuild.get_or_none(
-            organization_id=organization_id,
-            guild_id=guild_id
-        ).prefetch_related('organization', 'linked_by')
+            organization_id=organization_id, guild_id=guild_id
+        ).prefetch_related("organization", "linked_by")
 
     async def get_by_id(self, guild_pk: int) -> Optional[DiscordGuild]:
         """Get a Discord guild by primary key."""
-        return await DiscordGuild.get_or_none(id=guild_pk).prefetch_related('organization', 'linked_by')
+        return await DiscordGuild.get_or_none(id=guild_pk).prefetch_related(
+            "organization", "linked_by"
+        )
 
     async def list_by_organization(self, organization_id: int) -> List[DiscordGuild]:
         """List all Discord guilds for an organization."""
-        return await DiscordGuild.filter(
-            organization_id=organization_id,
-            is_active=True
-        ).prefetch_related('linked_by').all()
+        return (
+            await DiscordGuild.filter(organization_id=organization_id, is_active=True)
+            .prefetch_related("linked_by")
+            .all()
+        )
 
     async def create(
         self,
@@ -58,14 +64,12 @@ class DiscordGuildRepository:
             verified_admin=verified_admin,
             is_active=True,
         )
-        logger.info("Created Discord guild link %s for org %s", guild_id, organization_id)
+        logger.info(
+            "Created Discord guild link %s for org %s", guild_id, organization_id
+        )
         return guild
 
-    async def update(
-        self,
-        guild_pk: int,
-        **fields
-    ) -> Optional[DiscordGuild]:
+    async def update(self, guild_pk: int, **fields) -> Optional[DiscordGuild]:
         """Update a Discord guild."""
         guild = await self.get_by_id(guild_pk)
         if not guild:
@@ -105,9 +109,7 @@ class DiscordGuildRepository:
         return guild
 
     async def get_guilds_by_organization(
-        self,
-        organization_id: int,
-        active_only: bool = True
+        self, organization_id: int, active_only: bool = True
     ) -> List[DiscordGuild]:
         """
         Get all Discord guilds for an organization.
@@ -122,12 +124,10 @@ class DiscordGuildRepository:
         query = DiscordGuild.filter(organization_id=organization_id)
         if active_only:
             query = query.filter(is_active=True)
-        return await query.prefetch_related('linked_by').all()
+        return await query.prefetch_related("linked_by").all()
 
     async def get_guilds_by_ids(
-        self,
-        guild_ids: List[int],
-        organization_id: int
+        self, guild_ids: List[int], organization_id: int
     ) -> List[DiscordGuild]:
         """
         Get Discord guilds by their primary key IDs for a specific organization.
@@ -139,7 +139,8 @@ class DiscordGuildRepository:
         Returns:
             List of DiscordGuild models
         """
-        return await DiscordGuild.filter(
-            id__in=guild_ids,
-            organization_id=organization_id
-        ).prefetch_related('linked_by').all()
+        return (
+            await DiscordGuild.filter(id__in=guild_ids, organization_id=organization_id)
+            .prefetch_related("linked_by")
+            .all()
+        )

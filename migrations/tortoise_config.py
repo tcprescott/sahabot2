@@ -37,9 +37,7 @@ def get_model_modules():
 
 
 TORTOISE_ORM = {
-    "connections": {
-        "default": settings.database_url
-    },
+    "connections": {"default": settings.database_url},
     "apps": {
         "models": {
             "models": get_model_modules(),
@@ -47,5 +45,5 @@ TORTOISE_ORM = {
         }
     },
     "use_tz": True,
-    "timezone": "UTC"
+    "timezone": "UTC",
 }

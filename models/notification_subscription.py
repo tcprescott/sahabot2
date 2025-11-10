@@ -21,24 +21,24 @@ class NotificationMethod(IntEnum):
 class NotificationEventType(IntEnum):
     """
     Event types that users can subscribe to for notifications.
-    
+
     These map to a subset of the events already emitted in the system.
     """
 
     # User-specific events
     USER_PERMISSION_CHANGED = 100
-    
+
     # Organization events (requires org membership)
     ORGANIZATION_MEMBER_ADDED = 200
     ORGANIZATION_MEMBER_REMOVED = 201
     ORGANIZATION_PERMISSION_CHANGED = 202
-    
+
     # Tournament events (requires tournament participation or admin)
     TOURNAMENT_CREATED = 300
     TOURNAMENT_STARTED = 301
     TOURNAMENT_ENDED = 302
     TOURNAMENT_UPDATED = 303
-    
+
     # Match/Race events (requires participation)
     MATCH_SCHEDULED = 400
     MATCH_RESCHEDULED = 401
@@ -48,18 +48,18 @@ class NotificationEventType(IntEnum):
     RACE_SUBMITTED = 410
     RACE_APPROVED = 411
     RACE_REJECTED = 412
-    
+
     # Live Race events (async tournaments)
     LIVE_RACE_SCHEDULED = 415
     LIVE_RACE_ROOM_OPENED = 416
     LIVE_RACE_STARTED = 417
     LIVE_RACE_FINISHED = 418
     LIVE_RACE_CANCELLED = 419
-    
+
     # Crew events (requires being crew member)
     CREW_APPROVED = 420
     CREW_REMOVED = 421
-    
+
     # Invite events (requires being the invitee)
     INVITE_RECEIVED = 500
     INVITE_ACCEPTED = 501
@@ -70,41 +70,43 @@ class NotificationEventType(IntEnum):
 class NotificationSubscription(Model):
     """
     User subscription to event notifications.
-    
+
     Users can subscribe to specific event types and choose how to be notified.
     Some events are personal (e.g., match scheduled for user), others are
     organization-wide (e.g., tournament created in org).
     """
 
     id = fields.IntField(pk=True)
-    
+
     # User who created this subscription
-    user = fields.ForeignKeyField("models.User", related_name="notification_subscriptions")
-    
+    user = fields.ForeignKeyField(
+        "models.User", related_name="notification_subscriptions"
+    )
+
     # Event type to subscribe to
     event_type = fields.IntEnumField(NotificationEventType)
-    
+
     # How to deliver the notification
     notification_method = fields.IntEnumField(NotificationMethod)
-    
+
     # Optional: organization scope (for org-wide events like tournament creation)
     # If None, applies to all organizations the user is a member of
     organization = fields.ForeignKeyField(
-        "models.Organization",
-        related_name="notification_subscriptions",
-        null=True
+        "models.Organization", related_name="notification_subscriptions", null=True
     )
-    
+
     # Whether this subscription is active
     is_active = fields.BooleanField(default=True)
-    
+
     # Timestamps
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
     class Meta:
         table = "notification_subscriptions"
-        unique_together = (("user", "event_type", "notification_method", "organization"),)
+        unique_together = (
+            ("user", "event_type", "notification_method", "organization"),
+        )
         indexes = (
             ("user", "is_active"),
             ("event_type", "is_active"),
@@ -112,8 +114,8 @@ class NotificationSubscription(Model):
         )
 
     def __str__(self) -> str:
-        org_id = getattr(self, 'organization_id', None)
-        user_id = getattr(self, 'user_id', None)
+        org_id = getattr(self, "organization_id", None)
+        user_id = getattr(self, "user_id", None)
         org_suffix = f" (org: {org_id})" if org_id else ""
         return (
             f"Subscription({user_id}: "

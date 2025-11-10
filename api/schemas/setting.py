@@ -25,7 +25,9 @@ class GlobalSettingCreateRequest(BaseModel):
 
     key: str = Field(..., min_length=1, max_length=100, description="Setting key")
     value: str = Field(..., description="Setting value")
-    description: Optional[str] = Field(None, max_length=500, description="Setting description")
+    description: Optional[str] = Field(
+        None, max_length=500, description="Setting description"
+    )
     is_public: bool = Field(False, description="Whether setting is publicly visible")
 
 
@@ -33,7 +35,9 @@ class GlobalSettingUpdateRequest(BaseModel):
     """Schema for updating a global setting."""
 
     value: str = Field(..., description="Updated value")
-    description: Optional[str] = Field(None, max_length=500, description="Updated description")
+    description: Optional[str] = Field(
+        None, max_length=500, description="Updated description"
+    )
     is_public: Optional[bool] = Field(None, description="Updated public visibility")
 
 
@@ -42,11 +46,15 @@ class OrganizationSettingCreateRequest(BaseModel):
 
     key: str = Field(..., min_length=1, max_length=100, description="Setting key")
     value: str = Field(..., description="Setting value")
-    description: Optional[str] = Field(None, max_length=500, description="Setting description")
+    description: Optional[str] = Field(
+        None, max_length=500, description="Setting description"
+    )
 
 
 class OrganizationSettingUpdateRequest(BaseModel):
     """Schema for updating an organization setting."""
 
     value: str = Field(..., description="Updated value")
-    description: Optional[str] = Field(None, max_length=500, description="Updated description")
+    description: Optional[str] = Field(
+        None, max_length=500, description="Updated description"
+    )

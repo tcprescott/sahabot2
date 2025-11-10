@@ -7,9 +7,19 @@ Tests the cleanup logic for orphaned events (finished matches, disabled tourname
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
-from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
-from application.repositories.discord_scheduled_event_repository import DiscordScheduledEventRepository
-from models import Organization, Tournament, Match, DiscordScheduledEvent, SYSTEM_USER_ID
+from application.services.discord.discord_scheduled_event_service import (
+    DiscordScheduledEventService,
+)
+from application.repositories.discord_scheduled_event_repository import (
+    DiscordScheduledEventRepository,
+)
+from models import (
+    Organization,
+    Tournament,
+    Match,
+    DiscordScheduledEvent,
+    SYSTEM_USER_ID,
+)
 
 
 @pytest.fixture
@@ -32,7 +42,9 @@ async def sample_tournament(db, sample_organization, sample_discord_guild):
 class TestOrphanedEventCleanup:
     """Test cases for orphaned event cleanup functionality."""
 
-    async def test_list_orphaned_events_finished_matches(self, db, sample_organization, sample_tournament):
+    async def test_list_orphaned_events_finished_matches(
+        self, db, sample_organization, sample_tournament
+    ):
         """Test finding events for finished matches."""
         repo = DiscordScheduledEventRepository()
 
@@ -64,7 +76,9 @@ class TestOrphanedEventCleanup:
         assert len(orphaned) == 1
         assert orphaned[0].match_id == finished_match.id
 
-    async def test_list_events_for_disabled_tournaments(self, db, sample_organization, sample_tournament):
+    async def test_list_events_for_disabled_tournaments(
+        self, db, sample_organization, sample_tournament
+    ):
         """Test finding events for tournaments with events disabled."""
         repo = DiscordScheduledEventRepository()
 
@@ -80,7 +94,9 @@ class TestOrphanedEventCleanup:
         )
 
         # Initially no disabled events
-        disabled = await repo.list_events_for_disabled_tournaments(sample_organization.id)
+        disabled = await repo.list_events_for_disabled_tournaments(
+            sample_organization.id
+        )
         assert len(disabled) == 0
 
         # Disable scheduled events
@@ -88,11 +104,15 @@ class TestOrphanedEventCleanup:
         await sample_tournament.save()
 
         # Now should find the event
-        disabled = await repo.list_events_for_disabled_tournaments(sample_organization.id)
+        disabled = await repo.list_events_for_disabled_tournaments(
+            sample_organization.id
+        )
         assert len(disabled) == 1
         assert disabled[0].id == event.id
 
-    async def test_list_events_for_create_disabled_tournaments(self, db, sample_organization, sample_tournament):
+    async def test_list_events_for_create_disabled_tournaments(
+        self, db, sample_organization, sample_tournament
+    ):
         """Test finding events for tournaments with create_scheduled_events=False."""
         repo = DiscordScheduledEventRepository()
 
@@ -112,11 +132,15 @@ class TestOrphanedEventCleanup:
         await sample_tournament.save()
 
         # Should find the event
-        disabled = await repo.list_events_for_disabled_tournaments(sample_organization.id)
+        disabled = await repo.list_events_for_disabled_tournaments(
+            sample_organization.id
+        )
         assert len(disabled) == 1
         assert disabled[0].id == event.id
 
-    async def test_cleanup_all_orphaned_events(self, db, sample_organization, sample_tournament):
+    async def test_cleanup_all_orphaned_events(
+        self, db, sample_organization, sample_tournament
+    ):
         """Test comprehensive cleanup finds all types of orphaned events."""
         repo = DiscordScheduledEventRepository()
 
@@ -156,9 +180,16 @@ class TestOrphanedEventCleanup:
         assert finished_match.id in event_ids
         assert disabled_match.id in event_ids
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
     async def test_cleanup_orphaned_events_service(
-        self, mock_get_bot, db, sample_organization, sample_tournament, sample_discord_guild
+        self,
+        mock_get_bot,
+        db,
+        sample_organization,
+        sample_tournament,
+        sample_discord_guild,
     ):
         """Test service method for cleaning up orphaned events."""
         # Create finished match with event
@@ -189,8 +220,8 @@ class TestOrphanedEventCleanup:
             organization_id=sample_organization.id,
         )
 
-        assert stats['deleted'] >= 1
-        assert stats['errors'] == 0
+        assert stats["deleted"] >= 1
+        assert stats["errors"] == 0
 
         # Verify database record deleted
         events = await DiscordScheduledEvent.filter(match_id=finished_match.id).all()
@@ -224,7 +255,9 @@ class TestOrphanedEventCleanup:
         orphaned_org1 = await repo.list_orphaned_events(org1.id)
         assert len(orphaned_org1) == 1
 
-    async def test_no_duplicate_events_in_cleanup(self, db, sample_organization, sample_tournament):
+    async def test_no_duplicate_events_in_cleanup(
+        self, db, sample_organization, sample_tournament
+    ):
         """Test that events are not duplicated when matching multiple criteria."""
         repo = DiscordScheduledEventRepository()
 

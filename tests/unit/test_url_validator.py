@@ -3,7 +3,7 @@
 from application.utils.url_validator import (
     validate_url,
     sanitize_url,
-    is_safe_redirect_url
+    is_safe_redirect_url,
 )
 
 
@@ -110,7 +110,9 @@ class TestValidateUrl:
         assert is_valid is False
 
         # FTP should be accepted when explicitly allowed
-        is_valid, error = validate_url("ftp://example.com/file", allowed_schemes=['ftp'])
+        is_valid, error = validate_url(
+            "ftp://example.com/file", allowed_schemes=["ftp"]
+        )
         assert is_valid is True
         assert error is None
 
@@ -155,28 +157,25 @@ class TestIsSafeRedirectUrl:
 
     def test_same_domain_safe(self):
         """Test that same domain URLs are safe."""
-        assert is_safe_redirect_url(
-            "https://example.com/page",
-            "https://example.com"
-        ) is True
+        assert (
+            is_safe_redirect_url("https://example.com/page", "https://example.com")
+            is True
+        )
 
     def test_different_domain_unsafe(self):
         """Test that different domain URLs are unsafe."""
-        assert is_safe_redirect_url(
-            "https://evil.com/page",
-            "https://example.com"
-        ) is False
+        assert (
+            is_safe_redirect_url("https://evil.com/page", "https://example.com")
+            is False
+        )
 
     def test_protocol_relative_unsafe(self):
         """Test that protocol-relative URLs are unsafe."""
-        assert is_safe_redirect_url(
-            "//evil.com/page",
-            "https://example.com"
-        ) is False
+        assert is_safe_redirect_url("//evil.com/page", "https://example.com") is False
 
     def test_subdomain_unsafe(self):
         """Test that different subdomains are unsafe."""
-        assert is_safe_redirect_url(
-            "https://sub.example.com/page",
-            "https://example.com"
-        ) is False
+        assert (
+            is_safe_redirect_url("https://sub.example.com/page", "https://example.com")
+            is False
+        )

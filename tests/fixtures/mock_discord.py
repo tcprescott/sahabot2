@@ -12,18 +12,18 @@ def mock_discord_user_data(
     username: str = "testuser",
     discriminator: str = "0001",
     avatar: str = "test_avatar_hash",
-    email: str = "testuser@example.com"
+    email: str = "testuser@example.com",
 ) -> Dict[str, Any]:
     """
     Create mock Discord user data.
-    
+
     Args:
         user_id: Discord user ID
         username: Discord username
         discriminator: Discord discriminator
         avatar: Avatar hash
         email: Email address
-        
+
     Returns:
         Mock Discord user data dict
     """
@@ -42,16 +42,15 @@ def mock_discord_user_data(
 
 
 def mock_discord_guild_data(
-    guild_id: str = "987654321098765432",
-    name: str = "Test Guild"
+    guild_id: str = "987654321098765432", name: str = "Test Guild"
 ) -> Dict[str, Any]:
     """
     Create mock Discord guild data.
-    
+
     Args:
         guild_id: Discord guild ID
         name: Guild name
-        
+
     Returns:
         Mock Discord guild data dict
     """
@@ -69,18 +68,18 @@ def mock_oauth_token_response(
     token_type: str = "Bearer",
     expires_in: int = 604800,
     refresh_token: str = "mock_refresh_token",
-    scope: str = "identify email"
+    scope: str = "identify email",
 ) -> Dict[str, Any]:
     """
     Create mock OAuth2 token response.
-    
+
     Args:
         access_token: Access token
         token_type: Token type
         expires_in: Token expiration in seconds
         refresh_token: Refresh token
         scope: OAuth scopes
-        
+
     Returns:
         Mock OAuth token response dict
     """

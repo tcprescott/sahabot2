@@ -26,13 +26,12 @@ class RandomizerPresetRepository:
         Returns:
             RandomizerPreset if found, None otherwise
         """
-        return await RandomizerPreset.get_or_none(id=preset_id).prefetch_related('user', 'namespace')
+        return await RandomizerPreset.get_or_none(id=preset_id).prefetch_related(
+            "user", "namespace"
+        )
 
     async def get_by_name(
-        self,
-        randomizer: str,
-        name: str,
-        namespace_id: Optional[int] = None
+        self, randomizer: str, name: str, namespace_id: Optional[int] = None
     ) -> Optional[RandomizerPreset]:
         """
         Get a preset by randomizer and name.
@@ -46,15 +45,11 @@ class RandomizerPresetRepository:
             RandomizerPreset if found, None otherwise
         """
         return await RandomizerPreset.get_or_none(
-            namespace_id=namespace_id,
-            randomizer=randomizer,
-            name=name
-        ).prefetch_related('user', 'namespace')
+            namespace_id=namespace_id, randomizer=randomizer, name=name
+        ).prefetch_related("user", "namespace")
 
     async def get_global_preset(
-        self,
-        randomizer: str,
-        name: str
+        self, randomizer: str, name: str
     ) -> Optional[RandomizerPreset]:
         """
         Get a global preset by randomizer and name.
@@ -67,14 +62,11 @@ class RandomizerPresetRepository:
             RandomizerPreset if found, None otherwise
         """
         return await RandomizerPreset.get_or_none(
-            namespace_id=None,
-            randomizer=randomizer,
-            name=name
-        ).prefetch_related('user', 'namespace')
+            namespace_id=None, randomizer=randomizer, name=name
+        ).prefetch_related("user", "namespace")
 
     async def list_global_presets(
-        self,
-        randomizer: Optional[str] = None
+        self, randomizer: Optional[str] = None
     ) -> list[RandomizerPreset]:
         """
         List global (non-namespaced) presets.
@@ -90,12 +82,10 @@ class RandomizerPresetRepository:
         if randomizer:
             query = query.filter(randomizer=randomizer)
 
-        return await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+        return await query.prefetch_related("user", "namespace").order_by("-updated_at")
 
     async def list_in_namespace(
-        self,
-        namespace_id: int,
-        randomizer: Optional[str] = None
+        self, namespace_id: int, randomizer: Optional[str] = None
     ) -> list[RandomizerPreset]:
         """
         List presets in a specific namespace.
@@ -112,13 +102,13 @@ class RandomizerPresetRepository:
         if randomizer:
             query = query.filter(randomizer=randomizer)
 
-        return await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+        return await query.prefetch_related("user", "namespace").order_by("-updated_at")
 
     async def list_presets(
         self,
         randomizer: Optional[str] = None,
         user_id: Optional[int] = None,
-        include_public: bool = True
+        include_public: bool = True,
     ) -> list[RandomizerPreset]:
         """
         List presets globally (legacy method for backward compatibility).
@@ -145,14 +135,14 @@ class RandomizerPresetRepository:
         elif include_public:
             query = query.filter(is_public=True)
 
-        return await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+        return await query.prefetch_related("user", "namespace").order_by("-updated_at")
 
     async def list_accessible_presets(
         self,
         namespaces: list[PresetNamespace],
         randomizer: Optional[str] = None,
         include_global: bool = True,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
     ) -> list[RandomizerPreset]:
         """
         List presets accessible through given namespaces.
@@ -181,30 +171,33 @@ class RandomizerPresetRepository:
             # Separate user's own namespaces from others
             user_namespace_ids = []
             other_namespace_ids = []
-            
+
             for ns in namespaces:
                 if user_id and ns.user_id == user_id:
                     user_namespace_ids.append(ns.id)
                 else:
                     other_namespace_ids.append(ns.id)
-            
+
             # Get all presets from user's own namespaces
             if user_namespace_ids:
                 query = RandomizerPreset.filter(namespace_id__in=user_namespace_ids)
                 if randomizer:
                     query = query.filter(randomizer=randomizer)
-                user_presets = await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+                user_presets = await query.prefetch_related(
+                    "user", "namespace"
+                ).order_by("-updated_at")
                 presets.extend(user_presets)
-            
+
             # Get only public presets from other namespaces
             if other_namespace_ids:
                 query = RandomizerPreset.filter(
-                    namespace_id__in=other_namespace_ids,
-                    is_public=True
+                    namespace_id__in=other_namespace_ids, is_public=True
                 )
                 if randomizer:
                     query = query.filter(randomizer=randomizer)
-                public_presets = await query.prefetch_related('user', 'namespace').order_by('-updated_at')
+                public_presets = await query.prefetch_related(
+                    "user", "namespace"
+                ).order_by("-updated_at")
                 presets.extend(public_presets)
 
         return presets
@@ -217,7 +210,7 @@ class RandomizerPresetRepository:
         settings: dict,
         namespace_id: Optional[int] = None,
         description: Optional[str] = None,
-        is_public: bool = False
+        is_public: bool = False,
     ) -> RandomizerPreset:
         """
         Create a new preset.
@@ -241,17 +234,13 @@ class RandomizerPresetRepository:
             name=name,
             settings=settings,
             description=description,
-            is_public=is_public
+            is_public=is_public,
         )
-        await preset.fetch_related('user', 'namespace')
-        
+        await preset.fetch_related("user", "namespace")
+
         scope = "global" if namespace_id is None else f"namespace {namespace_id}"
         logger.info(
-            "Created preset %s/%s in %s by user %s",
-            randomizer,
-            name,
-            scope,
-            user_id
+            "Created preset %s/%s in %s by user %s", randomizer, name, scope, user_id
         )
         return preset
 
@@ -271,7 +260,7 @@ class RandomizerPresetRepository:
             return None
 
         # Only allow updating specific fields
-        allowed_fields = {'name', 'description', 'settings', 'is_public'}
+        allowed_fields = {"name", "description", "settings", "is_public"}
         update_fields = {k: v for k, v in fields.items() if k in allowed_fields}
 
         if update_fields:
@@ -281,7 +270,7 @@ class RandomizerPresetRepository:
                 "Updated preset %s (id=%s) fields: %s",
                 preset.full_name,
                 preset_id,
-                list(update_fields.keys())
+                list(update_fields.keys()),
             )
 
         return preset

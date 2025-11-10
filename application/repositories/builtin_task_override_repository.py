@@ -3,6 +3,7 @@ Builtin Task Override repository for SahaBot2.
 
 This module provides data access layer for builtin task overrides.
 """
+
 from __future__ import annotations
 from typing import Optional, List, Dict
 from models.builtin_task_override import BuiltinTaskOverride
@@ -38,12 +39,11 @@ class BuiltinTaskOverrideRepository:
         Returns:
             Created BuiltinTaskOverride instance
         """
-        return await BuiltinTaskOverride.create(
-            task_id=task_id,
-            is_active=is_active
-        )
+        return await BuiltinTaskOverride.create(task_id=task_id, is_active=is_active)
 
-    async def update(self, task_id: str, is_active: bool) -> Optional[BuiltinTaskOverride]:
+    async def update(
+        self, task_id: str, is_active: bool
+    ) -> Optional[BuiltinTaskOverride]:
         """
         Update a builtin task override.
 

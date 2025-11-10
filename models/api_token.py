@@ -15,7 +15,9 @@ class ApiToken(Model):
     """
 
     id = fields.IntField(pk=True)
-    user = fields.ForeignKeyField("models.User", related_name="api_tokens", on_delete=fields.CASCADE)
+    user = fields.ForeignKeyField(
+        "models.User", related_name="api_tokens", on_delete=fields.CASCADE
+    )
     name = fields.CharField(max_length=100, null=True)
     token_hash = fields.CharField(max_length=64, unique=True, index=True)
     is_active = fields.BooleanField(default=True)

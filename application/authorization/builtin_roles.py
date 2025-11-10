@@ -18,7 +18,7 @@ from typing import List, Optional
 class BuiltinRoleDefinition:
     """
     Definition of a built-in role.
-    
+
     Attributes:
         name: Role name (e.g., "Admin", "Tournament Manager")
         description: Human-readable description
@@ -26,6 +26,7 @@ class BuiltinRoleDefinition:
         actions: List of actions this role can perform (e.g., "tournament:*")
         scope: "organization" or "system" - which type of org this role is for
     """
+
     name: str
     description: str
     is_locked: bool
@@ -43,31 +44,31 @@ REGULAR_ORG_BUILTIN_ROLES = [
         description="Full administrative access to organization",
         is_locked=True,
         actions=[
-            "organization:*",      # All organization actions
-            "member:*",            # All member actions
-            "tournament:*",        # All tournament actions
-            "match:*",             # All match actions
-            "async_race:*",        # All async race actions
+            "organization:*",  # All organization actions
+            "member:*",  # All member actions
+            "tournament:*",  # All tournament actions
+            "match:*",  # All match actions
+            "async_race:*",  # All async race actions
             "async_tournament:*",  # All async tournament actions
-            "async_live_race:*",   # All async live race actions
-            "scheduled_task:*",    # All scheduled task actions
-            "race_room_profile:*", # All race room profile actions
+            "async_live_race:*",  # All async live race actions
+            "scheduled_task:*",  # All scheduled task actions
+            "race_room_profile:*",  # All race room profile actions
         ],
-        scope="organization"
+        scope="organization",
     ),
     BuiltinRoleDefinition(
         name="Tournament Manager",
         description="Manage tournaments and matches",
         is_locked=True,
         actions=[
-            "tournament:*",        # All tournament actions
-            "match:*",             # All match actions
+            "tournament:*",  # All tournament actions
+            "match:*",  # All match actions
             "async_tournament:*",  # All async tournament actions
-            "scheduled_task:*",    # All scheduled task actions (for tournament scheduling)
-            "race_room_profile:*", # All race room profile actions (for tournament setup)
-            "organization:read",   # Read org info
+            "scheduled_task:*",  # All scheduled task actions (for tournament scheduling)
+            "race_room_profile:*",  # All race room profile actions (for tournament setup)
+            "organization:read",  # Read org info
         ],
-        scope="organization"
+        scope="organization",
     ),
     BuiltinRoleDefinition(
         name="Async Reviewer",
@@ -75,22 +76,22 @@ REGULAR_ORG_BUILTIN_ROLES = [
         is_locked=True,
         actions=[
             "async_race:review",  # Review submissions
-            "async_race:approve", # Approve submissions
+            "async_race:approve",  # Approve submissions
             "async_race:reject",  # Reject submissions
-            "tournament:read",    # Read tournament info
-            "match:read",         # Read match info
+            "tournament:read",  # Read tournament info
+            "match:read",  # Read match info
         ],
-        scope="organization"
+        scope="organization",
     ),
     BuiltinRoleDefinition(
         name="Member Manager",
         description="Manage organization members and invites",
         is_locked=True,
         actions=[
-            "member:*",          # All member actions
-            "organization:read", # Read org info
+            "member:*",  # All member actions
+            "organization:read",  # Read org info
         ],
-        scope="organization"
+        scope="organization",
     ),
     BuiltinRoleDefinition(
         name="Moderator",
@@ -102,7 +103,7 @@ REGULAR_ORG_BUILTIN_ROLES = [
             "tournament:read",
             "match:read",
         ],
-        scope="organization"
+        scope="organization",
     ),
 ]
 
@@ -120,7 +121,7 @@ SYSTEM_ORG_BUILTIN_ROLES = [
             "system:view_users",
             "system:manage_users",
         ],
-        scope="system"
+        scope="system",
     ),
     BuiltinRoleDefinition(
         name="Organization Manager",
@@ -130,7 +131,7 @@ SYSTEM_ORG_BUILTIN_ROLES = [
             "system:create_organization",
             "system:manage_organizations",
         ],
-        scope="system"
+        scope="system",
     ),
     BuiltinRoleDefinition(
         name="Analytics Viewer",
@@ -140,7 +141,7 @@ SYSTEM_ORG_BUILTIN_ROLES = [
             "system:view_analytics",
             "system:view_audit_logs",
         ],
-        scope="system"
+        scope="system",
     ),
     BuiltinRoleDefinition(
         name="Platform Moderator",
@@ -150,7 +151,7 @@ SYSTEM_ORG_BUILTIN_ROLES = [
             "system:moderate_content",
             "system:view_reports",
         ],
-        scope="system"
+        scope="system",
     ),
 ]
 
@@ -159,15 +160,16 @@ SYSTEM_ORG_BUILTIN_ROLES = [
 # Public API Functions
 # =============================================================================
 
+
 def get_builtin_role_definitions(organization_id: int) -> List[BuiltinRoleDefinition]:
     """
     Get built-in role definitions for an organization.
-    
+
     Args:
         organization_id: Organization ID
             -1 for System organization
             >0 for regular organizations
-    
+
     Returns:
         List of built-in role definitions for this organization type
     """
@@ -177,34 +179,36 @@ def get_builtin_role_definitions(organization_id: int) -> List[BuiltinRoleDefini
         return REGULAR_ORG_BUILTIN_ROLES
 
 
-def get_builtin_role_actions(role_name: str, organization_id: int) -> Optional[List[str]]:
+def get_builtin_role_actions(
+    role_name: str, organization_id: int
+) -> Optional[List[str]]:
     """
     Get static actions for a built-in role.
-    
+
     Args:
         role_name: Name of built-in role (e.g., "Admin", "User Manager")
         organization_id: Organization ID (-1 for system, >0 for regular)
-    
+
     Returns:
         List of actions this role can perform, or None if role not found
     """
     role_defs = get_builtin_role_definitions(organization_id)
-    
+
     for role_def in role_defs:
         if role_def.name == role_name:
             return role_def.actions
-    
+
     return None
 
 
 def is_builtin_role(role_name: str, organization_id: int) -> bool:
     """
     Check if a role name is a built-in role for this organization.
-    
+
     Args:
         role_name: Role name to check
         organization_id: Organization ID
-    
+
     Returns:
         True if this is a built-in role for this org type
     """

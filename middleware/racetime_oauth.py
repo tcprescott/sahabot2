@@ -39,11 +39,11 @@ class RacetimeOAuthService:
             str: Authorization URL
         """
         params = {
-            'client_id': self.client_id,
-            'redirect_uri': self.redirect_uri,
-            'response_type': 'code',
-            'scope': 'read',
-            'state': state
+            "client_id": self.client_id,
+            "redirect_uri": self.redirect_uri,
+            "response_type": "code",
+            "scope": "read",
+            "state": state,
         }
 
         query_string = urlencode(params)
@@ -63,29 +63,32 @@ class RacetimeOAuthService:
             httpx.HTTPError: If token exchange fails
         """
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': self.redirect_uri,
-            'scope': 'read'
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": self.redirect_uri,
+            "scope": "read",
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.racetime_url}/o/token",
                 data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             # Log error details if request fails
             if response.status_code != 200:
                 # Don't log the full error response as it may contain sensitive info
-                logger.error("RaceTime.gg token exchange failed with status %s", response.status_code)
+                logger.error(
+                    "RaceTime.gg token exchange failed with status %s",
+                    response.status_code,
+                )
                 raise httpx.HTTPStatusError(
                     "RaceTime.gg token exchange failed",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             return response.json()
@@ -104,25 +107,28 @@ class RacetimeOAuthService:
             httpx.HTTPError: If token refresh fails
         """
         data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'grant_type': 'refresh_token',
-            'refresh_token': refresh_token,
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
         }
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.racetime_url}/o/token",
                 data=data,
-                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
             )
 
             if response.status_code != 200:
-                logger.error("RaceTime.gg token refresh failed with status %s", response.status_code)
+                logger.error(
+                    "RaceTime.gg token refresh failed with status %s",
+                    response.status_code,
+                )
                 raise httpx.HTTPStatusError(
                     "RaceTime.gg token refresh failed",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             return response.json()
@@ -155,16 +161,19 @@ class RacetimeOAuthService:
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.racetime_url}/o/userinfo",
-                headers={'Authorization': f"Bearer {access_token}"}
+                headers={"Authorization": f"Bearer {access_token}"},
             )
 
             if response.status_code != 200:
                 # Don't log the full error response as it may contain sensitive info
-                logger.error("RaceTime.gg userinfo request failed with status %s", response.status_code)
+                logger.error(
+                    "RaceTime.gg userinfo request failed with status %s",
+                    response.status_code,
+                )
                 raise httpx.HTTPStatusError(
                     "RaceTime.gg userinfo request failed",
                     request=response.request,
-                    response=response
+                    response=response,
                 )
 
             return response.json()

@@ -52,15 +52,17 @@ class MatchRaceHandler(SahaRaceHandler):
 
         # Import here to avoid circular dependency:
         # TournamentService imports Match model which could import handlers
-        from application.services.tournaments.tournament_service import TournamentService
+        from application.services.tournaments.tournament_service import (
+            TournamentService,
+        )
 
         # After parent processes, self.data contains the unwrapped race data
-        race_status = self.data.get('status', {}).get('value') if self.data else None
+        race_status = self.data.get("status", {}).get("value") if self.data else None
 
         # Process race finish (transitions to 'finished')
-        if race_status == 'finished' and not self._race_finished:
+        if race_status == "finished" and not self._race_finished:
             self._race_finished = True
-            race_slug = self.data.get('name', 'unknown')
+            race_slug = self.data.get("name", "unknown")
             logger.info(
                 "Match race %s finished on RaceTime.gg (slug: %s)",
                 self.match_id,
@@ -69,22 +71,24 @@ class MatchRaceHandler(SahaRaceHandler):
 
             try:
                 # Extract results from entrants
-                entrants = self.data.get('entrants', [])
+                entrants = self.data.get("entrants", [])
                 results = []
 
                 for entrant in entrants:
-                    racetime_id = entrant.get('user', {}).get('id')
-                    status = entrant.get('status', {}).get('value')
-                    finish_time = entrant.get('finish_time')
-                    place = entrant.get('place')
+                    racetime_id = entrant.get("user", {}).get("id")
+                    status = entrant.get("status", {}).get("value")
+                    finish_time = entrant.get("finish_time")
+                    place = entrant.get("place")
 
                     if racetime_id:
-                        results.append({
-                            'racetime_id': racetime_id,
-                            'status': status,
-                            'finish_time': finish_time,
-                            'place': place,
-                        })
+                        results.append(
+                            {
+                                "racetime_id": racetime_id,
+                                "status": status,
+                                "finish_time": finish_time,
+                                "place": place,
+                            }
+                        )
 
                 # Call service to record results
                 service = TournamentService()

@@ -13,7 +13,9 @@ from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPla
 from models.racetime_room import RacetimeRoom
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organizations.organization_service import OrganizationService
-from application.services.authorization.authorization_service_v2 import AuthorizationServiceV2
+from application.services.authorization.authorization_service_v2 import (
+    AuthorizationServiceV2,
+)
 from application.events import (
     EventBus,
     CrewAddedEvent,
@@ -53,29 +55,40 @@ class TournamentService:
         """
         return tournament.speedgaming_enabled
 
-    async def list_org_tournaments(self, user: Optional[User], organization_id: int) -> List[Tournament]:
+    async def list_org_tournaments(
+        self, user: Optional[User], organization_id: int
+    ) -> List[Tournament]:
         """List tournaments for an organization after access check."""
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated list_org_tournaments attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated list_org_tournaments attempt for org %s",
+                organization_id,
+            )
             return []
-        
+
         # Check permission using new authorization service
         # Action: tournament:list, Resource: tournament:* (any tournament in org)
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("tournament", "list"),
             resource=self.auth.get_resource_identifier("tournament"),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
-            logger.warning("Unauthorized list_org_tournaments by user %s for org %s", user.id, organization_id)
+            logger.warning(
+                "Unauthorized list_org_tournaments by user %s for org %s",
+                user.id,
+                organization_id,
+            )
             return []
-        
+
         return await self.repo.list_by_org(organization_id)
 
-    async def list_active_org_tournaments(self, user: Optional[User], organization_id: int) -> List[Tournament]:
+    async def list_active_org_tournaments(
+        self, user: Optional[User], organization_id: int
+    ) -> List[Tournament]:
         """
         List active tournaments for an organization.
 
@@ -92,15 +105,16 @@ class TournamentService:
         # Check if user is a member of the organization
         is_member = await self.org_service.is_member(user, organization_id)
         if not is_member:
-            logger.warning("Non-member user %s attempted to list active tournaments for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning(
+                "Non-member user %s attempted to list active tournaments for org %s",
+                getattr(user, "id", None),
+                organization_id,
+            )
             return []
         return await self.repo.list_active_by_org(organization_id)
 
     async def get_tournament(
-        self,
-        user: Optional[User],
-        organization_id: int,
-        tournament_id: int
+        self, user: Optional[User], organization_id: int, tournament_id: int
     ) -> Optional[Tournament]:
         """
         Get a tournament by ID for an organization.
@@ -118,7 +132,12 @@ class TournamentService:
         # Check if user is a member of the organization
         is_member = await self.org_service.is_member(user, organization_id)
         if not is_member:
-            logger.warning("Non-member user %s attempted to get tournament %s for org %s", getattr(user, 'id', None), tournament_id, organization_id)
+            logger.warning(
+                "Non-member user %s attempted to get tournament %s for org %s",
+                getattr(user, "id", None),
+                tournament_id,
+                organization_id,
+            )
             return None
         return await self.repo.get_for_org(organization_id, tournament_id)
 
@@ -144,21 +163,27 @@ class TournamentService:
         """Create a tournament in an org if user can admin the org."""
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated create_tournament attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated create_tournament attempt for org %s", organization_id
+            )
             return None
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("tournament", "create"),
             resource=self.auth.get_resource_identifier("tournament"),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
-            logger.warning("Unauthorized create_tournament by user %s for org %s", user.id, organization_id)
+            logger.warning(
+                "Unauthorized create_tournament by user %s for org %s",
+                user.id,
+                organization_id,
+            )
             return None
-        
+
         tournament = await self.repo.create(
             organization_id,
             name,
@@ -175,13 +200,16 @@ class TournamentService:
             speedgaming_enabled=speedgaming_enabled,
             speedgaming_event_slug=speedgaming_event_slug,
         )
-        
+
         # Set discord guilds if provided
         if tournament and discord_guild_ids:
             from models import DiscordGuild
-            guilds = await DiscordGuild.filter(id__in=discord_guild_ids, organization_id=organization_id).all()
+
+            guilds = await DiscordGuild.filter(
+                id__in=discord_guild_ids, organization_id=organization_id
+            ).all()
             await tournament.discord_event_guilds.add(*guilds)
-        
+
         return tournament
 
     async def update_tournament(
@@ -214,95 +242,112 @@ class TournamentService:
         """Update a tournament if user can admin the org."""
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated update_tournament attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated update_tournament attempt for org %s", organization_id
+            )
             return None
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("tournament", "update"),
             resource=self.auth.get_resource_identifier("tournament", tournament_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
-            logger.warning("Unauthorized update_tournament by user %s for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning(
+                "Unauthorized update_tournament by user %s for org %s",
+                getattr(user, "id", None),
+                organization_id,
+            )
             return None
 
         # Build update kwargs
         updates = {}
         if name is not None:
-            updates['name'] = name
+            updates["name"] = name
         if description is not None:
-            updates['description'] = description
+            updates["description"] = description
         if is_active is not None:
-            updates['is_active'] = is_active
+            updates["is_active"] = is_active
         if tracker_enabled is not None:
-            updates['tracker_enabled'] = tracker_enabled
+            updates["tracker_enabled"] = tracker_enabled
         if racetime_bot_id is not None:
-            updates['racetime_bot_id'] = racetime_bot_id
+            updates["racetime_bot_id"] = racetime_bot_id
         if racetime_auto_create is not None:
-            updates['racetime_auto_create_rooms'] = racetime_auto_create
+            updates["racetime_auto_create_rooms"] = racetime_auto_create
         if room_open_minutes is not None:
-            updates['room_open_minutes_before'] = room_open_minutes
+            updates["room_open_minutes_before"] = room_open_minutes
         if require_racetime_link is not None:
-            updates['require_racetime_link'] = require_racetime_link
+            updates["require_racetime_link"] = require_racetime_link
         if racetime_default_goal is not None:
-            updates['racetime_default_goal'] = racetime_default_goal
+            updates["racetime_default_goal"] = racetime_default_goal
         if race_room_profile_id is not None:
-            updates['race_room_profile_id'] = race_room_profile_id
+            updates["race_room_profile_id"] = race_room_profile_id
         if create_scheduled_events is not None:
-            updates['create_scheduled_events'] = create_scheduled_events
+            updates["create_scheduled_events"] = create_scheduled_events
         if scheduled_events_enabled is not None:
-            updates['scheduled_events_enabled'] = scheduled_events_enabled
+            updates["scheduled_events_enabled"] = scheduled_events_enabled
         if speedgaming_enabled is not None:
-            updates['speedgaming_enabled'] = speedgaming_enabled
+            updates["speedgaming_enabled"] = speedgaming_enabled
         if speedgaming_event_slug is not None:
-            updates['speedgaming_event_slug'] = speedgaming_event_slug
+            updates["speedgaming_event_slug"] = speedgaming_event_slug
         if discord_event_filter is not None:
-            updates['discord_event_filter'] = discord_event_filter
+            updates["discord_event_filter"] = discord_event_filter
         if event_duration_minutes is not None:
-            updates['event_duration_minutes'] = event_duration_minutes
+            updates["event_duration_minutes"] = event_duration_minutes
         if onsite_tournament is not None:
-            updates['onsite_tournament'] = onsite_tournament
+            updates["onsite_tournament"] = onsite_tournament
         if randomizer is not None:
-            updates['randomizer'] = randomizer
+            updates["randomizer"] = randomizer
         if randomizer_preset_id is not None:
-            updates['randomizer_preset_id'] = randomizer_preset_id
+            updates["randomizer_preset_id"] = randomizer_preset_id
 
         tournament = await self.repo.update(organization_id, tournament_id, **updates)
-        
+
         # Update discord guilds if provided
         if tournament and discord_guild_ids is not None:
             from models import DiscordGuild
+
             # Clear existing guilds
             await tournament.discord_event_guilds.clear()
             # Add new guilds
             if discord_guild_ids:
-                guilds = await DiscordGuild.filter(id__in=discord_guild_ids, organization_id=organization_id).all()
+                guilds = await DiscordGuild.filter(
+                    id__in=discord_guild_ids, organization_id=organization_id
+                ).all()
                 await tournament.discord_event_guilds.add(*guilds)
-        
+
         return tournament
 
-    async def delete_tournament(self, user: Optional[User], organization_id: int, tournament_id: int) -> bool:
+    async def delete_tournament(
+        self, user: Optional[User], organization_id: int, tournament_id: int
+    ) -> bool:
         """Delete a tournament if user can admin the org."""
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated delete_tournament attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated delete_tournament attempt for org %s", organization_id
+            )
             return False
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("tournament", "delete"),
             resource=self.auth.get_resource_identifier("tournament", tournament_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
-            logger.warning("Unauthorized delete_tournament by user %s for org %s", user.id, organization_id)
+            logger.warning(
+                "Unauthorized delete_tournament by user %s for org %s",
+                user.id,
+                organization_id,
+            )
             return False
-        
+
         return await self.repo.delete(organization_id, tournament_id)
 
     async def list_org_matches(self, organization_id: int) -> List[Match]:
@@ -312,115 +357,145 @@ class TournamentService:
         """
         return await self.repo.list_matches_for_org(organization_id)
 
-    async def list_user_matches(self, organization_id: int, user_id: int) -> List[MatchPlayers]:
+    async def list_user_matches(
+        self, organization_id: int, user_id: int
+    ) -> List[MatchPlayers]:
         """List matches for a specific user in an organization.
 
         No special authorization - users can view their own matches.
         """
         return await self.repo.list_matches_for_user(organization_id, user_id)
 
-    async def list_user_tournament_registrations(self, organization_id: int, user_id: int) -> List[TournamentPlayers]:
+    async def list_user_tournament_registrations(
+        self, organization_id: int, user_id: int
+    ) -> List[TournamentPlayers]:
         """List tournament registrations for a user in an organization.
 
         No special authorization - users can view their own registrations.
         """
-        return await self.repo.list_user_tournament_registrations(organization_id, user_id)
+        return await self.repo.list_user_tournament_registrations(
+            organization_id, user_id
+        )
 
     async def list_all_org_tournaments(self, organization_id: int) -> List[Tournament]:
         """List all tournaments in an organization (public listing for members).
-        
+
         No special authorization - any member can view available tournaments.
         """
         return await self.repo.list_all_org_tournaments(organization_id)
 
-    async def register_user_for_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> Optional[TournamentPlayers]:
+    async def register_user_for_tournament(
+        self, organization_id: int, tournament_id: int, user_id: int
+    ) -> Optional[TournamentPlayers]:
         """Register a user for a tournament.
-        
+
         Open enrollment - any member can register themselves.
         Returns None if tournament doesn't exist or doesn't belong to the organization.
         """
-        return await self.repo.register_user_for_tournament(organization_id, tournament_id, user_id)
+        return await self.repo.register_user_for_tournament(
+            organization_id, tournament_id, user_id
+        )
 
     async def admin_register_user_for_tournament(
         self,
         admin_user: Optional[User],
         organization_id: int,
         tournament_id: int,
-        user_id: int
+        user_id: int,
     ) -> Optional[TournamentPlayers]:
         """Register a user for a tournament (admin action).
-        
+
         Requires TOURNAMENT_MANAGER permission or org admin privileges.
         Returns None if unauthorized or tournament doesn't exist.
         """
         # Use new authorization system
         if not admin_user:
-            logger.warning("Unauthenticated admin_register_user_for_tournament attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated admin_register_user_for_tournament attempt for org %s",
+                organization_id,
+            )
             return None
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             admin_user,
-            action=self.auth.get_action_for_operation("tournament", "manage_registration"),
+            action=self.auth.get_action_for_operation(
+                "tournament", "manage_registration"
+            ),
             resource=self.auth.get_resource_identifier("tournament", tournament_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
             logger.warning(
                 "Unauthorized admin_register_user_for_tournament by user %s for org %s",
                 admin_user.id,
-                organization_id
+                organization_id,
             )
             return None
 
-        return await self.repo.register_user_for_tournament(organization_id, tournament_id, user_id)
+        return await self.repo.register_user_for_tournament(
+            organization_id, tournament_id, user_id
+        )
 
     async def admin_unregister_user_from_tournament(
         self,
         admin_user: Optional[User],
         organization_id: int,
         tournament_id: int,
-        user_id: int
+        user_id: int,
     ) -> bool:
         """Unregister a user from a tournament (admin action).
-        
+
         Requires TOURNAMENT_MANAGER permission or org admin privileges.
         Returns False if unauthorized or user not registered.
         """
         # Use new authorization system
         if not admin_user:
-            logger.warning("Unauthenticated admin_unregister_user_from_tournament attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated admin_unregister_user_from_tournament attempt for org %s",
+                organization_id,
+            )
             return False
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             admin_user,
-            action=self.auth.get_action_for_operation("tournament", "manage_registration"),
+            action=self.auth.get_action_for_operation(
+                "tournament", "manage_registration"
+            ),
             resource=self.auth.get_resource_identifier("tournament", tournament_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
             logger.warning(
                 "Unauthorized admin_unregister_user_from_tournament by user %s for org %s",
                 admin_user.id,
-                organization_id
+                organization_id,
             )
             return False
 
-        return await self.repo.unregister_user_from_tournament(organization_id, tournament_id, user_id)
+        return await self.repo.unregister_user_from_tournament(
+            organization_id, tournament_id, user_id
+        )
 
-    async def unregister_user_from_tournament(self, organization_id: int, tournament_id: int, user_id: int) -> bool:
+    async def unregister_user_from_tournament(
+        self, organization_id: int, tournament_id: int, user_id: int
+    ) -> bool:
         """Unregister a user from a tournament.
-        
+
         Users can unregister themselves from tournaments.
         """
-        return await self.repo.unregister_user_from_tournament(organization_id, tournament_id, user_id)
+        return await self.repo.unregister_user_from_tournament(
+            organization_id, tournament_id, user_id
+        )
 
-    async def list_tournament_players(self, organization_id: int, tournament_id: int) -> List[TournamentPlayers]:
+    async def list_tournament_players(
+        self, organization_id: int, tournament_id: int
+    ) -> List[TournamentPlayers]:
         """List all players registered for a tournament.
-        
+
         No special authorization - any member can view tournament registrations.
         """
         return await self.repo.list_tournament_players(organization_id, tournament_id)
@@ -446,25 +521,33 @@ class TournamentService:
         """
         # Verify user is a member of the organization
         if not user:
-            logger.warning("Unauthenticated attempt to create match for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated attempt to create match for org %s", organization_id
+            )
             return None
 
         member = await self.org_service.get_member(organization_id, user.id)
         if not member:
-            logger.warning("User %s is not a member of org %s, cannot create match", user.id, organization_id)
+            logger.warning(
+                "User %s is not a member of org %s, cannot create match",
+                user.id,
+                organization_id,
+            )
             return None
 
         # Check if tournament schedule is read-only
         tournament = await self.repo.get_for_org(organization_id, tournament_id)
         if not tournament:
-            logger.warning("Tournament %s not found in org %s", tournament_id, organization_id)
+            logger.warning(
+                "Tournament %s not found in org %s", tournament_id, organization_id
+            )
             return None
 
         if await self.is_schedule_read_only(tournament):
             error_msg = "Cannot create matches for this tournament - schedule is managed by SpeedGaming"
             logger.warning(
                 "Match creation blocked - tournament %s has SpeedGaming integration enabled",
-                tournament_id
+                tournament_id,
             )
             raise ValueError(error_msg)
 
@@ -472,6 +555,7 @@ class TournamentService:
         if tournament.require_racetime_link:
             # Check that all players have RaceTime accounts linked
             from models.user import User as UserModel
+
             players = await UserModel.filter(id__in=player_ids).all()
 
             players_without_racetime = [
@@ -484,7 +568,7 @@ class TournamentService:
                 logger.warning(
                     "Match creation blocked - players without RaceTime: %s (tournament %s)",
                     player_list,
-                    tournament_id
+                    tournament_id,
                 )
                 raise ValueError(error_msg)
 
@@ -517,16 +601,18 @@ class TournamentService:
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated update_match attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated update_match attempt for org %s", organization_id
+            )
             return None
-        
+
         # Check if user can manage matches (tournament manager or moderator)
         # Try tournament management permission first
         can_manage = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("match", "update"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         if not can_manage:
@@ -534,19 +620,27 @@ class TournamentService:
             can_moderate = await self.auth.can(
                 user,
                 action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "organization", organization_id
+                ),
+                organization_id=organization_id,
             )
-            
+
             if not can_moderate:
-                logger.warning("Unauthorized update_match by user %s for org %s", user.id, organization_id)
+                logger.warning(
+                    "Unauthorized update_match by user %s for org %s",
+                    user.id,
+                    organization_id,
+                )
                 return None
 
         # Get the match before update to check channel changes and schedule changes
-        match_before = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('stream_channel', 'tournament').prefetch_related('players__user').first()
+        match_before = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("stream_channel", "tournament")
+            .prefetch_related("players__user")
+            .first()
+        )
 
         if not match_before:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -557,7 +651,7 @@ class TournamentService:
             error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
             logger.warning(
                 "Match update blocked - tournament %s has SpeedGaming integration enabled",
-                match_before.tournament_id
+                match_before.tournament_id,
             )
             raise ValueError(error_msg)
 
@@ -579,18 +673,24 @@ class TournamentService:
         # Emit MatchScheduledEvent if scheduled_at was changed
         if scheduled_at is not None and scheduled_at != previous_scheduled_at:
             # Fetch participants
-            await updated_match.fetch_related('players__user', 'tournament')
+            await updated_match.fetch_related("players__user", "tournament")
             participant_ids = [p.user_id for p in updated_match.players]
 
-            await EventBus.emit(MatchScheduledEvent(
-                user_id=user.id if user else None,
-                organization_id=organization_id,
-                entity_id=match_id,
-                tournament_id=updated_match.tournament_id,
-                scheduled_time=scheduled_at.isoformat() if scheduled_at else None,
-                participant_ids=participant_ids,
-            ))
-            logger.info("Emitted MatchScheduledEvent for match %s in org %s", match_id, organization_id)
+            await EventBus.emit(
+                MatchScheduledEvent(
+                    user_id=user.id if user else None,
+                    organization_id=organization_id,
+                    entity_id=match_id,
+                    tournament_id=updated_match.tournament_id,
+                    scheduled_time=scheduled_at.isoformat() if scheduled_at else None,
+                    participant_ids=participant_ids,
+                )
+            )
+            logger.info(
+                "Emitted MatchScheduledEvent for match %s in org %s",
+                match_id,
+                organization_id,
+            )
 
         # Emit events for channel assignment changes
         if stream_channel_id is not None:
@@ -600,28 +700,32 @@ class TournamentService:
                     channel_name = None
                     if updated_match.stream_channel_id:
                         # Fetch channel name if available
-                        await updated_match.fetch_related('stream_channel')
+                        await updated_match.fetch_related("stream_channel")
                         if updated_match.stream_channel:
                             channel_name = updated_match.stream_channel.name
-                    
-                    await EventBus.emit(MatchChannelAssignedEvent(
-                        user_id=user.id if user else None,
-                        organization_id=organization_id,
-                        entity_id=match_id,
-                        match_id=match_id,
-                        stream_channel_id=stream_channel_id,
-                        stream_channel_name=channel_name,
-                    ))
+
+                    await EventBus.emit(
+                        MatchChannelAssignedEvent(
+                            user_id=user.id if user else None,
+                            organization_id=organization_id,
+                            entity_id=match_id,
+                            match_id=match_id,
+                            stream_channel_id=stream_channel_id,
+                            stream_channel_name=channel_name,
+                        )
+                    )
                 else:
                     # Channel unassigned (set to None)
-                    await EventBus.emit(MatchChannelUnassignedEvent(
-                        user_id=user.id if user else None,
-                        organization_id=organization_id,
-                        entity_id=match_id,
-                        match_id=match_id,
-                        previous_stream_channel_id=previous_channel_id,
-                    ))
-        
+                    await EventBus.emit(
+                        MatchChannelUnassignedEvent(
+                            user_id=user.id if user else None,
+                            organization_id=organization_id,
+                            entity_id=match_id,
+                            match_id=match_id,
+                            previous_stream_channel_id=previous_channel_id,
+                        )
+                    )
+
         return updated_match
 
     async def advance_match_status(
@@ -651,7 +755,10 @@ class TournamentService:
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated advance_match_status attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated advance_match_status attempt for org %s",
+                organization_id,
+            )
             return None
 
         # Check if user can manage matches (tournament manager or moderator)
@@ -659,7 +766,7 @@ class TournamentService:
             user,
             action=self.auth.get_action_for_operation("match", "update"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         if not can_manage:
@@ -667,19 +774,27 @@ class TournamentService:
             can_moderate = await self.auth.can(
                 user,
                 action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "organization", organization_id
+                ),
+                organization_id=organization_id,
             )
 
             if not can_moderate:
-                logger.warning("Unauthorized advance_match_status by user %s for org %s", user.id, organization_id)
+                logger.warning(
+                    "Unauthorized advance_match_status by user %s for org %s",
+                    user.id,
+                    organization_id,
+                )
                 return None
 
         # Get the match
-        match = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('tournament').prefetch_related('racetime_room').first()
+        match = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("tournament")
+            .prefetch_related("racetime_room")
+            .first()
+        )
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -688,50 +803,66 @@ class TournamentService:
         # Check if match has a RaceTime room linked - cannot manually advance if it does
         # Try to access the prefetched relation, or query if not prefetched
         try:
-            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+            room = (
+                match.racetime_room
+                if hasattr(match, "racetime_room") and match.racetime_room
+                else None
+            )
         except AttributeError:
             room = await RacetimeRoom.filter(match_id=match.id).first()
-        
+
         if room:
             error_msg = "Cannot manually advance status for matches with a RaceTime room linked - status is auto-managed"
             logger.warning(
                 "Match status advance blocked - match %s has RaceTime room %s",
                 match_id,
-                room.slug
+                room.slug,
             )
             raise ValueError(error_msg)
 
         # Update appropriate timestamp based on status
         now = datetime.now(timezone.utc)
-        valid_statuses = ['checked_in', 'started', 'finished', 'recorded']
+        valid_statuses = ["checked_in", "started", "finished", "recorded"]
 
         if status not in valid_statuses:
-            raise ValueError(f"Invalid status: {status}. Must be one of {valid_statuses}")
+            raise ValueError(
+                f"Invalid status: {status}. Must be one of {valid_statuses}"
+            )
 
-        if status == 'checked_in':
+        if status == "checked_in":
             if match.checked_in_at:
-                logger.info("Match %s already checked in at %s", match_id, match.checked_in_at)
+                logger.info(
+                    "Match %s already checked in at %s", match_id, match.checked_in_at
+                )
             match.checked_in_at = now
-        elif status == 'started':
+        elif status == "started":
             if match.started_at:
-                logger.info("Match %s already started at %s", match_id, match.started_at)
+                logger.info(
+                    "Match %s already started at %s", match_id, match.started_at
+                )
             match.started_at = now
-        elif status == 'finished':
+        elif status == "finished":
             if match.finished_at:
-                logger.info("Match %s already finished at %s", match_id, match.finished_at)
+                logger.info(
+                    "Match %s already finished at %s", match_id, match.finished_at
+                )
             match.finished_at = now
             # Emit MatchFinishedEvent
-            await EventBus.emit(MatchFinishedEvent(
-                user_id=user.id,
-                organization_id=organization_id,
-                entity_id=match_id,
-                match_id=match_id,
-                tournament_id=match.tournament_id,
-            ))
+            await EventBus.emit(
+                MatchFinishedEvent(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    entity_id=match_id,
+                    match_id=match_id,
+                    tournament_id=match.tournament_id,
+                )
+            )
             logger.info("Emitted MatchFinishedEvent for match %s", match_id)
-        elif status == 'recorded':
+        elif status == "recorded":
             if match.confirmed_at:
-                logger.info("Match %s already recorded at %s", match_id, match.confirmed_at)
+                logger.info(
+                    "Match %s already recorded at %s", match_id, match.confirmed_at
+                )
             match.confirmed_at = now
 
         await match.save()
@@ -769,7 +900,10 @@ class TournamentService:
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated revert_match_status attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated revert_match_status attempt for org %s",
+                organization_id,
+            )
             return None
 
         # Check if user can manage matches (tournament manager or moderator)
@@ -777,7 +911,7 @@ class TournamentService:
             user,
             action=self.auth.get_action_for_operation("match", "update"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         if not can_manage:
@@ -785,19 +919,27 @@ class TournamentService:
             can_moderate = await self.auth.can(
                 user,
                 action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "organization", organization_id
+                ),
+                organization_id=organization_id,
             )
 
             if not can_moderate:
-                logger.warning("Unauthorized revert_match_status by user %s for org %s", user.id, organization_id)
+                logger.warning(
+                    "Unauthorized revert_match_status by user %s for org %s",
+                    user.id,
+                    organization_id,
+                )
                 return None
 
         # Get the match
-        match = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('tournament').prefetch_related('racetime_room').first()
+        match = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("tournament")
+            .prefetch_related("racetime_room")
+            .first()
+        )
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -808,45 +950,51 @@ class TournamentService:
             error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
             logger.warning(
                 "Match status revert blocked - tournament %s has SpeedGaming integration enabled",
-                match.tournament_id
+                match.tournament_id,
             )
             raise ValueError(error_msg)
 
         # Check if match has a RaceTime room linked - cannot revert if it does
         # Try to access the prefetched relation, or query if not prefetched
         try:
-            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+            room = (
+                match.racetime_room
+                if hasattr(match, "racetime_room") and match.racetime_room
+                else None
+            )
         except AttributeError:
             room = await RacetimeRoom.filter(match_id=match.id).first()
-        
+
         if room:
             error_msg = "Cannot revert status for matches with a RaceTime room linked"
             logger.warning(
                 "Match status revert blocked - match %s has RaceTime room %s",
                 match_id,
-                room.slug
+                room.slug,
             )
             raise ValueError(error_msg)
 
         # Clear appropriate timestamp based on status
-        valid_statuses = ['checked_in', 'started', 'finished', 'recorded']
+        valid_statuses = ["checked_in", "started", "finished", "recorded"]
 
         if status not in valid_statuses:
-            raise ValueError(f"Invalid status: {status}. Must be one of {valid_statuses}")
+            raise ValueError(
+                f"Invalid status: {status}. Must be one of {valid_statuses}"
+            )
 
-        if status == 'checked_in':
+        if status == "checked_in":
             if not match.checked_in_at:
                 logger.info("Match %s not checked in, nothing to revert", match_id)
             match.checked_in_at = None
-        elif status == 'started':
+        elif status == "started":
             if not match.started_at:
                 logger.info("Match %s not started, nothing to revert", match_id)
             match.started_at = None
-        elif status == 'finished':
+        elif status == "finished":
             if not match.finished_at:
                 logger.info("Match %s not finished, nothing to revert", match_id)
             match.finished_at = None
-        elif status == 'recorded':
+        elif status == "recorded":
             if not match.confirmed_at:
                 logger.info("Match %s not recorded, nothing to revert", match_id)
             match.confirmed_at = None
@@ -865,23 +1013,25 @@ class TournamentService:
     ) -> Optional[MatchPlayers]:
         """
         Set the winner of a match by setting finish_rank=1 for the winning player.
-        
+
         Clears finish_rank for all other players in the match.
-        
+
         Requires TOURNAMENT_MANAGER permission or MODERATOR permission.
-        
+
         Args:
             user: User performing the action
             organization_id: Organization ID
             match_id: Match ID
             match_player_id: MatchPlayers ID of the winning player
-        
+
         Returns:
             Updated MatchPlayers record for the winner, or None if unauthorized/failed
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated set_match_winner attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated set_match_winner attempt for org %s", organization_id
+            )
             return None
 
         # Check if user can manage matches
@@ -889,7 +1039,7 @@ class TournamentService:
             user,
             action=self.auth.get_action_for_operation("match", "update"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         if not can_manage:
@@ -897,17 +1047,23 @@ class TournamentService:
             can_moderate = await self.auth.can(
                 user,
                 action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "organization", organization_id
+                ),
+                organization_id=organization_id,
             )
 
             if not can_moderate:
-                logger.warning("Unauthorized set_match_winner by user %s for org %s", user.id, organization_id)
+                logger.warning(
+                    "Unauthorized set_match_winner by user %s for org %s",
+                    user.id,
+                    organization_id,
+                )
                 return None
 
         # Get all match players for this match
         match_players = await MatchPlayers.filter(match_id=match_id).all()
-        
+
         if not match_players:
             logger.warning("No players found for match %s", match_id)
             return None
@@ -923,9 +1079,15 @@ class TournamentService:
             await mp.save()
 
         if winner:
-            logger.info("Set winner for match %s: match_player_id=%s", match_id, match_player_id)
+            logger.info(
+                "Set winner for match %s: match_player_id=%s", match_id, match_player_id
+            )
         else:
-            logger.warning("Winner match_player_id %s not found in match %s", match_player_id, match_id)
+            logger.warning(
+                "Winner match_player_id %s not found in match %s",
+                match_player_id,
+                match_id,
+            )
 
         return winner
 
@@ -938,19 +1100,22 @@ class TournamentService:
     ) -> bool:
         """
         Update station assignments for match players (onsite tournaments).
-        
+
         Args:
             user: User performing the action
             organization_id: Organization ID
             match_id: Match ID
             station_assignments: Dict mapping match_player_id to station number string
-        
+
         Returns:
             True if successful, False if unauthorized or failed
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated update_station_assignments attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated update_station_assignments attempt for org %s",
+                organization_id,
+            )
             return False
 
         # Check if user can manage matches
@@ -958,7 +1123,7 @@ class TournamentService:
             user,
             action=self.auth.get_action_for_operation("match", "update"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         if not can_manage:
@@ -966,23 +1131,37 @@ class TournamentService:
             can_moderate = await self.auth.can(
                 user,
                 action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "organization", organization_id
+                ),
+                organization_id=organization_id,
             )
 
             if not can_moderate:
-                logger.warning("Unauthorized update_station_assignments by user %s for org %s", user.id, organization_id)
+                logger.warning(
+                    "Unauthorized update_station_assignments by user %s for org %s",
+                    user.id,
+                    organization_id,
+                )
                 return False
 
         # Update station assignments for each match player
         for match_player_id, station in station_assignments.items():
-            match_player = await MatchPlayers.filter(id=match_player_id, match_id=match_id).first()
+            match_player = await MatchPlayers.filter(
+                id=match_player_id, match_id=match_id
+            ).first()
             if match_player:
                 match_player.assigned_station = station
                 await match_player.save()
-                logger.info("Updated station for match_player %s: station=%s", match_player_id, station)
+                logger.info(
+                    "Updated station for match_player %s: station=%s",
+                    match_player_id,
+                    station,
+                )
             else:
-                logger.warning("MatchPlayer %s not found in match %s", match_player_id, match_id)
+                logger.warning(
+                    "MatchPlayer %s not found in match %s", match_player_id, match_id
+                )
 
         return True
 
@@ -1017,7 +1196,7 @@ class TournamentService:
                 user,
                 action=self.auth.get_action_for_operation("match", "update"),
                 resource=self.auth.get_resource_identifier("match", match_id),
-                organization_id=organization_id
+                organization_id=organization_id,
             )
 
             if not can_manage:
@@ -1025,21 +1204,31 @@ class TournamentService:
                 can_moderate = await self.auth.can(
                     user,
                     action="organization:moderate",
-                    resource=self.auth.get_resource_identifier("organization", organization_id),
-                    organization_id=organization_id
+                    resource=self.auth.get_resource_identifier(
+                        "organization", organization_id
+                    ),
+                    organization_id=organization_id,
                 )
 
                 if not can_moderate:
-                    logger.warning("Unauthorized sync_racetime_room_status by user %s for org %s", user.id, organization_id)
+                    logger.warning(
+                        "Unauthorized sync_racetime_room_status by user %s for org %s",
+                        user.id,
+                        organization_id,
+                    )
                     return None
         else:
-            logger.info("System-initiated sync_racetime_room_status for match %s", match_id)
+            logger.info(
+                "System-initiated sync_racetime_room_status for match %s", match_id
+            )
 
         # Get the match
-        match = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('tournament').prefetch_related('racetime_room').first()
+        match = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("tournament")
+            .prefetch_related("racetime_room")
+            .first()
+        )
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -1050,17 +1239,21 @@ class TournamentService:
             error_msg = "Cannot update matches for this tournament - schedule is managed by SpeedGaming"
             logger.warning(
                 "Match status sync blocked - tournament %s has SpeedGaming integration enabled",
-                match.tournament_id
+                match.tournament_id,
             )
             raise ValueError(error_msg)
 
         # Check if match has a RaceTime room
         # Try to access the prefetched relation, or query if not prefetched
         try:
-            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+            room = (
+                match.racetime_room
+                if hasattr(match, "racetime_room") and match.racetime_room
+                else None
+            )
         except AttributeError:
             room = await RacetimeRoom.filter(match_id=match.id).first()
-        
+
         if not room:
             error_msg = "Match does not have a RaceTime room linked"
             logger.warning("Match %s has no RaceTime room to sync", match_id)
@@ -1080,12 +1273,14 @@ class TournamentService:
 
             async with session.get(url) as response:
                 if response.status != 200:
-                    raise ValueError(f"Failed to fetch RaceTime data: HTTP {response.status}")
+                    raise ValueError(
+                        f"Failed to fetch RaceTime data: HTTP {response.status}"
+                    )
 
                 race_data = await response.json()
 
         # Get race status
-        race_status = race_data.get('status', {}).get('value') if race_data else None
+        race_status = race_data.get("status", {}).get("value") if race_data else None
 
         if not race_status:
             raise ValueError("No status in RaceTime data")
@@ -1095,19 +1290,26 @@ class TournamentService:
         updated = False
 
         # If race is cancelled, unlink the room from the match
-        if race_status == 'cancelled':
+        if race_status == "cancelled":
             await room.delete()
             updated = True
-            logger.info("Race cancelled - unlinked RaceTime room from match %s", match_id)
+            logger.info(
+                "Race cancelled - unlinked RaceTime room from match %s", match_id
+            )
 
         # If race is open/invitational/pending and match not checked in yet
-        elif race_status in ['open', 'invitational', 'pending'] and not match.checked_in_at:
+        elif (
+            race_status in ["open", "invitational", "pending"]
+            and not match.checked_in_at
+        ):
             match.checked_in_at = now
             updated = True
-            logger.info("Synced match %s to checked_in (race status: %s)", match_id, race_status)
+            logger.info(
+                "Synced match %s to checked_in (race status: %s)", match_id, race_status
+            )
 
         # If race is in progress and match not started yet
-        elif race_status == 'in_progress' and not match.started_at:
+        elif race_status == "in_progress" and not match.started_at:
             if not match.checked_in_at:
                 match.checked_in_at = now
             match.started_at = now
@@ -1115,7 +1317,7 @@ class TournamentService:
             logger.info("Synced match %s to started (race in progress)", match_id)
 
         # If race is finished and match not finished yet
-        elif race_status == 'finished' and not match.finished_at:
+        elif race_status == "finished" and not match.finished_at:
             if not match.checked_in_at:
                 match.checked_in_at = now
             if not match.started_at:
@@ -1125,23 +1327,33 @@ class TournamentService:
             logger.info("Synced match %s to finished (race finished)", match_id)
 
             # Emit MatchFinishedEvent
-            await EventBus.emit(MatchFinishedEvent(
-                user_id=user.id if user else SYSTEM_USER_ID,
-                organization_id=organization_id,
-                entity_id=match_id,
-                match_id=match_id,
-                tournament_id=match.tournament_id,
-            ))
+            await EventBus.emit(
+                MatchFinishedEvent(
+                    user_id=user.id if user else SYSTEM_USER_ID,
+                    organization_id=organization_id,
+                    entity_id=match_id,
+                    match_id=match_id,
+                    tournament_id=match.tournament_id,
+                )
+            )
             logger.info("Emitted MatchFinishedEvent for match %s", match_id)
 
         if updated:
             await match.save()
-            if race_status == 'cancelled':
-                logger.info("Match %s RaceTime room unlinked due to cancellation", match_id)
+            if race_status == "cancelled":
+                logger.info(
+                    "Match %s RaceTime room unlinked due to cancellation", match_id
+                )
             else:
-                logger.info("Match %s status synced from RaceTime room %s", match_id, room.slug)
+                logger.info(
+                    "Match %s status synced from RaceTime room %s", match_id, room.slug
+                )
         else:
-            logger.info("Match %s status already up to date with RaceTime room %s", match_id, room.slug)
+            logger.info(
+                "Match %s status already up to date with RaceTime room %s",
+                match_id,
+                room.slug,
+            )
 
         return match
 
@@ -1165,16 +1377,19 @@ class TournamentService:
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated create_racetime_room attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated create_racetime_room attempt for org %s",
+                organization_id,
+            )
             return None
-        
+
         # Check if user can manage matches (tournament manager or moderator)
         # Try tournament management permission first
         can_manage = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("match", "create_racetime_room"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         if not can_manage:
@@ -1182,19 +1397,27 @@ class TournamentService:
             can_moderate = await self.auth.can(
                 user,
                 action="organization:moderate",
-                resource=self.auth.get_resource_identifier("organization", organization_id),
-                organization_id=organization_id
+                resource=self.auth.get_resource_identifier(
+                    "organization", organization_id
+                ),
+                organization_id=organization_id,
             )
-            
+
             if not can_moderate:
-                logger.warning("Unauthorized create_racetime_room by user %s for org %s", user.id, organization_id)
+                logger.warning(
+                    "Unauthorized create_racetime_room by user %s for org %s",
+                    user.id,
+                    organization_id,
+                )
                 return None
 
         # Get match and tournament details
-        match = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('tournament__racetime_bot').prefetch_related('players__user', 'racetime_room').first()
+        match = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("tournament__racetime_bot")
+            .prefetch_related("players__user", "racetime_room")
+            .first()
+        )
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -1202,64 +1425,95 @@ class TournamentService:
 
         # Verify tournament has RaceTime integration
         if not match.tournament.racetime_bot_id:
-            logger.warning("Tournament %s has no RaceTime bot configured", match.tournament_id)
+            logger.warning(
+                "Tournament %s has no RaceTime bot configured", match.tournament_id
+            )
             raise ValueError("Tournament does not have RaceTime integration configured")
 
         # Check if room already exists
         # Try to access the prefetched relation, or query if not prefetched
         try:
-            room = match.racetime_room if hasattr(match, 'racetime_room') and match.racetime_room else None
+            room = (
+                match.racetime_room
+                if hasattr(match, "racetime_room") and match.racetime_room
+                else None
+            )
         except AttributeError:
             room = await RacetimeRoom.filter(match_id=match.id).first()
-        
+
         if room:
-            logger.warning("Match %s already has a RaceTime room: %s", match_id, room.slug)
+            logger.warning(
+                "Match %s already has a RaceTime room: %s", match_id, room.slug
+            )
             raise ValueError(f"Match already has a room: {room.slug}")
 
         # Determine goal (use match-specific or tournament default)
-        goal = match.racetime_goal or match.tournament.racetime_default_goal or "Beat the game"
+        goal = (
+            match.racetime_goal
+            or match.tournament.racetime_default_goal
+            or "Beat the game"
+        )
 
         # Create room via RaceTime bot
         try:
             from racetime.client import RacetimeBot
             import aiohttp
-            
+
             # Get bot credentials
             bot_config = match.tournament.racetime_bot
-            
-            logger.info("Creating RaceTime room for match %s using bot %s (%s)", 
-                       match_id, bot_config.category, bot_config.client_id)
-            
+
+            logger.info(
+                "Creating RaceTime room for match %s using bot %s (%s)",
+                match_id,
+                bot_config.category,
+                bot_config.client_id,
+            )
+
             # Create bot instance
             racetime_bot = RacetimeBot(
                 category_slug=bot_config.category,
                 client_id=bot_config.client_id,
                 client_secret=bot_config.client_secret,
-                bot_id=bot_config.id
+                bot_id=bot_config.id,
             )
-            
+
             # Initialize the bot's HTTP session and get access token
             racetime_bot.http = aiohttp.ClientSession()
             try:
                 logger.info("Authorizing bot with RaceTime API...")
                 # Call authorize() directly (not reauthorize which runs in a loop)
-                racetime_bot.access_token, racetime_bot.reauthorize_every = racetime_bot.authorize()
-                logger.info("Bot authorized successfully, access_token: %s", 
-                           racetime_bot.access_token[:20] + "..." if racetime_bot.access_token else "None")
-                
+                racetime_bot.access_token, racetime_bot.reauthorize_every = (
+                    racetime_bot.authorize()
+                )
+                logger.info(
+                    "Bot authorized successfully, access_token: %s",
+                    (
+                        racetime_bot.access_token[:20] + "..."
+                        if racetime_bot.access_token
+                        else "None"
+                    ),
+                )
+
                 # Create the race room
-                logger.info("Creating race room with goal: %s, invitational: %s", 
-                           goal, match.racetime_invitational)
-                
+                logger.info(
+                    "Creating race room with goal: %s, invitational: %s",
+                    goal,
+                    match.racetime_invitational,
+                )
+
                 # Use race room profile settings if tournament has one configured
                 tournament = match.tournament
-                
+
                 # Fetch race room profile if configured
                 if tournament.race_room_profile_id:
-                    await tournament.fetch_related('race_room_profile')
+                    await tournament.fetch_related("race_room_profile")
                     profile = tournament.race_room_profile
-                    logger.info("Using race room profile %s (%s) for match %s", 
-                               profile.id, profile.name, match_id)
+                    logger.info(
+                        "Using race room profile %s (%s) for match %s",
+                        profile.id,
+                        profile.name,
+                        match_id,
+                    )
                     # Use profile settings
                     start_delay = profile.start_delay
                     time_limit = profile.time_limit
@@ -1271,8 +1525,10 @@ class TournamentService:
                     allow_midrace_chat = profile.allow_midrace_chat
                     allow_non_entrant_chat = profile.allow_non_entrant_chat
                 else:
-                    logger.info("No race room profile configured for tournament %s, using defaults", 
-                               tournament.id)
+                    logger.info(
+                        "No race room profile configured for tournament %s, using defaults",
+                        tournament.id,
+                    )
                     # Use default settings
                     start_delay = 15
                     time_limit = 24
@@ -1283,7 +1539,7 @@ class TournamentService:
                     allow_prerace_chat = True
                     allow_midrace_chat = True
                     allow_non_entrant_chat = True
-                
+
                 handler = await racetime_bot.startrace(
                     custom_goal=goal,
                     invitational=match.racetime_invitational,
@@ -1299,43 +1555,45 @@ class TournamentService:
                     allow_midrace_chat=allow_midrace_chat,
                     allow_non_entrant_chat=allow_non_entrant_chat,
                 )
-                
+
                 logger.info("startrace() returned: %s", handler)
-                
+
                 if not handler:
                     raise ValueError("Failed to create race room - bot returned None")
-                
+
                 # Get room slug from handler
-                room_slug = handler.data.get('name')
+                room_slug = handler.data.get("name")
                 logger.info("Room slug from handler: %s", room_slug)
-                
+
                 if not room_slug:
                     raise ValueError("Race room created but no slug returned")
-                
+
                 # Parse slug to get category and room name
-                parts = room_slug.split('/', 1)
+                parts = room_slug.split("/", 1)
                 if len(parts) != 2:
                     raise ValueError(f"Invalid room slug format: {room_slug}")
                 category, room_name = parts
-                
+
                 # Create RacetimeRoom record
                 await RacetimeRoom.create(
                     slug=room_slug,
                     category=category,
                     room_name=room_name,
-                    status='open',
+                    status="open",
                     match_id=match.id,
-                    bot_id=match.tournament.racetime_bot_id
+                    bot_id=match.tournament.racetime_bot_id,
                 )
-                
+
                 # Update match with racetime goal
                 match.racetime_goal = goal
                 await match.save()
 
-                logger.info("Created RaceTime room %s for match %s", room_slug, match_id)
+                logger.info(
+                    "Created RaceTime room %s for match %s", room_slug, match_id
+                )
 
                 # Invite players to the room
-                players = await match.players.prefetch_related('user').all()
+                players = await match.players.prefetch_related("user").all()
                 invited_count = 0
                 skipped_count = 0
 
@@ -1345,7 +1603,7 @@ class TournamentService:
                         logger.warning(
                             "Player %s (%s) does not have RaceTime account linked, skipping invite",
                             user.discord_username,
-                            user.id
+                            user.id,
                         )
                         skipped_count += 1
                         continue
@@ -1353,14 +1611,18 @@ class TournamentService:
                     try:
                         await handler.invite_user(user.racetime_id)
                         invited_count += 1
-                        logger.info("Invited user %s to race room %s", user.racetime_id, room_slug)
+                        logger.info(
+                            "Invited user %s to race room %s",
+                            user.racetime_id,
+                            room_slug,
+                        )
                     except Exception as e:
                         logger.error(
                             "Failed to invite user %s to room %s: %s",
                             user.racetime_id,
                             room_slug,
                             e,
-                            exc_info=True
+                            exc_info=True,
                         )
 
                 logger.info(
@@ -1368,24 +1630,34 @@ class TournamentService:
                     invited_count,
                     len(players),
                     room_slug,
-                    skipped_count
+                    skipped_count,
                 )
 
                 # Emit RacetimeRoomOpenedEvent
-                tournament_id = match.tournament.id if hasattr(match, 'tournament') and match.tournament else None
-                await EventBus.emit(RacetimeRoomOpenedEvent(
-                    user_id=user.id,
-                    organization_id=organization_id,
-                    entity_id=match_id,
-                    match_id=match_id,
-                    tournament_id=tournament_id,
-                    room_slug=room_slug,
-                    opened_by_user_id=user.id,
-                ))
-                logger.info("Emitted RacetimeRoomOpenedEvent for match %s, room %s", match_id, room_slug)
+                tournament_id = (
+                    match.tournament.id
+                    if hasattr(match, "tournament") and match.tournament
+                    else None
+                )
+                await EventBus.emit(
+                    RacetimeRoomOpenedEvent(
+                        user_id=user.id,
+                        organization_id=organization_id,
+                        entity_id=match_id,
+                        match_id=match_id,
+                        tournament_id=tournament_id,
+                        room_slug=room_slug,
+                        opened_by_user_id=user.id,
+                    )
+                )
+                logger.info(
+                    "Emitted RacetimeRoomOpenedEvent for match %s, room %s",
+                    match_id,
+                    room_slug,
+                )
 
                 return match
-                
+
             finally:
                 # Always close the HTTP session
                 if racetime_bot.http and not racetime_bot.http.closed:
@@ -1393,10 +1665,17 @@ class TournamentService:
                     logger.info("Closed RaceTime bot HTTP session")
 
         except Exception as e:
-            logger.error("Failed to create RaceTime room for match %s: %s", match_id, e, exc_info=True)
+            logger.error(
+                "Failed to create RaceTime room for match %s: %s",
+                match_id,
+                e,
+                exc_info=True,
+            )
             raise
 
-    async def signup_crew(self, user: User, organization_id: int, match_id: int, role: str) -> Optional['Crew']:
+    async def signup_crew(
+        self, user: User, organization_id: int, match_id: int, role: str
+    ) -> Optional["Crew"]:
         """Sign up as crew for a match.
 
         Any member can sign up. Requires approval from tournament manager.
@@ -1408,14 +1687,19 @@ class TournamentService:
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
         if not member:
-            logger.warning("User %s is not a member of org %s, cannot sign up as crew", user.id, organization_id)
+            logger.warning(
+                "User %s is not a member of org %s, cannot sign up as crew",
+                user.id,
+                organization_id,
+            )
             return None
 
         # Check if tournament schedule is read-only
-        match = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('tournament').first()
+        match = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("tournament")
+            .first()
+        )
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
@@ -1425,7 +1709,7 @@ class TournamentService:
             error_msg = "Cannot sign up for crew - tournament schedule is managed by SpeedGaming"
             logger.warning(
                 "Crew signup blocked - tournament %s has SpeedGaming integration enabled",
-                match.tournament_id
+                match.tournament_id,
             )
             raise ValueError(error_msg)
 
@@ -1433,48 +1717,58 @@ class TournamentService:
 
         if crew:
             # Emit crew added event (self-signup, not approved)
-            await EventBus.emit(CrewAddedEvent(
-                user_id=user.id,
-                organization_id=organization_id,
-                entity_id=crew.id,
-                match_id=match_id,
-                crew_user_id=user.id,
-                role=role,
-                added_by_admin=False,
-                auto_approved=False,
-            ))
+            await EventBus.emit(
+                CrewAddedEvent(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    entity_id=crew.id,
+                    match_id=match_id,
+                    crew_user_id=user.id,
+                    role=role,
+                    added_by_admin=False,
+                    auto_approved=False,
+                )
+            )
 
         return crew
 
-    async def remove_crew_signup(self, user: User, organization_id: int, match_id: int, role: str) -> bool:
+    async def remove_crew_signup(
+        self, user: User, organization_id: int, match_id: int, role: str
+    ) -> bool:
         """Remove crew signup for a match.
-        
+
         Users can remove their own signups.
         """
         from models.match_schedule import Crew
-        
+
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
         if not member:
-            logger.warning("User %s is not a member of org %s, cannot remove crew signup", user.id, organization_id)
+            logger.warning(
+                "User %s is not a member of org %s, cannot remove crew signup",
+                user.id,
+                organization_id,
+            )
             return False
 
         # Get crew info before removing for event
         crew = await Crew.filter(match_id=match_id, user_id=user.id, role=role).first()
-        
+
         success = await self.repo.remove_crew_signup(match_id, user.id, role)
-        
+
         if success and crew:
             # Emit crew removed event
-            await EventBus.emit(CrewRemovedEvent(
-                user_id=user.id,
-                organization_id=organization_id,
-                entity_id=crew.id,
-                match_id=match_id,
-                crew_user_id=user.id,
-                role=role,
-            ))
-        
+            await EventBus.emit(
+                CrewRemovedEvent(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    entity_id=crew.id,
+                    match_id=match_id,
+                    crew_user_id=user.id,
+                    role=role,
+                )
+            )
+
         return success
 
     async def admin_add_crew(
@@ -1484,8 +1778,8 @@ class TournamentService:
         match_id: int,
         user_id: int,
         role: str,
-        approved: bool = True
-    ) -> Optional['Crew']:
+        approved: bool = True,
+    ) -> Optional["Crew"]:
         """Add a user as crew for a match (admin action).
 
         Requires ADMIN or TOURNAMENT_MANAGER permission in the organization.
@@ -1507,30 +1801,35 @@ class TournamentService:
         """
 
         # Check if admin user has permission to approve crew (same permission level)
-        allowed = await self.org_service.user_can_approve_crew(admin_user, organization_id)
+        allowed = await self.org_service.user_can_approve_crew(
+            admin_user, organization_id
+        )
         if not allowed:
             logger.warning(
                 "Unauthorized admin_add_crew by user %s for org %s",
-                getattr(admin_user, 'id', None),
-                organization_id
+                getattr(admin_user, "id", None),
+                organization_id,
             )
             return None
 
         # Check if tournament schedule is read-only
-        match = await Match.filter(
-            id=match_id,
-            tournament__organization_id=organization_id
-        ).select_related('tournament').first()
+        match = (
+            await Match.filter(id=match_id, tournament__organization_id=organization_id)
+            .select_related("tournament")
+            .first()
+        )
 
         if not match:
             logger.warning("Match %s not found in org %s", match_id, organization_id)
             return None
 
         if await self.is_schedule_read_only(match.tournament):
-            error_msg = "Cannot add crew - tournament schedule is managed by SpeedGaming"
+            error_msg = (
+                "Cannot add crew - tournament schedule is managed by SpeedGaming"
+            )
             logger.warning(
                 "Crew assignment blocked - tournament %s has SpeedGaming integration enabled",
-                match.tournament_id
+                match.tournament_id,
             )
             raise ValueError(error_msg)
 
@@ -1540,7 +1839,7 @@ class TournamentService:
             logger.warning(
                 "Cannot add user %s as crew - not a member of org %s",
                 user_id,
-                organization_id
+                organization_id,
             )
             return None
 
@@ -1549,25 +1848,29 @@ class TournamentService:
             user_id=user_id,
             role=role,
             approved=approved,
-            approver_user_id=admin_user.id if approved else None
+            approver_user_id=admin_user.id if approved else None,
         )
 
         if crew:
             # Emit crew added event (admin action)
-            await EventBus.emit(CrewAddedEvent(
-                user_id=admin_user.id,
-                organization_id=organization_id,
-                entity_id=crew.id,
-                match_id=match_id,
-                crew_user_id=user_id,
-                role=role,
-                added_by_admin=True,
-                auto_approved=approved,
-            ))
+            await EventBus.emit(
+                CrewAddedEvent(
+                    user_id=admin_user.id,
+                    organization_id=organization_id,
+                    entity_id=crew.id,
+                    match_id=match_id,
+                    crew_user_id=user_id,
+                    role=role,
+                    added_by_admin=True,
+                    auto_approved=approved,
+                )
+            )
 
         return crew
 
-    async def approve_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
+    async def approve_crew(
+        self, user: Optional[User], organization_id: int, crew_id: int
+    ) -> Optional["Crew"]:
         """Approve a crew signup.
 
         Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
@@ -1588,11 +1891,17 @@ class TournamentService:
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)
         if not allowed:
-            logger.warning("Unauthorized crew approval by user %s for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning(
+                "Unauthorized crew approval by user %s for org %s",
+                getattr(user, "id", None),
+                organization_id,
+            )
             return None
 
         # Get crew info before approving
-        crew_before = await Crew.filter(id=crew_id).select_related('match__tournament').first()
+        crew_before = (
+            await Crew.filter(id=crew_id).select_related("match__tournament").first()
+        )
 
         if not crew_before:
             logger.warning("Crew %s not found", crew_id)
@@ -1600,10 +1909,12 @@ class TournamentService:
 
         # Check if tournament schedule is read-only
         if await self.is_schedule_read_only(crew_before.match.tournament):
-            error_msg = "Cannot approve crew - tournament schedule is managed by SpeedGaming"
+            error_msg = (
+                "Cannot approve crew - tournament schedule is managed by SpeedGaming"
+            )
             logger.warning(
                 "Crew approval blocked - tournament %s has SpeedGaming integration enabled",
-                crew_before.match.tournament_id
+                crew_before.match.tournament_id,
             )
             raise ValueError(error_msg)
 
@@ -1611,105 +1922,136 @@ class TournamentService:
 
         if crew and crew_before:
             # Emit crew approved event
-            await EventBus.emit(CrewApprovedEvent(
-                user_id=user.id,
-                organization_id=organization_id,
-                entity_id=crew_id,
-                match_id=crew.match_id,
-                crew_user_id=crew.user_id,
-                role=crew.role,
-                approved_by_user_id=user.id,
-            ))
+            await EventBus.emit(
+                CrewApprovedEvent(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    entity_id=crew_id,
+                    match_id=crew.match_id,
+                    crew_user_id=crew.user_id,
+                    role=crew.role,
+                    approved_by_user_id=user.id,
+                )
+            )
 
         return crew
 
-    async def unapprove_crew(self, user: Optional[User], organization_id: int, crew_id: int) -> Optional['Crew']:
+    async def unapprove_crew(
+        self, user: Optional[User], organization_id: int, crew_id: int
+    ) -> Optional["Crew"]:
         """Remove approval from a crew signup.
-        
+
         Requires ADMIN, TOURNAMENT_MANAGER, or MODERATOR permission in the organization.
-        
+
         Args:
             user: User attempting to unapprove the crew
             organization_id: Organization ID for permission check
             crew_id: ID of the crew signup to unapprove
-        
+
         Returns:
             The unapproved Crew record or None if unauthorized.
         """
         from models.match_schedule import Crew
-        
+
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)
         if not allowed:
-            logger.warning("Unauthorized crew unapproval by user %s for org %s", getattr(user, 'id', None), organization_id)
+            logger.warning(
+                "Unauthorized crew unapproval by user %s for org %s",
+                getattr(user, "id", None),
+                organization_id,
+            )
             return None
-        
+
         # Get crew info before unapproving
         crew_before = await Crew.filter(id=crew_id).first()
-        
+
         crew = await self.repo.unapprove_crew(crew_id)
-        
+
         if crew and crew_before:
             # Emit crew unapproved event
-            await EventBus.emit(CrewUnapprovedEvent(
-                user_id=user.id,
-                organization_id=organization_id,
-                entity_id=crew_id,
-                match_id=crew.match_id,
-                crew_user_id=crew.user_id,
-                role=crew.role,
-            ))
-        
+            await EventBus.emit(
+                CrewUnapprovedEvent(
+                    user_id=user.id,
+                    organization_id=organization_id,
+                    entity_id=crew_id,
+                    match_id=crew.match_id,
+                    crew_user_id=crew.user_id,
+                    role=crew.role,
+                )
+            )
+
         return crew
 
-    async def set_match_seed(self, user: Optional[User], organization_id: int, match_id: int, url: str, description: Optional[str] = None):
+    async def set_match_seed(
+        self,
+        user: Optional[User],
+        organization_id: int,
+        match_id: int,
+        url: str,
+        description: Optional[str] = None,
+    ):
         """Set or update seed information for a match.
-        
+
         Requires TOURNAMENT_MANAGER permission.
         Returns the MatchSeed instance or None if unauthorized.
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated set_match_seed attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated set_match_seed attempt for org %s", organization_id
+            )
             return None
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("match", "set_seed"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
-            logger.warning("Unauthorized set_match_seed by user %s for org %s", user.id, organization_id)
+            logger.warning(
+                "Unauthorized set_match_seed by user %s for org %s",
+                user.id,
+                organization_id,
+            )
             return None
-        
+
         return await self.repo.create_or_update_match_seed(match_id, url, description)
 
-    async def delete_match_seed(self, user: Optional[User], organization_id: int, match_id: int) -> bool:
+    async def delete_match_seed(
+        self, user: Optional[User], organization_id: int, match_id: int
+    ) -> bool:
         """Delete seed information for a match.
-        
+
         Requires TOURNAMENT_MANAGER permission.
         Returns True if deleted, False if not found or unauthorized.
         """
         # Use new authorization system
         if not user:
-            logger.warning("Unauthenticated delete_match_seed attempt for org %s", organization_id)
+            logger.warning(
+                "Unauthenticated delete_match_seed attempt for org %s", organization_id
+            )
             return False
-        
+
         # Check permission using new authorization service
         allowed = await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("match", "delete_seed"),
             resource=self.auth.get_resource_identifier("match", match_id),
-            organization_id=organization_id
+            organization_id=organization_id,
         )
-        
+
         if not allowed:
-            logger.warning("Unauthorized delete_match_seed by user %s for org %s", user.id, organization_id)
+            logger.warning(
+                "Unauthorized delete_match_seed by user %s for org %s",
+                user.id,
+                organization_id,
+            )
             return False
-        
+
         return await self.repo.delete_match_seed(match_id)
 
     async def process_match_race_finish(
@@ -1737,15 +2079,16 @@ class TournamentService:
         try:
             # Get the match
             match = await Match.get_or_none(id=match_id).prefetch_related(
-                'tournament',
-                'players__user'
+                "tournament", "players__user"
             )
             if not match:
-                logger.warning("Match %s not found when processing race finish", match_id)
+                logger.warning(
+                    "Match %s not found when processing race finish", match_id
+                )
                 return False
 
             # Map RaceTime.gg IDs to User IDs
-            racetime_ids = [r['racetime_id'] for r in results if r.get('racetime_id')]
+            racetime_ids = [r["racetime_id"] for r in results if r.get("racetime_id")]
             users_map = {
                 u.racetime_id: u
                 for u in await User.filter(racetime_id__in=racetime_ids).all()
@@ -1754,9 +2097,9 @@ class TournamentService:
             # Update match player records with finish ranks
             updated_count = 0
             for result in results:
-                racetime_id = result.get('racetime_id')
-                status = result.get('status')
-                place = result.get('place')
+                racetime_id = result.get("racetime_id")
+                status = result.get("status")
+                place = result.get("place")
 
                 if not racetime_id:
                     continue
@@ -1766,7 +2109,7 @@ class TournamentService:
                     logger.warning(
                         "User with RaceTime ID %s not found in match %s results",
                         racetime_id,
-                        match_id
+                        match_id,
                     )
                     continue
 
@@ -1774,59 +2117,60 @@ class TournamentService:
                 # Note: Players who forfeit or are disqualified do not receive a finish rank
                 # since they did not complete the race. Their status is tracked in the
                 # race results but not reflected in finish_rank field.
-                if status != 'finished' or place is None:
+                if status != "finished" or place is None:
                     logger.debug(
                         "Skipping result for user %s (status: %s, place: %s)",
                         user.id,
                         status,
-                        place
+                        place,
                     )
                     continue
 
                 # Find and update the match player record
                 match_player = await MatchPlayers.get_or_none(
-                    match_id=match_id,
-                    user_id=user.id
+                    match_id=match_id, user_id=user.id
                 )
                 if not match_player:
                     logger.warning(
                         "Match player record not found for user %s in match %s",
                         user.id,
-                        match_id
+                        match_id,
                     )
                     continue
 
                 # Update finish rank
                 match_player.finish_rank = place
-                await match_player.save(update_fields=['finish_rank'])
+                await match_player.save(update_fields=["finish_rank"])
                 updated_count += 1
 
                 logger.info(
                     "Updated match %s player %s with finish rank %s",
                     match_id,
                     user.id,
-                    place
+                    place,
                 )
 
             # Mark match as finished
             match.finished_at = datetime.now(timezone.utc)
-            await match.save(update_fields=['finished_at'])
+            await match.save(update_fields=["finished_at"])
 
             logger.info(
                 "Match %s race finished - updated %s player finish ranks",
                 match_id,
-                updated_count
+                updated_count,
             )
 
             # Emit match finished event
-            await EventBus.emit(MatchFinishedEvent(
-                user_id=SYSTEM_USER_ID,  # System action (automated)
-                organization_id=match.tournament.organization_id,
-                entity_id=match_id,
-                match_id=match_id,
-                tournament_id=match.tournament_id,
-                finisher_count=updated_count,
-            ))
+            await EventBus.emit(
+                MatchFinishedEvent(
+                    user_id=SYSTEM_USER_ID,  # System action (automated)
+                    organization_id=match.tournament.organization_id,
+                    entity_id=match_id,
+                    match_id=match_id,
+                    tournament_id=match.tournament_id,
+                    finisher_count=updated_count,
+                )
+            )
 
             return True
 
@@ -1835,6 +2179,6 @@ class TournamentService:
                 "Failed to process match race finish for match %s: %s",
                 match_id,
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return False

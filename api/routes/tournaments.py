@@ -40,7 +40,7 @@ router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 )
 async def list_tournaments(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentListResponse:
     """
     List organization tournaments.
@@ -79,7 +79,7 @@ async def list_tournaments(
 async def create_tournament(
     data: TournamentCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentOut:
     """
     Create a tournament.
@@ -105,13 +105,12 @@ async def create_tournament(
         name=data.name,
         description=data.description,
         is_active=data.is_active,
-        tracker_enabled=data.tracker_enabled
+        tracker_enabled=data.tracker_enabled,
     )
 
     if not tournament:
         raise HTTPException(
-            status_code=403,
-            detail="Insufficient permissions to create tournaments"
+            status_code=403, detail="Insufficient permissions to create tournaments"
         )
 
     return TournamentOut.model_validate(tournament)
@@ -136,7 +135,7 @@ async def update_tournament(
     data: TournamentUpdateRequest,
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentOut:
     """
     Update a tournament.
@@ -165,13 +164,12 @@ async def update_tournament(
         name=data.name,
         description=data.description,
         is_active=data.is_active,
-        tracker_enabled=data.tracker_enabled
+        tracker_enabled=data.tracker_enabled,
     )
 
     if not tournament:
         raise HTTPException(
-            status_code=403,
-            detail="Tournament not found or insufficient permissions"
+            status_code=403, detail="Tournament not found or insufficient permissions"
         )
 
     return TournamentOut.model_validate(tournament)
@@ -194,7 +192,7 @@ async def update_tournament(
 async def delete_tournament(
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete a tournament.
@@ -213,15 +211,12 @@ async def delete_tournament(
     """
     service = TournamentService()
     success = await service.delete_tournament(
-        user=current_user,
-        organization_id=organization_id,
-        tournament_id=tournament_id
+        user=current_user, organization_id=organization_id, tournament_id=tournament_id
     )
 
     if not success:
         raise HTTPException(
-            status_code=403,
-            detail="Tournament not found or insufficient permissions"
+            status_code=403, detail="Tournament not found or insufficient permissions"
         )
 
 
@@ -243,7 +238,9 @@ async def delete_tournament(
 async def list_tournament_players(
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> TournamentPlayerListResponse:
     """
     List tournament players.
@@ -283,7 +280,9 @@ async def register_player(
     tournament_id: int = Path(..., description="Tournament ID"),
     user_id: int = Path(..., description="User ID to register"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> TournamentPlayerOut:
     """
     Register a player for tournament.
@@ -304,9 +303,7 @@ async def register_player(
     """
     service = TournamentService()
     registration = await service.register_user_for_tournament(
-        organization_id,
-        tournament_id,
-        user_id
+        organization_id, tournament_id, user_id
     )
 
     if not registration:
@@ -332,7 +329,9 @@ async def unregister_player(
     tournament_id: int = Path(..., description="Tournament ID"),
     user_id: int = Path(..., description="User ID to unregister"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> None:
     """
     Unregister a player from tournament.
@@ -350,9 +349,7 @@ async def unregister_player(
     """
     service = TournamentService()
     success = await service.unregister_user_from_tournament(
-        organization_id,
-        tournament_id,
-        user_id
+        organization_id, tournament_id, user_id
     )
 
     if not success:
@@ -376,7 +373,9 @@ async def unregister_player(
 )
 async def list_matches(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> MatchListResponse:
     """
     List organization matches.
@@ -414,7 +413,7 @@ async def list_matches(
 async def create_match(
     data: MatchCreateRequest,
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> MatchOut:
     """
     Create a match.
@@ -440,13 +439,12 @@ async def create_match(
         player_ids=data.player_ids,
         scheduled_at=data.scheduled_at,
         title=data.title,
-        comment=data.comment
+        comment=data.comment,
     )
 
     if not match:
         raise HTTPException(
-            status_code=403,
-            detail="Insufficient permissions or invalid tournament"
+            status_code=403, detail="Insufficient permissions or invalid tournament"
         )
 
     return MatchOut.model_validate(match)
@@ -471,7 +469,7 @@ async def update_match(
     data: MatchUpdateRequest,
     match_id: int = Path(..., description="Match ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> MatchOut:
     """
     Update a match.
@@ -499,13 +497,12 @@ async def update_match(
         title=data.title,
         scheduled_at=data.scheduled_at,
         stream_channel_id=data.stream_channel_id,
-        comment=data.comment
+        comment=data.comment,
     )
 
     if not match:
         raise HTTPException(
-            status_code=403,
-            detail="Match not found or insufficient permissions"
+            status_code=403, detail="Match not found or insufficient permissions"
         )
 
     return MatchOut.model_validate(match)
@@ -530,7 +527,7 @@ async def advance_match_status(
     data: MatchAdvanceStatusRequest,
     match_id: int = Path(..., description="Match ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> MatchOut:
     """
     Advance match status.
@@ -559,22 +556,18 @@ async def advance_match_status(
             user=current_user,
             organization_id=organization_id,
             match_id=match_id,
-            status=data.status
+            status=data.status,
         )
 
         if not match:
             raise HTTPException(
-                status_code=403,
-                detail="Match not found or insufficient permissions"
+                status_code=403, detail="Match not found or insufficient permissions"
             )
 
         return MatchOut.model_validate(match)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post(
@@ -596,7 +589,7 @@ async def revert_match_status(
     data: MatchAdvanceStatusRequest,
     match_id: int = Path(..., description="Match ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> MatchOut:
     """
     Revert match status.
@@ -627,22 +620,18 @@ async def revert_match_status(
             user=current_user,
             organization_id=organization_id,
             match_id=match_id,
-            status=data.status
+            status=data.status,
         )
 
         if not match:
             raise HTTPException(
-                status_code=403,
-                detail="Match not found or insufficient permissions"
+                status_code=403, detail="Match not found or insufficient permissions"
             )
 
         return MatchOut.model_validate(match)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=400,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 # ==================== CREW MANAGEMENT ====================
@@ -665,7 +654,7 @@ async def revert_match_status(
 async def approve_crew(
     data: CrewApprovalRequest,
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> CrewOut:
     """
     Approve a crew signup.
@@ -686,15 +675,12 @@ async def approve_crew(
     """
     service = TournamentService()
     crew = await service.approve_crew(
-        user=current_user,
-        organization_id=organization_id,
-        crew_id=data.crew_id
+        user=current_user, organization_id=organization_id, crew_id=data.crew_id
     )
 
     if not crew:
         raise HTTPException(
-            status_code=403,
-            detail="Crew signup not found or insufficient permissions"
+            status_code=403, detail="Crew signup not found or insufficient permissions"
         )
 
     return CrewOut.model_validate(crew)
@@ -717,7 +703,7 @@ async def approve_crew(
 async def unapprove_crew(
     data: CrewApprovalRequest,
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> CrewOut:
     """
     Remove approval from a crew signup.
@@ -738,15 +724,12 @@ async def unapprove_crew(
     """
     service = TournamentService()
     crew = await service.unapprove_crew(
-        user=current_user,
-        organization_id=organization_id,
-        crew_id=data.crew_id
+        user=current_user, organization_id=organization_id, crew_id=data.crew_id
     )
 
     if not crew:
         raise HTTPException(
-            status_code=403,
-            detail="Crew signup not found or insufficient permissions"
+            status_code=403, detail="Crew signup not found or insufficient permissions"
         )
 
     return CrewOut.model_validate(crew)

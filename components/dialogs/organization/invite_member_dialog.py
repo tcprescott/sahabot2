@@ -21,7 +21,7 @@ class InviteMemberDialog(BaseDialog):
         self,
         organization_id: int,
         organization_name: str,
-        on_save: Optional[Callable[[], Awaitable[None]]] = None
+        on_save: Optional[Callable[[], Awaitable[None]]] = None,
     ) -> None:
         super().__init__()
         self.organization_id = organization_id
@@ -33,22 +33,24 @@ class InviteMemberDialog(BaseDialog):
         self.user_select = None
 
     async def show(self) -> None:
-        title = f'Invite Member to {self.organization_name}'
-        self.create_dialog(title=title, icon='person_add')
+        title = f"Invite Member to {self.organization_name}"
+        self.create_dialog(title=title, icon="person_add")
         await super().show()
 
     def _render_body(self) -> None:
         with self.create_form_grid(columns=1):
-            with ui.element('div').classes('span-1'):
-                ui.label('Select a user to add to this organization').classes('font-semibold mb-2')
+            with ui.element("div").classes("span-1"):
+                ui.label("Select a user to add to this organization").classes(
+                    "font-semibold mb-2"
+                )
 
                 # Get all users for the dropdown
                 # Note: this loads synchronously; in production you might want lazy loading
                 self.user_select = ui.select(
-                    label='User',
+                    label="User",
                     options={},
                     with_input=True,
-                ).classes('w-full')
+                ).classes("w-full")
 
                 # Load users asynchronously
                 async def load_users():
@@ -61,20 +63,22 @@ class InviteMemberDialog(BaseDialog):
                 ui.timer(0.1, load_users, once=True)
 
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Add Member', on_click=self._save).props('color=positive').classes('btn')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Add Member", on_click=self._save).props(
+                "color=positive"
+            ).classes("btn")
 
     async def _save(self) -> None:
         if not self.user_select or not self.user_select.value:
-            ui.notify('Please select a user', type='warning')
+            ui.notify("Please select a user", type="warning")
             return
 
         user_id = self.user_select.value
         try:
             await self.org_service.add_member(self.organization_id, user_id)
-            ui.notify('Member added successfully', type='positive')
+            ui.notify("Member added successfully", type="positive")
             if self.on_save:
                 await self.on_save()
             await self.close()
         except Exception as e:
-            ui.notify(f'Failed to add member: {str(e)}', type='negative')
+            ui.notify(f"Failed to add member: {str(e)}", type="negative")

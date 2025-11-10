@@ -61,6 +61,7 @@ logger = logging.getLogger(__name__)
 # These listeners create audit log entries for important events
 # Priority: HIGH - audit logging should happen before other handlers
 
+
 @EventBus.on(UserCreatedEvent, priority=EventPriority.HIGH)
 async def log_user_created(event: UserCreatedEvent) -> None:
     """Log user creation to audit log."""
@@ -112,7 +113,7 @@ async def log_user_permission_changed(event: UserPermissionChangedEvent) -> None
         "Logged permission change: user_id=%s, %s -> %s",
         event.entity_id,
         event.old_permission,
-        event.new_permission
+        event.new_permission,
     )
 
 
@@ -150,7 +151,11 @@ async def log_organization_member_added(event: OrganizationMemberAddedEvent) -> 
     user_repo = UserRepository()
 
     # Get the user who added the member
-    user = await user_repo.get_by_id(event.added_by_user_id) if event.added_by_user_id else None
+    user = (
+        await user_repo.get_by_id(event.added_by_user_id)
+        if event.added_by_user_id
+        else None
+    )
 
     await audit_service.log_action(
         user=user,
@@ -164,12 +169,14 @@ async def log_organization_member_added(event: OrganizationMemberAddedEvent) -> 
     logger.info(
         "Logged member addition: user_id=%s to org_id=%s",
         event.member_user_id,
-        event.organization_id
+        event.organization_id,
     )
 
 
 @EventBus.on(OrganizationMemberRemovedEvent, priority=EventPriority.HIGH)
-async def log_organization_member_removed(event: OrganizationMemberRemovedEvent) -> None:
+async def log_organization_member_removed(
+    event: OrganizationMemberRemovedEvent,
+) -> None:
     """Log member removal to audit log."""
     from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
@@ -178,7 +185,11 @@ async def log_organization_member_removed(event: OrganizationMemberRemovedEvent)
     user_repo = UserRepository()
 
     # Get the user who removed the member
-    user = await user_repo.get_by_id(event.removed_by_user_id) if event.removed_by_user_id else None
+    user = (
+        await user_repo.get_by_id(event.removed_by_user_id)
+        if event.removed_by_user_id
+        else None
+    )
 
     await audit_service.log_action(
         user=user,
@@ -193,7 +204,7 @@ async def log_organization_member_removed(event: OrganizationMemberRemovedEvent)
     logger.info(
         "Logged member removal: user_id=%s from org_id=%s",
         event.member_user_id,
-        event.organization_id
+        event.organization_id,
     )
 
 
@@ -232,7 +243,9 @@ async def log_race_submitted(event: RaceSubmittedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the racer who submitted
-    user = await user_repo.get_by_id(event.racer_user_id) if event.racer_user_id else None
+    user = (
+        await user_repo.get_by_id(event.racer_user_id) if event.racer_user_id else None
+    )
 
     await audit_service.log_action(
         user=user,
@@ -248,7 +261,7 @@ async def log_race_submitted(event: RaceSubmittedEvent) -> None:
     logger.info(
         "Logged race submission: race_id=%s, user_id=%s",
         event.entity_id,
-        event.racer_user_id
+        event.racer_user_id,
     )
 
 
@@ -262,7 +275,11 @@ async def log_race_approved(event: RaceApprovedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the reviewer who approved
-    user = await user_repo.get_by_id(event.reviewer_user_id) if event.reviewer_user_id else None
+    user = (
+        await user_repo.get_by_id(event.reviewer_user_id)
+        if event.reviewer_user_id
+        else None
+    )
 
     await audit_service.log_action(
         user=user,
@@ -277,12 +294,14 @@ async def log_race_approved(event: RaceApprovedEvent) -> None:
     logger.info(
         "Logged race approval: race_id=%s, reviewer_id=%s",
         event.entity_id,
-        event.reviewer_user_id
+        event.reviewer_user_id,
     )
 
 
 @EventBus.on(TournamentMatchSettingsSubmittedEvent, priority=EventPriority.HIGH)
-async def log_match_settings_submitted(event: TournamentMatchSettingsSubmittedEvent) -> None:
+async def log_match_settings_submitted(
+    event: TournamentMatchSettingsSubmittedEvent,
+) -> None:
     """Log tournament match settings submission to audit log."""
     from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
@@ -291,7 +310,11 @@ async def log_match_settings_submitted(event: TournamentMatchSettingsSubmittedEv
     user_repo = UserRepository()
 
     # Get the user who submitted
-    user = await user_repo.get_by_id(event.submitted_by_user_id) if event.submitted_by_user_id else None
+    user = (
+        await user_repo.get_by_id(event.submitted_by_user_id)
+        if event.submitted_by_user_id
+        else None
+    )
 
     await audit_service.log_action(
         user=user,
@@ -309,7 +332,7 @@ async def log_match_settings_submitted(event: TournamentMatchSettingsSubmittedEv
         "Logged settings submission: submission_id=%s, match_id=%s, user_id=%s",
         event.entity_id,
         event.match_id,
-        event.submitted_by_user_id
+        event.submitted_by_user_id,
     )
 
 
@@ -408,7 +431,9 @@ async def log_organization_deleted(event: OrganizationDeletedEvent) -> None:
 
 
 @EventBus.on(OrganizationMemberPermissionChangedEvent, priority=EventPriority.HIGH)
-async def log_organization_member_permission_changed(event: OrganizationMemberPermissionChangedEvent) -> None:
+async def log_organization_member_permission_changed(
+    event: OrganizationMemberPermissionChangedEvent,
+) -> None:
     """Log member permission change to audit log."""
     from application.services.core.audit_service import AuditService
     from application.repositories.user_repository import UserRepository
@@ -433,7 +458,7 @@ async def log_organization_member_permission_changed(event: OrganizationMemberPe
     logger.info(
         "Logged member permission change: user_id=%s in org_id=%s",
         event.member_user_id,
-        event.organization_id
+        event.organization_id,
     )
 
 
@@ -540,7 +565,11 @@ async def log_race_rejected(event: RaceRejectedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the reviewer who rejected
-    user = await user_repo.get_by_id(event.reviewer_user_id) if event.reviewer_user_id else None
+    user = (
+        await user_repo.get_by_id(event.reviewer_user_id)
+        if event.reviewer_user_id
+        else None
+    )
 
     await audit_service.log_action(
         user=user,
@@ -556,7 +585,7 @@ async def log_race_rejected(event: RaceRejectedEvent) -> None:
     logger.info(
         "Logged race rejection: race_id=%s, reviewer_id=%s",
         event.entity_id,
-        event.reviewer_user_id
+        event.reviewer_user_id,
     )
 
 
@@ -652,10 +681,13 @@ async def log_async_live_race_updated(event: AsyncLiveRaceUpdatedEvent) -> None:
 # These listeners queue notifications for subscribed users
 # Priority: NORMAL - notifications happen after audit logging
 
+
 @EventBus.on(MatchScheduledEvent, priority=EventPriority.NORMAL)
 async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
     """Queue notifications for match scheduled event."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
 
@@ -665,7 +697,9 @@ async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
     # Get all participants
     participant_ids = event.participant_ids or []
     if not participant_ids:
-        logger.debug("No participants for match %s, skipping notifications", event.entity_id)
+        logger.debug(
+            "No participants for match %s, skipping notifications", event.entity_id
+        )
         return
 
     # Fetch all participant users
@@ -676,7 +710,9 @@ async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
             participants.append(user)
 
     if not participants:
-        logger.warning("Could not find any participant users for match %s", event.entity_id)
+        logger.warning(
+            "Could not find any participant users for match %s", event.entity_id
+        )
         return
 
     # Base event data (common to all notifications)
@@ -703,13 +739,19 @@ async def notify_match_scheduled(event: MatchScheduledEvent) -> None:
             },
             organization_id=event.organization_id,
         )
-        logger.debug("Queued match scheduled notification for participant %s", participant.id)
+        logger.debug(
+            "Queued match scheduled notification for participant %s", participant.id
+        )
 
 
 @EventBus.on(TournamentMatchSettingsSubmittedEvent, priority=EventPriority.NORMAL)
-async def notify_match_settings_submitted(event: TournamentMatchSettingsSubmittedEvent) -> None:
+async def notify_match_settings_submitted(
+    event: TournamentMatchSettingsSubmittedEvent,
+) -> None:
     """Queue notifications for match settings submission."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
     from models.match_schedule import MatchPlayers
@@ -718,13 +760,21 @@ async def notify_match_settings_submitted(event: TournamentMatchSettingsSubmitte
     user_repo = UserRepository()
 
     # Get all participants in the match
-    participants = await MatchPlayers.filter(match_id=event.match_id).prefetch_related('user')
+    participants = await MatchPlayers.filter(match_id=event.match_id).prefetch_related(
+        "user"
+    )
     if not participants:
-        logger.debug("No participants for match %s, skipping notifications", event.match_id)
+        logger.debug(
+            "No participants for match %s, skipping notifications", event.match_id
+        )
         return
 
     # Get the submitter
-    submitter = await user_repo.get_by_id(event.submitted_by_user_id) if event.submitted_by_user_id else None
+    submitter = (
+        await user_repo.get_by_id(event.submitted_by_user_id)
+        if event.submitted_by_user_id
+        else None
+    )
     submitter_name = submitter.get_display_name() if submitter else "Unknown"
 
     # Base event data
@@ -734,7 +784,11 @@ async def notify_match_settings_submitted(event: TournamentMatchSettingsSubmitte
         "game_number": event.game_number,
         "submitted_by": submitter_name,
         "submitted_by_id": event.submitted_by_user_id,
-        "settings_summary": _format_settings_summary(event.settings_data) if event.settings_data else "Settings submitted",
+        "settings_summary": (
+            _format_settings_summary(event.settings_data)
+            if event.settings_data
+            else "Settings submitted"
+        ),
         "submission_url": f"/tournaments/matches/{event.match_id}/submit",
     }
 
@@ -753,7 +807,7 @@ async def notify_match_settings_submitted(event: TournamentMatchSettingsSubmitte
         logger.debug(
             "Queued match settings notification for participant %s (match %s)",
             participant.user_id,
-            event.match_id
+            event.match_id,
         )
 
 
@@ -792,7 +846,9 @@ def _format_settings_summary(settings: dict) -> str:
 @EventBus.on(TournamentCreatedEvent, priority=EventPriority.NORMAL)
 async def notify_tournament_created(event: TournamentCreatedEvent) -> None:
     """Queue notifications for tournament created event."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -814,15 +870,16 @@ async def notify_tournament_created(event: TournamentCreatedEvent) -> None:
         organization_id=event.organization_id,
     )
     logger.debug(
-        "Queued tournament created notifications for tournament %s",
-        event.entity_id
+        "Queued tournament created notifications for tournament %s", event.entity_id
     )
 
 
 @EventBus.on(InviteCreatedEvent, priority=EventPriority.NORMAL)
 async def notify_invite_created(event: InviteCreatedEvent) -> None:
     """Queue notifications for organization invite event."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
 
@@ -830,7 +887,11 @@ async def notify_invite_created(event: InviteCreatedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the invited user
-    invited_user = await user_repo.get_by_id(event.invited_user_id) if event.invited_user_id else None
+    invited_user = (
+        await user_repo.get_by_id(event.invited_user_id)
+        if event.invited_user_id
+        else None
+    )
     if not invited_user:
         logger.warning("Could not find invited user %s", event.invited_user_id)
         return
@@ -857,7 +918,9 @@ async def notify_invite_created(event: InviteCreatedEvent) -> None:
 @EventBus.on(CrewAddedEvent, priority=EventPriority.NORMAL)
 async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
     """Queue notifications when crew is added in auto-approved state (admin added)."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
     from models.match_schedule import Match
@@ -870,7 +933,9 @@ async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the crew member user
-    crew_user = await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    crew_user = (
+        await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    )
     if not crew_user:
         logger.warning("Could not find crew user %s", event.crew_user_id)
         return
@@ -883,26 +948,28 @@ async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
     tournament_name = None
     stream_channel = None
     player_names = []
-    
+
     if event.match_id:
-        match = await Match.filter(id=event.match_id).prefetch_related(
-            'tournament',
-            'stream_channel',
-            'players__user'
-        ).first()
-        
+        match = (
+            await Match.filter(id=event.match_id)
+            .prefetch_related("tournament", "stream_channel", "players__user")
+            .first()
+        )
+
         if match:
             # Get tournament name
             if match.tournament:
                 tournament_name = match.tournament.name
-            
+
             # Get stream channel name
             if match.stream_channel:
                 stream_channel = match.stream_channel.name
-            
+
             # Get player names
             if match.players:
-                player_names = [p.user.get_display_name() for p in match.players if p.user]
+                player_names = [
+                    p.user.get_display_name() for p in match.players if p.user
+                ]
 
     event_data = {
         "match_id": event.match_id,
@@ -927,7 +994,9 @@ async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
 @EventBus.on(CrewApprovedEvent, priority=EventPriority.NORMAL)
 async def notify_crew_approved(event: CrewApprovedEvent) -> None:
     """Queue notifications when crew signup is approved."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
     from models.match_schedule import Match
@@ -936,39 +1005,47 @@ async def notify_crew_approved(event: CrewApprovedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the crew member user
-    crew_user = await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    crew_user = (
+        await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    )
     if not crew_user:
         logger.warning("Could not find crew user %s", event.crew_user_id)
         return
 
     # Get the approver
-    approved_by = await user_repo.get_by_id(event.approved_by_user_id) if event.approved_by_user_id else None
+    approved_by = (
+        await user_repo.get_by_id(event.approved_by_user_id)
+        if event.approved_by_user_id
+        else None
+    )
 
     # Get match details
     match = None
     tournament_name = None
     stream_channel = None
     player_names = []
-    
+
     if event.match_id:
-        match = await Match.filter(id=event.match_id).prefetch_related(
-            'tournament',
-            'stream_channel',
-            'players__user'
-        ).first()
-        
+        match = (
+            await Match.filter(id=event.match_id)
+            .prefetch_related("tournament", "stream_channel", "players__user")
+            .first()
+        )
+
         if match:
             # Get tournament name
             if match.tournament:
                 tournament_name = match.tournament.name
-            
+
             # Get stream channel name
             if match.stream_channel:
                 stream_channel = match.stream_channel.name
-            
+
             # Get player names
             if match.players:
-                player_names = [p.user.get_display_name() for p in match.players if p.user]
+                player_names = [
+                    p.user.get_display_name() for p in match.players if p.user
+                ]
 
     event_data = {
         "match_id": event.match_id,
@@ -993,7 +1070,9 @@ async def notify_crew_approved(event: CrewApprovedEvent) -> None:
 @EventBus.on(CrewRemovedEvent, priority=EventPriority.NORMAL)
 async def notify_crew_removed(event: CrewRemovedEvent) -> None:
     """Queue notifications when crew is removed from a match."""
-    from application.services.notifications.notification_service import NotificationService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
 
@@ -1001,7 +1080,9 @@ async def notify_crew_removed(event: CrewRemovedEvent) -> None:
     user_repo = UserRepository()
 
     # Get the crew member user
-    crew_user = await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    crew_user = (
+        await user_repo.get_by_id(event.crew_user_id) if event.crew_user_id else None
+    )
     if not crew_user:
         logger.warning("Could not find crew user %s", event.crew_user_id)
         return
@@ -1027,11 +1108,16 @@ async def notify_crew_removed(event: CrewRemovedEvent) -> None:
 # These listeners queue notifications for live race events
 # Priority: NORMAL - notifications happen after audit logging
 
+
 @EventBus.on(AsyncLiveRaceCreatedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
     """Queue notifications when a live race is scheduled."""
-    from application.services.notifications.notification_service import NotificationService
-    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
+    from application.services.tournaments.async_live_race_service import (
+        AsyncLiveRaceService,
+    )
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -1040,17 +1126,23 @@ async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
     # Get eligible participants for this race
     try:
         eligibility_list = await live_race_service.get_eligible_participants(
-            organization_id=event.organization_id,
-            live_race_id=event.entity_id
+            organization_id=event.organization_id, live_race_id=event.entity_id
         )
     except ValueError as e:
-        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        logger.warning(
+            "Could not get eligible participants for live race %s: %s",
+            event.entity_id,
+            e,
+        )
         return
 
     # Filter to only eligible participants
     eligible_users = [e.user for e in eligibility_list if e.is_eligible]
     if not eligible_users:
-        logger.debug("No eligible participants for live race %s, skipping notifications", event.entity_id)
+        logger.debug(
+            "No eligible participants for live race %s, skipping notifications",
+            event.entity_id,
+        )
         return
 
     # Base event data
@@ -1059,7 +1151,9 @@ async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
         "tournament_id": event.tournament_id,
         "tournament_name": event.tournament_name,
         "pool_name": event.pool_name,
-        "scheduled_time": event.scheduled_time.isoformat() if event.scheduled_time else None,
+        "scheduled_time": (
+            event.scheduled_time.isoformat() if event.scheduled_time else None
+        ),
     }
 
     # Notify each eligible participant
@@ -1076,9 +1170,15 @@ async def notify_live_race_scheduled(event: AsyncLiveRaceCreatedEvent) -> None:
 @EventBus.on(AsyncLiveRaceRoomOpenedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> None:
     """Queue notifications when a live race room opens."""
-    from application.services.notifications.notification_service import NotificationService
-    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
-    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
+    from application.services.tournaments.async_live_race_service import (
+        AsyncLiveRaceService,
+    )
+    from application.repositories.async_live_race_repository import (
+        AsyncLiveRaceRepository,
+    )
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -1094,11 +1194,14 @@ async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> N
     # Get eligible participants
     try:
         eligibility_list = await live_race_service.get_eligible_participants(
-            organization_id=event.organization_id,
-            live_race_id=event.entity_id
+            organization_id=event.organization_id, live_race_id=event.entity_id
         )
     except ValueError as e:
-        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        logger.warning(
+            "Could not get eligible participants for live race %s: %s",
+            event.entity_id,
+            e,
+        )
         return
 
     # Filter to only eligible participants
@@ -1111,10 +1214,14 @@ async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> N
     event_data = {
         "live_race_id": event.entity_id,
         "tournament_id": live_race.tournament_id,
-        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "tournament_name": (
+            live_race.tournament.name if live_race.tournament else "Unknown"
+        ),
         "pool_name": live_race.pool_name,
         "racetime_url": event.racetime_url,
-        "scheduled_time": live_race.scheduled_time.isoformat() if live_race.scheduled_time else None,
+        "scheduled_time": (
+            live_race.scheduled_time.isoformat() if live_race.scheduled_time else None
+        ),
     }
 
     # Notify each eligible participant
@@ -1131,9 +1238,15 @@ async def notify_live_race_room_opened(event: AsyncLiveRaceRoomOpenedEvent) -> N
 @EventBus.on(AsyncLiveRaceStartedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
     """Queue notifications when a live race starts."""
-    from application.services.notifications.notification_service import NotificationService
-    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
-    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
+    from application.services.tournaments.async_live_race_service import (
+        AsyncLiveRaceService,
+    )
+    from application.repositories.async_live_race_repository import (
+        AsyncLiveRaceRepository,
+    )
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -1149,11 +1262,14 @@ async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
     # Get eligible participants
     try:
         eligibility_list = await live_race_service.get_eligible_participants(
-            organization_id=event.organization_id,
-            live_race_id=event.entity_id
+            organization_id=event.organization_id, live_race_id=event.entity_id
         )
     except ValueError as e:
-        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        logger.warning(
+            "Could not get eligible participants for live race %s: %s",
+            event.entity_id,
+            e,
+        )
         return
 
     # Filter to only eligible participants
@@ -1166,7 +1282,9 @@ async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
     event_data = {
         "live_race_id": event.entity_id,
         "tournament_id": live_race.tournament_id,
-        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "tournament_name": (
+            live_race.tournament.name if live_race.tournament else "Unknown"
+        ),
         "pool_name": live_race.pool_name,
         "participant_count": event.participant_count,
         "racetime_url": live_race.racetime_url,
@@ -1186,9 +1304,15 @@ async def notify_live_race_started(event: AsyncLiveRaceStartedEvent) -> None:
 @EventBus.on(AsyncLiveRaceFinishedEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
     """Queue notifications when a live race finishes."""
-    from application.services.notifications.notification_service import NotificationService
-    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
-    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
+    from application.services.tournaments.async_live_race_service import (
+        AsyncLiveRaceService,
+    )
+    from application.repositories.async_live_race_repository import (
+        AsyncLiveRaceRepository,
+    )
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -1204,11 +1328,14 @@ async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
     # Get eligible participants
     try:
         eligibility_list = await live_race_service.get_eligible_participants(
-            organization_id=event.organization_id,
-            live_race_id=event.entity_id
+            organization_id=event.organization_id, live_race_id=event.entity_id
         )
     except ValueError as e:
-        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        logger.warning(
+            "Could not get eligible participants for live race %s: %s",
+            event.entity_id,
+            e,
+        )
         return
 
     # Filter to only eligible participants
@@ -1221,7 +1348,9 @@ async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
     event_data = {
         "live_race_id": event.entity_id,
         "tournament_id": live_race.tournament_id,
-        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "tournament_name": (
+            live_race.tournament.name if live_race.tournament else "Unknown"
+        ),
         "pool_name": live_race.pool_name,
         "finisher_count": event.finisher_count,
         "racetime_url": live_race.racetime_url,
@@ -1241,9 +1370,15 @@ async def notify_live_race_finished(event: AsyncLiveRaceFinishedEvent) -> None:
 @EventBus.on(AsyncLiveRaceCancelledEvent, priority=EventPriority.NORMAL)
 async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None:
     """Queue notifications when a live race is cancelled."""
-    from application.services.notifications.notification_service import NotificationService
-    from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
-    from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
+    from application.services.notifications.notification_service import (
+        NotificationService,
+    )
+    from application.services.tournaments.async_live_race_service import (
+        AsyncLiveRaceService,
+    )
+    from application.repositories.async_live_race_repository import (
+        AsyncLiveRaceRepository,
+    )
     from models.notification_subscription import NotificationEventType
 
     notification_service = NotificationService()
@@ -1259,11 +1394,14 @@ async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None
     # Get eligible participants
     try:
         eligibility_list = await live_race_service.get_eligible_participants(
-            organization_id=event.organization_id,
-            live_race_id=event.entity_id
+            organization_id=event.organization_id, live_race_id=event.entity_id
         )
     except ValueError as e:
-        logger.warning("Could not get eligible participants for live race %s: %s", event.entity_id, e)
+        logger.warning(
+            "Could not get eligible participants for live race %s: %s",
+            event.entity_id,
+            e,
+        )
         return
 
     # Filter to only eligible participants
@@ -1276,7 +1414,9 @@ async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None
     event_data = {
         "live_race_id": event.entity_id,
         "tournament_id": live_race.tournament_id,
-        "tournament_name": live_race.tournament.name if live_race.tournament else "Unknown",
+        "tournament_name": (
+            live_race.tournament.name if live_race.tournament else "Unknown"
+        ),
         "pool_name": live_race.pool_name,
         "reason": event.reason,
     }
@@ -1298,13 +1438,16 @@ async def notify_live_race_cancelled(event: AsyncLiveRaceCancelledEvent) -> None
 # These listeners manage Discord scheduled events for tournament matches
 # Priority: NORMAL - runs after audit logging
 
+
 @EventBus.on(MatchScheduledEvent, priority=EventPriority.NORMAL)
 async def create_discord_event_for_match(event: MatchScheduledEvent) -> None:
     """Create Discord scheduled event when a match is scheduled."""
-    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import (
+        DiscordScheduledEventService,
+    )
 
     service = DiscordScheduledEventService()
-    
+
     try:
         await service.create_event_for_match(
             user_id=event.user_id,
@@ -1313,24 +1456,31 @@ async def create_discord_event_for_match(event: MatchScheduledEvent) -> None:
         )
         logger.debug("Created Discord event for match %s", event.entity_id)
     except Exception as e:
-        logger.exception("Failed to create Discord event for match %s: %s", event.entity_id, e)
+        logger.exception(
+            "Failed to create Discord event for match %s: %s", event.entity_id, e
+        )
 
 
 @EventBus.on(MatchUpdatedEvent, priority=EventPriority.NORMAL)
 async def update_discord_event_for_match(event: MatchUpdatedEvent) -> None:
     """Update Discord scheduled event when match details change."""
-    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import (
+        DiscordScheduledEventService,
+    )
 
     # Only update Discord event if relevant fields changed
-    relevant_fields = {'scheduled_at', 'title', 'stream_channel_id', 'comment'}
+    relevant_fields = {"scheduled_at", "title", "stream_channel_id", "comment"}
     changed_fields = set(event.changed_fields or [])
-    
+
     if not changed_fields.intersection(relevant_fields):
-        logger.debug("Match %s updated but no relevant fields changed, skipping Discord event update", event.entity_id)
+        logger.debug(
+            "Match %s updated but no relevant fields changed, skipping Discord event update",
+            event.entity_id,
+        )
         return
 
     service = DiscordScheduledEventService()
-    
+
     try:
         await service.update_event_for_match(
             user_id=event.user_id,
@@ -1339,16 +1489,20 @@ async def update_discord_event_for_match(event: MatchUpdatedEvent) -> None:
         )
         logger.debug("Updated Discord event for match %s", event.entity_id)
     except Exception as e:
-        logger.exception("Failed to update Discord event for match %s: %s", event.entity_id, e)
+        logger.exception(
+            "Failed to update Discord event for match %s: %s", event.entity_id, e
+        )
 
 
 @EventBus.on(MatchDeletedEvent, priority=EventPriority.NORMAL)
 async def delete_discord_event_for_match(event: MatchDeletedEvent) -> None:
     """Delete Discord scheduled event when a match is deleted."""
-    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import (
+        DiscordScheduledEventService,
+    )
 
     service = DiscordScheduledEventService()
-    
+
     try:
         await service.delete_event_for_match(
             user_id=event.user_id,
@@ -1357,16 +1511,20 @@ async def delete_discord_event_for_match(event: MatchDeletedEvent) -> None:
         )
         logger.debug("Deleted Discord event for match %s", event.entity_id)
     except Exception as e:
-        logger.exception("Failed to delete Discord event for match %s: %s", event.entity_id, e)
+        logger.exception(
+            "Failed to delete Discord event for match %s: %s", event.entity_id, e
+        )
 
 
 @EventBus.on(MatchCompletedEvent, priority=EventPriority.NORMAL)
 async def cleanup_discord_event_for_completed_match(event: MatchCompletedEvent) -> None:
     """Clean up Discord scheduled event when a match is completed."""
-    from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+    from application.services.discord.discord_scheduled_event_service import (
+        DiscordScheduledEventService,
+    )
 
     service = DiscordScheduledEventService()
-    
+
     try:
         await service.delete_event_for_match(
             user_id=event.user_id,
@@ -1375,7 +1533,9 @@ async def cleanup_discord_event_for_completed_match(event: MatchCompletedEvent) 
         )
         logger.debug("Cleaned up Discord event for completed match %s", event.entity_id)
     except Exception as e:
-        logger.exception("Failed to clean up Discord event for match %s: %s", event.entity_id, e)
+        logger.exception(
+            "Failed to clean up Discord event for match %s: %s", event.entity_id, e
+        )
 
 
 # ============================================================================
@@ -1396,23 +1556,34 @@ async def advance_match_on_room_opened(event: RacetimeRoomOpenedEvent) -> None:
         # Get the match
         match = await Match.filter(id=event.match_id).first()
         if not match:
-            logger.warning("Match %s not found for RacetimeRoomOpenedEvent", event.match_id)
+            logger.warning(
+                "Match %s not found for RacetimeRoomOpenedEvent", event.match_id
+            )
             return
 
         # Only advance if not already checked in
         if not match.checked_in_at:
             match.checked_in_at = datetime.now(timezone.utc)
             await match.save()
-            logger.info("Auto-advanced match %s to 'checked_in' status (room opened)", event.match_id)
+            logger.info(
+                "Auto-advanced match %s to 'checked_in' status (room opened)",
+                event.match_id,
+            )
         else:
-            logger.debug("Match %s already checked in, skipping auto-advance", event.match_id)
+            logger.debug(
+                "Match %s already checked in, skipping auto-advance", event.match_id
+            )
 
     except Exception as e:
-        logger.exception("Failed to auto-advance match %s on room opened: %s", event.match_id, e)
+        logger.exception(
+            "Failed to auto-advance match %s on room opened: %s", event.match_id, e
+        )
 
 
 @EventBus.on(RacetimeRaceStatusChangedEvent, priority=EventPriority.NORMAL)
-async def advance_match_on_race_status_changed(event: RacetimeRaceStatusChangedEvent) -> None:
+async def advance_match_on_race_status_changed(
+    event: RacetimeRaceStatusChangedEvent,
+) -> None:
     """Advance match status when RaceTime race status changes."""
     from models.match_schedule import Match
     from datetime import datetime, timezone
@@ -1424,42 +1595,63 @@ async def advance_match_on_race_status_changed(event: RacetimeRaceStatusChangedE
         # Get the match
         match = await Match.filter(id=event.match_id).first()
         if not match:
-            logger.debug("Match %s not found for RacetimeRaceStatusChangedEvent", event.match_id)
+            logger.debug(
+                "Match %s not found for RacetimeRaceStatusChangedEvent", event.match_id
+            )
             return
 
         # Advance based on race status
         now = datetime.now(timezone.utc)
 
-        if event.new_status == 'in_progress':
+        if event.new_status == "in_progress":
             # Race started - advance to 'started'
             if not match.started_at:
                 match.started_at = now
                 await match.save()
-                logger.info("Auto-advanced match %s to 'started' status (race in progress)", event.match_id)
+                logger.info(
+                    "Auto-advanced match %s to 'started' status (race in progress)",
+                    event.match_id,
+                )
             else:
-                logger.debug("Match %s already started, skipping auto-advance", event.match_id)
+                logger.debug(
+                    "Match %s already started, skipping auto-advance", event.match_id
+                )
 
-        elif event.new_status == 'finished':
+        elif event.new_status == "finished":
             # Race finished - advance to 'finished'
             if not match.finished_at:
                 match.finished_at = now
                 await match.save()
-                logger.info("Auto-advanced match %s to 'finished' status (race finished)", event.match_id)
+                logger.info(
+                    "Auto-advanced match %s to 'finished' status (race finished)",
+                    event.match_id,
+                )
 
                 # Emit MatchFinishedEvent
-                await EventBus.emit(MatchFinishedEvent(
-                    user_id=event.user_id,
-                    organization_id=event.organization_id,
-                    entity_id=event.match_id,
-                    match_id=event.match_id,
-                    tournament_id=event.tournament_id,
-                ))
-                logger.info("Emitted MatchFinishedEvent for match %s (auto-advanced)", event.match_id)
+                await EventBus.emit(
+                    MatchFinishedEvent(
+                        user_id=event.user_id,
+                        organization_id=event.organization_id,
+                        entity_id=event.match_id,
+                        match_id=event.match_id,
+                        tournament_id=event.tournament_id,
+                    )
+                )
+                logger.info(
+                    "Emitted MatchFinishedEvent for match %s (auto-advanced)",
+                    event.match_id,
+                )
             else:
-                logger.debug("Match %s already finished, skipping auto-advance", event.match_id)
+                logger.debug(
+                    "Match %s already finished, skipping auto-advance", event.match_id
+                )
 
     except Exception as e:
-        logger.exception("Failed to auto-advance match %s on race status change: %s", event.match_id, e)
+        logger.exception(
+            "Failed to auto-advance match %s on race status change: %s",
+            event.match_id,
+            e,
+        )
 
 
 logger.info("Event listeners registered")

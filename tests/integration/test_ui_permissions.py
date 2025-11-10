@@ -6,8 +6,17 @@ user types and organization roles.
 """
 
 import pytest
-from models import User, Permission, Organization, OrganizationMember, OrganizationMemberRole, OrganizationRole
-from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
+from models import (
+    User,
+    Permission,
+    Organization,
+    OrganizationMember,
+    OrganizationMemberRole,
+    OrganizationRole,
+)
+from application.services.authorization.ui_authorization_helper import (
+    UIAuthorizationHelper,
+)
 from application.repositories.organization_repository import OrganizationRepository
 from application.repositories.user_repository import UserRepository
 
@@ -20,10 +29,7 @@ class TestUIPermissions:
     @pytest.fixture
     async def organization(self, db):
         """Create a test organization."""
-        org = await Organization.create(
-            name="Test Organization",
-            slug="test-org"
-        )
+        org = await Organization.create(name="Test Organization", slug="test-org")
         yield org
         await org.delete()
 
@@ -33,7 +39,7 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000001,
             discord_username="superadmin_user",
-            permission=Permission.SUPERADMIN
+            permission=Permission.SUPERADMIN,
         )
         yield user
         await user.delete()
@@ -44,7 +50,7 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000002,
             discord_username="admin_user",
-            permission=Permission.ADMIN
+            permission=Permission.ADMIN,
         )
         yield user
         await user.delete()
@@ -55,7 +61,7 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000003,
             discord_username="moderator_user",
-            permission=Permission.MODERATOR
+            permission=Permission.MODERATOR,
         )
         yield user
         await user.delete()
@@ -66,7 +72,7 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000004,
             discord_username="regular_user",
-            permission=Permission.USER
+            permission=Permission.USER,
         )
         yield user
         await user.delete()
@@ -77,30 +83,24 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000005,
             discord_username="org_admin_user",
-            permission=Permission.USER
+            permission=Permission.USER,
         )
-        
+
         # Add to organization
-        member = await OrganizationMember.create(
-            organization=organization,
-            user=user
-        )
-        
+        member = await OrganizationMember.create(organization=organization, user=user)
+
         # Create Admin role for organization
         admin_role = await OrganizationRole.create(
             organization=organization,
             name="Admin",
             description="Organization administrator",
             is_builtin=True,
-            is_locked=True
+            is_locked=True,
         )
-        
+
         # Grant ADMIN role to member
-        await OrganizationMemberRole.create(
-            member=member,
-            role=admin_role
-        )
-        
+        await OrganizationMemberRole.create(member=member, role=admin_role)
+
         yield user
         await member.delete()
         await admin_role.delete()
@@ -112,30 +112,24 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000006,
             discord_username="tournament_manager",
-            permission=Permission.USER
+            permission=Permission.USER,
         )
-        
+
         # Add to organization
-        member = await OrganizationMember.create(
-            organization=organization,
-            user=user
-        )
-        
+        member = await OrganizationMember.create(organization=organization, user=user)
+
         # Create Tournament Manager role for organization
         tournament_manager_role = await OrganizationRole.create(
             organization=organization,
             name="Tournament Manager",
             description="Manage tournaments and matches",
             is_builtin=True,
-            is_locked=True
+            is_locked=True,
         )
-        
+
         # Grant TOURNAMENT_MANAGER role to member
-        await OrganizationMemberRole.create(
-            member=member,
-            role=tournament_manager_role
-        )
-        
+        await OrganizationMemberRole.create(member=member, role=tournament_manager_role)
+
         yield user
         await member.delete()
         await tournament_manager_role.delete()
@@ -147,15 +141,12 @@ class TestUIPermissions:
         user = await User.create(
             discord_id=1000007,
             discord_username="org_member_user",
-            permission=Permission.USER
+            permission=Permission.USER,
         )
-        
+
         # Add to organization with no special roles
-        member = await OrganizationMember.create(
-            organization=organization,
-            user=user
-        )
-        
+        member = await OrganizationMember.create(organization=organization, user=user)
+
         yield user
         await member.delete()
         await user.delete()
@@ -202,8 +193,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can manage any organization."""
         can_manage = await ui_auth.can_manage_organization(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_manage is True
 
@@ -212,8 +202,7 @@ class TestUIPermissions:
     ):
         """Organization admin can manage their organization."""
         can_manage = await ui_auth.can_manage_organization(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_manage is True
 
@@ -222,8 +211,7 @@ class TestUIPermissions:
     ):
         """Regular member cannot manage organization."""
         can_manage = await ui_auth.can_manage_organization(
-            org_member_user,
-            organization.id
+            org_member_user, organization.id
         )
         assert can_manage is False
 
@@ -232,8 +220,7 @@ class TestUIPermissions:
     ):
         """Non-member cannot manage organization."""
         can_manage = await ui_auth.can_manage_organization(
-            regular_user,
-            organization.id
+            regular_user, organization.id
         )
         assert can_manage is False
 
@@ -243,30 +230,21 @@ class TestUIPermissions:
         self, ui_auth, superadmin_user, organization
     ):
         """SUPERADMIN can manage members in any organization."""
-        can_manage = await ui_auth.can_manage_members(
-            superadmin_user,
-            organization.id
-        )
+        can_manage = await ui_auth.can_manage_members(superadmin_user, organization.id)
         assert can_manage is True
 
     async def test_org_admin_can_manage_members(
         self, ui_auth, org_admin_user, organization
     ):
         """Organization admin can manage members."""
-        can_manage = await ui_auth.can_manage_members(
-            org_admin_user,
-            organization.id
-        )
+        can_manage = await ui_auth.can_manage_members(org_admin_user, organization.id)
         assert can_manage is True
 
     async def test_regular_member_cannot_manage_members(
         self, ui_auth, org_member_user, organization
     ):
         """Regular member cannot manage members."""
-        can_manage = await ui_auth.can_manage_members(
-            org_member_user,
-            organization.id
-        )
+        can_manage = await ui_auth.can_manage_members(org_member_user, organization.id)
         assert can_manage is False
 
     # ==================== Tournament Management Tests ====================
@@ -276,8 +254,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can manage tournaments in any organization."""
         can_manage = await ui_auth.can_manage_tournaments(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_manage is True
 
@@ -286,8 +263,7 @@ class TestUIPermissions:
     ):
         """Organization admin can manage tournaments."""
         can_manage = await ui_auth.can_manage_tournaments(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_manage is True
 
@@ -296,8 +272,7 @@ class TestUIPermissions:
     ):
         """Tournament manager can manage tournaments."""
         can_manage = await ui_auth.can_manage_tournaments(
-            org_tournament_manager,
-            organization.id
+            org_tournament_manager, organization.id
         )
         assert can_manage is True
 
@@ -306,8 +281,7 @@ class TestUIPermissions:
     ):
         """Regular member cannot manage tournaments."""
         can_manage = await ui_auth.can_manage_tournaments(
-            org_member_user,
-            organization.id
+            org_member_user, organization.id
         )
         assert can_manage is False
 
@@ -315,10 +289,7 @@ class TestUIPermissions:
         self, ui_auth, regular_user, organization
     ):
         """Non-member cannot manage tournaments."""
-        can_manage = await ui_auth.can_manage_tournaments(
-            regular_user,
-            organization.id
-        )
+        can_manage = await ui_auth.can_manage_tournaments(regular_user, organization.id)
         assert can_manage is False
 
     # ==================== Async Tournament Management Tests ====================
@@ -328,8 +299,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can manage async tournaments in any organization."""
         can_manage = await ui_auth.can_manage_async_tournaments(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_manage is True
 
@@ -338,8 +308,7 @@ class TestUIPermissions:
     ):
         """Organization admin can manage async tournaments."""
         can_manage = await ui_auth.can_manage_async_tournaments(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_manage is True
 
@@ -348,8 +317,7 @@ class TestUIPermissions:
     ):
         """Tournament manager can manage async tournaments."""
         can_manage = await ui_auth.can_manage_async_tournaments(
-            org_tournament_manager,
-            organization.id
+            org_tournament_manager, organization.id
         )
         assert can_manage is True
 
@@ -360,8 +328,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can review async races in any organization."""
         can_review = await ui_auth.can_review_async_races(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_review is True
 
@@ -370,8 +337,7 @@ class TestUIPermissions:
     ):
         """Organization admin can review async races."""
         can_review = await ui_auth.can_review_async_races(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_review is True
 
@@ -382,8 +348,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can manage scheduled tasks in any organization."""
         can_manage = await ui_auth.can_manage_scheduled_tasks(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_manage is True
 
@@ -392,8 +357,7 @@ class TestUIPermissions:
     ):
         """Organization admin can manage scheduled tasks."""
         can_manage = await ui_auth.can_manage_scheduled_tasks(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_manage is True
 
@@ -402,8 +366,7 @@ class TestUIPermissions:
     ):
         """Regular member cannot manage scheduled tasks."""
         can_manage = await ui_auth.can_manage_scheduled_tasks(
-            org_member_user,
-            organization.id
+            org_member_user, organization.id
         )
         assert can_manage is False
 
@@ -414,8 +377,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can manage race room profiles in any organization."""
         can_manage = await ui_auth.can_manage_race_room_profiles(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_manage is True
 
@@ -424,8 +386,7 @@ class TestUIPermissions:
     ):
         """Organization admin can manage race room profiles."""
         can_manage = await ui_auth.can_manage_race_room_profiles(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_manage is True
 
@@ -436,8 +397,7 @@ class TestUIPermissions:
     ):
         """SUPERADMIN can manage live races in any organization."""
         can_manage = await ui_auth.can_manage_live_races(
-            superadmin_user,
-            organization.id
+            superadmin_user, organization.id
         )
         assert can_manage is True
 
@@ -446,8 +406,7 @@ class TestUIPermissions:
     ):
         """Organization admin can manage live races."""
         can_manage = await ui_auth.can_manage_live_races(
-            org_admin_user,
-            organization.id
+            org_admin_user, organization.id
         )
         assert can_manage is True
 
@@ -457,8 +416,10 @@ class TestUIPermissions:
         """Null user should return False for all permission checks."""
         can_manage_org = await ui_auth.can_manage_organization(None, organization.id)
         can_manage_members = await ui_auth.can_manage_members(None, organization.id)
-        can_manage_tournaments = await ui_auth.can_manage_tournaments(None, organization.id)
-        
+        can_manage_tournaments = await ui_auth.can_manage_tournaments(
+            None, organization.id
+        )
+
         assert can_manage_org is False
         assert can_manage_members is False
         assert can_manage_tournaments is False
@@ -466,7 +427,7 @@ class TestUIPermissions:
     async def test_invalid_organization_returns_false(self, ui_auth, regular_user):
         """Invalid organization ID should return False."""
         invalid_org_id = 999999
-        
+
         can_manage = await ui_auth.can_manage_organization(regular_user, invalid_org_id)
         assert can_manage is False
 
@@ -478,7 +439,7 @@ class TestUIPermissions:
         assert Permission.SUPERADMIN > Permission.ADMIN
         assert Permission.ADMIN > Permission.MODERATOR
         assert Permission.MODERATOR > Permission.USER
-        
+
         # Test transitivity
         assert Permission.SUPERADMIN > Permission.USER
 
@@ -488,7 +449,7 @@ class TestUIPermissions:
         assert admin_user.has_permission(Permission.ADMIN)
         assert admin_user.has_permission(Permission.MODERATOR)
         assert admin_user.has_permission(Permission.USER)
-        
+
         # But not higher
         assert not admin_user.has_permission(Permission.SUPERADMIN)
 
@@ -499,23 +460,18 @@ class TestUIPermissions:
     ):
         """User with admin in one org shouldn't have admin in another."""
         # Create second organization
-        org2 = await Organization.create(
-            name="Other Organization",
-            slug="other-org"
-        )
-        
+        org2 = await Organization.create(name="Other Organization", slug="other-org")
+
         try:
             # User is admin in organization
             can_manage_org1 = await ui_auth.can_manage_organization(
-                org_admin_user,
-                organization.id
+                org_admin_user, organization.id
             )
             assert can_manage_org1 is True
-            
+
             # But not in org2 (not a member)
             can_manage_org2 = await ui_auth.can_manage_organization(
-                org_admin_user,
-                org2.id
+                org_admin_user, org2.id
             )
             assert can_manage_org2 is False
         finally:
@@ -528,10 +484,7 @@ class TestUIPermissions:
     ):
         """Global ADMIN should have permissions even without org membership."""
         # Admin user is not a member of organization
-        can_manage = await ui_auth.can_manage_organization(
-            admin_user,
-            organization.id
-        )
+        can_manage = await ui_auth.can_manage_organization(admin_user, organization.id)
         # Global admin has access regardless
         assert can_manage is True
 
@@ -541,14 +494,12 @@ class TestUIPermissions:
         """Regular users need org role for permissions, unlike global admins."""
         # Regular user (not member) - no access
         can_manage_non_member = await ui_auth.can_manage_tournaments(
-            regular_user,
-            organization.id
+            regular_user, organization.id
         )
         assert can_manage_non_member is False
-        
+
         # Regular user (member but no role) - no access
         can_manage_member = await ui_auth.can_manage_tournaments(
-            org_member_user,
-            organization.id
+            org_member_user, organization.id
         )
         assert can_manage_member is False

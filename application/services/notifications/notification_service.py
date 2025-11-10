@@ -58,14 +58,17 @@ class NotificationService:
                 user_id=user.id,
                 is_active=True,
             )
-            
+
             for sub in existing:
-                if (sub.event_type == event_type and
-                    sub.notification_method == notification_method and
-                    getattr(sub, 'organization_id', None) == (organization.id if organization else None)):
+                if (
+                    sub.event_type == event_type
+                    and sub.notification_method == notification_method
+                    and getattr(sub, "organization_id", None)
+                    == (organization.id if organization else None)
+                ):
                     logger.info("Subscription already exists for user %s", user.id)
                     return sub
-            
+
             # Create new subscription
             return await self.repository.create_subscription(
                 user=user,
@@ -100,15 +103,22 @@ class NotificationService:
             user_id=user.id,
             is_active=True,
         )
-        
+
         for sub in subscriptions:
-            if (sub.event_type == event_type and
-                sub.notification_method == notification_method and
-                getattr(sub, 'organization_id', None) == (organization.id if organization else None)):
+            if (
+                sub.event_type == event_type
+                and sub.notification_method == notification_method
+                and getattr(sub, "organization_id", None)
+                == (organization.id if organization else None)
+            ):
                 await self.repository.delete_subscription(sub.id)
-                logger.info("User %s unsubscribed from %s", user.id, NotificationEventType(event_type).name)
+                logger.info(
+                    "User %s unsubscribed from %s",
+                    user.id,
+                    NotificationEventType(event_type).name,
+                )
                 return True
-        
+
         return False
 
     async def get_user_subscriptions(
@@ -153,12 +163,16 @@ class NotificationService:
         subscription = await self.repository.get_subscription_by_id(subscription_id)
         if not subscription:
             return None
-        
+
         # Verify ownership
-        if getattr(subscription, 'user_id', None) != user.id:
-            logger.warning("User %s attempted to toggle subscription %s they don't own", user.id, subscription_id)
+        if getattr(subscription, "user_id", None) != user.id:
+            logger.warning(
+                "User %s attempted to toggle subscription %s they don't own",
+                user.id,
+                subscription_id,
+            )
             return None
-        
+
         return await self.repository.update_subscription(
             subscription_id,
             is_active=not subscription.is_active,
@@ -199,32 +213,32 @@ class NotificationService:
             user_id=user.id,
             is_active=True,
         )
-        
+
         # Filter to matching event types and organization scope
         matching = []
         for sub in subscriptions:
             # Must match event type
             if sub.event_type != event_type:
                 continue
-            
+
             # Check organization scope:
             # - If subscription has organization_id, it must match the event's organization_id
             # - If subscription is global (organization_id=None), it matches all organizations
-            sub_org_id = getattr(sub, 'organization_id', None)
+            sub_org_id = getattr(sub, "organization_id", None)
             if sub_org_id is not None and sub_org_id != organization_id:
                 continue
-            
+
             matching.append(sub)
-        
+
         if not matching:
             logger.debug(
                 "No active subscriptions for user %s, event %s, org %s",
                 user.id,
                 NotificationEventType(event_type).name,
-                organization_id
+                organization_id,
             )
             return []
-        
+
         # Create notification logs for each subscription
         log_ids = []
         for sub in matching:
@@ -236,13 +250,13 @@ class NotificationService:
                 delivery_status=NotificationDeliveryStatus.PENDING,
             )
             log_ids.append(log.id)
-        
+
         logger.info(
             "Queued %d notification(s) for user %s, event %s, org %s",
             len(log_ids),
             user.id,
             NotificationEventType(event_type).name,
-            organization_id
+            organization_id,
         )
         return log_ids
 
@@ -286,7 +300,7 @@ class NotificationService:
         logger.info(
             "Queued %d broadcast notification(s) for event type %s",
             len(log_ids),
-            event_type.name
+            event_type.name,
         )
         return log_ids
 
@@ -306,12 +320,16 @@ class NotificationService:
             True if updated
         """
         updates = {
-            'delivery_status': NotificationDeliveryStatus.FAILED if error_message else NotificationDeliveryStatus.SENT,
-            'sent_at': datetime.now(timezone.utc),
+            "delivery_status": (
+                NotificationDeliveryStatus.FAILED
+                if error_message
+                else NotificationDeliveryStatus.SENT
+            ),
+            "sent_at": datetime.now(timezone.utc),
         }
-        
+
         if error_message:
-            updates['error_message'] = error_message
-        
+            updates["error_message"] = error_message
+
         result = await self.repository.update_notification_log(log_id, **updates)
         return result is not None

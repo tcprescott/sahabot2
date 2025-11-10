@@ -13,12 +13,12 @@ logger = logging.getLogger(__name__)
 
 # Default SMZ3 settings for seed generation
 DEFAULT_SMZ3_SETTINGS = {
-    'logic': 'normal',
-    'mode': 'normal',
-    'goal': 'defeatBoth',
-    'itemPlacement': 'major',
-    'swordLocation': 'randomized',
-    'morphLocation': 'original',
+    "logic": "normal",
+    "mode": "normal",
+    "goal": "defeatBoth",
+    "itemPlacement": "major",
+    "swordLocation": "randomized",
+    "morphLocation": "original",
 }
 
 
@@ -46,7 +46,7 @@ class SMZ3Service:
         baseurl: str = "https://samus.link",
         tournament: bool = True,
         spoilers: bool = False,
-        spoiler_key: Optional[str] = None
+        spoiler_key: Optional[str] = None,
     ) -> RandomizerResult:
         """
         Generate an SMZ3 combo randomizer seed.
@@ -68,26 +68,24 @@ class SMZ3Service:
             httpx.HTTPError: If the API request fails
         """
         # Set race mode
-        settings['race'] = "true" if tournament else "false"
+        settings["race"] = "true" if tournament else "false"
 
         # Add spoiler key if requested
         if spoilers and spoiler_key:
-            settings['spoilerKey'] = spoiler_key
+            settings["spoilerKey"] = spoiler_key
 
         logger.info("Generating SMZ3 seed with race=%s", tournament)
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{baseurl}/api/randomize",
-                json=settings,
-                timeout=60.0
+                f"{baseurl}/api/randomize", json=settings, timeout=60.0
             )
             response.raise_for_status()
             result = response.json()
 
         # Extract data from response
-        slug_id = result.get('slug', result.get('id', 'unknown'))
-        guid = result.get('guid', slug_id)
+        slug_id = result.get("slug", result.get("id", "unknown"))
+        guid = result.get("guid", slug_id)
 
         seed_url = f"{baseurl}/seed/{slug_id}"
 
@@ -102,12 +100,8 @@ class SMZ3Service:
             url=seed_url,
             hash_id=slug_id,
             settings=settings,
-            randomizer='smz3',
+            randomizer="smz3",
             permalink=seed_url,
             spoiler_url=spoiler_url,
-            metadata={
-                'guid': guid,
-                'slug': slug_id,
-                **result
-            }
+            metadata={"guid": guid, "slug": slug_id, **result},
         )

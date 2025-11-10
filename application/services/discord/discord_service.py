@@ -5,12 +5,18 @@ This module encapsulates starting and stopping the Discord bot as part of the
 application services layer. UI and main application should depend on this
 service rather than calling the bot client directly.
 """
+
 from __future__ import annotations
 
 import logging
 from typing import Optional
 
-from discordbot.client import start_bot as _start_bot, stop_bot as _stop_bot, get_bot_instance, DiscordBot
+from discordbot.client import (
+    start_bot as _start_bot,
+    stop_bot as _stop_bot,
+    get_bot_instance,
+    DiscordBot,
+)
 
 logger = logging.getLogger(__name__)
 

@@ -8,6 +8,7 @@ if TYPE_CHECKING:
     from .audit_log import AuditLog
     from .settings import OrganizationSetting
 
+
 class Organization(Model):
     id = fields.IntField(pk=True)
     name = fields.CharField(max_length=255, unique=True)
@@ -23,17 +24,23 @@ class Organization(Model):
     audit_logs: fields.ReverseRelation["AuditLog"]
     settings: fields.ReverseRelation["OrganizationSetting"]
 
+
 class OrganizationMember(Model):
     id = fields.IntField(pk=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='members')
-    user = fields.ForeignKeyField('models.User', related_name='organizations')
-    permissions = fields.ManyToManyField('models.OrganizationPermission', related_name='members')
+    organization = fields.ForeignKeyField("models.Organization", related_name="members")
+    user = fields.ForeignKeyField("models.User", related_name="organizations")
+    permissions = fields.ManyToManyField(
+        "models.OrganizationPermission", related_name="members"
+    )
     joined_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
+
 class OrganizationPermission(Model):
     id = fields.IntField(pk=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='permissions')
+    organization = fields.ForeignKeyField(
+        "models.Organization", related_name="permissions"
+    )
     permission_name = fields.CharField(max_length=100)
     description = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)

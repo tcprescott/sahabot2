@@ -56,32 +56,20 @@ def auto_register_routes(app: FastAPI, prefix: str = "/api") -> None:
                 logger.info("Registered API routes from %s", module_name)
                 registered_count += 1
             else:
-                logger.debug(
-                    "Skipping %s - no 'router' attribute found",
-                    module_name
-                )
+                logger.debug("Skipping %s - no 'router' attribute found", module_name)
 
         except Exception as e:
-            logger.error(
-                "Failed to load %s: %s",
-                module_name,
-                str(e),
-                exc_info=True
-            )
+            logger.error("Failed to load %s: %s", module_name, str(e), exc_info=True)
             failed_count += 1
 
     logger.info(
         "API route registration complete: %s registered, %s failed",
         registered_count,
-        failed_count
+        failed_count,
     )
 
 
-def register_route_module(
-    app: FastAPI,
-    module_name: str,
-    prefix: str = "/api"
-) -> bool:
+def register_route_module(app: FastAPI, module_name: str, prefix: str = "/api") -> bool:
     """
     Manually register a specific route module.
 
@@ -105,10 +93,7 @@ def register_route_module(
         module = import_module(module_name)
 
         if not hasattr(module, "router"):
-            logger.error(
-                "Module %s does not have a 'router' attribute",
-                module_name
-            )
+            logger.error("Module %s does not have a 'router' attribute", module_name)
             return False
 
         app.include_router(module.router, prefix=prefix)
@@ -116,10 +101,5 @@ def register_route_module(
         return True
 
     except Exception as e:
-        logger.error(
-            "Failed to load %s: %s",
-            module_name,
-            str(e),
-            exc_info=True
-        )
+        logger.error("Failed to load %s: %s", module_name, str(e), exc_info=True)
         return False

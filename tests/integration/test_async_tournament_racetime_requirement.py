@@ -16,10 +16,7 @@ from models.organizations import Organization
 async def test_async_tournament_with_racetime_required(db):
     """Test that async tournament can require RaceTime.gg account."""
     # Create organization
-    org = await Organization.create(
-        name="Test Org",
-        slug="test-org"
-    )
+    org = await Organization.create(name="Test Org", slug="test-org")
 
     # Create tournament with RaceTime requirement
     tournament = await AsyncTournament.create(
@@ -28,7 +25,7 @@ async def test_async_tournament_with_racetime_required(db):
         description="Test tournament with RaceTime requirement",
         is_active=True,
         require_racetime_for_async_runs=True,
-        runs_per_pool=1
+        runs_per_pool=1,
     )
 
     # Verify the field is set correctly
@@ -51,7 +48,7 @@ async def test_user_with_racetime_can_access(db):
         discord_email="test@example.com",
         permission=Permission.USER,
         racetime_id="test_racetime_user",
-        racetime_name="TestRacetimeUser"
+        racetime_name="TestRacetimeUser",
     )
 
     # Verify RaceTime.gg account is linked
@@ -72,7 +69,7 @@ async def test_user_without_racetime_cannot_access(db):
         discord_discriminator="0002",
         discord_avatar="test_avatar",
         discord_email="test2@example.com",
-        permission=Permission.USER
+        permission=Permission.USER,
     )
 
     # Verify RaceTime.gg account is not linked
@@ -87,10 +84,7 @@ async def test_user_without_racetime_cannot_access(db):
 async def test_tournament_without_racetime_requirement(db):
     """Test that tournaments without RaceTime requirement work normally."""
     # Create organization
-    org = await Organization.create(
-        name="Test Org 2",
-        slug="test-org-2"
-    )
+    org = await Organization.create(name="Test Org 2", slug="test-org-2")
 
     # Create tournament without RaceTime requirement
     tournament = await AsyncTournament.create(
@@ -99,7 +93,7 @@ async def test_tournament_without_racetime_requirement(db):
         description="Test tournament without RaceTime requirement",
         is_active=True,
         require_racetime_for_async_runs=False,
-        runs_per_pool=1
+        runs_per_pool=1,
     )
 
     # Verify the field is set correctly
@@ -114,10 +108,7 @@ async def test_tournament_without_racetime_requirement(db):
 async def test_default_racetime_requirement_is_false(db):
     """Test that RaceTime requirement defaults to False."""
     # Create organization
-    org = await Organization.create(
-        name="Test Org 3",
-        slug="test-org-3"
-    )
+    org = await Organization.create(name="Test Org 3", slug="test-org-3")
 
     # Create tournament without specifying RaceTime requirement
     tournament = await AsyncTournament.create(
@@ -125,7 +116,7 @@ async def test_default_racetime_requirement_is_false(db):
         name="Test Tournament 3",
         description="Test tournament with default RaceTime requirement",
         is_active=True,
-        runs_per_pool=1
+        runs_per_pool=1,
     )
 
     # Verify the field defaults to False

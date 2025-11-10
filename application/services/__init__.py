@@ -22,9 +22,8 @@ from application.services.authorization import AuthorizationServiceV2
 from application.services.randomizer.randomizer_service import RandomizerService
 
 __all__ = [
-    'UserService',
-    'AuthorizationServiceV2',
-    'AuditService',
-    'RandomizerService',
+    "UserService",
+    "AuthorizationServiceV2",
+    "AuditService",
+    "RandomizerService",
 ]
-

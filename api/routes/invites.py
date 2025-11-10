@@ -9,7 +9,9 @@ from api.schemas.invite import (
     OrganizationInviteUseResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.organizations.organization_invite_service import OrganizationInviteService
+from application.services.organizations.organization_invite_service import (
+    OrganizationInviteService,
+)
 from models import User
 
 router = APIRouter(prefix="/invites", tags=["invites"])
@@ -29,7 +31,7 @@ router = APIRouter(prefix="/invites", tags=["invites"])
 )
 async def list_organization_invites(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationInviteListResponse:
     """
     List organization invites.
@@ -68,7 +70,7 @@ async def list_organization_invites(
 async def create_organization_invite(
     data: OrganizationInviteCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationInviteOut:
     """
     Create organization invite.
@@ -93,13 +95,12 @@ async def create_organization_invite(
         organization_id=organization_id,
         slug=data.slug,
         max_uses=data.max_uses,
-        expires_at=data.expires_at
+        expires_at=data.expires_at,
     )
 
     if not invite:
         raise HTTPException(
-            status_code=403,
-            detail="Insufficient permissions to create invites"
+            status_code=403, detail="Insufficient permissions to create invites"
         )
 
     return OrganizationInviteOut.model_validate(invite)
@@ -123,7 +124,7 @@ async def create_organization_invite(
 async def update_organization_invite(
     data: OrganizationInviteUpdateRequest,
     invite_id: int = Path(..., description="Invite ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationInviteOut:
     """
     Update organization invite.
@@ -144,24 +145,29 @@ async def update_organization_invite(
         HTTPException: 404 if invite not found
     """
     service = OrganizationInviteService()
-    
+
     # Get invite by ID across all organizations user has access to
     # Service will validate access during update
     # For now, we'll try to update and let service handle authorization
     # This is a simplified approach - ideally we'd have a get_by_id method
-    
+
     # Try each organization the user has access to
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     user_orgs = await org_service.list_user_memberships(current_user.id)
-    
+
     current_invite = None
     for membership in user_orgs:
-        invites = await service.list_org_invites(current_user, membership.organization_id)
+        invites = await service.list_org_invites(
+            current_user, membership.organization_id
+        )
         current_invite = next((inv for inv in invites if inv.id == invite_id), None)
         if current_invite:
             break
-    
+
     if not current_invite:
         raise HTTPException(status_code=404, detail="Invite not found")
 
@@ -171,13 +177,12 @@ async def update_organization_invite(
         invite_id=invite_id,
         is_active=data.is_active,
         max_uses=data.max_uses,
-        expires_at=data.expires_at
+        expires_at=data.expires_at,
     )
 
     if not invite:
         raise HTTPException(
-            status_code=403,
-            detail="Insufficient permissions to update invite"
+            status_code=403, detail="Insufficient permissions to update invite"
         )
 
     return OrganizationInviteOut.model_validate(invite)
@@ -199,7 +204,7 @@ async def update_organization_invite(
 )
 async def delete_organization_invite(
     invite_id: int = Path(..., description="Invite ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete organization invite.
@@ -216,32 +221,36 @@ async def delete_organization_invite(
         HTTPException: 404 if invite not found
     """
     service = OrganizationInviteService()
-    
+
     # Get invite by ID across all organizations user has access to
-    from application.services.organizations.organization_service import OrganizationService
+    from application.services.organizations.organization_service import (
+        OrganizationService,
+    )
+
     org_service = OrganizationService()
     user_orgs = await org_service.list_user_memberships(current_user.id)
-    
+
     current_invite = None
     for membership in user_orgs:
-        invites = await service.list_org_invites(current_user, membership.organization_id)
+        invites = await service.list_org_invites(
+            current_user, membership.organization_id
+        )
         current_invite = next((inv for inv in invites if inv.id == invite_id), None)
         if current_invite:
             break
-    
+
     if not current_invite:
         raise HTTPException(status_code=404, detail="Invite not found")
 
     success = await service.delete_invite(
         user=current_user,
         organization_id=current_invite.organization_id,
-        invite_id=invite_id
+        invite_id=invite_id,
     )
 
     if not success:
         raise HTTPException(
-            status_code=403,
-            detail="Insufficient permissions to delete invite"
+            status_code=403, detail="Insufficient permissions to delete invite"
         )
 
 
@@ -259,7 +268,9 @@ async def delete_organization_invite(
 )
 async def get_invite_by_slug(
     slug: str = Path(..., description="Invite slug/code"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> OrganizationInviteOut:
     """
     Get invite by slug.
@@ -301,7 +312,7 @@ async def get_invite_by_slug(
 )
 async def use_invite(
     slug: str = Path(..., description="Invite slug/code"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationInviteUseResponse:
     """
     Use invite to join organization.
@@ -333,5 +344,5 @@ async def use_invite(
     return OrganizationInviteUseResponse(
         success=True,
         message=message,
-        organization_id=invite.organization_id if invite else None
+        organization_id=invite.organization_id if invite else None,
     )

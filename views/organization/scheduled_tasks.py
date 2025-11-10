@@ -26,17 +26,17 @@ class OrganizationScheduledTasksView:
 
     async def render(self) -> None:
         """Render the scheduled tasks view."""
-        with Card.create(title=f'Scheduled Tasks - {self.org.name}'):
-            with ui.row().classes('w-full justify-between items-center mb-4'):
-                ui.label('Manage automated tasks for this organization').classes('text-secondary')
+        with Card.create(title=f"Scheduled Tasks - {self.org.name}"):
+            with ui.row().classes("w-full justify-between items-center mb-4"):
+                ui.label("Manage automated tasks for this organization").classes(
+                    "text-secondary"
+                )
                 ui.button(
-                    'Create Task',
-                    icon='add',
-                    on_click=self._show_create_dialog
-                ).classes('btn').props('color=positive')
+                    "Create Task", icon="add", on_click=self._show_create_dialog
+                ).classes("btn").props("color=positive")
 
             # Container for task list
-            self.tasks_container = ui.element('div').classes('w-full')
+            self.tasks_container = ui.element("div").classes("w-full")
 
             await self._refresh_tasks()
 
@@ -48,78 +48,83 @@ class OrganizationScheduledTasksView:
             tasks = await self.service.list_tasks(self.user, self.org.id)
 
             if not tasks:
-                with ui.element('div').classes('text-center mt-4'):
-                    ui.icon('schedule').classes('text-secondary icon-large')
-                    ui.label('No scheduled tasks yet').classes('text-secondary')
-                    ui.label('Create your first automated task to get started').classes('text-secondary text-sm')
+                with ui.element("div").classes("text-center mt-4"):
+                    ui.icon("schedule").classes("text-secondary icon-large")
+                    ui.label("No scheduled tasks yet").classes("text-secondary")
+                    ui.label("Create your first automated task to get started").classes(
+                        "text-secondary text-sm"
+                    )
             else:
                 # Display tasks in a responsive layout
-                with ui.element('div').classes('flex flex-col gap-4'):
+                with ui.element("div").classes("flex flex-col gap-4"):
                     for task in tasks:
                         await self._render_task_card(task)
 
     async def _render_task_card(self, task) -> None:
         """Render a single task card."""
-        with ui.element('div').classes('card'):
-            with ui.element('div').classes('card-body'):
-                with ui.row().classes('w-full justify-between items-start'):
+        with ui.element("div").classes("card"):
+            with ui.element("div").classes("card-body"):
+                with ui.row().classes("w-full justify-between items-start"):
                     # Task info
-                    with ui.column().classes('gap-2 flex-grow'):
-                        with ui.row().classes('items-center gap-2'):
-                            ui.label(task.name).classes('text-lg font-bold')
+                    with ui.column().classes("gap-2 flex-grow"):
+                        with ui.row().classes("items-center gap-2"):
+                            ui.label(task.name).classes("text-lg font-bold")
                             # Status badge
                             Badge.status(task.is_active)
 
                         if task.description:
-                            ui.label(task.description).classes('text-sm text-secondary')
+                            ui.label(task.description).classes("text-sm text-secondary")
 
                         # Task details
-                        with ui.element('div').classes('text-sm mt-2'):
-                            ui.label(f'Type: {self._format_task_type(task.task_type)}')
-                            ui.label(f'Schedule: {self._format_schedule(task)}')
+                        with ui.element("div").classes("text-sm mt-2"):
+                            ui.label(f"Type: {self._format_task_type(task.task_type)}")
+                            ui.label(f"Schedule: {self._format_schedule(task)}")
 
                             if task.last_run_at:
-                                ui.label(f'Last run: {self._format_datetime(task.last_run_at)} ({task.last_run_status or "unknown"})')
+                                ui.label(
+                                    f'Last run: {self._format_datetime(task.last_run_at)} ({task.last_run_status or "unknown"})'
+                                )
                             else:
-                                ui.label('Last run: Never')
+                                ui.label("Last run: Never")
 
                             if task.next_run_at:
-                                ui.label(f'Next run: {self._format_datetime(task.next_run_at)}')
+                                ui.label(
+                                    f"Next run: {self._format_datetime(task.next_run_at)}"
+                                )
 
                     # Actions
-                    with ui.column().classes('gap-2'):
+                    with ui.column().classes("gap-2"):
                         ui.button(
-                            icon='play_circle',
-                            on_click=lambda t=task: self._execute_now(t)
-                        ).props('flat color=primary').tooltip('Run Now')
+                            icon="play_circle",
+                            on_click=lambda t=task: self._execute_now(t),
+                        ).props("flat color=primary").tooltip("Run Now")
 
                         ui.button(
-                            icon='edit',
-                            on_click=lambda t=task: self._show_edit_dialog(t)
-                        ).props('flat color=primary').tooltip('Edit Task')
+                            icon="edit",
+                            on_click=lambda t=task: self._show_edit_dialog(t),
+                        ).props("flat color=primary").tooltip("Edit Task")
 
                         if task.is_active:
                             ui.button(
-                                icon='pause',
-                                on_click=lambda t=task: self._toggle_task(t)
-                            ).props('flat color=warning').tooltip('Pause Task')
+                                icon="pause",
+                                on_click=lambda t=task: self._toggle_task(t),
+                            ).props("flat color=warning").tooltip("Pause Task")
                         else:
                             ui.button(
-                                icon='play_arrow',
-                                on_click=lambda t=task: self._toggle_task(t)
-                            ).props('flat color=positive').tooltip('Activate Task')
+                                icon="play_arrow",
+                                on_click=lambda t=task: self._toggle_task(t),
+                            ).props("flat color=positive").tooltip("Activate Task")
 
                         ui.button(
-                            icon='delete',
-                            on_click=lambda t=task: self._delete_task(t)
-                        ).props('flat color=negative').tooltip('Delete Task')
+                            icon="delete", on_click=lambda t=task: self._delete_task(t)
+                        ).props("flat color=negative").tooltip("Delete Task")
 
     def _format_task_type(self, task_type: TaskType) -> str:
         """Format task type for display."""
         if task_type == TaskType.RACETIME_OPEN_ROOM:
-            return 'Open Racetime Room'
+            return "Open Racetime Room"
         elif task_type == TaskType.CUSTOM:
-            return 'Custom'
+            return "Custom"
         return str(task_type)
 
     def _format_schedule(self, task) -> str:
@@ -128,18 +133,18 @@ class OrganizationScheduledTasksView:
             minutes = task.interval_seconds // 60
             hours = minutes // 60
             if hours > 0:
-                return f'Every {hours} hour(s)'
+                return f"Every {hours} hour(s)"
             else:
-                return f'Every {minutes} minute(s)'
+                return f"Every {minutes} minute(s)"
         elif task.schedule_type == ScheduleType.CRON:
-            return f'Cron: {task.cron_expression}'
+            return f"Cron: {task.cron_expression}"
         elif task.schedule_type == ScheduleType.ONE_TIME:
-            return f'One-time: {self._format_datetime(task.scheduled_time)}'
-        return 'Unknown'
+            return f"One-time: {self._format_datetime(task.scheduled_time)}"
+        return "Unknown"
 
     def _format_datetime(self, dt: datetime) -> str:
         """Format datetime for display."""
-        return dt.strftime('%Y-%m-%d %H:%M UTC')
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
 
     async def _show_create_dialog(self):
         """Show dialog to create a new scheduled task."""
@@ -149,7 +154,7 @@ class OrganizationScheduledTasksView:
             user=self.user,
             organization_id=self.org.id,
             task=None,
-            on_save=self._refresh_tasks
+            on_save=self._refresh_tasks,
         )
         await dialog.show()
 
@@ -161,7 +166,7 @@ class OrganizationScheduledTasksView:
             user=self.user,
             organization_id=self.org.id,
             task=task,
-            on_save=self._refresh_tasks
+            on_save=self._refresh_tasks,
         )
         await dialog.show()
 
@@ -169,43 +174,41 @@ class OrganizationScheduledTasksView:
         """Toggle task active status."""
         new_status = not task.is_active
         updated_task = await self.service.update_task(
-            self.user,
-            self.org.id,
-            task.id,
-            is_active=new_status
+            self.user, self.org.id, task.id, is_active=new_status
         )
 
         if updated_task:
-            status_text = 'activated' if new_status else 'paused'
-            ui.notify(f'Task {status_text} successfully', type='positive')
+            status_text = "activated" if new_status else "paused"
+            ui.notify(f"Task {status_text} successfully", type="positive")
             await self._refresh_tasks()
         else:
-            ui.notify('Failed to update task', type='negative')
+            ui.notify("Failed to update task", type="negative")
 
     async def _execute_now(self, task) -> None:
         """Execute a task immediately."""
         success = await self.service.execute_task_now(self.user, self.org.id, task.id)
 
         if success:
-            ui.notify(f'Task "{task.name}" execution triggered', type='positive')
+            ui.notify(f'Task "{task.name}" execution triggered', type="positive")
             # Refresh to show updated last run time (after a brief delay)
             await self._refresh_tasks()
         else:
-            ui.notify('Failed to execute task', type='negative')
+            ui.notify("Failed to execute task", type="negative")
 
     async def _delete_task(self, task) -> None:
         """Delete a task."""
+
         async def do_delete():
             success = await self.service.delete_task(self.user, self.org.id, task.id)
             if success:
-                ui.notify('Task deleted successfully', type='positive')
+                ui.notify("Task deleted successfully", type="positive")
                 await self._refresh_tasks()
             else:
-                ui.notify('Failed to delete task', type='negative')
+                ui.notify("Failed to delete task", type="negative")
 
         dialog = ConfirmDialog(
             title=f'Delete task "{task.name}"?',
-            message='This action cannot be undone.',
-            on_confirm=do_delete
+            message="This action cannot be undone.",
+            on_confirm=do_delete,
         )
         await dialog.show()

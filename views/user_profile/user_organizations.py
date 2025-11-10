@@ -13,7 +13,9 @@ from components.empty_state import EmptyState
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import LeaveOrganizationDialog, RequestOrganizationDialog
 from application.services.organizations.organization_service import OrganizationService
-from application.services.authorization.ui_authorization_helper import UIAuthorizationHelper
+from application.services.authorization.ui_authorization_helper import (
+    UIAuthorizationHelper,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -37,6 +39,7 @@ class UserOrganizationsView:
 
     async def _leave_organization(self, org_id: int, org_name: str) -> None:
         """Leave an organization."""
+
         async def confirm_leave():
             """Handle the leave confirmation."""
             try:
@@ -44,11 +47,11 @@ class UserOrganizationsView:
                 member = await self.service.get_member(org_id, self.user.id)
                 if member:
                     await member.delete()
-                    ui.notify(f'Left {org_name}', type='positive')
+                    ui.notify(f"Left {org_name}", type="positive")
                     await self._refresh()
             except Exception as e:
                 logger.error("Failed to leave organization: %s", e)
-                ui.notify(f'Failed to leave organization: {e}', type='negative')
+                ui.notify(f"Failed to leave organization: {e}", type="negative")
 
         # Show confirmation dialog
         dialog = LeaveOrganizationDialog(org_name, on_confirm=confirm_leave)
@@ -57,7 +60,9 @@ class UserOrganizationsView:
     async def _render_content(self) -> None:
         """Render the organizations list."""
         # Import the organization request service
-        from application.services.organizations.organization_request_service import OrganizationRequestService
+        from application.services.organizations.organization_request_service import (
+            OrganizationRequestService,
+        )
 
         request_service = OrganizationRequestService()
 
@@ -68,70 +73,91 @@ class UserOrganizationsView:
         pending_requests = await request_service.list_user_pending_requests(self.user)
 
         if pending_requests:
-            with Card.create(title='Pending Organization Requests'):
-                with ui.column().classes('gap-2'):
+            with Card.create(title="Pending Organization Requests"):
+                with ui.column().classes("gap-2"):
                     for request in pending_requests:
-                        with ui.element('div').classes('card'):
-                            with ui.element('div').classes('card-body'):
-                                with ui.row().classes('items-center justify-between w-full'):
-                                    with ui.column().classes('gap-1'):
-                                        ui.label(request.name).classes('font-bold')
+                        with ui.element("div").classes("card"):
+                            with ui.element("div").classes("card-body"):
+                                with ui.row().classes(
+                                    "items-center justify-between w-full"
+                                ):
+                                    with ui.column().classes("gap-1"):
+                                        ui.label(request.name).classes("font-bold")
                                         if request.description:
-                                            ui.label(request.description).classes('text-sm text-secondary')
-                                        ui.label(f'Requested: {request.requested_at.strftime("%Y-%m-%d %H:%M")}').classes('text-xs text-secondary')
-                                    Badge.custom('Pending Review', 'warning')
+                                            ui.label(request.description).classes(
+                                                "text-sm text-secondary"
+                                            )
+                                        ui.label(
+                                            f'Requested: {request.requested_at.strftime("%Y-%m-%d %H:%M")}'
+                                        ).classes("text-xs text-secondary")
+                                    Badge.custom("Pending Review", "warning")
 
-        with Card.create(title='My Organizations'):
+        with Card.create(title="My Organizations"):
             # Add request button at the top
             async def request_organization():
                 await self._show_request_dialog()
 
             ui.button(
-                'Request New Organization',
-                icon='add_business',
-                on_click=request_organization
-            ).classes('btn mb-4').props('color=primary')
+                "Request New Organization",
+                icon="add_business",
+                on_click=request_organization,
+            ).classes("btn mb-4").props("color=primary")
 
             if not memberships:
                 EmptyState.no_items(
-                    item_name='organizations',
-                    message='Request a new organization or wait for an invitation',
-                    icon='business',
-                    in_card=False
+                    item_name="organizations",
+                    message="Request a new organization or wait for an invitation",
+                    icon="business",
+                    in_card=False,
                 )
             else:
+
                 def render_name(m):
-                    return ui.label(m.organization.name).classes('font-bold')
+                    return ui.label(m.organization.name).classes("font-bold")
 
                 def render_description(m):
-                    return ui.label(m.organization.description or 'No description').classes('text-secondary')
+                    return ui.label(
+                        m.organization.description or "No description"
+                    ).classes("text-secondary")
 
                 async def render_permissions(m):
                     perms = await m.permissions.all()
                     if perms:
                         perm_names = [p.permission_name for p in perms]
-                        with ui.element('div').classes('flex gap-1 flex-wrap'):
+                        with ui.element("div").classes("flex gap-1 flex-wrap"):
                             for name in perm_names:
-                                Badge.custom(name, 'info')
+                                Badge.custom(name, "info")
                     else:
-                        ui.label('Member').classes('text-secondary')
+                        ui.label("Member").classes("text-secondary")
 
                 async def render_actions(m):
-                    with ui.row().classes('gap-2'):
+                    with ui.row().classes("gap-2"):
                         # Show admin button if user can access the organization admin panel
-                        can_admin = await self.ui_auth.can_manage_organization(self.user, m.organization.id)
+                        can_admin = await self.ui_auth.can_manage_organization(
+                            self.user, m.organization.id
+                        )
                         if can_admin:
-                            ui.button('Admin Panel', icon='admin_panel_settings',
-                                    on_click=lambda org=m.organization: ui.navigate.to(f'/orgs/{org.id}/admin')).classes('btn')
+                            ui.button(
+                                "Admin Panel",
+                                icon="admin_panel_settings",
+                                on_click=lambda org=m.organization: ui.navigate.to(
+                                    f"/orgs/{org.id}/admin"
+                                ),
+                            ).classes("btn")
 
-                        ui.button('Leave', icon='exit_to_app',
-                                on_click=lambda org=m.organization: self._leave_organization(org.id, org.name)).props('color=warning').classes('btn')
+                        ui.button(
+                            "Leave",
+                            icon="exit_to_app",
+                            on_click=lambda org=m.organization: self._leave_organization(
+                                org.id, org.name
+                            ),
+                        ).props("color=warning").classes("btn")
 
                 columns = [
-                    TableColumn('Organization', cell_render=render_name),
-                    TableColumn('Description', cell_render=render_description),
-                    TableColumn('Your Permissions', cell_render=render_permissions),
-                    TableColumn('Actions', cell_render=render_actions),
+                    TableColumn("Organization", cell_render=render_name),
+                    TableColumn("Description", cell_render=render_description),
+                    TableColumn("Your Permissions", cell_render=render_permissions),
+                    TableColumn("Actions", cell_render=render_actions),
                 ]
                 table = ResponsiveTable(columns, memberships)
                 await table.render()
@@ -143,6 +169,6 @@ class UserOrganizationsView:
 
     async def render(self) -> None:
         """Render the organizations view."""
-        self.container = ui.column().classes('full-width')
+        self.container = ui.column().classes("full-width")
         with self.container:
             await self._render_content()

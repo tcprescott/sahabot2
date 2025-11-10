@@ -27,7 +27,7 @@ router = APIRouter(prefix="/tokens", tags=["tokens"])
     },
 )
 async def list_tokens(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> ApiTokenListResponse:
     """
     List user's API tokens.
@@ -62,8 +62,7 @@ async def list_tokens(
     status_code=201,
 )
 async def create_token(
-    data: ApiTokenCreateRequest,
-    current_user: User = Depends(get_current_user)
+    data: ApiTokenCreateRequest, current_user: User = Depends(get_current_user)
 ) -> ApiTokenCreateResponse:
     """
     Create a new API token.
@@ -82,12 +81,12 @@ async def create_token(
     result = await service.create_token(
         user_id=current_user.id,
         name=data.name or "API Token",
-        expires_at=data.expires_at
+        expires_at=data.expires_at,
     )
 
     return ApiTokenCreateResponse(
         token=result["token"],
-        token_info=ApiTokenOut.model_validate(result["token_obj"])
+        token_info=ApiTokenOut.model_validate(result["token_obj"]),
     )
 
 
@@ -106,7 +105,7 @@ async def create_token(
 )
 async def revoke_token(
     token_id: int = Path(..., description="Token ID to revoke"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Revoke an API token.
@@ -121,7 +120,7 @@ async def revoke_token(
         HTTPException: 404 if token not found or not owned by user
     """
     service = ApiTokenService()
-    
+
     # Verify token belongs to user
     tokens = await service.list_user_tokens(current_user.id)
     if not any(t.id == token_id for t in tokens):

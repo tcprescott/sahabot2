@@ -15,8 +15,14 @@ from models import User
 from models.discord_guild import DiscordGuild
 from application.repositories.discord_guild_repository import DiscordGuildRepository
 from application.services.organizations.organization_service import OrganizationService
-from application.services.discord.discord_permissions_config import AsyncTournamentChannelPermissions
-from application.events import EventBus, DiscordGuildLinkedEvent, DiscordGuildUnlinkedEvent
+from application.services.discord.discord_permissions_config import (
+    AsyncTournamentChannelPermissions,
+)
+from application.events import (
+    EventBus,
+    DiscordGuildLinkedEvent,
+    DiscordGuildUnlinkedEvent,
+)
 from config import settings
 
 logger = logging.getLogger(__name__)
@@ -29,6 +35,7 @@ DISCORD_OAUTH_AUTHORIZE = "https://discord.com/oauth2/authorize"
 @dataclass
 class ChannelPermissionCheck:
     """Result of checking Discord channel permissions."""
+
     channel_id: int
     is_valid: bool
     warnings: List[str]
@@ -61,12 +68,12 @@ class DiscordGuildService:
             Discord OAuth2 authorization URL
         """
         params = {
-            'client_id': settings.DISCORD_CLIENT_ID,
-            'scope': 'bot guilds',  # bot scope + guilds to read guild info
-            'permissions': '0',  # No permissions requested (will be configured later)
-            'redirect_uri': redirect_uri,
-            'response_type': 'code',
-            'state': f'org:{organization_id}',  # Pass org ID in state
+            "client_id": settings.DISCORD_CLIENT_ID,
+            "scope": "bot guilds",  # bot scope + guilds to read guild info
+            "permissions": "0",  # No permissions requested (will be configured later)
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "state": f"org:{organization_id}",  # Pass org ID in state
         }
 
         url = f"{DISCORD_OAUTH_AUTHORIZE}?{urlencode(params)}"
@@ -79,7 +86,7 @@ class DiscordGuildService:
         organization_id: int,
         code: str,
         redirect_uri: str,
-        guild_id: Optional[str] = None
+        guild_id: Optional[str] = None,
     ) -> tuple[Optional[DiscordGuild], Optional[str]]:
         """
         Verify and link a Discord guild to an organization.
@@ -101,27 +108,27 @@ class DiscordGuildService:
             logger.warning(
                 "User %s attempted to link guild to org %s without admin permission",
                 user.id,
-                organization_id
+                organization_id,
             )
-            return None, 'no_membership'
+            return None, "no_membership"
 
         logger.info(
             "User %s linking guild %s to org %s",
             user.id,
             guild_id or "(unknown)",
-            organization_id
+            organization_id,
         )
 
         # Exchange code for access token
         token_data = await self._exchange_code(code, redirect_uri)
         if not token_data:
             logger.error("Failed to exchange OAuth2 code for org %s", organization_id)
-            return None, 'oauth_failed'
+            return None, "oauth_failed"
 
-        access_token = token_data.get('access_token')
+        access_token = token_data.get("access_token")
         if not access_token:
             logger.error("No access token in response for org %s", organization_id)
-            return None, 'no_access_token'
+            return None, "no_access_token"
 
         logger.debug("Successfully obtained access token")
 
@@ -130,16 +137,16 @@ class DiscordGuildService:
         if not guild_info:
             logger.error(
                 "Failed to get guild info from Discord API (guild_id=%s)",
-                guild_id or "not provided"
+                guild_id or "not provided",
             )
-            return None, 'guild_not_found'
+            return None, "guild_not_found"
 
-        logger.debug("Guild info retrieved: %s", guild_info.get('name'))
+        logger.debug("Guild info retrieved: %s", guild_info.get("name"))
 
         # The guild they added the bot to should be in their guilds list
         # We need to verify they have admin (0x8) permission
-        actual_guild_id = guild_info.get('id')
-        permissions = int(guild_info.get('permissions', 0))
+        actual_guild_id = guild_info.get("id")
+        permissions = int(guild_info.get("permissions", 0))
 
         # Check for Administrator permission (0x8)
         ADMINISTRATOR = 0x8
@@ -147,26 +154,24 @@ class DiscordGuildService:
             logger.warning(
                 "User %s does not have admin permissions in guild %s",
                 user.id,
-                actual_guild_id
+                actual_guild_id,
             )
-            return None, 'no_admin_permissions'
+            return None, "no_admin_permissions"
 
         # Check if this organization already has this guild linked
         existing = await self.repo.get_guild(organization_id, int(actual_guild_id))
         if existing:
             logger.warning(
-                "Guild %s is already linked to org %s",
-                actual_guild_id,
-                organization_id
+                "Guild %s is already linked to org %s", actual_guild_id, organization_id
             )
-            return None, 'already_linked'
+            return None, "already_linked"
 
         # Create the guild link
         guild = await self.repo.create(
             organization_id=organization_id,
             guild_id=int(actual_guild_id),
-            guild_name=guild_info.get('name', 'Unknown'),
-            guild_icon=guild_info.get('icon'),
+            guild_name=guild_info.get("name", "Unknown"),
+            guild_icon=guild_info.get("icon"),
             linked_by_user_id=user.id,
             verified_admin=True,
         )
@@ -176,17 +181,19 @@ class DiscordGuildService:
             actual_guild_id,
             guild.guild_name,
             organization_id,
-            user.id
+            user.id,
         )
 
         # Emit event
-        await EventBus.emit(DiscordGuildLinkedEvent(
-            user_id=user.id,
-            organization_id=organization_id,
-            entity_id=guild.id,
-            guild_id=str(actual_guild_id),
-            guild_name=guild.guild_name,
-        ))
+        await EventBus.emit(
+            DiscordGuildLinkedEvent(
+                user_id=user.id,
+                organization_id=organization_id,
+                entity_id=guild.id,
+                guild_id=str(actual_guild_id),
+                guild_name=guild.guild_name,
+            )
+        )
 
         return guild, None
 
@@ -197,13 +204,13 @@ class DiscordGuildService:
                 response = await client.post(
                     f"{DISCORD_API_BASE}/oauth2/token",
                     data={
-                        'client_id': settings.DISCORD_CLIENT_ID,
-                        'client_secret': settings.DISCORD_CLIENT_SECRET,
-                        'grant_type': 'authorization_code',
-                        'code': code,
-                        'redirect_uri': redirect_uri,
+                        "client_id": settings.DISCORD_CLIENT_ID,
+                        "client_secret": settings.DISCORD_CLIENT_SECRET,
+                        "grant_type": "authorization_code",
+                        "code": code,
+                        "redirect_uri": redirect_uri,
                     },
-                    headers={'Content-Type': 'application/x-www-form-urlencoded'}
+                    headers={"Content-Type": "application/x-www-form-urlencoded"},
                 )
                 response.raise_for_status()
                 return response.json()
@@ -211,7 +218,9 @@ class DiscordGuildService:
                 logger.error("Error exchanging OAuth2 code: %s", e)
                 return None
 
-    async def _get_user_guild_info(self, access_token: str, guild_id: Optional[str] = None) -> Optional[dict]:
+    async def _get_user_guild_info(
+        self, access_token: str, guild_id: Optional[str] = None
+    ) -> Optional[dict]:
         """
         Get guild info from Discord API using access token.
 
@@ -227,7 +236,7 @@ class DiscordGuildService:
                 # Get user's guilds
                 response = await client.get(
                     f"{DISCORD_API_BASE}/users/@me/guilds",
-                    headers={'Authorization': f'Bearer {access_token}'}
+                    headers={"Authorization": f"Bearer {access_token}"},
                 )
                 response.raise_for_status()
                 guilds = response.json()
@@ -235,7 +244,7 @@ class DiscordGuildService:
                 # If guild_id provided, find that specific guild
                 if guild_id:
                     for guild in guilds:
-                        if str(guild.get('id')) == str(guild_id):
+                        if str(guild.get("id")) == str(guild_id):
                             return guild
                     logger.warning("Guild %s not found in user's guild list", guild_id)
                     return None
@@ -250,9 +259,7 @@ class DiscordGuildService:
                 return None
 
     async def list_guilds(
-        self,
-        user: Optional[User],
-        organization_id: int
+        self, user: Optional[User], organization_id: int
     ) -> List[DiscordGuild]:
         """
         List Discord guilds for an organization.
@@ -268,18 +275,15 @@ class DiscordGuildService:
         if not member:
             logger.warning(
                 "Unauthorized list_guilds by user %s for org %s",
-                getattr(user, 'id', None),
-                organization_id
+                getattr(user, "id", None),
+                organization_id,
             )
             return []
 
         return await self.repo.list_by_organization(organization_id)
 
     async def unlink_guild(
-        self,
-        user: Optional[User],
-        organization_id: int,
-        guild_pk: int
+        self, user: Optional[User], organization_id: int, guild_pk: int
     ) -> bool:
         """
         Unlink a Discord guild from an organization.
@@ -296,8 +300,8 @@ class DiscordGuildService:
         if not await self.org_service.user_can_admin_org(user, organization_id):
             logger.warning(
                 "Unauthorized unlink_guild by user %s for org %s",
-                getattr(user, 'id', None),
-                organization_id
+                getattr(user, "id", None),
+                organization_id,
             )
             return False
 
@@ -305,9 +309,7 @@ class DiscordGuildService:
         guild = await self.repo.get_by_id(guild_pk)
         if not guild or guild.organization_id != organization_id:
             logger.warning(
-                "Guild %s does not belong to org %s",
-                guild_pk,
-                organization_id
+                "Guild %s does not belong to org %s", guild_pk, organization_id
             )
             return False
 
@@ -318,80 +320,73 @@ class DiscordGuildService:
                 "Unlinked guild %s from org %s by user %s",
                 guild.guild_id,
                 organization_id,
-                user.id if user else None
+                user.id if user else None,
             )
 
             # Emit guild unlinked event
-            await EventBus.emit(DiscordGuildUnlinkedEvent(
-                user_id=user.id if user else None,
-                organization_id=organization_id,
-                entity_id=guild_pk,
-                guild_id=str(guild.guild_id),
-            ))
+            await EventBus.emit(
+                DiscordGuildUnlinkedEvent(
+                    user_id=user.id if user else None,
+                    organization_id=organization_id,
+                    entity_id=guild_pk,
+                    guild_id=str(guild.guild_id),
+                )
+            )
 
         return success
 
     async def check_async_tournament_channel_permissions(
-        self,
-        channel_id: int,
-        bot_instance: Optional[discord.Client] = None
+        self, channel_id: int, bot_instance: Optional[discord.Client] = None
     ) -> ChannelPermissionCheck:
         """
         Check if a Discord channel has the correct permissions for async tournaments.
-        
+
         This method verifies:
         1. @everyone role cannot create messages, public threads, or private threads
         2. Bot can manage threads and create public/private threads
-        
+
         Args:
             channel_id: Discord channel ID to check
             bot_instance: Discord bot instance (will import if not provided)
-        
+
         Returns:
             ChannelPermissionCheck with validation results and any warnings
         """
         warnings: List[str] = []
-        
+
         # Import bot if not provided
         if bot_instance is None:
             try:
                 from discordbot.client import get_bot_instance
+
                 bot_instance = get_bot_instance()
                 if not bot_instance:
                     logger.warning("Bot instance not available for permission check")
                     warnings.append("Unable to verify permissions: Bot is not running")
                     return ChannelPermissionCheck(
-                        channel_id=channel_id,
-                        is_valid=False,
-                        warnings=warnings
+                        channel_id=channel_id, is_valid=False, warnings=warnings
                     )
             except Exception as e:
                 logger.error("Failed to get bot instance: %s", e)
                 warnings.append("Unable to verify permissions: Bot is not available")
                 return ChannelPermissionCheck(
-                    channel_id=channel_id,
-                    is_valid=False,
-                    warnings=warnings
+                    channel_id=channel_id, is_valid=False, warnings=warnings
                 )
-        
+
         try:
             # Get the channel
             channel = await bot_instance.fetch_channel(channel_id)
             if not channel:
                 warnings.append("Channel not found")
                 return ChannelPermissionCheck(
-                    channel_id=channel_id,
-                    is_valid=False,
-                    warnings=warnings
+                    channel_id=channel_id, is_valid=False, warnings=warnings
                 )
 
             # Ensure it's a text-based channel
             if not isinstance(channel, (discord.TextChannel, discord.Thread)):
                 warnings.append("Channel is not a text channel or thread")
                 return ChannelPermissionCheck(
-                    channel_id=channel_id,
-                    is_valid=False,
-                    warnings=warnings
+                    channel_id=channel_id, is_valid=False, warnings=warnings
                 )
 
             # Fetch the full guild to ensure roles and members are populated
@@ -399,9 +394,7 @@ class DiscordGuildService:
             if not guild:
                 warnings.append("Guild not found")
                 return ChannelPermissionCheck(
-                    channel_id=channel_id,
-                    is_valid=False,
-                    warnings=warnings
+                    channel_id=channel_id, is_valid=False, warnings=warnings
                 )
 
             # For threads, we can't check overwrites, so just verify bot permissions
@@ -415,13 +408,21 @@ class DiscordGuildService:
                         bot_permissions = channel.permissions_for(bot_member)
 
                         # Check bot permissions using config
-                        for perm_name in AsyncTournamentChannelPermissions.get_bot_permission_names():
+                        for (
+                            perm_name
+                        ) in (
+                            AsyncTournamentChannelPermissions.get_bot_permission_names()
+                        ):
                             if not getattr(bot_permissions, perm_name, False):
                                 warnings.append(
-                                    AsyncTournamentChannelPermissions.get_bot_permission_description(perm_name)
+                                    AsyncTournamentChannelPermissions.get_bot_permission_description(
+                                        perm_name
+                                    )
                                 )
                     else:
-                        warnings.append("Unable to verify bot permissions (bot not found in guild)")
+                        warnings.append(
+                            "Unable to verify bot permissions (bot not found in guild)"
+                        )
                 except Exception as e:
                     logger.error("Error checking bot permissions in thread: %s", e)
                     warnings.append("Unable to verify bot permissions")
@@ -429,7 +430,7 @@ class DiscordGuildService:
                 return ChannelPermissionCheck(
                     channel_id=channel_id,
                     is_valid=len(warnings) == 0,
-                    warnings=warnings
+                    warnings=warnings,
                 )
 
             # For TextChannel, check @everyone and bot permissions
@@ -441,14 +442,20 @@ class DiscordGuildService:
                 everyone_permissions = channel.permissions_for(everyone_role)
 
                 # Check @everyone restrictions using config
-                for perm_name in AsyncTournamentChannelPermissions.get_everyone_restriction_names():
+                for (
+                    perm_name
+                ) in AsyncTournamentChannelPermissions.get_everyone_restriction_names():
                     if getattr(everyone_permissions, perm_name, False):
                         warnings.append(
-                            AsyncTournamentChannelPermissions.get_everyone_restriction_description(perm_name)
+                            AsyncTournamentChannelPermissions.get_everyone_restriction_description(
+                                perm_name
+                            )
                         )
             else:
                 logger.warning("Guild %s has no default_role", guild.id)
-                warnings.append("Unable to verify @everyone permissions (no default role found)")
+                warnings.append(
+                    "Unable to verify @everyone permissions (no default role found)"
+                )
 
             # Check bot permissions - need to fetch bot's member object
             try:
@@ -460,53 +467,53 @@ class DiscordGuildService:
 
                 if bot_member:
                     bot_permissions = channel.permissions_for(bot_member)
-                    for perm_name in AsyncTournamentChannelPermissions.get_bot_permission_names():
+                    for (
+                        perm_name
+                    ) in AsyncTournamentChannelPermissions.get_bot_permission_names():
                         if not getattr(bot_permissions, perm_name, False):
                             warnings.append(
-                                AsyncTournamentChannelPermissions.get_bot_permission_description(perm_name)
+                                AsyncTournamentChannelPermissions.get_bot_permission_description(
+                                    perm_name
+                                )
                             )
                 else:
                     logger.warning("Bot member not found in guild %s", guild.id)
-                    warnings.append("Unable to verify bot permissions (bot not found in guild)")
+                    warnings.append(
+                        "Unable to verify bot permissions (bot not found in guild)"
+                    )
             except discord.Forbidden:
-                warnings.append("Unable to verify bot permissions (no permission to fetch member)")
+                warnings.append(
+                    "Unable to verify bot permissions (no permission to fetch member)"
+                )
             except Exception as e:
                 logger.error("Error fetching bot member from guild %s: %s", guild.id, e)
-                warnings.append("Unable to verify bot permissions (error fetching member)")
+                warnings.append(
+                    "Unable to verify bot permissions (error fetching member)"
+                )
 
             return ChannelPermissionCheck(
-                channel_id=channel_id,
-                is_valid=len(warnings) == 0,
-                warnings=warnings
+                channel_id=channel_id, is_valid=len(warnings) == 0, warnings=warnings
             )
 
         except discord.Forbidden:
             warnings.append("Bot does not have permission to view this channel")
             return ChannelPermissionCheck(
-                channel_id=channel_id,
-                is_valid=False,
-                warnings=warnings
+                channel_id=channel_id, is_valid=False, warnings=warnings
             )
         except discord.NotFound:
             warnings.append("Channel not found")
             return ChannelPermissionCheck(
-                channel_id=channel_id,
-                is_valid=False,
-                warnings=warnings
+                channel_id=channel_id, is_valid=False, warnings=warnings
             )
         except Exception as e:
             logger.error("Error checking channel permissions: %s", e, exc_info=True)
             warnings.append(f"Error checking permissions: {str(e)}")
             return ChannelPermissionCheck(
-                channel_id=channel_id,
-                is_valid=False,
-                warnings=warnings
+                channel_id=channel_id, is_valid=False, warnings=warnings
             )
 
     async def get_guilds_with_event_permissions(
-        self,
-        organization_id: int,
-        current_user: User
+        self, organization_id: int, current_user: User
     ) -> List[dict]:
         """
         Get all Discord guilds for an organization with MANAGE_EVENTS permission status.
@@ -524,12 +531,14 @@ class DiscordGuildService:
             logger.warning(
                 "User %s attempted to get guilds for org %s without membership",
                 current_user.id,
-                organization_id
+                organization_id,
             )
             return []
 
         # Get guilds for organization
-        guilds = await self.repo.get_guilds_by_organization(organization_id, active_only=True)
+        guilds = await self.repo.get_guilds_by_organization(
+            organization_id, active_only=True
+        )
 
         # Check permissions for each
         from discordbot.client import get_bot_instance
@@ -537,13 +546,7 @@ class DiscordGuildService:
         bot = get_bot_instance()
         if not bot:
             # Bot not running - return all guilds with False permissions
-            return [
-                {
-                    'guild': guild,
-                    'has_manage_events': False
-                }
-                for guild in guilds
-            ]
+            return [{"guild": guild, "has_manage_events": False} for guild in guilds]
 
         results = []
         for guild_model in guilds:
@@ -561,21 +564,15 @@ class DiscordGuildService:
                 logger.debug(
                     "Error checking MANAGE_EVENTS for guild %s: %s",
                     guild_model.guild_id,
-                    e
+                    e,
                 )
 
-            results.append({
-                'guild': guild_model,
-                'has_manage_events': has_permission
-            })
+            results.append({"guild": guild_model, "has_manage_events": has_permission})
 
         return results
 
     async def check_guilds_manage_events_permission(
-        self,
-        guild_ids: List[int],
-        organization_id: int,
-        current_user: User
+        self, guild_ids: List[int], organization_id: int, current_user: User
     ) -> List[str]:
         """
         Check MANAGE_EVENTS permission for specific guilds and return warnings.

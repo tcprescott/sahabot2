@@ -37,16 +37,16 @@ async def demo_motd():
     initial_time = datetime.now(timezone.utc).isoformat()
 
     await service.set_global(
-        key='motd_text',
+        key="motd_text",
         value=initial_motd,
-        description='Message of the Day banner text',
-        is_public=True
+        description="Message of the Day banner text",
+        is_public=True,
     )
     await service.set_global(
-        key='motd_updated_at',
+        key="motd_updated_at",
         value=initial_time,
-        description='Last time MOTD was updated',
-        is_public=True
+        description="Last time MOTD was updated",
+        is_public=True,
     )
     print(f"   ✓ MOTD set: {initial_motd}")
     print(f"   ✓ Timestamp: {initial_time}")
@@ -54,8 +54,8 @@ async def demo_motd():
 
     # 2. Retrieve MOTD
     print("2. Retrieving MOTD from database...")
-    motd = await service.get_global('motd_text')
-    timestamp = await service.get_global('motd_updated_at')
+    motd = await service.get_global("motd_text")
+    timestamp = await service.get_global("motd_updated_at")
     print(f"   ✓ MOTD: {motd['value']}")
     print(f"   ✓ Timestamp: {timestamp['value']}")
     print()
@@ -74,8 +74,8 @@ async def demo_motd():
     updated_motd = "🎉 <strong>New Tournament Starting!</strong> Sign up now in the Organizations tab."
     updated_time = datetime.now(timezone.utc).isoformat()
 
-    await service.set_global(key='motd_text', value=updated_motd, is_public=True)
-    await service.set_global(key='motd_updated_at', value=updated_time, is_public=True)
+    await service.set_global(key="motd_text", value=updated_motd, is_public=True)
+    await service.set_global(key="motd_updated_at", value=updated_time, is_public=True)
 
     print(f"   ✓ Updated MOTD: {updated_motd}")
     print(f"   ✓ New timestamp: {updated_time}")
@@ -91,8 +91,8 @@ async def demo_motd():
 
     # 6. Clear MOTD
     print("6. Disabling banner (setting empty MOTD)...")
-    await service.set_global(key='motd_text', value='', is_public=True)
-    empty_motd = await service.get_global('motd_text')
+    await service.set_global(key="motd_text", value="", is_public=True)
+    empty_motd = await service.get_global("motd_text")
     print(f"   ✓ MOTD now: '{empty_motd['value']}' (empty = banner hidden)")
     print()
 
@@ -114,5 +114,5 @@ async def demo_motd():
     await Tortoise.close_connections()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(demo_motd())

@@ -10,7 +10,9 @@ import logging
 from models import User
 from models.user import Permission
 from models.organization_request import OrganizationRequest
-from application.repositories.organization_request_repository import OrganizationRequestRepository
+from application.repositories.organization_request_repository import (
+    OrganizationRequestRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,9 @@ class OrganizationRequestService:
     def __init__(self) -> None:
         self.repo = OrganizationRequestRepository()
 
-    async def list_pending_requests(self, user: Optional[User]) -> List[OrganizationRequest]:
+    async def list_pending_requests(
+        self, user: Optional[User]
+    ) -> List[OrganizationRequest]:
         """
         List pending organization requests.
 
@@ -34,12 +38,17 @@ class OrganizationRequestService:
             List of pending requests, or empty list if user is not SUPERADMIN
         """
         if not user or not user.has_permission(Permission.SUPERADMIN):
-            logger.warning("Unauthorized list_pending_requests by user %s", getattr(user, 'id', None))
+            logger.warning(
+                "Unauthorized list_pending_requests by user %s",
+                getattr(user, "id", None),
+            )
             return []
 
         return await self.repo.list_pending_requests()
 
-    async def list_reviewed_requests(self, user: Optional[User]) -> List[OrganizationRequest]:
+    async def list_reviewed_requests(
+        self, user: Optional[User]
+    ) -> List[OrganizationRequest]:
         """
         List reviewed organization requests.
 
@@ -52,7 +61,10 @@ class OrganizationRequestService:
             List of reviewed requests, or empty list if user is not SUPERADMIN
         """
         if not user or not user.has_permission(Permission.SUPERADMIN):
-            logger.warning("Unauthorized list_reviewed_requests by user %s", getattr(user, 'id', None))
+            logger.warning(
+                "Unauthorized list_reviewed_requests by user %s",
+                getattr(user, "id", None),
+            )
             return []
 
         return await self.repo.list_reviewed_requests()

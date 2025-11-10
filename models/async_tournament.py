@@ -25,20 +25,33 @@ class AsyncTournament(Model):
     player racing permalinks from various pools at their own pace. Scores are
     calculated based on finish time relative to a par time (average of top 5).
     """
+
     id = fields.IntField(pk=True)
-    organization = fields.ForeignKeyField('models.Organization', related_name='async_tournaments')
+    organization = fields.ForeignKeyField(
+        "models.Organization", related_name="async_tournaments"
+    )
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     is_active = fields.BooleanField(default=True)
-    hide_results = fields.BooleanField(default=False)  # Hide other players' results until tournament ends
-    discord_channel_id = fields.BigIntField(null=True, unique=True)  # Discord channel for race actions
-    runs_per_pool = fields.SmallIntField(default=1)  # Number of runs each player can do per pool
-    require_racetime_for_async_runs = fields.BooleanField(default=False)  # Require RaceTime.gg account for async runs
+    hide_results = fields.BooleanField(
+        default=False
+    )  # Hide other players' results until tournament ends
+    discord_channel_id = fields.BigIntField(
+        null=True, unique=True
+    )  # Discord channel for race actions
+    runs_per_pool = fields.SmallIntField(
+        default=1
+    )  # Number of runs each player can do per pool
+    require_racetime_for_async_runs = fields.BooleanField(
+        default=False
+    )  # Require RaceTime.gg account for async runs
 
     # Cached Discord channel permission warnings
     discord_warnings = fields.JSONField(null=True)  # List of permission warning strings
-    discord_warnings_checked_at = fields.DatetimeField(null=True)  # When permissions were last checked
-    
+    discord_warnings_checked_at = fields.DatetimeField(
+        null=True
+    )  # When permissions were last checked
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -59,8 +72,9 @@ class AsyncTournamentPool(Model):
     A tournament can have multiple pools, and players must complete a certain
     number of runs from each pool.
     """
+
     id = fields.IntField(pk=True)
-    tournament = fields.ForeignKeyField('models.AsyncTournament', related_name='pools')
+    tournament = fields.ForeignKeyField("models.AsyncTournament", related_name="pools")
     name = fields.CharField(max_length=255)
     description = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
@@ -71,7 +85,7 @@ class AsyncTournamentPool(Model):
 
     class Meta:
         table = "async_tournament_pools"
-        unique_together = (('tournament', 'name'),)
+        unique_together = (("tournament", "name"),)
 
 
 class AsyncTournamentPermalink(Model):
@@ -81,8 +95,11 @@ class AsyncTournamentPermalink(Model):
     Each permalink can be raced by multiple players. The par time is calculated
     as the average of the top 5 finish times.
     """
+
     id = fields.IntField(pk=True)
-    pool = fields.ForeignKeyField('models.AsyncTournamentPool', related_name='permalinks')
+    pool = fields.ForeignKeyField(
+        "models.AsyncTournamentPool", related_name="permalinks"
+    )
     url = fields.CharField(max_length=500)
     notes = fields.TextField(null=True)
     par_time = fields.FloatField(null=True)  # In seconds, calculated from top 5 times
@@ -120,37 +137,50 @@ class AsyncTournamentRace(Model):
     Tracks a single player's attempt at a permalink, including timing,
     status, and scoring information.
     """
+
     id = fields.IntField(pk=True)
-    tournament = fields.ForeignKeyField('models.AsyncTournament', related_name='races')
-    permalink = fields.ForeignKeyField('models.AsyncTournamentPermalink', related_name='races')
-    user = fields.ForeignKeyField('models.User', related_name='async_tournament_races')
-    
+    tournament = fields.ForeignKeyField("models.AsyncTournament", related_name="races")
+    permalink = fields.ForeignKeyField(
+        "models.AsyncTournamentPermalink", related_name="races"
+    )
+    user = fields.ForeignKeyField("models.User", related_name="async_tournament_races")
+
     # Link to live race (if this race was part of a live event)
     live_race = fields.ForeignKeyField(
-        'models.AsyncTournamentLiveRace',
-        related_name='participant_races',
-        null=True
+        "models.AsyncTournamentLiveRace", related_name="participant_races", null=True
     )
-    
+
     discord_thread_id = fields.BigIntField(null=True)  # Discord thread for this race
     thread_open_time = fields.DatetimeField(null=True)
     thread_timeout_time = fields.DatetimeField(null=True)
     start_time = fields.DatetimeField(null=True)
     end_time = fields.DatetimeField(null=True)
-    status = fields.CharField(max_length=50, default='pending')  # pending, in_progress, finished, forfeit, disqualified
-    reattempted = fields.BooleanField(default=False)  # True if this race was reattempted
+    status = fields.CharField(
+        max_length=50, default="pending"
+    )  # pending, in_progress, finished, forfeit, disqualified
+    reattempted = fields.BooleanField(
+        default=False
+    )  # True if this race was reattempted
     runner_notes = fields.TextField(null=True)
     runner_vod_url = fields.CharField(max_length=500, null=True)
     score = fields.FloatField(null=True)  # Calculated score based on par time
     score_updated_at = fields.DatetimeField(null=True)
 
     # Review fields
-    review_status = fields.CharField(max_length=20, default='pending')  # pending, accepted, rejected
-    reviewed_by = fields.ForeignKeyField('models.User', related_name='async_race_reviews', null=True)
+    review_status = fields.CharField(
+        max_length=20, default="pending"
+    )  # pending, accepted, rejected
+    reviewed_by = fields.ForeignKeyField(
+        "models.User", related_name="async_race_reviews", null=True
+    )
     reviewed_at = fields.DatetimeField(null=True)
     reviewer_notes = fields.TextField(null=True)
-    review_requested_by_user = fields.BooleanField(default=False)  # True if user flagged for review
-    review_request_reason = fields.TextField(null=True)  # User's reason for requesting review
+    review_requested_by_user = fields.BooleanField(
+        default=False
+    )  # True if user flagged for review
+    review_request_reason = fields.TextField(
+        null=True
+    )  # User's reason for requesting review
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
@@ -178,11 +208,11 @@ class AsyncTournamentRace(Model):
     def status_formatted(self) -> str:
         """Get human-readable status."""
         status_map = {
-            'pending': 'Pending',
-            'in_progress': 'In Progress',
-            'finished': 'Finished',
-            'forfeit': 'Forfeit',
-            'disqualified': 'Disqualified'
+            "pending": "Pending",
+            "in_progress": "In Progress",
+            "finished": "Finished",
+            "forfeit": "Forfeit",
+            "disqualified": "Disqualified",
         }
         return status_map.get(self.status, self.status.title())
 
@@ -196,13 +226,13 @@ class AsyncTournamentRace(Model):
     @property
     def review_status_formatted(self) -> str:
         """Get human-readable review status."""
-        if self.reattempted or self.status != 'finished':
+        if self.reattempted or self.status != "finished":
             return "N/A"
 
         status_map = {
-            'pending': 'Pending',
-            'accepted': 'Accepted',
-            'rejected': 'Pending Second Review'
+            "pending": "Pending",
+            "accepted": "Accepted",
+            "rejected": "Pending Second Review",
         }
         return status_map.get(self.review_status, self.review_status.title())
 
@@ -210,7 +240,7 @@ class AsyncTournamentRace(Model):
 class AsyncTournamentLiveRace(Model):
     """
     Live race event for async tournaments.
-    
+
     Represents a scheduled race where all eligible participants race the same
     seed simultaneously on RaceTime.gg. Results are automatically recorded.
     Unlike standard async races (individual, thread-based), live races are:
@@ -218,37 +248,46 @@ class AsyncTournamentLiveRace(Model):
     - Open to all eligible tournament participants
     - Hosted on RaceTime.gg with automatic result tracking
     """
+
     id = fields.IntField(pk=True)
-    tournament = fields.ForeignKeyField('models.AsyncTournament', related_name='live_races')
-    pool = fields.ForeignKeyField('models.AsyncTournamentPool', related_name='live_races')
-    permalink = fields.ForeignKeyField('models.AsyncTournamentPermalink', related_name='live_races', null=True)
-    
+    tournament = fields.ForeignKeyField(
+        "models.AsyncTournament", related_name="live_races"
+    )
+    pool = fields.ForeignKeyField(
+        "models.AsyncTournamentPool", related_name="live_races"
+    )
+    permalink = fields.ForeignKeyField(
+        "models.AsyncTournamentPermalink", related_name="live_races", null=True
+    )
+
     # Scheduling
-    episode_id = fields.IntField(null=True, unique=True)  # SpeedGaming episode ID (if applicable)
+    episode_id = fields.IntField(
+        null=True, unique=True
+    )  # SpeedGaming episode ID (if applicable)
     scheduled_at = fields.DatetimeField(null=True)  # When race is scheduled to start
     match_title = fields.CharField(max_length=200, null=True)  # Display name for race
-    
+
     # RaceTime.gg integration
-    racetime_slug = fields.CharField(max_length=200, null=True, unique=True)  # e.g., "alttpr/cool-icerod-1234"
+    racetime_slug = fields.CharField(
+        max_length=200, null=True, unique=True
+    )  # e.g., "alttpr/cool-icerod-1234"
     racetime_goal = fields.CharField(max_length=255, null=True)  # RaceTime.gg goal
     room_open_time = fields.DatetimeField(null=True)  # When room was opened
-    
+
     # Room configuration (optional override of tournament's profile)
     # If null, inherits from tournament.race_room_profile or org default profile
     race_room_profile = fields.ForeignKeyField(
-        'models.RaceRoomProfile',
-        related_name='live_races',
-        null=True
+        "models.RaceRoomProfile", related_name="live_races", null=True
     )
-    
+
     # Status tracking
-    status = fields.CharField(max_length=45, default='scheduled')
+    status = fields.CharField(max_length=45, default="scheduled")
     # scheduled: Room not yet created
     # pending: Room created, waiting for race to start
     # in_progress: Race started
     # finished: Race completed
     # cancelled: Race cancelled
-    
+
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
@@ -264,33 +303,36 @@ class AsyncTournamentLiveRace(Model):
         if not self.racetime_slug:
             return None
         return f"https://racetime.gg/{self.racetime_slug}"
-    
+
     async def get_effective_profile(self) -> Optional[RaceRoomProfile]:
         """
         Get the effective race room profile for this live race.
-        
+
         Priority:
         1. Live race's specific profile (if set)
         2. Tournament's profile (if set)
         3. Organization's default profile
         4. None (use system defaults)
-        
+
         Returns:
             RaceRoomProfile if found, None otherwise
         """
         # Check if this live race has a specific profile
-        await self.fetch_related('race_room_profile')
+        await self.fetch_related("race_room_profile")
         if self.race_room_profile is not None:
             return self.race_room_profile
-        
+
         # Check if tournament has a profile
-        await self.fetch_related('tournament__race_room_profile')
+        await self.fetch_related("tournament__race_room_profile")
         if self.tournament.race_room_profile is not None:
             return self.tournament.race_room_profile
-        
+
         # Get org default profile (no auth check needed for internal model method)
-        from application.repositories.race_room_profile_repository import RaceRoomProfileRepository
-        await self.fetch_related('tournament__organization')
+        from application.repositories.race_room_profile_repository import (
+            RaceRoomProfileRepository,
+        )
+
+        await self.fetch_related("tournament__organization")
         repo = RaceRoomProfileRepository()
         return await repo.get_default_for_org(self.tournament.organization_id)
 
@@ -302,10 +344,17 @@ class AsyncTournamentAuditLog(Model):
     Tracks all significant actions in async tournaments for accountability
     and debugging.
     """
+
     id = fields.IntField(pk=True)
-    tournament = fields.ForeignKeyField('models.AsyncTournament', related_name='audit_logs')
-    user = fields.ForeignKeyField('models.User', related_name='async_tournament_audit_logs', null=True)
-    action = fields.CharField(max_length=100)  # e.g., 'create_thread', 'race_start', 'race_finish'
+    tournament = fields.ForeignKeyField(
+        "models.AsyncTournament", related_name="audit_logs"
+    )
+    user = fields.ForeignKeyField(
+        "models.User", related_name="async_tournament_audit_logs", null=True
+    )
+    action = fields.CharField(
+        max_length=100
+    )  # e.g., 'create_thread', 'race_start', 'race_finish'
     details = fields.TextField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
 

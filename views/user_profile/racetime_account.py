@@ -21,72 +21,86 @@ class RacetimeAccountView:
 
     async def render(self) -> None:
         """Render the RaceTime account management interface."""
-        with Card.create(title='RaceTime.gg Account'):
-            with ui.element('div').classes('flex flex-col gap-4'):
+        with Card.create(title="RaceTime.gg Account"):
+            with ui.element("div").classes("flex flex-col gap-4"):
                 # Account status
                 if self.user.racetime_id:
                     # Account is linked
-                    with ui.row().classes('items-center'):
-                        ui.icon('link').classes('text-success')
-                        with ui.column().classes('flex-1'):
-                            ui.label('Account Status').classes('text-sm text-secondary')
-                            ui.label('Linked').classes('badge badge-success')
+                    with ui.row().classes("items-center"):
+                        ui.icon("link").classes("text-success")
+                        with ui.column().classes("flex-1"):
+                            ui.label("Account Status").classes("text-sm text-secondary")
+                            ui.label("Linked").classes("badge badge-success")
 
                     # RaceTime username
-                    with ui.row().classes('items-center'):
-                        ui.icon('person').classes('text-secondary')
-                        with ui.column().classes('flex-1'):
-                            ui.label('RaceTime.gg Username').classes('text-sm text-secondary')
-                            ui.label(self.user.racetime_name or 'Unknown').classes('font-bold')
+                    with ui.row().classes("items-center"):
+                        ui.icon("person").classes("text-secondary")
+                        with ui.column().classes("flex-1"):
+                            ui.label("RaceTime.gg Username").classes(
+                                "text-sm text-secondary"
+                            )
+                            ui.label(self.user.racetime_name or "Unknown").classes(
+                                "font-bold"
+                            )
 
                     # RaceTime ID
-                    with ui.row().classes('items-center'):
-                        ui.icon('fingerprint').classes('text-secondary')
-                        with ui.column().classes('flex-1'):
-                            ui.label('RaceTime.gg ID').classes('text-sm text-secondary')
-                            ui.label(self.user.racetime_id).classes('font-mono')
+                    with ui.row().classes("items-center"):
+                        ui.icon("fingerprint").classes("text-secondary")
+                        with ui.column().classes("flex-1"):
+                            ui.label("RaceTime.gg ID").classes("text-sm text-secondary")
+                            ui.label(self.user.racetime_id).classes("font-mono")
 
                     ui.separator()
 
                     # Unlink button
                     async def handle_unlink():
                         """Handle unlinking RaceTime account."""
-                        from components.dialogs.common.tournament_dialogs import ConfirmDialog
-                        
+                        from components.dialogs.common.tournament_dialogs import (
+                            ConfirmDialog,
+                        )
+
                         dialog = ConfirmDialog(
-                            title='Unlink RaceTime Account',
-                            message='Are you sure you want to unlink your RaceTime.gg account? This will remove your race data sync and tournament participation capabilities.',
-                            on_confirm=self._unlink_account
+                            title="Unlink RaceTime Account",
+                            message="Are you sure you want to unlink your RaceTime.gg account? This will remove your race data sync and tournament participation capabilities.",
+                            on_confirm=self._unlink_account,
                         )
                         await dialog.show()
 
-                    ui.button('Unlink Account', on_click=handle_unlink).classes('btn').props('color=negative')
+                    ui.button("Unlink Account", on_click=handle_unlink).classes(
+                        "btn"
+                    ).props("color=negative")
 
                 else:
                     # Account is not linked
-                    with ui.row().classes('items-center'):
-                        ui.icon('link_off').classes('text-warning')
-                        with ui.column().classes('flex-1'):
-                            ui.label('Account Status').classes('text-sm text-secondary')
-                            ui.label('Not Linked').classes('badge badge-warning')
+                    with ui.row().classes("items-center"):
+                        ui.icon("link_off").classes("text-warning")
+                        with ui.column().classes("flex-1"):
+                            ui.label("Account Status").classes("text-sm text-secondary")
+                            ui.label("Not Linked").classes("badge badge-warning")
 
                     ui.separator()
 
                     # Info about linking
-                    with ui.element('div').classes('flex flex-col gap-2'):
-                        ui.label('Link your RaceTime.gg account to:').classes('text-sm')
-                        with ui.element('ul').classes('list-disc pl-6 text-sm'):
-                            ui.label('Participate in races and tournaments').classes('list-item')
-                            ui.label('Track your race history and statistics').classes('list-item')
-                            ui.label('Sync your race data automatically').classes('list-item')
+                    with ui.element("div").classes("flex flex-col gap-2"):
+                        ui.label("Link your RaceTime.gg account to:").classes("text-sm")
+                        with ui.element("ul").classes("list-disc pl-6 text-sm"):
+                            ui.label("Participate in races and tournaments").classes(
+                                "list-item"
+                            )
+                            ui.label("Track your race history and statistics").classes(
+                                "list-item"
+                            )
+                            ui.label("Sync your race data automatically").classes(
+                                "list-item"
+                            )
 
                     ui.separator()
 
                     # Link button
                     ui.button(
-                        'Link RaceTime.gg Account',
-                        on_click=lambda: ui.navigate.to('/racetime/link/initiate')
-                    ).classes('btn btn-primary')
+                        "Link RaceTime.gg Account",
+                        on_click=lambda: ui.navigate.to("/racetime/link/initiate"),
+                    ).classes("btn btn-primary")
 
     async def _unlink_account(self) -> None:
         """Unlink the RaceTime account via service."""
@@ -102,10 +116,10 @@ class RacetimeAccountView:
             user_repo = UserRepository()
             self.user = await user_repo.get_by_id(self.user.id)
 
-            ui.notify('RaceTime account unlinked successfully', type='positive')
+            ui.notify("RaceTime account unlinked successfully", type="positive")
             # Reload the page to reflect changes
-            ui.navigate.to('/profile')
+            ui.navigate.to("/profile")
 
         except Exception as e:
             logger.error("Error unlinking RaceTime account: %s", str(e), exc_info=True)
-            ui.notify('An error occurred while unlinking your account', type='negative')
+            ui.notify("An error occurred while unlinking your account", type="negative")

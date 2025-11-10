@@ -47,7 +47,7 @@ class UserEditDialog(BaseDialog):
     def _can_change_permissions(self, new_permission: Permission) -> bool:
         """
         Check if current user can change target user's permissions.
-        
+
         Only SUPERADMINs can change permissions.
         Can't change your own permissions.
         Can't elevate someone to your level or higher.
@@ -63,46 +63,50 @@ class UserEditDialog(BaseDialog):
     async def show(self) -> None:
         """Display the edit dialog using BaseDialog structure."""
         self.create_dialog(
-            title=f'Edit User: {self.target_user.discord_username}',
-            icon='edit',
+            title=f"Edit User: {self.target_user.discord_username}",
+            icon="edit",
         )
         await super().show()
 
     def _render_body(self) -> None:
         """Render the dialog body content."""
         # User info (read-only)
-        self.create_section_title('User Information')
-        self.create_info_row('Discord ID', str(self.target_user.discord_id))
-        self.create_info_row('Username', self.target_user.discord_username)
+        self.create_section_title("User Information")
+        self.create_info_row("Discord ID", str(self.target_user.discord_id))
+        self.create_info_row("Username", self.target_user.discord_username)
         if self.target_user.discord_email:
-            self.create_info_row('Email', self.target_user.discord_email)
+            self.create_info_row("Email", self.target_user.discord_email)
 
         ui.separator()
 
         # Editable fields
-        self.create_section_title('Account Status')
-        status_switch = ui.checkbox('Active Account', value=self.is_active)
-        status_switch.on('update:model-value', lambda e: setattr(self, 'is_active', e.args))
+        self.create_section_title("Account Status")
+        status_switch = ui.checkbox("Active Account", value=self.is_active)
+        status_switch.on(
+            "update:model-value", lambda e: setattr(self, "is_active", e.args)
+        )
 
         # Permission level (only if user can change permissions)
         if self._can_change_permissions(Permission.USER):
-            self.create_section_title('Permission Level')
+            self.create_section_title("Permission Level")
             self.create_permission_select(
                 current_permission=self.permission,
                 max_permission=self.current_user.permission,
-                on_change=lambda p: setattr(self, 'permission', p),
+                on_change=lambda p: setattr(self, "permission", p),
             )
         else:
-            self.create_info_row('Permission', self.target_user.permission.name)
+            self.create_info_row("Permission", self.target_user.permission.name)
 
         ui.separator()
 
         # Actions
         with self.create_actions_row():
             # Neutral/negative action on the far left
-            ui.button('Cancel', on_click=self.close).classes('btn')
+            ui.button("Cancel", on_click=self.close).classes("btn")
             # Positive action on the far right
-            ui.button('Save Changes', on_click=self._save_and_close).classes('btn').props('color=positive')
+            ui.button("Save Changes", on_click=self._save_and_close).classes(
+                "btn"
+            ).props("color=positive")
 
     async def _save_and_close(self) -> None:
         """Save changes and close dialog."""
@@ -115,20 +119,25 @@ class UserEditDialog(BaseDialog):
             if self.is_active != self.target_user.is_active:
                 if self.is_active:
                     await self.user_service.activate_user(self.target_user.id)
-                    changes.append('activated account')
+                    changes.append("activated account")
                 else:
                     await self.user_service.deactivate_user(self.target_user.id)
-                    changes.append('deactivated account')
+                    changes.append("deactivated account")
                 changed = True
 
             # Update permission
             if self.permission != self.target_user.permission:
                 if self._can_change_permissions(self.permission):
-                    await self.user_service.update_user_permission(self.target_user.id, self.permission)
-                    changes.append(f'changed permission to {self.permission.name}')
+                    await self.user_service.update_user_permission(
+                        self.target_user.id, self.permission
+                    )
+                    changes.append(f"changed permission to {self.permission.name}")
                     changed = True
                 else:
-                    ui.notify('You do not have permission to change this user\'s permissions', type='negative')
+                    ui.notify(
+                        "You do not have permission to change this user's permissions",
+                        type="negative",
+                    )
                     return
 
             if changed:
@@ -136,19 +145,22 @@ class UserEditDialog(BaseDialog):
                 await self.audit_service.log_user_update(
                     user=self.current_user,
                     target_user_id=self.target_user.id,
-                    changes=', '.join(changes),
+                    changes=", ".join(changes),
                 )
 
-                ui.notify(f'User {self.target_user.discord_username} updated successfully', type='positive')
+                ui.notify(
+                    f"User {self.target_user.discord_username} updated successfully",
+                    type="positive",
+                )
 
                 # Call the callback
                 if self.on_save:
                     await self.on_save()
             else:
-                ui.notify('No changes made', type='info')
+                ui.notify("No changes made", type="info")
 
             await self.close()
 
         except Exception as e:
             logger.error("Error updating user: %s", e, exc_info=True)
-            ui.notify(f'Error updating user: {str(e)}', type='negative')
+            ui.notify(f"Error updating user: {str(e)}", type="negative")

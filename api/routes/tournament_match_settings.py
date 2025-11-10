@@ -9,7 +9,9 @@ from api.schemas.tournament import (
     TournamentMatchSettingsValidateResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.tournaments.tournament_match_settings_service import TournamentMatchSettingsService
+from application.services.tournaments.tournament_match_settings_service import (
+    TournamentMatchSettingsService,
+)
 from models import User
 
 router = APIRouter(prefix="/tournaments/settings", tags=["tournament-settings"])
@@ -29,7 +31,7 @@ router = APIRouter(prefix="/tournaments/settings", tags=["tournament-settings"])
 )
 async def list_match_settings(
     match_id: int = Path(..., description="Match ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentMatchSettingsListResponse:
     """
     List settings submissions for a match.
@@ -66,7 +68,7 @@ async def list_match_settings(
 async def get_match_game_settings(
     match_id: int = Path(..., description="Match ID"),
     game_number: int = Path(..., ge=1, le=10, description="Game number (1-10)"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentMatchSettingsOut:
     """
     Get settings submission for a match game.
@@ -87,10 +89,12 @@ async def get_match_game_settings(
     """
     service = TournamentMatchSettingsService()
     submission = await service.get_submission(current_user, match_id, game_number)
-    
+
     if not submission:
-        raise HTTPException(status_code=404, detail="Settings not found or unauthorized")
-    
+        raise HTTPException(
+            status_code=404, detail="Settings not found or unauthorized"
+        )
+
     return TournamentMatchSettingsOut.model_validate(submission)
 
 
@@ -112,7 +116,7 @@ async def get_match_game_settings(
 async def submit_match_settings(
     data: TournamentMatchSettingsSubmitRequest,
     match_id: int = Path(..., description="Match ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentMatchSettingsOut:
     """
     Submit settings for a tournament match.
@@ -137,15 +141,15 @@ async def submit_match_settings(
         match_id=match_id,
         settings=data.settings,
         game_number=data.game_number,
-        notes=data.notes
+        notes=data.notes,
     )
-    
+
     if not submission:
         raise HTTPException(
             status_code=403,
-            detail="Unauthorized to submit settings for this match or validation failed"
+            detail="Unauthorized to submit settings for this match or validation failed",
         )
-    
+
     return TournamentMatchSettingsOut.model_validate(submission)
 
 
@@ -165,7 +169,7 @@ async def submit_match_settings(
 )
 async def delete_settings_submission(
     submission_id: int = Path(..., description="Settings submission ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete a settings submission.
@@ -181,11 +185,10 @@ async def delete_settings_submission(
     """
     service = TournamentMatchSettingsService()
     deleted = await service.delete_submission(current_user, submission_id)
-    
+
     if not deleted:
         raise HTTPException(
-            status_code=404,
-            detail="Settings not found or unauthorized to delete"
+            status_code=404, detail="Settings not found or unauthorized to delete"
         )
 
 
@@ -203,7 +206,7 @@ async def delete_settings_submission(
 )
 async def validate_settings(
     data: TournamentMatchSettingsValidateRequest,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> TournamentMatchSettingsValidateResponse:
     """
     Validate tournament match settings.
@@ -220,11 +223,9 @@ async def validate_settings(
     """
     service = TournamentMatchSettingsService()
     is_valid, error_message = await service.validate_settings(
-        data.settings,
-        data.tournament_id
+        data.settings, data.tournament_id
     )
-    
+
     return TournamentMatchSettingsValidateResponse(
-        is_valid=is_valid,
-        error_message=error_message
+        is_valid=is_valid, error_message=error_message
     )

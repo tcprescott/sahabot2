@@ -7,7 +7,9 @@ into the Match model with player and crew member creation.
 
 import pytest
 from datetime import datetime, timezone
-from application.services.speedgaming.speedgaming_etl_service import SpeedGamingETLService
+from application.services.speedgaming.speedgaming_etl_service import (
+    SpeedGamingETLService,
+)
 from application.services.speedgaming.speedgaming_service import (
     SpeedGamingEpisode,
     SpeedGamingPlayer,

@@ -13,7 +13,13 @@ class ApiTokenRepository:
     async def get_by_hash(self, token_hash: str) -> Optional[ApiToken]:
         return await ApiToken.get_or_none(token_hash=token_hash)
 
-    async def create(self, user_id: int, token_hash: str, name: Optional[str] = None, expires_at: Optional[datetime] = None) -> ApiToken:
+    async def create(
+        self,
+        user_id: int,
+        token_hash: str,
+        name: Optional[str] = None,
+        expires_at: Optional[datetime] = None,
+    ) -> ApiToken:
         return await ApiToken.create(
             user_id=user_id,
             token_hash=token_hash,
@@ -31,7 +37,7 @@ class ApiTokenRepository:
 
     async def list_by_user(self, user_id: int) -> list[ApiToken]:
         """Get all tokens for a user."""
-        return await ApiToken.filter(user_id=user_id).order_by('-created_at')
+        return await ApiToken.filter(user_id=user_id).order_by("-created_at")
 
     async def get_by_id(self, token_id: int) -> Optional[ApiToken]:
         """Get a token by its ID."""

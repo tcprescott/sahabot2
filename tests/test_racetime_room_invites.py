@@ -20,25 +20,25 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
     user1 = User(
         id=1,
         discord_id=111111,
-        discord_username='Player1',
-        racetime_id='abc123',  # Has linked account
-        racetime_name='Player1RT',
+        discord_username="Player1",
+        racetime_id="abc123",  # Has linked account
+        racetime_name="Player1RT",
         permission=Permission.USER,
     )
 
     user2 = User(
         id=2,
         discord_id=222222,
-        discord_username='Player2',
-        racetime_id='def456',  # Has linked account
-        racetime_name='Player2RT',
+        discord_username="Player2",
+        racetime_id="def456",  # Has linked account
+        racetime_name="Player2RT",
         permission=Permission.USER,
     )
 
     user3 = User(
         id=3,
         discord_id=333333,
-        discord_username='Player3',
+        discord_username="Player3",
         racetime_id=None,  # No linked account
         racetime_name=None,
         permission=Permission.USER,
@@ -57,7 +57,7 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
 
     # Mock handler with invite_user method
     mock_handler = AsyncMock()
-    mock_handler.data = {'name': 'alttpr/test-room-1234'}
+    mock_handler.data = {"name": "alttpr/test-room-1234"}
 
     async def track_invite(racetime_id: str):
         """Track which users were invited."""
@@ -77,7 +77,9 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
     # Mock players relation
     mock_players = AsyncMock()
     mock_prefetch_result = AsyncMock()
-    mock_prefetch_result.all = AsyncMock(return_value=[match_player1, match_player2, match_player3])
+    mock_prefetch_result.all = AsyncMock(
+        return_value=[match_player1, match_player2, match_player3]
+    )
     mock_players.prefetch_related = MagicMock(return_value=mock_prefetch_result)
     mock_match.players = mock_players
 
@@ -92,17 +94,19 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
 
     # Mock racetime bot
     mock_bot_config = MagicMock()
-    mock_bot_config.category = 'alttpr'
-    mock_bot_config.client_id = 'test_client'
-    mock_bot_config.client_secret = 'test_secret'
+    mock_bot_config.category = "alttpr"
+    mock_bot_config.client_id = "test_client"
+    mock_bot_config.client_secret = "test_secret"
     mock_bot_config.id = 1
     mock_bot_config.is_active = True
     mock_tournament.racetime_bot = mock_bot_config
 
     # Mock the service
-    with patch('application.services.tournaments.tournament_service.Match') as MockMatch, \
-         patch('racetime.client.RacetimeBot') as MockBot, \
-         patch('aiohttp.ClientSession') as MockSession:
+    with patch(
+        "application.services.tournaments.tournament_service.Match"
+    ) as MockMatch, patch("racetime.client.RacetimeBot") as MockBot, patch(
+        "aiohttp.ClientSession"
+    ) as MockSession:
 
         # Setup Match.filter mock
         mock_filter = AsyncMock()
@@ -114,9 +118,9 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
         # Setup RacetimeBot mock
         mock_bot_instance = MagicMock()
         mock_bot_instance.http = None
-        mock_bot_instance.access_token = 'test_token'
+        mock_bot_instance.access_token = "test_token"
         mock_bot_instance.reauthorize_every = 3600
-        mock_bot_instance.authorize = MagicMock(return_value=('test_token', 3600))
+        mock_bot_instance.authorize = MagicMock(return_value=("test_token", 3600))
         mock_bot_instance.startrace = AsyncMock(return_value=mock_handler)
         MockBot.return_value = mock_bot_instance
 
@@ -140,13 +144,13 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
 
         # Verify room was created
         assert result is not None
-        assert result.racetime_room_slug == 'alttpr/test-room-1234'
+        assert result.racetime_room_slug == "alttpr/test-room-1234"
 
         # Verify invites were sent
         # Should invite user1 (abc123) and user2 (def456), but NOT user3 (no racetime_id)
         assert len(invited_users) == 2
-        assert 'abc123' in invited_users
-        assert 'def456' in invited_users
+        assert "abc123" in invited_users
+        assert "def456" in invited_users
 
         # Verify invite_user was called twice
         assert mock_handler.invite_user.call_count == 2
@@ -159,18 +163,18 @@ async def test_create_room_handles_invite_failure(db, admin_user, sample_organiz
     user1 = User(
         id=1,
         discord_id=111111,
-        discord_username='Player1',
-        racetime_id='abc123',
-        racetime_name='Player1RT',
+        discord_username="Player1",
+        racetime_id="abc123",
+        racetime_name="Player1RT",
         permission=Permission.USER,
     )
 
     user2 = User(
         id=2,
         discord_id=222222,
-        discord_username='Player2',
-        racetime_id='def456',
-        racetime_name='Player2RT',
+        discord_username="Player2",
+        racetime_id="def456",
+        racetime_name="Player2RT",
         permission=Permission.USER,
     )
 
@@ -186,11 +190,11 @@ async def test_create_room_handles_invite_failure(db, admin_user, sample_organiz
 
     # Mock handler that fails on first invite
     mock_handler = AsyncMock()
-    mock_handler.data = {'name': 'alttpr/test-room-5678'}
+    mock_handler.data = {"name": "alttpr/test-room-5678"}
 
     async def track_invite(racetime_id: str):
         """Track invites and fail on first one."""
-        if racetime_id == 'abc123':
+        if racetime_id == "abc123":
             failed_users.append(racetime_id)
             raise Exception("Network error")
         invited_users.append(racetime_id)
@@ -224,17 +228,19 @@ async def test_create_room_handles_invite_failure(db, admin_user, sample_organiz
 
     # Mock racetime bot
     mock_bot_config = MagicMock()
-    mock_bot_config.category = 'alttpr'
-    mock_bot_config.client_id = 'test_client'
-    mock_bot_config.client_secret = 'test_secret'
+    mock_bot_config.category = "alttpr"
+    mock_bot_config.client_id = "test_client"
+    mock_bot_config.client_secret = "test_secret"
     mock_bot_config.id = 1
     mock_bot_config.is_active = True
     mock_tournament.racetime_bot = mock_bot_config
 
     # Mock the service
-    with patch('application.services.tournaments.tournament_service.Match') as MockMatch, \
-         patch('racetime.client.RacetimeBot') as MockBot, \
-         patch('aiohttp.ClientSession') as MockSession:
+    with patch(
+        "application.services.tournaments.tournament_service.Match"
+    ) as MockMatch, patch("racetime.client.RacetimeBot") as MockBot, patch(
+        "aiohttp.ClientSession"
+    ) as MockSession:
 
         # Setup Match.filter mock
         mock_filter = AsyncMock()
@@ -246,9 +252,9 @@ async def test_create_room_handles_invite_failure(db, admin_user, sample_organiz
         # Setup RacetimeBot mock
         mock_bot_instance = MagicMock()
         mock_bot_instance.http = None
-        mock_bot_instance.access_token = 'test_token'
+        mock_bot_instance.access_token = "test_token"
         mock_bot_instance.reauthorize_every = 3600
-        mock_bot_instance.authorize = MagicMock(return_value=('test_token', 3600))
+        mock_bot_instance.authorize = MagicMock(return_value=("test_token", 3600))
         mock_bot_instance.startrace = AsyncMock(return_value=mock_handler)
         MockBot.return_value = mock_bot_instance
 
@@ -273,13 +279,13 @@ async def test_create_room_handles_invite_failure(db, admin_user, sample_organiz
 
         # Verify room was still created successfully
         assert result is not None
-        assert result.racetime_room_slug == 'alttpr/test-room-5678'
+        assert result.racetime_room_slug == "alttpr/test-room-5678"
 
         # Verify second invite succeeded even though first failed
         assert len(invited_users) == 1
-        assert 'def456' in invited_users
+        assert "def456" in invited_users
         assert len(failed_users) == 1
-        assert 'abc123' in failed_users
+        assert "abc123" in failed_users
 
         # Both invites should have been attempted
         assert mock_handler.invite_user.call_count == 2

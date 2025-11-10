@@ -43,6 +43,6 @@ class AOSRService:
             url=url,
             hash_id=str(seed),
             settings=kwargs,
-            randomizer='aosr',
+            randomizer="aosr",
             permalink=url,
         )

@@ -10,7 +10,9 @@ from api.schemas.async_live_race import (
     EligibleParticipantsResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
+from application.services.tournaments.async_live_race_service import (
+    AsyncLiveRaceService,
+)
 from models import User
 import logging
 
@@ -37,7 +39,10 @@ router = APIRouter(prefix="/async-live-races", tags=["async-live-races"])
 async def list_live_races(
     organization_id: int = Path(..., description="Organization ID"),
     tournament_id: int = Path(..., description="Tournament ID"),
-    status: str | None = Query(None, description="Filter by status (scheduled/pending/in_progress/finished/cancelled)"),
+    status: str | None = Query(
+        None,
+        description="Filter by status (scheduled/pending/in_progress/finished/cancelled)",
+    ),
     current_user: User = Depends(get_current_user),
 ) -> AsyncLiveRaceListResponse:
     """
@@ -61,26 +66,26 @@ async def list_live_races(
     # Fetch related data for response
     items = []
     for race in races:
-        await race.fetch_related('pool', 'permalink')
+        await race.fetch_related("pool", "permalink")
         item_dict = {
-            'id': race.id,
-            'tournament_id': race.tournament_id,
-            'pool_id': race.pool_id,
-            'pool_name': race.pool.name if race.pool else None,
-            'permalink_id': race.permalink_id,
-            'permalink_url': race.permalink.url if race.permalink else None,
-            'episode_id': race.episode_id,
-            'scheduled_at': race.scheduled_at,
-            'match_title': race.match_title,
-            'racetime_slug': race.racetime_slug,
-            'racetime_url': race.racetime_url,
-            'racetime_goal': race.racetime_goal,
-            'room_open_time': race.room_open_time,
-            'race_room_profile_id': race.race_room_profile_id,
-            'status': race.status,
-            'participant_count': 0,  # Will be counted in future
-            'created_at': race.created_at,
-            'updated_at': race.updated_at,
+            "id": race.id,
+            "tournament_id": race.tournament_id,
+            "pool_id": race.pool_id,
+            "pool_name": race.pool.name if race.pool else None,
+            "permalink_id": race.permalink_id,
+            "permalink_url": race.permalink.url if race.permalink else None,
+            "episode_id": race.episode_id,
+            "scheduled_at": race.scheduled_at,
+            "match_title": race.match_title,
+            "racetime_slug": race.racetime_slug,
+            "racetime_url": race.racetime_url,
+            "racetime_goal": race.racetime_goal,
+            "room_open_time": race.room_open_time,
+            "race_room_profile_id": race.race_room_profile_id,
+            "status": race.status,
+            "participant_count": 0,  # Will be counted in future
+            "created_at": race.created_at,
+            "updated_at": race.updated_at,
         }
         items.append(AsyncLiveRaceOut.model_validate(item_dict))
 
@@ -124,26 +129,26 @@ async def list_scheduled_races(
     # Fetch related data for response
     items = []
     for race in races:
-        await race.fetch_related('pool', 'permalink')
+        await race.fetch_related("pool", "permalink")
         item_dict = {
-            'id': race.id,
-            'tournament_id': race.tournament_id,
-            'pool_id': race.pool_id,
-            'pool_name': race.pool.name if race.pool else None,
-            'permalink_id': race.permalink_id,
-            'permalink_url': race.permalink.url if race.permalink else None,
-            'episode_id': race.episode_id,
-            'scheduled_at': race.scheduled_at,
-            'match_title': race.match_title,
-            'racetime_slug': race.racetime_slug,
-            'racetime_url': race.racetime_url,
-            'racetime_goal': race.racetime_goal,
-            'room_open_time': race.room_open_time,
-            'race_room_profile_id': race.race_room_profile_id,
-            'status': race.status,
-            'participant_count': 0,  # Will be counted in future
-            'created_at': race.created_at,
-            'updated_at': race.updated_at,
+            "id": race.id,
+            "tournament_id": race.tournament_id,
+            "pool_id": race.pool_id,
+            "pool_name": race.pool.name if race.pool else None,
+            "permalink_id": race.permalink_id,
+            "permalink_url": race.permalink.url if race.permalink else None,
+            "episode_id": race.episode_id,
+            "scheduled_at": race.scheduled_at,
+            "match_title": race.match_title,
+            "racetime_slug": race.racetime_slug,
+            "racetime_url": race.racetime_url,
+            "racetime_goal": race.racetime_goal,
+            "room_open_time": race.room_open_time,
+            "race_room_profile_id": race.race_room_profile_id,
+            "status": race.status,
+            "participant_count": 0,  # Will be counted in future
+            "created_at": race.created_at,
+            "updated_at": race.updated_at,
         }
         items.append(AsyncLiveRaceOut.model_validate(item_dict))
 
@@ -189,29 +194,31 @@ async def get_live_race(
     race = await service.get_live_race(organization_id, live_race_id)
 
     if not race:
-        raise HTTPException(status_code=404, detail="Live race not found or access denied")
+        raise HTTPException(
+            status_code=404, detail="Live race not found or access denied"
+        )
 
     # Fetch related data for response
-    await race.fetch_related('pool', 'permalink')
+    await race.fetch_related("pool", "permalink")
     item_dict = {
-        'id': race.id,
-        'tournament_id': race.tournament_id,
-        'pool_id': race.pool_id,
-        'pool_name': race.pool.name if race.pool else None,
-        'permalink_id': race.permalink_id,
-        'permalink_url': race.permalink.url if race.permalink else None,
-        'episode_id': race.episode_id,
-        'scheduled_at': race.scheduled_at,
-        'match_title': race.match_title,
-        'racetime_slug': race.racetime_slug,
-        'racetime_url': race.racetime_url,
-        'racetime_goal': race.racetime_goal,
-        'room_open_time': race.room_open_time,
-        'race_room_profile_id': race.race_room_profile_id,
-        'status': race.status,
-        'participant_count': 0,  # Will be counted in future
-        'created_at': race.created_at,
-        'updated_at': race.updated_at,
+        "id": race.id,
+        "tournament_id": race.tournament_id,
+        "pool_id": race.pool_id,
+        "pool_name": race.pool.name if race.pool else None,
+        "permalink_id": race.permalink_id,
+        "permalink_url": race.permalink.url if race.permalink else None,
+        "episode_id": race.episode_id,
+        "scheduled_at": race.scheduled_at,
+        "match_title": race.match_title,
+        "racetime_slug": race.racetime_slug,
+        "racetime_url": race.racetime_url,
+        "racetime_goal": race.racetime_goal,
+        "room_open_time": race.room_open_time,
+        "race_room_profile_id": race.race_room_profile_id,
+        "status": race.status,
+        "participant_count": 0,  # Will be counted in future
+        "created_at": race.created_at,
+        "updated_at": race.updated_at,
     }
 
     return AsyncLiveRaceOut.model_validate(item_dict)
@@ -274,26 +281,26 @@ async def create_live_race(
         raise HTTPException(status_code=422, detail=str(e))
 
     # Fetch related data for response
-    await race.fetch_related('pool', 'permalink')
+    await race.fetch_related("pool", "permalink")
     item_dict = {
-        'id': race.id,
-        'tournament_id': race.tournament_id,
-        'pool_id': race.pool_id,
-        'pool_name': race.pool.name if race.pool else None,
-        'permalink_id': race.permalink_id,
-        'permalink_url': race.permalink.url if race.permalink else None,
-        'episode_id': race.episode_id,
-        'scheduled_at': race.scheduled_at,
-        'match_title': race.match_title,
-        'racetime_slug': race.racetime_slug,
-        'racetime_url': race.racetime_url,
-        'racetime_goal': race.racetime_goal,
-        'room_open_time': race.room_open_time,
-        'race_room_profile_id': race.race_room_profile_id,
-        'status': race.status,
-        'participant_count': 0,
-        'created_at': race.created_at,
-        'updated_at': race.updated_at,
+        "id": race.id,
+        "tournament_id": race.tournament_id,
+        "pool_id": race.pool_id,
+        "pool_name": race.pool.name if race.pool else None,
+        "permalink_id": race.permalink_id,
+        "permalink_url": race.permalink.url if race.permalink else None,
+        "episode_id": race.episode_id,
+        "scheduled_at": race.scheduled_at,
+        "match_title": race.match_title,
+        "racetime_slug": race.racetime_slug,
+        "racetime_url": race.racetime_url,
+        "racetime_goal": race.racetime_goal,
+        "room_open_time": race.room_open_time,
+        "race_room_profile_id": race.race_room_profile_id,
+        "status": race.status,
+        "participant_count": 0,
+        "created_at": race.created_at,
+        "updated_at": race.updated_at,
     }
 
     return AsyncLiveRaceOut.model_validate(item_dict)
@@ -356,26 +363,26 @@ async def update_live_race(
         raise HTTPException(status_code=422, detail=str(e))
 
     # Fetch related data for response
-    await race.fetch_related('pool', 'permalink')
+    await race.fetch_related("pool", "permalink")
     item_dict = {
-        'id': race.id,
-        'tournament_id': race.tournament_id,
-        'pool_id': race.pool_id,
-        'pool_name': race.pool.name if race.pool else None,
-        'permalink_id': race.permalink_id,
-        'permalink_url': race.permalink.url if race.permalink else None,
-        'episode_id': race.episode_id,
-        'scheduled_at': race.scheduled_at,
-        'match_title': race.match_title,
-        'racetime_slug': race.racetime_slug,
-        'racetime_url': race.racetime_url,
-        'racetime_goal': race.racetime_goal,
-        'room_open_time': race.room_open_time,
-        'race_room_profile_id': race.race_room_profile_id,
-        'status': race.status,
-        'participant_count': 0,
-        'created_at': race.created_at,
-        'updated_at': race.updated_at,
+        "id": race.id,
+        "tournament_id": race.tournament_id,
+        "pool_id": race.pool_id,
+        "pool_name": race.pool.name if race.pool else None,
+        "permalink_id": race.permalink_id,
+        "permalink_url": race.permalink.url if race.permalink else None,
+        "episode_id": race.episode_id,
+        "scheduled_at": race.scheduled_at,
+        "match_title": race.match_title,
+        "racetime_slug": race.racetime_slug,
+        "racetime_url": race.racetime_url,
+        "racetime_goal": race.racetime_goal,
+        "room_open_time": race.room_open_time,
+        "race_room_profile_id": race.race_room_profile_id,
+        "status": race.status,
+        "participant_count": 0,
+        "created_at": race.created_at,
+        "updated_at": race.updated_at,
     }
 
     return AsyncLiveRaceOut.model_validate(item_dict)
@@ -483,26 +490,26 @@ async def cancel_live_race(
         raise HTTPException(status_code=422, detail=str(e))
 
     # Fetch related data for response
-    await race.fetch_related('pool', 'permalink')
+    await race.fetch_related("pool", "permalink")
     item_dict = {
-        'id': race.id,
-        'tournament_id': race.tournament_id,
-        'pool_id': race.pool_id,
-        'pool_name': race.pool.name if race.pool else None,
-        'permalink_id': race.permalink_id,
-        'permalink_url': race.permalink.url if race.permalink else None,
-        'episode_id': race.episode_id,
-        'scheduled_at': race.scheduled_at,
-        'match_title': race.match_title,
-        'racetime_slug': race.racetime_slug,
-        'racetime_url': race.racetime_url,
-        'racetime_goal': race.racetime_goal,
-        'room_open_time': race.room_open_time,
-        'race_room_profile_id': race.race_room_profile_id,
-        'status': race.status,
-        'participant_count': 0,
-        'created_at': race.created_at,
-        'updated_at': race.updated_at,
+        "id": race.id,
+        "tournament_id": race.tournament_id,
+        "pool_id": race.pool_id,
+        "pool_name": race.pool.name if race.pool else None,
+        "permalink_id": race.permalink_id,
+        "permalink_url": race.permalink.url if race.permalink else None,
+        "episode_id": race.episode_id,
+        "scheduled_at": race.scheduled_at,
+        "match_title": race.match_title,
+        "racetime_slug": race.racetime_slug,
+        "racetime_url": race.racetime_url,
+        "racetime_goal": race.racetime_goal,
+        "room_open_time": race.room_open_time,
+        "race_room_profile_id": race.race_room_profile_id,
+        "status": race.status,
+        "participant_count": 0,
+        "created_at": race.created_at,
+        "updated_at": race.updated_at,
     }
 
     return AsyncLiveRaceOut.model_validate(item_dict)
@@ -545,7 +552,9 @@ async def get_eligible_participants(
     service = AsyncLiveRaceService()
 
     try:
-        eligibility_list = await service.get_eligible_participants(organization_id, live_race_id)
+        eligibility_list = await service.get_eligible_participants(
+            organization_id, live_race_id
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 

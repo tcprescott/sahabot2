@@ -21,33 +21,35 @@ class NotificationDeliveryStatus(IntEnum):
 class NotificationLog(Model):
     """
     Log of sent/attempted notifications.
-    
+
     Tracks all notification delivery attempts for auditing and debugging.
     """
 
     id = fields.IntField(pk=True)
-    
+
     # User who should receive this notification
     user = fields.ForeignKeyField("models.User", related_name="notification_logs")
-    
+
     # Type of event that triggered this notification
     event_type = fields.IntField()  # NotificationEventType value
-    
+
     # How the notification was/should be delivered
     notification_method = fields.IntField()  # NotificationMethod value
-    
+
     # Event data (JSON) - contains details about what happened
     event_data = fields.JSONField(default=dict)
-    
+
     # Delivery status
-    delivery_status = fields.IntEnumField(NotificationDeliveryStatus, default=NotificationDeliveryStatus.PENDING)
-    
+    delivery_status = fields.IntEnumField(
+        NotificationDeliveryStatus, default=NotificationDeliveryStatus.PENDING
+    )
+
     # Error message if delivery failed
     error_message = fields.TextField(null=True)
-    
+
     # Number of delivery attempts
     retry_count = fields.IntField(default=0)
-    
+
     # Timestamps
     created_at = fields.DatetimeField(auto_now_add=True)  # When notification was queued
     sent_at = fields.DatetimeField(null=True)  # When successfully delivered
@@ -63,6 +65,8 @@ class NotificationLog(Model):
         ordering = ["-created_at"]
 
     def __str__(self) -> str:
-        user_id = getattr(self, 'user_id', None)
+        user_id = getattr(self, "user_id", None)
         status_name = NotificationDeliveryStatus(self.delivery_status).name
-        return f"NotificationLog({user_id}: event={self.event_type}, status={status_name})"
+        return (
+            f"NotificationLog({user_id}: event={self.event_type}, status={status_name})"
+        )

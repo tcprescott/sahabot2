@@ -14,7 +14,9 @@ from api.schemas.async_tournament import (
     UserBasicInfo,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.tournaments.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import (
+    AsyncTournamentService,
+)
 from models import User
 
 router = APIRouter(prefix="/async-tournaments", tags=["async-tournaments"])
@@ -37,7 +39,7 @@ router = APIRouter(prefix="/async-tournaments", tags=["async-tournaments"])
 )
 async def list_async_tournaments(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentListResponse:
     """
     List organization async tournaments.
@@ -54,7 +56,9 @@ async def list_async_tournaments(
     """
     service = AsyncTournamentService()
     tournaments = await service.list_org_tournaments(current_user, organization_id)
-    items = [AsyncTournamentOut.model_validate(tournament) for tournament in tournaments]
+    items = [
+        AsyncTournamentOut.model_validate(tournament) for tournament in tournaments
+    ]
     return AsyncTournamentListResponse(items=items, count=len(items))
 
 
@@ -76,7 +80,7 @@ async def list_async_tournaments(
 async def create_async_tournament(
     data: AsyncTournamentCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentCreateResponse:
     """
     Create an async tournament.
@@ -110,12 +114,11 @@ async def create_async_tournament(
     if not tournament:
         raise HTTPException(
             status_code=403,
-            detail="Insufficient permissions to create async tournament"
+            detail="Insufficient permissions to create async tournament",
         )
 
     return AsyncTournamentCreateResponse(
-        tournament=AsyncTournamentOut.model_validate(tournament),
-        warnings=warnings
+        tournament=AsyncTournamentOut.model_validate(tournament), warnings=warnings
     )
 
 
@@ -136,7 +139,7 @@ async def create_async_tournament(
 async def get_async_tournament(
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentOut:
     """
     Get an async tournament by ID.
@@ -156,12 +159,14 @@ async def get_async_tournament(
         HTTPException: 404 if tournament not found
     """
     service = AsyncTournamentService()
-    tournament = await service.get_tournament(current_user, organization_id, tournament_id)
+    tournament = await service.get_tournament(
+        current_user, organization_id, tournament_id
+    )
 
     if not tournament:
         raise HTTPException(
             status_code=404,
-            detail="Async tournament not found or you lack permission to view it"
+            detail="Async tournament not found or you lack permission to view it",
         )
 
     return AsyncTournamentOut.model_validate(tournament)
@@ -186,7 +191,7 @@ async def update_async_tournament(
     data: AsyncTournamentUpdateRequest,
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentCreateResponse:
     """
     Update an async tournament.
@@ -208,19 +213,19 @@ async def update_async_tournament(
         HTTPException: 404 if tournament not found
     """
     service = AsyncTournamentService()
-    
+
     # Build update fields from request
     update_fields = {}
     if data.name is not None:
-        update_fields['name'] = data.name
+        update_fields["name"] = data.name
     if data.description is not None:
-        update_fields['description'] = data.description
+        update_fields["description"] = data.description
     if data.is_active is not None:
-        update_fields['is_active'] = data.is_active
+        update_fields["is_active"] = data.is_active
     if data.discord_channel_id is not None:
-        update_fields['discord_channel_id'] = data.discord_channel_id
+        update_fields["discord_channel_id"] = data.discord_channel_id
     if data.runs_per_pool is not None:
-        update_fields['runs_per_pool'] = data.runs_per_pool
+        update_fields["runs_per_pool"] = data.runs_per_pool
 
     tournament, warnings = await service.update_tournament(
         user=current_user,
@@ -232,12 +237,11 @@ async def update_async_tournament(
     if not tournament:
         raise HTTPException(
             status_code=404,
-            detail="Async tournament not found or insufficient permissions"
+            detail="Async tournament not found or insufficient permissions",
         )
 
     return AsyncTournamentCreateResponse(
-        tournament=AsyncTournamentOut.model_validate(tournament),
-        warnings=warnings
+        tournament=AsyncTournamentOut.model_validate(tournament), warnings=warnings
     )
 
 
@@ -258,7 +262,7 @@ async def update_async_tournament(
 async def delete_async_tournament(
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete an async tournament.
@@ -277,15 +281,13 @@ async def delete_async_tournament(
     """
     service = AsyncTournamentService()
     success = await service.delete_tournament(
-        user=current_user,
-        organization_id=organization_id,
-        tournament_id=tournament_id
+        user=current_user, organization_id=organization_id, tournament_id=tournament_id
     )
 
     if not success:
         raise HTTPException(
             status_code=404,
-            detail="Async tournament not found or insufficient permissions"
+            detail="Async tournament not found or insufficient permissions",
         )
 
 
@@ -309,11 +311,17 @@ async def get_review_queue(
     tournament_id: int = Path(..., description="Tournament ID"),
     organization_id: int = Query(..., description="Organization ID"),
     status: str = Query("finished", description="Race status filter"),
-    review_status: str = Query("pending", description="Review status filter (pending, accepted, rejected, all)"),
-    reviewed_by_id: int = Query(-1, description="Reviewer ID filter (-1 for unreviewed, 0 for all)"),
+    review_status: str = Query(
+        "pending", description="Review status filter (pending, accepted, rejected, all)"
+    ),
+    reviewed_by_id: int = Query(
+        -1, description="Reviewer ID filter (-1 for unreviewed, 0 for all)"
+    ),
     skip: int = Query(0, ge=0, description="Number of records to skip"),
-    limit: int = Query(50, ge=1, le=100, description="Maximum number of records to return"),
-    current_user: User = Depends(get_current_user)
+    limit: int = Query(
+        50, ge=1, le=100, description="Maximum number of records to return"
+    ),
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentRaceReviewListResponse:
     """
     Get review queue for a tournament.
@@ -340,8 +348,8 @@ async def get_review_queue(
     service = AsyncTournamentService()
 
     # Convert 'all' filters to None
-    status_filter = None if status == 'all' else status
-    review_status_filter = None if review_status == 'all' else review_status
+    status_filter = None if status == "all" else status
+    review_status_filter = None if review_status == "all" else review_status
     reviewer_filter = None if reviewed_by_id == 0 else reviewed_by_id
 
     races = await service.get_review_queue(
@@ -360,15 +368,14 @@ async def get_review_queue(
     for race in races:
         # Build response object
         user_info = UserBasicInfo(
-            id=race.user.id,
-            discord_username=race.user.discord_username
+            id=race.user.id, discord_username=race.user.discord_username
         )
 
         reviewed_by_info = None
         if race.reviewed_by:
             reviewed_by_info = UserBasicInfo(
                 id=race.reviewed_by.id,
-                discord_username=race.reviewed_by.discord_username
+                discord_username=race.reviewed_by.discord_username,
             )
 
         item = AsyncTournamentRaceReviewOut(
@@ -377,7 +384,11 @@ async def get_review_queue(
             user=user_info,
             permalink_id=race.permalink_id,
             permalink_url=race.permalink.url if race.permalink else None,
-            pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+            pool_name=(
+                race.permalink.pool.name
+                if race.permalink and race.permalink.pool
+                else None
+            ),
             status=race.status,
             start_time=race.start_time,
             end_time=race.end_time,
@@ -416,7 +427,7 @@ async def get_review_queue(
 async def get_race_for_review(
     race_id: int = Path(..., description="Race ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentRaceReviewOut:
     """
     Get race for review with full details.
@@ -444,21 +455,18 @@ async def get_race_for_review(
 
     if not race:
         raise HTTPException(
-            status_code=404,
-            detail="Race not found or insufficient permissions"
+            status_code=404, detail="Race not found or insufficient permissions"
         )
 
     # Build response object
     user_info = UserBasicInfo(
-        id=race.user.id,
-        discord_username=race.user.discord_username
+        id=race.user.id, discord_username=race.user.discord_username
     )
 
     reviewed_by_info = None
     if race.reviewed_by:
         reviewed_by_info = UserBasicInfo(
-            id=race.reviewed_by.id,
-            discord_username=race.reviewed_by.discord_username
+            id=race.reviewed_by.id, discord_username=race.reviewed_by.discord_username
         )
 
     return AsyncTournamentRaceReviewOut(
@@ -467,7 +475,9 @@ async def get_race_for_review(
         user=user_info,
         permalink_id=race.permalink_id,
         permalink_url=race.permalink.url if race.permalink else None,
-        pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+        pool_name=(
+            race.permalink.pool.name if race.permalink and race.permalink.pool else None
+        ),
         status=race.status,
         start_time=race.start_time,
         end_time=race.end_time,
@@ -495,7 +505,9 @@ async def get_race_for_review(
     responses={
         200: {"description": "Review updated successfully"},
         401: {"description": "Invalid or missing authentication token"},
-        403: {"description": "Insufficient permissions or attempting to review own race"},
+        403: {
+            "description": "Insufficient permissions or attempting to review own race"
+        },
         404: {"description": "Race not found"},
         422: {"description": "Invalid request data"},
         429: {"description": "Rate limit exceeded"},
@@ -505,7 +517,7 @@ async def update_race_review(
     data: AsyncTournamentRaceReviewUpdateRequest,
     race_id: int = Path(..., description="Race ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentRaceReviewOut:
     """
     Update review status and details for a race.
@@ -539,20 +551,18 @@ async def update_race_review(
     if not race:
         raise HTTPException(
             status_code=404,
-            detail="Race not found, insufficient permissions, or cannot review own race"
+            detail="Race not found, insufficient permissions, or cannot review own race",
         )
 
     # Build response object
     user_info = UserBasicInfo(
-        id=race.user.id,
-        discord_username=race.user.discord_username
+        id=race.user.id, discord_username=race.user.discord_username
     )
 
     reviewed_by_info = None
     if race.reviewed_by:
         reviewed_by_info = UserBasicInfo(
-            id=race.reviewed_by.id,
-            discord_username=race.reviewed_by.discord_username
+            id=race.reviewed_by.id, discord_username=race.reviewed_by.discord_username
         )
 
     return AsyncTournamentRaceReviewOut(
@@ -561,7 +571,9 @@ async def update_race_review(
         user=user_info,
         permalink_id=race.permalink_id,
         permalink_url=race.permalink.url if race.permalink else None,
-        pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+        pool_name=(
+            race.permalink.pool.name if race.permalink and race.permalink.pool else None
+        ),
         status=race.status,
         start_time=race.start_time,
         end_time=race.end_time,
@@ -602,7 +614,7 @@ async def update_race_submission(
     data: AsyncTournamentRaceUpdateRequest,
     race_id: int = Path(..., description="Race ID"),
     organization_id: int = Query(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> AsyncTournamentRaceReviewOut:
     """
     Update race submission with VoD URL, notes, and optional review flag.
@@ -625,7 +637,7 @@ async def update_race_submission(
         HTTPException: 422 if flagging for review without reason
     """
     service = AsyncTournamentService()
-    
+
     race = await service.update_race_submission(
         user=current_user,
         organization_id=organization_id,
@@ -638,21 +650,18 @@ async def update_race_submission(
 
     if not race:
         raise HTTPException(
-            status_code=404,
-            detail="Race not found or insufficient permissions"
+            status_code=404, detail="Race not found or insufficient permissions"
         )
 
     # Build response object
     user_info = UserBasicInfo(
-        id=race.user.id,
-        discord_username=race.user.discord_username
+        id=race.user.id, discord_username=race.user.discord_username
     )
 
     reviewed_by_info = None
     if race.reviewed_by:
         reviewed_by_info = UserBasicInfo(
-            id=race.reviewed_by.id,
-            discord_username=race.reviewed_by.discord_username
+            id=race.reviewed_by.id, discord_username=race.reviewed_by.discord_username
         )
 
     return AsyncTournamentRaceReviewOut(
@@ -661,7 +670,9 @@ async def update_race_submission(
         user=user_info,
         permalink_id=race.permalink_id,
         permalink_url=race.permalink.url if race.permalink else None,
-        pool_name=race.permalink.pool.name if race.permalink and race.permalink.pool else None,
+        pool_name=(
+            race.permalink.pool.name if race.permalink and race.permalink.pool else None
+        ),
         status=race.status,
         start_time=race.start_time,
         end_time=race.end_time,

@@ -7,7 +7,9 @@ Tests the business logic for Discord scheduled event operations.
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timezone
-from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import (
+    DiscordScheduledEventService,
+)
 from models import Organization, Tournament, Match, User, Permission, SYSTEM_USER_ID
 
 
@@ -53,16 +55,27 @@ async def moderator_user(db):
 class TestDiscordScheduledEventService:
     """Test cases for DiscordScheduledEventService."""
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
     async def test_create_event_for_match_success(
-        self, mock_get_bot, db, sample_organization, sample_match, sample_tournament, moderator_user, sample_discord_guild
+        self,
+        mock_get_bot,
+        db,
+        sample_organization,
+        sample_match,
+        sample_tournament,
+        moderator_user,
+        sample_discord_guild,
     ):
         """Test creating Discord event for a match."""
         # Mock Discord bot and guild
         mock_bot = MagicMock()
         mock_guild = MagicMock()
         mock_guild.id = sample_discord_guild.guild_id
-        mock_guild.create_scheduled_event = AsyncMock(return_value=MagicMock(id=1111111111))
+        mock_guild.create_scheduled_event = AsyncMock(
+            return_value=MagicMock(id=1111111111)
+        )
         mock_bot.get_guild.return_value = mock_guild
         mock_get_bot.return_value = mock_bot
 
@@ -77,8 +90,12 @@ class TestDiscordScheduledEventService:
         assert event.match_id == sample_match.id
         assert event.organization_id == sample_organization.id
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
-    async def test_create_event_no_bot(self, mock_get_bot, db, sample_organization, sample_match, moderator_user):
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
+    async def test_create_event_no_bot(
+        self, mock_get_bot, db, sample_organization, sample_match, moderator_user
+    ):
         """Test creating event when bot is unavailable."""
         mock_get_bot.return_value = None
 
@@ -91,7 +108,9 @@ class TestDiscordScheduledEventService:
 
         assert event is None
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
     async def test_create_event_disabled_tournament(
         self, mock_get_bot, db, sample_organization, sample_tournament, moderator_user
     ):
@@ -115,13 +134,22 @@ class TestDiscordScheduledEventService:
 
         assert event is None
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
     async def test_update_event_for_match(
-        self, mock_get_bot, db, sample_organization, sample_match, sample_discord_guild, moderator_user
+        self,
+        mock_get_bot,
+        db,
+        sample_organization,
+        sample_match,
+        sample_discord_guild,
+        moderator_user,
     ):
         """Test updating Discord event for a match."""
         # Create initial event
         from models import DiscordScheduledEvent
+
         db_event = await DiscordScheduledEvent.create(
             organization_id=sample_organization.id,
             match_id=sample_match.id,
@@ -147,8 +175,12 @@ class TestDiscordScheduledEventService:
 
         assert result is True
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
-    async def test_update_event_not_found(self, mock_get_bot, db, sample_organization, moderator_user):
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
+    async def test_update_event_not_found(
+        self, mock_get_bot, db, sample_organization, moderator_user
+    ):
         """Test updating non-existent event."""
         service = DiscordScheduledEventService()
         result = await service.update_event_for_match(
@@ -159,13 +191,22 @@ class TestDiscordScheduledEventService:
 
         assert result is False
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
     async def test_delete_event_for_match(
-        self, mock_get_bot, db, sample_organization, sample_match, sample_discord_guild, moderator_user
+        self,
+        mock_get_bot,
+        db,
+        sample_organization,
+        sample_match,
+        sample_discord_guild,
+        moderator_user,
     ):
         """Test deleting Discord event for a match."""
         # Create event
         from models import DiscordScheduledEvent
+
         await DiscordScheduledEvent.create(
             organization_id=sample_organization.id,
             match_id=sample_match.id,
@@ -193,12 +234,21 @@ class TestDiscordScheduledEventService:
 
         # Verify database record deleted
         from models import DiscordScheduledEvent
+
         events = await DiscordScheduledEvent.filter(match_id=sample_match.id).all()
         assert len(events) == 0
 
-    @patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')
+    @patch(
+        "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+    )
     async def test_sync_tournament_events(
-        self, mock_get_bot, db, sample_organization, sample_tournament, sample_discord_guild, moderator_user
+        self,
+        mock_get_bot,
+        db,
+        sample_organization,
+        sample_tournament,
+        sample_discord_guild,
+        moderator_user,
     ):
         """Test syncing tournament events."""
         # Create matches
@@ -217,7 +267,9 @@ class TestDiscordScheduledEventService:
         mock_bot = MagicMock()
         mock_guild = MagicMock()
         mock_guild.id = sample_discord_guild.guild_id
-        mock_guild.create_scheduled_event = AsyncMock(return_value=MagicMock(id=4444444444))
+        mock_guild.create_scheduled_event = AsyncMock(
+            return_value=MagicMock(id=4444444444)
+        )
         mock_bot.get_guild.return_value = mock_guild
         mock_get_bot.return_value = mock_bot
 
@@ -228,8 +280,8 @@ class TestDiscordScheduledEventService:
             tournament_id=sample_tournament.id,
         )
 
-        assert stats['created'] >= 0
-        assert stats['errors'] >= 0
+        assert stats["created"] >= 0
+        assert stats["errors"] >= 0
         assert isinstance(stats, dict)
 
     async def test_format_event_name(self, db, sample_tournament, sample_match):
@@ -248,14 +300,25 @@ class TestDiscordScheduledEventService:
         assert isinstance(description, str)
         assert len(description) > 0
 
-    async def test_system_user_actions(self, db, sample_organization, sample_match, sample_tournament, sample_discord_guild):
+    async def test_system_user_actions(
+        self,
+        db,
+        sample_organization,
+        sample_match,
+        sample_tournament,
+        sample_discord_guild,
+    ):
         """Test that system actions use SYSTEM_USER_ID."""
-        with patch('application.services.discord.discord_scheduled_event_service.get_bot_instance') as mock_get_bot:
+        with patch(
+            "application.services.discord.discord_scheduled_event_service.get_bot_instance"
+        ) as mock_get_bot:
             # Mock Discord bot
             mock_bot = MagicMock()
             mock_guild = MagicMock()
             mock_guild.id = sample_discord_guild.guild_id
-            mock_guild.create_scheduled_event = AsyncMock(return_value=MagicMock(id=5555555555))
+            mock_guild.create_scheduled_event = AsyncMock(
+                return_value=MagicMock(id=5555555555)
+            )
             mock_bot.get_guild.return_value = mock_guild
             mock_get_bot.return_value = mock_bot
 
@@ -276,6 +339,7 @@ class TestDiscordScheduledEventService:
 
         # Create event in org1
         from models import DiscordScheduledEvent
+
         await DiscordScheduledEvent.create(
             organization_id=org1.id,
             match_id=sample_match.id,

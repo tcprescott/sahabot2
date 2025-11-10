@@ -15,14 +15,21 @@ class AsyncLiveRaceOut(BaseModel):
     permalink_id: Optional[int] = Field(None, description="Permalink ID")
     permalink_url: Optional[str] = Field(None, description="Permalink URL")
     episode_id: Optional[int] = Field(None, description="SpeedGaming episode ID")
-    scheduled_at: Optional[datetime] = Field(None, description="Scheduled race start time")
+    scheduled_at: Optional[datetime] = Field(
+        None, description="Scheduled race start time"
+    )
     match_title: Optional[str] = Field(None, description="Match title/display name")
     racetime_slug: Optional[str] = Field(None, description="RaceTime.gg race slug")
     racetime_url: Optional[str] = Field(None, description="RaceTime.gg race URL")
     racetime_goal: Optional[str] = Field(None, description="RaceTime.gg race goal")
     room_open_time: Optional[datetime] = Field(None, description="Time room was opened")
-    race_room_profile_id: Optional[int] = Field(None, description="Race room profile ID")
-    status: str = Field(..., description="Race status (scheduled/pending/in_progress/finished/cancelled)")
+    race_room_profile_id: Optional[int] = Field(
+        None, description="Race room profile ID"
+    )
+    status: str = Field(
+        ...,
+        description="Race status (scheduled/pending/in_progress/finished/cancelled)",
+    )
     participant_count: int = Field(0, description="Number of participants")
     created_at: datetime = Field(..., description="Creation timestamp")
     updated_at: datetime = Field(..., description="Last update timestamp")
@@ -44,20 +51,34 @@ class AsyncLiveRaceCreateRequest(BaseModel):
     tournament_id: int = Field(..., description="Tournament ID")
     pool_id: int = Field(..., description="Pool ID")
     scheduled_at: datetime = Field(..., description="Scheduled race start time")
-    match_title: Optional[str] = Field(None, max_length=200, description="Match title/display name")
-    permalink_id: Optional[int] = Field(None, description="Specific permalink/seed to use")
+    match_title: Optional[str] = Field(
+        None, max_length=200, description="Match title/display name"
+    )
+    permalink_id: Optional[int] = Field(
+        None, description="Specific permalink/seed to use"
+    )
     episode_id: Optional[int] = Field(None, description="SpeedGaming episode ID")
-    race_room_profile_id: Optional[int] = Field(None, description="Race room profile override")
+    race_room_profile_id: Optional[int] = Field(
+        None, description="Race room profile override"
+    )
 
 
 class AsyncLiveRaceUpdateRequest(BaseModel):
     """Request schema for updating an async live race."""
 
-    scheduled_at: Optional[datetime] = Field(None, description="Scheduled race start time")
-    match_title: Optional[str] = Field(None, max_length=200, description="Match title/display name")
-    permalink_id: Optional[int] = Field(None, description="Specific permalink/seed to use")
+    scheduled_at: Optional[datetime] = Field(
+        None, description="Scheduled race start time"
+    )
+    match_title: Optional[str] = Field(
+        None, max_length=200, description="Match title/display name"
+    )
+    permalink_id: Optional[int] = Field(
+        None, description="Specific permalink/seed to use"
+    )
     episode_id: Optional[int] = Field(None, description="SpeedGaming episode ID")
-    race_room_profile_id: Optional[int] = Field(None, description="Race room profile override")
+    race_room_profile_id: Optional[int] = Field(
+        None, description="Race room profile override"
+    )
 
 
 class EligibleParticipantOut(BaseModel):
@@ -72,6 +93,8 @@ class EligibleParticipantOut(BaseModel):
 class EligibleParticipantsResponse(BaseModel):
     """Response schema for eligible participants list."""
 
-    items: list[EligibleParticipantOut] = Field(..., description="List of participants with eligibility info")
+    items: list[EligibleParticipantOut] = Field(
+        ..., description="List of participants with eligibility info"
+    )
     count: int = Field(..., description="Total number of participants")
     eligible_count: int = Field(..., description="Number of eligible participants")

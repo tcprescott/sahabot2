@@ -46,7 +46,7 @@ class UserRepository:
         discord_username: str,
         discord_discriminator: Optional[str] = None,
         discord_avatar: Optional[str] = None,
-        permission: Permission = Permission.USER
+        permission: Permission = Permission.USER,
     ) -> User:
         """
         Create a new user.
@@ -67,7 +67,7 @@ class UserRepository:
             discord_discriminator=discord_discriminator,
             discord_avatar=discord_avatar,
             permission=permission,
-            is_active=True
+            is_active=True,
         )
         return user
 
@@ -84,7 +84,7 @@ class UserRepository:
         query = User.all()
         if not include_inactive:
             query = query.filter(is_active=True)
-        return await query.order_by('-created_at')
+        return await query.order_by("-created_at")
 
     async def search_by_username(self, query: str) -> list[User]:
         """
@@ -97,9 +97,8 @@ class UserRepository:
             list[User]: List of matching users
         """
         return await User.filter(
-            discord_username__icontains=query,
-            is_active=True
-        ).order_by('discord_username')
+            discord_username__icontains=query, is_active=True
+        ).order_by("discord_username")
 
     async def get_admins(self) -> list[User]:
         """
@@ -109,9 +108,8 @@ class UserRepository:
             list[User]: List of admin users
         """
         return await User.filter(
-            permission__gte=Permission.ADMIN,
-            is_active=True
-        ).order_by('-permission')
+            permission__gte=Permission.ADMIN, is_active=True
+        ).order_by("-permission")
 
     async def count_active_users(self) -> int:
         """
@@ -138,7 +136,7 @@ class UserRepository:
         self,
         include_inactive: bool = False,
         limit: Optional[int] = None,
-        offset: int = 0
+        offset: int = 0,
     ) -> list[User]:
         """
         Get all users with linked RaceTime accounts.
@@ -155,7 +153,7 @@ class UserRepository:
         if not include_inactive:
             query = query.filter(is_active=True)
 
-        query = query.order_by('-created_at')
+        query = query.order_by("-created_at")
 
         if offset > 0:
             query = query.offset(offset)
@@ -190,10 +188,8 @@ class UserRepository:
             list[User]: List of matching users
         """
         return await User.filter(
-            racetime_name__icontains=query,
-            racetime_id__not_isnull=True,
-            is_active=True
-        ).order_by('racetime_name')
+            racetime_name__icontains=query, racetime_id__not_isnull=True, is_active=True
+        ).order_by("racetime_name")
 
     async def get_by_twitch_id(self, twitch_id: str) -> Optional[User]:
         """
@@ -211,7 +207,7 @@ class UserRepository:
         self,
         include_inactive: bool = False,
         limit: Optional[int] = None,
-        offset: int = 0
+        offset: int = 0,
     ) -> list[User]:
         """
         Get all users with linked Twitch accounts.
@@ -228,7 +224,7 @@ class UserRepository:
         if not include_inactive:
             query = query.filter(is_active=True)
 
-        query = query.order_by('-created_at')
+        query = query.order_by("-created_at")
 
         if offset > 0:
             query = query.offset(offset)
@@ -263,12 +259,12 @@ class UserRepository:
             list[User]: List of matching users
         """
         return await User.filter(
-            twitch_name__icontains=query,
-            twitch_id__not_isnull=True,
-            is_active=True
-        ).order_by('twitch_name')
+            twitch_name__icontains=query, twitch_id__not_isnull=True, is_active=True
+        ).order_by("twitch_name")
 
-    async def get_placeholder_users_for_tournament(self, tournament_id: int) -> list[User]:
+    async def get_placeholder_users_for_tournament(
+        self, tournament_id: int
+    ) -> list[User]:
         """
         Get all placeholder users associated with a tournament's matches.
 
@@ -284,23 +280,31 @@ class UserRepository:
         from models.match_schedule import Match
 
         # Get all match IDs for this tournament
-        matches = await Match.filter(tournament_id=tournament_id).values_list('id', flat=True)
+        matches = await Match.filter(tournament_id=tournament_id).values_list(
+            "id", flat=True
+        )
         match_ids = list(matches)
 
         if not match_ids:
             return []
 
         # Get placeholder users from match players
-        player_placeholders = await User.filter(
-            is_placeholder=True,
-            match_players__match_id__in=match_ids
-        ).distinct().prefetch_related('match_players__match')
+        player_placeholders = (
+            await User.filter(
+                is_placeholder=True, match_players__match_id__in=match_ids
+            )
+            .distinct()
+            .prefetch_related("match_players__match")
+        )
 
         # Get placeholder users from crew
-        crew_placeholders = await User.filter(
-            is_placeholder=True,
-            crew_memberships__match_id__in=match_ids
-        ).distinct().prefetch_related('crew_memberships__match')
+        crew_placeholders = (
+            await User.filter(
+                is_placeholder=True, crew_memberships__match_id__in=match_ids
+            )
+            .distinct()
+            .prefetch_related("crew_memberships__match")
+        )
 
         # Combine and deduplicate, tracking roles
         all_placeholder_ids = set()
@@ -310,19 +314,19 @@ class UserRepository:
             if user.id not in all_placeholder_ids:
                 all_placeholder_ids.add(user.id)
                 # Tag user with role info for UI display
-                user._placeholder_roles = ['Player']
+                user._placeholder_roles = ["Player"]
                 all_placeholders.append(user)
 
         for user in crew_placeholders:
             if user.id not in all_placeholder_ids:
                 all_placeholder_ids.add(user.id)
                 # Tag user with role info for UI display
-                user._placeholder_roles = ['Crew']
+                user._placeholder_roles = ["Crew"]
                 all_placeholders.append(user)
             else:
                 # User is in both lists - add Crew to existing roles
                 existing_user = next(u for u in all_placeholders if u.id == user.id)
-                if 'Crew' not in existing_user._placeholder_roles:
-                    existing_user._placeholder_roles.append('Crew')
+                if "Crew" not in existing_user._placeholder_roles:
+                    existing_user._placeholder_roles.append("Crew")
 
         return all_placeholders

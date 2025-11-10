@@ -15,13 +15,13 @@ from views.user_profile.notification_preferences import NotificationPreferencesV
 from views.user_profile.racer_verification import RacerVerificationView
 
 __all__ = [
-    'ProfileInfoView',
-    'ProfileSettingsView',
-    'ApiKeysView',
-    'UserOrganizationsView',
-    'RacetimeAccountView',
-    'TwitchAccountView',
-    'PresetNamespacesView',
-    'NotificationPreferencesView',
-    'RacerVerificationView',
+    "ProfileInfoView",
+    "ProfileSettingsView",
+    "ApiKeysView",
+    "UserOrganizationsView",
+    "RacetimeAccountView",
+    "TwitchAccountView",
+    "PresetNamespacesView",
+    "NotificationPreferencesView",
+    "RacerVerificationView",
 ]

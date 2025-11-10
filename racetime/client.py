@@ -78,7 +78,9 @@ class SahaRaceHandler(RaceHandler):
         # Repository for user lookups
         self._user_repository = UserRepository()
 
-    async def _get_user_id_from_racetime_id(self, racetime_user_id: str) -> Optional[int]:
+    async def _get_user_id_from_racetime_id(
+        self, racetime_user_id: str
+    ) -> Optional[int]:
         """
         Look up application user ID from racetime user ID.
 
@@ -92,7 +94,9 @@ class SahaRaceHandler(RaceHandler):
             user = await self._user_repository.get_by_racetime_id(racetime_user_id)
             return user.id if user else None
         except Exception as e:
-            logger.warning("Error looking up user by racetime_id %s: %s", racetime_user_id, e)
+            logger.warning(
+                "Error looking up user by racetime_id %s: %s", racetime_user_id, e
+            )
             return None
 
     def _extract_race_details(self) -> tuple[str, str, str]:
@@ -102,9 +106,9 @@ class SahaRaceHandler(RaceHandler):
         Returns:
             Tuple of (category, room_slug, room_name)
         """
-        category = self.data.get('category', {}).get('slug', '') if self.data else ''
-        room_slug = self.data.get('name', '') if self.data else ''
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
+        category = self.data.get("category", {}).get("slug", "") if self.data else ""
+        room_slug = self.data.get("name", "") if self.data else ""
+        room_name = room_slug.split("/")[-1] if "/" in room_slug else room_slug
         return category, room_slug, room_name
 
     async def _handle_join_request(
@@ -126,19 +130,20 @@ class SahaRaceHandler(RaceHandler):
         """
         try:
             # Use service to check if user is a match player (follows architectural layers)
-            from application.services.racetime.racetime_room_service import RacetimeRoomService
+            from application.services.racetime.racetime_room_service import (
+                RacetimeRoomService,
+            )
 
             service = RacetimeRoomService()
             is_match_player, match_id = await service.is_player_on_match(
-                room_slug=room_slug,
-                racetime_user_id=racetime_user_id
+                room_slug=room_slug, racetime_user_id=racetime_user_id
             )
 
             if match_id is None:
                 logger.debug(
                     "No match found for room %s, not auto-accepting join request from %s",
                     room_slug,
-                    racetime_user_name
+                    racetime_user_name,
                 )
                 return
 
@@ -150,14 +155,14 @@ class SahaRaceHandler(RaceHandler):
                     racetime_user_name,
                     racetime_user_id,
                     match_id,
-                    room_slug
+                    room_slug,
                 )
             else:
                 logger.debug(
                     "User %s (%s) is not a player on match %s, not auto-accepting join request",
                     racetime_user_name,
                     racetime_user_id,
-                    match_id
+                    match_id,
                 )
 
         except Exception as e:
@@ -166,7 +171,7 @@ class SahaRaceHandler(RaceHandler):
                 racetime_user_name,
                 room_slug,
                 e,
-                exc_info=True
+                exc_info=True,
             )
 
     async def ex_test(self, _args, _message):
@@ -180,7 +185,7 @@ class SahaRaceHandler(RaceHandler):
     async def ex_help(self, _args, _message):
         """
         Show available commands.
-        
+
         Usage: !help
         """
         await self.send_message(
@@ -191,136 +196,142 @@ class SahaRaceHandler(RaceHandler):
             "!time (your finish time), "
             "!entrants (list entrants by status)"
         )
-    
+
     async def ex_status(self, _args, _message):
         """
         Show current race status and entrant count.
-        
+
         Usage: !status
         """
         if not self.data:
             await self.send_message("Race data not available yet.")
             return
-        
-        status_value = self.data.get('status', {}).get('value', 'unknown')
-        entrants = self.data.get('entrants', [])
+
+        status_value = self.data.get("status", {}).get("value", "unknown")
+        entrants = self.data.get("entrants", [])
         entrant_count = len(entrants)
-        
+
         # Map status values to human-readable text
         status_text_map = {
-            'open': 'Open',
-            'invitational': 'Invitational',
-            'pending': 'Pending',
-            'in_progress': 'In Progress',
-            'finished': 'Finished',
-            'cancelled': 'Cancelled',
+            "open": "Open",
+            "invitational": "Invitational",
+            "pending": "Pending",
+            "in_progress": "In Progress",
+            "finished": "Finished",
+            "cancelled": "Cancelled",
         }
-        status_text = status_text_map.get(status_value, status_value.replace('_', ' ').title())
-        
-        await self.send_message(f'Race Status: {status_text} | Entrants: {entrant_count}')
-    
+        status_text = status_text_map.get(
+            status_value, status_value.replace("_", " ").title()
+        )
+
+        await self.send_message(
+            f"Race Status: {status_text} | Entrants: {entrant_count}"
+        )
+
     async def ex_race(self, _args, _message):
         """
         Show race goal and info.
-        
+
         Usage: !race
         """
         if not self.data:
             await self.send_message("Race data not available yet.")
             return
-        
-        goal_name = self.data.get('goal', {}).get('name', 'No goal set')
-        info_text = self.data.get('info', '')
-        
+
+        goal_name = self.data.get("goal", {}).get("name", "No goal set")
+        info_text = self.data.get("info", "")
+
         if info_text:
-            await self.send_message(f'Goal: {goal_name} | Info: {info_text}')
+            await self.send_message(f"Goal: {goal_name} | Info: {info_text}")
         else:
-            await self.send_message(f'Goal: {goal_name}')
-    
+            await self.send_message(f"Goal: {goal_name}")
+
     async def ex_time(self, _args, message):
         """
         Show your finish time or race time if still running.
-        
+
         Usage: !time
         """
         if not self.data:
             await self.send_message("Race data not available yet.")
             return
-        
+
         # Extract racetime user ID
-        user_data = message.get('user', {})
-        racetime_user_id = user_data.get('id', '')
-        
+        user_data = message.get("user", {})
+        racetime_user_id = user_data.get("id", "")
+
         if not racetime_user_id:
             await self.send_message("Unable to identify user.")
             return
-        
-        entrants = self.data.get('entrants', [])
-        
+
+        entrants = self.data.get("entrants", [])
+
         # Find the user in entrants
         user_entrant = None
         for entrant in entrants:
-            if entrant.get('user', {}).get('id') == racetime_user_id:
+            if entrant.get("user", {}).get("id") == racetime_user_id:
                 user_entrant = entrant
                 break
-        
+
         if not user_entrant:
             await self.send_message("You are not in this race.")
             return
-        
+
         # Check if user has finished
-        finish_time = user_entrant.get('finish_time')
+        finish_time = user_entrant.get("finish_time")
         if finish_time:
             # Format finish time (it's a timedelta in ISO format)
             await self.send_message(f"Your finish time: {finish_time}")
             return
-        
+
         # User hasn't finished yet - show race time
-        status_value = self.data.get('status', {}).get('value', '')
-        if status_value == 'in_progress':
+        status_value = self.data.get("status", {}).get("value", "")
+        if status_value == "in_progress":
             # Race is in progress
-            started_at = self.data.get('started_at')
+            started_at = self.data.get("started_at")
             if started_at:
-                await self.send_message("Race is in progress. You haven't finished yet.")
+                await self.send_message(
+                    "Race is in progress. You haven't finished yet."
+                )
                 return
-        
+
         await self.send_message("Race hasn't started yet.")
-    
+
     async def ex_entrants(self, _args, _message):
         """
         List all entrants grouped by status.
-        
+
         Usage: !entrants
         """
         if not self.data:
             await self.send_message("Race data not available yet.")
             return
-        
-        entrants = self.data.get('entrants', [])
-        
+
+        entrants = self.data.get("entrants", [])
+
         if not entrants:
             await self.send_message("No entrants in this race.")
             return
-        
+
         # Group by status
         ready = []
         not_ready = []
         finished = []
         dnf = []
-        
+
         for entrant in entrants:
-            username = entrant.get('user', {}).get('name', 'Unknown')
-            status_value = entrant.get('status', {}).get('value', '')
-            
-            if status_value == 'ready':
+            username = entrant.get("user", {}).get("name", "Unknown")
+            status_value = entrant.get("status", {}).get("value", "")
+
+            if status_value == "ready":
                 ready.append(username)
-            elif status_value == 'not_ready':
+            elif status_value == "not_ready":
                 not_ready.append(username)
-            elif status_value == 'done':
+            elif status_value == "done":
                 finished.append(username)
-            elif status_value == 'dnf':
+            elif status_value == "dnf":
                 dnf.append(username)
-        
+
         # Build response
         parts = []
         if ready:
@@ -331,11 +342,11 @@ class SahaRaceHandler(RaceHandler):
             parts.append(f"Finished ({len(finished)}): {', '.join(finished)}")
         if dnf:
             parts.append(f"DNF ({len(dnf)}): {', '.join(dnf)}")
-        
+
         if not parts:
             await self.send_message(f"Total entrants: {len(entrants)}")
             return
-        
+
         await self.send_message(" | ".join(parts))
 
     async def begin(self):
@@ -345,45 +356,50 @@ class SahaRaceHandler(RaceHandler):
         Use this to perform initial setup for the race.
         Emits RacetimeBotJoinedRaceEvent or RacetimeBotCreatedRaceEvent.
         """
-        race_name = self.data.get('name', 'unknown')
+        race_name = self.data.get("name", "unknown")
         logger.info("Race handler started for race: %s", race_name)
 
         # Get bot ID from the bot instance (if available)
-        if hasattr(self.bot, 'bot_id'):
+        if hasattr(self.bot, "bot_id"):
             self._bot_id = self.bot.bot_id
 
         # Extract race details
-        category = self.data.get('category', {}).get('slug', '')
+        category = self.data.get("category", {}).get("slug", "")
         room_slug = race_name
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
-        race_status = self.data.get('status', {}).get('value', 'unknown')
-        entrant_count = len(self.data.get('entrants', []))
+        room_name = room_slug.split("/")[-1] if "/" in room_slug else room_slug
+        race_status = self.data.get("status", {}).get("value", "unknown")
+        entrant_count = len(self.data.get("entrants", []))
 
         # Emit appropriate event based on whether bot created or joined the room
         if self._bot_created_room:
             logger.info("Bot created race room: %s", room_slug)
-            await EventBus.emit(RacetimeBotCreatedRaceEvent(
-                user_id=SYSTEM_USER_ID,  # System automation action
-                entity_id=room_slug,
-                category=category,
-                room_slug=room_slug,
-                room_name=room_name,
-                goal=self.data.get('goal', {}).get('name', ''),
-                invitational=not self.data.get('unlisted', False),
-                bot_action="create",
-            ))
+            await EventBus.emit(
+                RacetimeBotCreatedRaceEvent(
+                    user_id=SYSTEM_USER_ID,  # System automation action
+                    entity_id=room_slug,
+                    category=category,
+                    room_slug=room_slug,
+                    room_name=room_name,
+                    goal=self.data.get("goal", {}).get("name", ""),
+                    invitational=not self.data.get("unlisted", False),
+                    bot_action="create",
+                )
+            )
         else:
             logger.info("Bot joined existing race room: %s", room_slug)
-            await EventBus.emit(RacetimeBotJoinedRaceEvent(
-                user_id=SYSTEM_USER_ID,  # System automation action
-                entity_id=room_slug,
-                category=category,
-                room_slug=room_slug,
-                room_name=room_name,
-                race_status=race_status,
-                entrant_count=entrant_count,
-                bot_action="join",
-            ))
+            await EventBus.emit(
+                RacetimeBotJoinedRaceEvent(
+                    user_id=SYSTEM_USER_ID,  # System automation action
+                    entity_id=room_slug,
+                    category=category,
+                    room_slug=room_slug,
+                    room_name=room_name,
+                    race_status=race_status,
+                    entrant_count=entrant_count,
+                    bot_action="join",
+                )
+            )
+
     # Initial setup hook for race handler
 
     async def end(self):
@@ -392,7 +408,8 @@ class SahaRaceHandler(RaceHandler):
 
         Use this to perform cleanup.
         """
-        logger.info("Race handler ended for race: %s", self.data.get('name'))
+        logger.info("Race handler ended for race: %s", self.data.get("name"))
+
     # Cleanup hook for race handler
 
     async def race_data(self, data):
@@ -405,50 +422,51 @@ class SahaRaceHandler(RaceHandler):
         Args:
             data: Updated race data from racetime.gg
         """
-        new_race_data = data.get('race', {})
+        new_race_data = data.get("race", {})
         old_race_data = self.data if self.data else {}
 
         # Extract identifiers
-        category = new_race_data.get('category', {}).get('slug', '')
-        room_slug = new_race_data.get('name', '')
-        room_name = room_slug.split('/')[-1] if '/' in room_slug else room_slug
-        new_status = new_race_data.get('status', {}).get('value')
+        category = new_race_data.get("category", {}).get("slug", "")
+        room_slug = new_race_data.get("name", "")
+        room_name = room_slug.split("/")[-1] if "/" in room_slug else room_slug
+        new_status = new_race_data.get("status", {}).get("value")
 
         # Check for race status changes
-        old_status = old_race_data.get('status', {}).get('value') if old_race_data else None
+        old_status = (
+            old_race_data.get("status", {}).get("value") if old_race_data else None
+        )
 
         if old_status and new_status and old_status != new_status:
             logger.info(
-                "Race %s status changed: %s -> %s",
-                room_slug,
-                old_status,
-                new_status
+                "Race %s status changed: %s -> %s", room_slug, old_status, new_status
             )
 
             # Emit race status changed event
-            await EventBus.emit(RacetimeRaceStatusChangedEvent(
-                user_id=SYSTEM_USER_ID,  # System automation (race status changes are automated)
-                entity_id=room_slug,
-                category=category,
-                room_slug=room_slug,
-                room_name=room_name,
-                old_status=old_status,
-                new_status=new_status,
-                entrant_count=len(new_race_data.get('entrants', [])),
-                started_at=new_race_data.get('started_at'),
-                ended_at=new_race_data.get('ended_at'),
-            ))
+            await EventBus.emit(
+                RacetimeRaceStatusChangedEvent(
+                    user_id=SYSTEM_USER_ID,  # System automation (race status changes are automated)
+                    entity_id=room_slug,
+                    category=category,
+                    room_slug=room_slug,
+                    room_name=room_name,
+                    old_status=old_status,
+                    new_status=new_status,
+                    entrant_count=len(new_race_data.get("entrants", [])),
+                    started_at=new_race_data.get("started_at"),
+                    ended_at=new_race_data.get("ended_at"),
+                )
+            )
 
         # Process entrants
-        new_entrants = new_race_data.get('entrants', [])
+        new_entrants = new_race_data.get("entrants", [])
         current_entrant_statuses = {}
         current_entrant_ids = set()
         current_entrant_names = {}
 
         for entrant in new_entrants:
-            user_id = entrant.get('user', {}).get('id', '')
-            user_name = entrant.get('user', {}).get('name', '')
-            entrant_status = entrant.get('status', {}).get('value', '')
+            user_id = entrant.get("user", {}).get("id", "")
+            user_name = entrant.get("user", {}).get("name", "")
+            entrant_status = entrant.get("status", {}).get("value", "")
 
             current_entrant_ids.add(user_id)
             current_entrant_statuses[user_id] = entrant_status
@@ -458,8 +476,8 @@ class SahaRaceHandler(RaceHandler):
         if not self._first_data_update:
             new_entrants_ids = current_entrant_ids - self._previous_entrant_ids
             for user_id in new_entrants_ids:
-                user_name = current_entrant_names.get(user_id, '')
-                initial_status = current_entrant_statuses.get(user_id, '')
+                user_name = current_entrant_names.get(user_id, "")
+                initial_status = current_entrant_statuses.get(user_id, "")
 
                 # Look up application user ID
                 app_user_id = await self._get_user_id_from_racetime_id(user_id)
@@ -469,20 +487,22 @@ class SahaRaceHandler(RaceHandler):
                     user_name,
                     user_id,
                     room_slug,
-                    initial_status
+                    initial_status,
                 )
 
-                await EventBus.emit(RacetimeEntrantJoinedEvent(
-                    user_id=app_user_id,  # Application user ID (None if not linked)
-                    entity_id=f"{room_slug}/{user_id}",
-                    category=category,
-                    room_slug=room_slug,
-                    room_name=room_name,
-                    racetime_user_id=user_id,
-                    racetime_user_name=user_name,
-                    initial_status=initial_status,
-                    race_status=new_status,
-                ))
+                await EventBus.emit(
+                    RacetimeEntrantJoinedEvent(
+                        user_id=app_user_id,  # Application user ID (None if not linked)
+                        entity_id=f"{room_slug}/{user_id}",
+                        category=category,
+                        room_slug=room_slug,
+                        room_name=room_name,
+                        racetime_user_id=user_id,
+                        racetime_user_name=user_name,
+                        initial_status=initial_status,
+                        race_status=new_status,
+                    )
+                )
 
         # Detect leaves (removed entrants) - skip on first data update
         if not self._first_data_update:
@@ -490,13 +510,13 @@ class SahaRaceHandler(RaceHandler):
             for user_id in left_entrant_ids:
                 # Get name from previous data (no longer in current data)
                 user_name = ""
-                last_status = self._previous_entrant_statuses.get(user_id, '')
+                last_status = self._previous_entrant_statuses.get(user_id, "")
 
                 # Try to find name from old data
                 if old_race_data:
-                    for old_entrant in old_race_data.get('entrants', []):
-                        if old_entrant.get('user', {}).get('id') == user_id:
-                            user_name = old_entrant.get('user', {}).get('name', '')
+                    for old_entrant in old_race_data.get("entrants", []):
+                        if old_entrant.get("user", {}).get("id") == user_id:
+                            user_name = old_entrant.get("user", {}).get("name", "")
                             break
 
                 # Look up application user ID
@@ -507,35 +527,37 @@ class SahaRaceHandler(RaceHandler):
                     user_name,
                     user_id,
                     room_slug,
-                    last_status
+                    last_status,
                 )
 
-                await EventBus.emit(RacetimeEntrantLeftEvent(
-                    user_id=app_user_id,  # Application user ID (None if not linked)
-                    entity_id=f"{room_slug}/{user_id}",
-                    category=category,
-                    room_slug=room_slug,
-                    room_name=room_name,
-                    racetime_user_id=user_id,
-                    racetime_user_name=user_name,
-                    last_status=last_status,
-                    race_status=new_status,
-                ))
+                await EventBus.emit(
+                    RacetimeEntrantLeftEvent(
+                        user_id=app_user_id,  # Application user ID (None if not linked)
+                        entity_id=f"{room_slug}/{user_id}",
+                        category=category,
+                        room_slug=room_slug,
+                        room_name=room_name,
+                        racetime_user_id=user_id,
+                        racetime_user_name=user_name,
+                        last_status=last_status,
+                        race_status=new_status,
+                    )
+                )
 
         # Detect status changes (for existing entrants)
         for user_id, entrant_status in current_entrant_statuses.items():
             old_entrant_status = self._previous_entrant_statuses.get(user_id)
 
             if old_entrant_status and old_entrant_status != entrant_status:
-                user_name = current_entrant_names.get(user_id, '')
+                user_name = current_entrant_names.get(user_id, "")
 
                 # Find full entrant data for finish_time and place
                 finish_time = None
                 place = None
                 for entrant in new_entrants:
-                    if entrant.get('user', {}).get('id') == user_id:
-                        finish_time = entrant.get('finish_time')
-                        place = entrant.get('place')
+                    if entrant.get("user", {}).get("id") == user_id:
+                        finish_time = entrant.get("finish_time")
+                        place = entrant.get("place")
                         break
 
                 # Look up application user ID
@@ -547,27 +569,29 @@ class SahaRaceHandler(RaceHandler):
                     user_id,
                     room_slug,
                     old_entrant_status,
-                    entrant_status
+                    entrant_status,
                 )
 
                 # Emit entrant status changed event
-                await EventBus.emit(RacetimeEntrantStatusChangedEvent(
-                    user_id=app_user_id,  # Application user ID (None if not linked)
-                    entity_id=f"{room_slug}/{user_id}",
-                    category=category,
-                    room_slug=room_slug,
-                    room_name=room_name,
-                    racetime_user_id=user_id,
-                    racetime_user_name=user_name,
-                    old_status=old_entrant_status,
-                    new_status=entrant_status,
-                    finish_time=finish_time,
-                    place=place,
-                    race_status=new_status,
-                ))
+                await EventBus.emit(
+                    RacetimeEntrantStatusChangedEvent(
+                        user_id=app_user_id,  # Application user ID (None if not linked)
+                        entity_id=f"{room_slug}/{user_id}",
+                        category=category,
+                        room_slug=room_slug,
+                        room_name=room_name,
+                        racetime_user_id=user_id,
+                        racetime_user_name=user_name,
+                        old_status=old_entrant_status,
+                        new_status=entrant_status,
+                        finish_time=finish_time,
+                        place=place,
+                        race_status=new_status,
+                    )
+                )
 
                 # Auto-accept join requests for match players
-                if entrant_status == 'requested':
+                if entrant_status == "requested":
                     await self._handle_join_request(user_id, user_name, room_slug)
 
         # Update tracked state
@@ -590,22 +614,24 @@ class SahaRaceHandler(RaceHandler):
         """
         # Extract race details
         category, room_slug, room_name = self._extract_race_details()
-        race_status = self.data.get('status', {}).get('value', '') if self.data else ''
+        race_status = self.data.get("status", {}).get("value", "") if self.data else ""
 
         # Look up application user ID
         app_user_id = await self._get_user_id_from_racetime_id(user_id)
 
         # Emit invite event
         logger.info("Bot inviting user %s to race %s", user_id, room_slug)
-        await EventBus.emit(RacetimeEntrantInvitedEvent(
-            user_id=app_user_id,  # Application user ID (None if not linked)
-            entity_id=f"{room_slug}/{user_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            racetime_user_id=user_id,
-            race_status=race_status,
-        ))
+        await EventBus.emit(
+            RacetimeEntrantInvitedEvent(
+                user_id=app_user_id,  # Application user ID (None if not linked)
+                entity_id=f"{room_slug}/{user_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                racetime_user_id=user_id,
+                race_status=race_status,
+            )
+        )
 
         # Call parent implementation to send the actual invite
         await super().invite_user(user_id)
@@ -622,14 +648,16 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot force-starting race %s", room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=room_slug,
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="force_start",
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="force_start",
+            )
+        )
 
         # Call parent implementation
         await super().force_start()
@@ -652,15 +680,17 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot force-unreadying user %s in race %s", user_id, room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=app_user_id,  # Application user ID (None if not linked)
-            entity_id=f"{room_slug}/{user_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="force_unready",
-            target_user_id=user_id,
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=app_user_id,  # Application user ID (None if not linked)
+                entity_id=f"{room_slug}/{user_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="force_unready",
+                target_user_id=user_id,
+            )
+        )
 
         # Call parent implementation
         await super().force_unready(user_id)
@@ -683,15 +713,17 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot removing entrant %s from race %s", user_id, room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=app_user_id,  # Application user ID (None if not linked)
-            entity_id=f"{room_slug}/{user_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="remove_entrant",
-            target_user_id=user_id,
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=app_user_id,  # Application user ID (None if not linked)
+                entity_id=f"{room_slug}/{user_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="remove_entrant",
+                target_user_id=user_id,
+            )
+        )
 
         # Call parent implementation
         await super().remove_entrant(user_id)
@@ -708,14 +740,16 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot cancelling race %s", room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=room_slug,
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="cancel_race",
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="cancel_race",
+            )
+        )
 
         # Call parent implementation
         await super().cancel_race()
@@ -738,15 +772,17 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot adding monitor %s to race %s", user_id, room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=app_user_id,  # Application user ID (None if not linked)
-            entity_id=f"{room_slug}/{user_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="add_monitor",
-            target_user_id=user_id,
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=app_user_id,  # Application user ID (None if not linked)
+                entity_id=f"{room_slug}/{user_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="add_monitor",
+                target_user_id=user_id,
+            )
+        )
 
         # Call parent implementation
         await super().add_monitor(user_id)
@@ -769,15 +805,17 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot removing monitor %s from race %s", user_id, room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=app_user_id,  # Application user ID (None if not linked)
-            entity_id=f"{room_slug}/{user_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="remove_monitor",
-            target_user_id=user_id,
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=app_user_id,  # Application user ID (None if not linked)
+                entity_id=f"{room_slug}/{user_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="remove_monitor",
+                target_user_id=user_id,
+            )
+        )
 
         # Call parent implementation
         await super().remove_monitor(user_id)
@@ -797,15 +835,17 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot pinning message %s in race %s", message_id, room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=f"{room_slug}/message/{message_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="pin_message",
-            details=message_id,
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=f"{room_slug}/message/{message_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="pin_message",
+                details=message_id,
+            )
+        )
 
         # Call parent implementation
         await super().pin_message(message_id)
@@ -825,20 +865,24 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot unpinning message %s in race %s", message_id, room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=f"{room_slug}/message/{message_id}",
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="unpin_message",
-            details=message_id,
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=f"{room_slug}/message/{message_id}",
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="unpin_message",
+                details=message_id,
+            )
+        )
 
         # Call parent implementation
         await super().unpin_message(message_id)
 
-    async def set_raceinfo(self, info: str, overwrite: bool = False, prefix: bool = True):
+    async def set_raceinfo(
+        self, info: str, overwrite: bool = False, prefix: bool = True
+    ):
         """
         Set the race info_user field.
 
@@ -854,17 +898,23 @@ class SahaRaceHandler(RaceHandler):
         category, room_slug, room_name = self._extract_race_details()
 
         # Emit action event
-        logger.info("Bot setting race info for %s (overwrite=%s, prefix=%s)",
-                   room_slug, overwrite, prefix)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=room_slug,
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="set_raceinfo",
-            details=f"overwrite={overwrite}, prefix={prefix}",
-        ))
+        logger.info(
+            "Bot setting race info for %s (overwrite=%s, prefix=%s)",
+            room_slug,
+            overwrite,
+            prefix,
+        )
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="set_raceinfo",
+                details=f"overwrite={overwrite}, prefix={prefix}",
+            )
+        )
 
         # Call parent implementation
         await super().set_raceinfo(info, overwrite=overwrite, prefix=prefix)
@@ -884,14 +934,16 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot setting bot race info for %s", room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=room_slug,
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="set_bot_raceinfo",
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="set_bot_raceinfo",
+            )
+        )
 
         # Call parent implementation
         await super().set_bot_raceinfo(info)
@@ -908,14 +960,16 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot setting race %s to open", room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=room_slug,
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="set_open",
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="set_open",
+            )
+        )
 
         # Call parent implementation
         await super().set_open()
@@ -932,14 +986,16 @@ class SahaRaceHandler(RaceHandler):
 
         # Emit action event
         logger.info("Bot setting race %s to invitational", room_slug)
-        await EventBus.emit(RacetimeBotActionEvent(
-            user_id=SYSTEM_USER_ID,
-            entity_id=room_slug,
-            category=category,
-            room_slug=room_slug,
-            room_name=room_name,
-            action_type="set_invitational",
-        ))
+        await EventBus.emit(
+            RacetimeBotActionEvent(
+                user_id=SYSTEM_USER_ID,
+                entity_id=room_slug,
+                category=category,
+                room_slug=room_slug,
+                room_name=room_name,
+                action_type="set_invitational",
+            )
+        )
 
         # Call parent implementation
         await super().set_invitational()
@@ -955,9 +1011,11 @@ class RacetimeBot(Bot):
 
     # Override the default racetime host and security settings with configured values
     # Extract just the hostname from the full URL (e.g., "http://localhost:8000" -> "localhost:8000")
-    racetime_host = settings.RACETIME_URL.replace('https://', '').replace('http://', '').rstrip('/')
+    racetime_host = (
+        settings.RACETIME_URL.replace("https://", "").replace("http://", "").rstrip("/")
+    )
     # Determine if TLS/SSL should be used based on URL scheme
-    racetime_secure = settings.RACETIME_URL.startswith('https://')
+    racetime_secure = settings.RACETIME_URL.startswith("https://")
 
     def __init__(
         self,
@@ -965,7 +1023,7 @@ class RacetimeBot(Bot):
         client_id: str,
         client_secret: str,
         bot_id: Optional[int] = None,
-        handler_class_name: str = 'SahaRaceHandler'
+        handler_class_name: str = "SahaRaceHandler",
     ):
         """
         Initialize the racetime bot with configuration.
@@ -984,7 +1042,7 @@ class RacetimeBot(Bot):
             client_secret[:10] + "..." if len(client_secret) > 10 else "***",
             handler_class_name,
             self.racetime_host,
-            self.racetime_secure
+            self.racetime_secure,
         )
         try:
             super().__init__(
@@ -999,7 +1057,7 @@ class RacetimeBot(Bot):
                 "Please verify that an OAuth2 application exists in your racetime instance "
                 "with these credentials and uses the 'client_credentials' grant type.",
                 category_slug,
-                e
+                e,
             )
             raise
         self.category_slug = category_slug
@@ -1013,7 +1071,7 @@ class RacetimeBot(Bot):
         logger.info(
             "Racetime bot initialized successfully for category: %s with handler: %s",
             category_slug,
-            handler_class_name
+            handler_class_name,
         )
 
     def should_handle(self, race_data: dict) -> bool:
@@ -1041,7 +1099,7 @@ class RacetimeBot(Bot):
         Return the handler class to use for race rooms.
 
         Override of Bot.get_handler_class() to use our configured handler.
-        
+
         The handler class is determined by the handler_class_name set during initialization.
         Supported handlers:
         - SahaRaceHandler (default - base handler with common commands)
@@ -1060,29 +1118,31 @@ class RacetimeBot(Bot):
         from racetime.smz3_race_handler import SMZ3RaceHandler
         from racetime.match_race_handler import MatchRaceHandler
         from racetime.live_race_handler import AsyncLiveRaceHandler
-        
+
         handler_map = {
-            'SahaRaceHandler': SahaRaceHandler,
-            'ALTTPRRaceHandler': ALTTPRRaceHandler,
-            'SMRaceHandler': SMRaceHandler,
-            'SMZ3RaceHandler': SMZ3RaceHandler,
-            'MatchRaceHandler': MatchRaceHandler,
-            'AsyncLiveRaceHandler': AsyncLiveRaceHandler,
+            "SahaRaceHandler": SahaRaceHandler,
+            "ALTTPRRaceHandler": ALTTPRRaceHandler,
+            "SMRaceHandler": SMRaceHandler,
+            "SMZ3RaceHandler": SMZ3RaceHandler,
+            "MatchRaceHandler": MatchRaceHandler,
+            "AsyncLiveRaceHandler": AsyncLiveRaceHandler,
         }
-        
+
         handler_class = handler_map.get(self.handler_class_name)
-        
+
         if not handler_class:
             logger.warning(
                 "Unknown handler class %s, falling back to SahaRaceHandler",
-                self.handler_class_name
+                self.handler_class_name,
             )
             return SahaRaceHandler
-        
+
         logger.debug("Using handler class: %s", self.handler_class_name)
         return handler_class
 
-    async def join_race_room(self, race_name: str, force: bool = False) -> Optional[SahaRaceHandler]:
+    async def join_race_room(
+        self, race_name: str, force: bool = False
+    ) -> Optional[SahaRaceHandler]:
         """
         Join a race room and create a handler for it.
 
@@ -1103,7 +1163,9 @@ class RacetimeBot(Bot):
 
         # Validate race belongs to our category
         if not race_name.startswith(f"{self.category_slug}/"):
-            logger.error("Race %s is not for category %s", race_name, self.category_slug)
+            logger.error(
+                "Race %s is not for category %s", race_name, self.category_slug
+            )
             return None
 
         # Ensure HTTP session is created
@@ -1118,7 +1180,7 @@ class RacetimeBot(Bot):
 
         for attempt in range(max_attempts):
             try:
-                url = self.http_uri(f'/{race_name}/data')
+                url = self.http_uri(f"/{race_name}/data")
                 async with self.http.get(url, ssl=self.ssl_context) as resp:
                     resp.raise_for_status()
                     race_data = await resp.json()
@@ -1130,13 +1192,17 @@ class RacetimeBot(Bot):
                     race_name,
                     attempt + 1,
                     max_attempts,
-                    e
+                    e,
                 )
                 if attempt < max_attempts - 1:
                     await asyncio.sleep(backoff_delay)
-                    backoff_delay = min(backoff_delay * 2, 10.0)  # Exponential backoff, max 10s
+                    backoff_delay = min(
+                        backoff_delay * 2, 10.0
+                    )  # Exponential backoff, max 10s
                 else:
-                    logger.error("Failed to fetch race data after %d attempts", max_attempts)
+                    logger.error(
+                        "Failed to fetch race data after %d attempts", max_attempts
+                    )
                     return None
 
         if not race_data:
@@ -1148,11 +1214,11 @@ class RacetimeBot(Bot):
             return None
 
         # Check if we already have a handler for this race
-        if hasattr(self, 'handlers') and race_name in self.handlers:
+        if hasattr(self, "handlers") and race_name in self.handlers:
             logger.info("Already have handler for race %s", race_name)
             existing_handler = self.handlers[race_name]
             # Return the handler object (fork stores in TaskHandler.handler)
-            if hasattr(existing_handler, 'handler'):
+            if hasattr(existing_handler, "handler"):
                 return existing_handler.handler
             return existing_handler
 
@@ -1169,7 +1235,9 @@ class RacetimeBot(Bot):
             return handler
 
         except Exception as e:
-            logger.error("Failed to create handler for race %s: %s", race_name, e, exc_info=True)
+            logger.error(
+                "Failed to create handler for race %s: %s", race_name, e, exc_info=True
+            )
             return None
 
     async def startrace(
@@ -1242,44 +1310,46 @@ class RacetimeBot(Bot):
         try:
             # Build race creation payload
             payload = {
-                'invitational': invitational,
-                'unlisted': unlisted,
-                'info_user': info_user,
-                'start_delay': start_delay,
-                'time_limit': time_limit,
-                'streaming_required': streaming_required,
-                'auto_start': auto_start,
-                'allow_comments': allow_comments,
-                'hide_comments': hide_comments,
-                'allow_prerace_chat': allow_prerace_chat,
-                'allow_midrace_chat': allow_midrace_chat,
-                'allow_non_entrant_chat': allow_non_entrant_chat,
-                'chat_message_delay': chat_message_delay,
-                'team_race': team_race,
+                "invitational": invitational,
+                "unlisted": unlisted,
+                "info_user": info_user,
+                "start_delay": start_delay,
+                "time_limit": time_limit,
+                "streaming_required": streaming_required,
+                "auto_start": auto_start,
+                "allow_comments": allow_comments,
+                "hide_comments": hide_comments,
+                "allow_prerace_chat": allow_prerace_chat,
+                "allow_midrace_chat": allow_midrace_chat,
+                "allow_non_entrant_chat": allow_non_entrant_chat,
+                "chat_message_delay": chat_message_delay,
+                "team_race": team_race,
             }
 
             if goal:
-                payload['goal'] = goal
+                payload["goal"] = goal
             else:
-                payload['custom_goal'] = custom_goal
+                payload["custom_goal"] = custom_goal
 
             # Create race via HTTP API (following fork pattern)
-            url = self.http_uri(f'/o/{self.category_slug}/startrace')
-            headers = {'Authorization': f'Bearer {self.access_token}'}
+            url = self.http_uri(f"/o/{self.category_slug}/startrace")
+            headers = {"Authorization": f"Bearer {self.access_token}"}
 
-            async with self.http.post(url, data=payload, headers=headers, ssl=self.ssl_context) as resp:
+            async with self.http.post(
+                url, data=payload, headers=headers, ssl=self.ssl_context
+            ) as resp:
                 if resp.status not in (200, 201):
                     logger.error("Failed to create race room: HTTP %s", resp.status)
                     return None
 
                 # Get the race location from response headers
-                race_location = resp.headers.get('Location')
+                race_location = resp.headers.get("Location")
                 if not race_location:
                     logger.error("No Location header in race creation response")
                     return None
 
             # Join the newly created race room and return handler
-            race_name = race_location.lstrip('/')
+            race_name = race_location.lstrip("/")
             logger.info("Created race room: %s", race_name)
 
             # Use our join_race_room implementation to get a handler
@@ -1291,6 +1361,7 @@ class RacetimeBot(Bot):
             logger.error("Failed to create race room: %s", e, exc_info=True)
             return None
 
+
 # Map of category -> bot instance
 _racetime_bots: dict[str, RacetimeBot] = {}
 _racetime_bot_tasks: dict[str, asyncio.Task] = {}
@@ -1299,77 +1370,100 @@ _racetime_bot_tasks: dict[str, asyncio.Task] = {}
 async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
     """
     Rejoin all open RaceTime rooms for matches when bot restarts.
-    
+
     Queries the database for all matches with active RaceTime rooms (not finished),
     and attempts to rejoin those rooms, syncing their status.
-    
+
     Args:
         bot: The RacetimeBot instance to use for rejoining
-        
+
     Returns:
         int: Number of rooms successfully rejoined
     """
     from models.racetime_room import RacetimeRoom
     from application.services.tournaments.tournament_service import TournamentService
-    
+
     logger.info("Rejoining open RaceTime rooms for category: %s", bot.category_slug)
-    
+
     try:
         # Find all RaceTime rooms for this category with unfinished matches
-        rooms = await RacetimeRoom.filter(
-            category=bot.category_slug,
-            match__finished_at__isnull=True
-        ).select_related('match__tournament').all()
-        
-        logger.info("Found %d open RaceTime rooms for category %s", len(rooms), bot.category_slug)
-        
+        rooms = (
+            await RacetimeRoom.filter(
+                category=bot.category_slug, match__finished_at__isnull=True
+            )
+            .select_related("match__tournament")
+            .all()
+        )
+
+        logger.info(
+            "Found %d open RaceTime rooms for category %s",
+            len(rooms),
+            bot.category_slug,
+        )
+
         rejoined_count = 0
         service = TournamentService()
-        
+
         for room in rooms:
             match = room.match
             if not match:
                 logger.warning("Room %s has no match associated, skipping", room.slug)
                 continue
-            
+
             try:
-                logger.info("Attempting to rejoin room %s for match %s", 
-                           room.slug, match.id)
-                
+                logger.info(
+                    "Attempting to rejoin room %s for match %s", room.slug, match.id
+                )
+
                 # Try to join the race room
                 handler = await bot.join_race_room(room.slug, force=True)
-                
+
                 if handler:
                     rejoined_count += 1
                     logger.info("Successfully rejoined room %s", room.slug)
-                    
+
                     # Sync the room status to the match
                     try:
                         await service.sync_racetime_room_status(
                             user=None,  # System action
                             organization_id=match.tournament.organization_id,
-                            match_id=match.id
+                            match_id=match.id,
                         )
-                        logger.info("Synced status for match %s from room %s", 
-                                   match.id, room.slug)
+                        logger.info(
+                            "Synced status for match %s from room %s",
+                            match.id,
+                            room.slug,
+                        )
                     except Exception as sync_error:
-                        logger.warning("Failed to sync status for match %s: %s", 
-                                      match.id, sync_error)
+                        logger.warning(
+                            "Failed to sync status for match %s: %s",
+                            match.id,
+                            sync_error,
+                        )
                 else:
                     logger.warning("Failed to rejoin room %s", room.slug)
-                    
+
             except Exception as e:
-                logger.error("Error rejoining room %s for match %s: %s", 
-                            room.slug, match.id, e)
+                logger.error(
+                    "Error rejoining room %s for match %s: %s", room.slug, match.id, e
+                )
                 continue
-        
-        logger.info("Rejoined %d out of %d open RaceTime rooms for category %s", 
-                   rejoined_count, len(rooms), bot.category_slug)
+
+        logger.info(
+            "Rejoined %d out of %d open RaceTime rooms for category %s",
+            rejoined_count,
+            len(rooms),
+            bot.category_slug,
+        )
         return rejoined_count
-        
+
     except Exception as e:
-        logger.error("Failed to rejoin open RaceTime rooms for category %s: %s", 
-                    bot.category_slug, e, exc_info=True)
+        logger.error(
+            "Failed to rejoin open RaceTime rooms for category %s: %s",
+            bot.category_slug,
+            e,
+            exc_info=True,
+        )
         return 0
 
 
@@ -1378,7 +1472,7 @@ async def start_racetime_bot(
     client_id: str,
     client_secret: str,
     bot_id: Optional[int] = None,
-    handler_class_name: str = 'SahaRaceHandler',
+    handler_class_name: str = "SahaRaceHandler",
     max_retries: int = 5,
     initial_backoff: float = 5.0,
 ) -> RacetimeBot:
@@ -1407,7 +1501,7 @@ async def start_racetime_bot(
         "Starting racetime bot for category: %s (bot_id=%s, handler=%s)",
         category,
         bot_id,
-        handler_class_name
+        handler_class_name,
     )
 
     try:
@@ -1436,10 +1530,17 @@ async def start_racetime_bot(
             try:
                 while True:
                     try:
-                        logger.info("Starting bot.run() for category: %s (attempt %d/%d)",
-                                   category, retry_count + 1, max_retries + 1)
-                        logger.debug("Bot configuration - host: %s, secure: %s",
-                                    bot.racetime_host, bot.racetime_secure)
+                        logger.info(
+                            "Starting bot.run() for category: %s (attempt %d/%d)",
+                            category,
+                            retry_count + 1,
+                            max_retries + 1,
+                        )
+                        logger.debug(
+                            "Bot configuration - host: %s, secure: %s",
+                            bot.racetime_host,
+                            bot.racetime_secure,
+                        )
 
                         # Update status to connected when starting
                         if bot_id:
@@ -1452,11 +1553,18 @@ async def start_racetime_bot(
                         # Rejoin any open RaceTime rooms from before bot restart
                         try:
                             rejoined_count = await rejoin_open_racetime_rooms(bot)
-                            logger.info("Rejoined %d open RaceTime rooms for category %s", 
-                                       rejoined_count, category)
+                            logger.info(
+                                "Rejoined %d open RaceTime rooms for category %s",
+                                rejoined_count,
+                                category,
+                            )
                         except Exception as rejoin_error:
-                            logger.error("Failed to rejoin open RaceTime rooms for %s: %s", 
-                                        category, rejoin_error, exc_info=True)
+                            logger.error(
+                                "Failed to rejoin open RaceTime rooms for %s: %s",
+                                category,
+                                rejoin_error,
+                                exc_info=True,
+                            )
 
                         # Instead of calling bot.run() which tries to take over the event loop,
                         # we manually create the reauthorize task that run() would create.
@@ -1477,15 +1585,23 @@ async def start_racetime_bot(
                         # Wait for the reauth task (runs forever until cancelled)
                         await reauth_task
 
-                        logger.info("bot reauth task completed normally for category: %s", category)
+                        logger.info(
+                            "bot reauth task completed normally for category: %s",
+                            category,
+                        )
                         break  # Exit retry loop on normal completion
 
                     except asyncio.CancelledError:
                         # Bot was cancelled (stopped manually) - don't retry
-                        logger.info("Racetime bot %s was cancelled (CancelledError caught)", category)
+                        logger.info(
+                            "Racetime bot %s was cancelled (CancelledError caught)",
+                            category,
+                        )
                         if bot_id:
                             await repository.update_bot_status(
-                                bot_id, BotStatus.DISCONNECTED, status_message="Bot stopped"
+                                bot_id,
+                                BotStatus.DISCONNECTED,
+                                status_message="Bot stopped",
                             )
                         raise  # Re-raise to properly handle cancellation
 
@@ -1497,12 +1613,16 @@ async def start_racetime_bot(
                             retry_count + 1,
                             max_retries + 1,
                             e,
-                            exc_info=True
+                            exc_info=True,
                         )
 
                         # Check if this is an auth error (don't retry auth failures)
                         error_msg = str(e)
-                        is_auth_error = "auth" in error_msg.lower() or "unauthorized" in error_msg.lower() or "401" in error_msg
+                        is_auth_error = (
+                            "auth" in error_msg.lower()
+                            or "unauthorized" in error_msg.lower()
+                            or "401" in error_msg
+                        )
 
                         # Update status based on error type
                         if bot_id:
@@ -1517,7 +1637,10 @@ async def start_racetime_bot(
 
                         # Don't retry on auth errors
                         if is_auth_error:
-                            logger.error("Authentication failed for bot %s - not retrying", category)
+                            logger.error(
+                                "Authentication failed for bot %s - not retrying",
+                                category,
+                            )
                             break
 
                         # Check if we should retry
@@ -1526,7 +1649,7 @@ async def start_racetime_bot(
                             logger.error(
                                 "Max retries (%d) reached for bot %s - giving up",
                                 max_retries,
-                                category
+                                category,
                             )
                             break
 
@@ -1536,7 +1659,7 @@ async def start_racetime_bot(
                             category,
                             backoff_delay,
                             retry_count + 1,
-                            max_retries + 1
+                            max_retries + 1,
                         )
                         await asyncio.sleep(backoff_delay)
 
@@ -1562,7 +1685,10 @@ async def start_racetime_bot(
                 _racetime_bots.pop(category, None)
                 logger.debug("Removing from _racetime_bot_tasks: %s", category)
                 _racetime_bot_tasks.pop(category, None)
-                logger.info("Racetime bot task completed and cleaned up for category: %s", category)
+                logger.info(
+                    "Racetime bot task completed and cleaned up for category: %s",
+                    category,
+                )
 
         _racetime_bot_tasks[category] = asyncio.create_task(run_wrapper())
 
@@ -1570,7 +1696,9 @@ async def start_racetime_bot(
         return bot
 
     except Exception as e:
-        logger.error("Failed to start racetime bot for %s: %s", category, e, exc_info=True)
+        logger.error(
+            "Failed to start racetime bot for %s: %s", category, e, exc_info=True
+        )
 
         # Update status to connection error
         if bot_id:
@@ -1617,12 +1745,19 @@ async def stop_racetime_bot(category: str) -> None:
             await task
         except asyncio.CancelledError:
             # Expected when cancelling
-            logger.info("Racetime bot task cancelled successfully for category: %s", category)
+            logger.info(
+                "Racetime bot task cancelled successfully for category: %s", category
+            )
 
         logger.info("Racetime bot stopped successfully for category: %s", category)
 
     except Exception as e:
-        logger.error("Error stopping racetime bot for category %s: %s", category, e, exc_info=True)
+        logger.error(
+            "Error stopping racetime bot for category %s: %s",
+            category,
+            e,
+            exc_info=True,
+        )
 
 
 async def stop_all_racetime_bots() -> None:

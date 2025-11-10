@@ -28,7 +28,7 @@ from views.organization import (
 def register():
     """Register organization admin route."""
 
-    @ui.page('/orgs/{organization_id}/admin')
+    @ui.page("/orgs/{organization_id}/admin")
     async def organization_admin_page(organization_id: int):
         """Organization admin page with scoped authorization checks."""
         base = BasePage.authenticated_page(title="Organization Admin")
@@ -37,26 +37,35 @@ def register():
         # Pre-check authorization to determine sidebar structure
         # We need to do this outside content() so we can build sidebar_items
         from middleware.auth import DiscordAuthService
+
         user = await DiscordAuthService.get_current_user()
-        
+
         allowed_admin = await service.user_can_admin_org(user, organization_id)
-        allowed_tournaments = await service.user_can_manage_tournaments(user, organization_id)
+        allowed_tournaments = await service.user_can_manage_tournaments(
+            user, organization_id
+        )
         allowed = allowed_admin or allowed_tournaments
 
         async def content(page: BasePage):
             # Re-check authorization inside content
             if not allowed:
-                ui.notify('You do not have access to administer this organization.', color='negative')
-                ui.navigate.to(f'/org/{organization_id}')
+                ui.notify(
+                    "You do not have access to administer this organization.",
+                    color="negative",
+                )
+                ui.navigate.to(f"/org/{organization_id}")
                 return
 
             org = await service.get_organization(organization_id)
             if not org:
-                with ui.element('div').classes('card'):
-                    with ui.element('div').classes('card-header'):
-                        ui.label('Organization not found')
-                    with ui.element('div').classes('card-body'):
-                        ui.button('Back to Organizations', on_click=lambda: ui.navigate.to('/?view=organizations')).classes('btn')
+                with ui.element("div").classes("card"):
+                    with ui.element("div").classes("card-header"):
+                        ui.label("Organization not found")
+                    with ui.element("div").classes("card-body"):
+                        ui.button(
+                            "Back to Organizations",
+                            on_click=lambda: ui.navigate.to("/?view=organizations"),
+                        ).classes("btn")
                 return
 
             # Register content loaders for different sections
@@ -102,7 +111,9 @@ def register():
                 if container:
                     container.clear()
                     with container:
-                        view = OrganizationTournamentsView(page.user, org, TournamentService())
+                        view = OrganizationTournamentsView(
+                            page.user, org, TournamentService()
+                        )
                         await view.render()
 
             async def load_async_tournaments():
@@ -170,19 +181,21 @@ def register():
 
             # Register loaders (restrict for non-admin tournament managers)
             if allowed_admin:
-                page.register_content_loader('overview', load_overview)
-                page.register_content_loader('members', load_members)
-                page.register_content_loader('permissions', load_permissions)
-                page.register_content_loader('stream_channels', load_stream_channels)
-                page.register_content_loader('scheduled_tasks', load_scheduled_tasks)
-                page.register_content_loader('discord_servers', load_discord_servers)
-                page.register_content_loader('racer_verification', load_racer_verification)
-                page.register_content_loader('audit_logs', load_audit_logs)
-                page.register_content_loader('settings', load_settings)
+                page.register_content_loader("overview", load_overview)
+                page.register_content_loader("members", load_members)
+                page.register_content_loader("permissions", load_permissions)
+                page.register_content_loader("stream_channels", load_stream_channels)
+                page.register_content_loader("scheduled_tasks", load_scheduled_tasks)
+                page.register_content_loader("discord_servers", load_discord_servers)
+                page.register_content_loader(
+                    "racer_verification", load_racer_verification
+                )
+                page.register_content_loader("audit_logs", load_audit_logs)
+                page.register_content_loader("settings", load_settings)
             # Tournaments and race room profiles accessible to admins and TOURNAMENT_MANAGERs
-            page.register_content_loader('tournaments', load_tournaments)
-            page.register_content_loader('async_tournaments', load_async_tournaments)
-            page.register_content_loader('race_room_profiles', load_race_room_profiles)
+            page.register_content_loader("tournaments", load_tournaments)
+            page.register_content_loader("async_tournaments", load_async_tournaments)
+            page.register_content_loader("race_room_profiles", load_race_room_profiles)
 
             # Load initial content only if no view parameter was specified
             if not page.initial_view:
@@ -194,31 +207,67 @@ def register():
 
         # Create sidebar items (conditionally for non-admins)
         sidebar_items = [
-            base.create_nav_link('Back to Organization', 'arrow_back', f'/org/{organization_id}'),
+            base.create_nav_link(
+                "Back to Organization", "arrow_back", f"/org/{organization_id}"
+            ),
             base.create_separator(),
         ]
 
         if allowed_admin:
-            sidebar_items.extend([
-                base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
-                base.create_sidebar_item_with_loader('Members', 'people', 'members'),
-                base.create_sidebar_item_with_loader('Permissions', 'verified_user', 'permissions'),
-                base.create_sidebar_item_with_loader('Stream Channels', 'cast', 'stream_channels'),
-                base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
-                base.create_sidebar_item_with_loader('Async Tournaments', 'schedule', 'async_tournaments'),
-                base.create_sidebar_item_with_loader('Race Room Profiles', 'tune', 'race_room_profiles'),
-                base.create_sidebar_item_with_loader('Discord Servers', 'dns', 'discord_servers'),
-                base.create_sidebar_item_with_loader('Racer Verification', 'verified', 'racer_verification'),
-                base.create_sidebar_item_with_loader('Scheduled Tasks', 'schedule', 'scheduled_tasks'),
-                base.create_sidebar_item_with_loader('Audit Logs', 'history', 'audit_logs'),
-                base.create_sidebar_item_with_loader('Settings', 'settings', 'settings'),
-            ])
+            sidebar_items.extend(
+                [
+                    base.create_sidebar_item_with_loader(
+                        "Overview", "dashboard", "overview"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Members", "people", "members"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Permissions", "verified_user", "permissions"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Stream Channels", "cast", "stream_channels"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Tournaments", "emoji_events", "tournaments"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Async Tournaments", "schedule", "async_tournaments"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Race Room Profiles", "tune", "race_room_profiles"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Discord Servers", "dns", "discord_servers"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Racer Verification", "verified", "racer_verification"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Scheduled Tasks", "schedule", "scheduled_tasks"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Audit Logs", "history", "audit_logs"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Settings", "settings", "settings"
+                    ),
+                ]
+            )
         else:
             # Tournament managers see both regular and async tournaments plus race room profiles
-            sidebar_items.extend([
-                base.create_sidebar_item_with_loader('Tournaments', 'emoji_events', 'tournaments'),
-                base.create_sidebar_item_with_loader('Async Tournaments', 'schedule', 'async_tournaments'),
-                base.create_sidebar_item_with_loader('Race Room Profiles', 'tune', 'race_room_profiles'),
-            ])
+            sidebar_items.extend(
+                [
+                    base.create_sidebar_item_with_loader(
+                        "Tournaments", "emoji_events", "tournaments"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Async Tournaments", "schedule", "async_tournaments"
+                    ),
+                    base.create_sidebar_item_with_loader(
+                        "Race Room Profiles", "tune", "race_room_profiles"
+                    ),
+                ]
+            )
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

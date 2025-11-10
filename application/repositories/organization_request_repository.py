@@ -18,9 +18,13 @@ class OrganizationRequestRepository:
         Returns:
             List of pending requests with related user data
         """
-        return await OrganizationRequest.filter(
-            status=OrganizationRequest.RequestStatus.PENDING
-        ).prefetch_related('requested_by').order_by('-requested_at')
+        return (
+            await OrganizationRequest.filter(
+                status=OrganizationRequest.RequestStatus.PENDING
+            )
+            .prefetch_related("requested_by")
+            .order_by("-requested_at")
+        )
 
     async def list_reviewed_requests(self) -> List[OrganizationRequest]:
         """
@@ -29,14 +33,20 @@ class OrganizationRequestRepository:
         Returns:
             List of reviewed requests with related user data
         """
-        return await OrganizationRequest.filter(
-            status__in=[
-                OrganizationRequest.RequestStatus.APPROVED,
-                OrganizationRequest.RequestStatus.REJECTED
-            ]
-        ).prefetch_related('requested_by', 'reviewed_by').order_by('-reviewed_at')
+        return (
+            await OrganizationRequest.filter(
+                status__in=[
+                    OrganizationRequest.RequestStatus.APPROVED,
+                    OrganizationRequest.RequestStatus.REJECTED,
+                ]
+            )
+            .prefetch_related("requested_by", "reviewed_by")
+            .order_by("-reviewed_at")
+        )
 
-    async def list_user_pending_requests(self, user_id: int) -> List[OrganizationRequest]:
+    async def list_user_pending_requests(
+        self, user_id: int
+    ) -> List[OrganizationRequest]:
         """
         List pending requests submitted by a specific user.
 
@@ -47,8 +57,7 @@ class OrganizationRequestRepository:
             List of user's pending requests
         """
         return await OrganizationRequest.filter(
-            requested_by_id=user_id,
-            status=OrganizationRequest.RequestStatus.PENDING
+            requested_by_id=user_id, status=OrganizationRequest.RequestStatus.PENDING
         ).all()
 
     async def get_by_id(self, request_id: int) -> Optional[OrganizationRequest]:

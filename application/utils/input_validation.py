@@ -39,23 +39,23 @@ def sanitize_filename(filename: str) -> str:
         str: Sanitized filename safe for filesystem operations
     """
     # Remove any path separators
-    filename = filename.replace('/', '').replace('\\', '')
+    filename = filename.replace("/", "").replace("\\", "")
 
     # Remove null bytes
-    filename = filename.replace('\0', '')
+    filename = filename.replace("\0", "")
 
     # Remove leading dots (hidden files)
-    filename = filename.lstrip('.')
+    filename = filename.lstrip(".")
 
     # Keep only alphanumeric, spaces, hyphens, underscores, and dots
-    filename = re.sub(r'[^\w\s\-\.]', '', filename)
+    filename = re.sub(r"[^\w\s\-\.]", "", filename)
 
     # Limit length
     if len(filename) > 255:
-        name, ext = filename.rsplit('.', 1) if '.' in filename else (filename, '')
-        filename = name[:250] + ('.' + ext if ext else '')
+        name, ext = filename.rsplit(".", 1) if "." in filename else (filename, "")
+        filename = name[:250] + ("." + ext if ext else "")
 
-    return filename or 'unnamed'
+    return filename or "unnamed"
 
 
 def validate_url(url: str, allowed_schemes: Optional[list] = None) -> bool:
@@ -70,18 +70,18 @@ def validate_url(url: str, allowed_schemes: Optional[list] = None) -> bool:
         bool: True if URL is valid and safe, False otherwise
     """
     if allowed_schemes is None:
-        allowed_schemes = ['http', 'https']
+        allowed_schemes = ["http", "https"]
 
     # Basic URL pattern matching
     url_pattern = re.compile(
-        r'^(?P<scheme>[a-z][a-z0-9+\-.]*):\/\/'  # Scheme
-        r'(?:[^\s:@\/]+(?::[^\s:@\/]*)?@)?'  # Optional user:pass
-        r'(?P<host>[^\s\/:?#]+)'  # Host
-        r'(?::(?P<port>\d+))?'  # Optional port
-        r'(?P<path>\/[^\s?#]*)?'  # Optional path
-        r'(?:\?[^\s#]*)?'  # Optional query
-        r'(?:#[^\s]*)?$',  # Optional fragment
-        re.IGNORECASE
+        r"^(?P<scheme>[a-z][a-z0-9+\-.]*):\/\/"  # Scheme
+        r"(?:[^\s:@\/]+(?::[^\s:@\/]*)?@)?"  # Optional user:pass
+        r"(?P<host>[^\s\/:?#]+)"  # Host
+        r"(?::(?P<port>\d+))?"  # Optional port
+        r"(?P<path>\/[^\s?#]*)?"  # Optional path
+        r"(?:\?[^\s#]*)?"  # Optional query
+        r"(?:#[^\s]*)?$",  # Optional fragment
+        re.IGNORECASE,
     )
 
     match = url_pattern.match(url)
@@ -89,7 +89,7 @@ def validate_url(url: str, allowed_schemes: Optional[list] = None) -> bool:
         return False
 
     # Check scheme
-    scheme = match.group('scheme').lower()
+    scheme = match.group("scheme").lower()
     if scheme not in allowed_schemes:
         return False
 
@@ -132,10 +132,10 @@ def sanitize_username(username: str, max_length: int = 32) -> str:
         str: Sanitized username
     """
     # Remove control characters
-    username = ''.join(char for char in username if ord(char) >= 32)
+    username = "".join(char for char in username if ord(char) >= 32)
 
     # Normalize whitespace
-    username = ' '.join(username.split())
+    username = " ".join(username.split())
 
     # Truncate to max length
     if len(username) > max_length:
@@ -156,13 +156,13 @@ def validate_email(email: str) -> bool:
     Returns:
         bool: True if email appears valid, False otherwise
     """
-    email_pattern = re.compile(
-        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
-    )
+    email_pattern = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
     return bool(email_pattern.match(email))
 
 
-def sanitize_integer(value: str, min_val: Optional[int] = None, max_val: Optional[int] = None) -> Optional[int]:
+def sanitize_integer(
+    value: str, min_val: Optional[int] = None, max_val: Optional[int] = None
+) -> Optional[int]:
     """
     Sanitize and validate an integer input.
 

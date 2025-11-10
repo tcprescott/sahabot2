@@ -25,7 +25,7 @@ class EmptyState:
         action_text: Optional[str] = None,
         action_callback: Optional[Callable] = None,
         in_card: bool = False,
-        classes: str = ""
+        classes: str = "",
     ):
         """
         Render an empty state with icon, title, message, and optional action.
@@ -49,29 +49,33 @@ class EmptyState:
                 in_card=True
             )
         """
-        container_classes = f'text-center py-8 {classes}'
+        container_classes = f"text-center py-8 {classes}"
 
         def render_content():
-            ui.icon(icon).classes('text-secondary icon-large').props('aria-hidden="true"')
-            ui.label(title).classes('text-secondary text-lg mt-4')
+            ui.icon(icon).classes("text-secondary icon-large").props(
+                'aria-hidden="true"'
+            )
+            ui.label(title).classes("text-secondary text-lg mt-4")
             if message:
-                ui.label(message).classes('text-secondary mt-2')
+                ui.label(message).classes("text-secondary mt-2")
             if action_text and action_callback:
-                ui.button(action_text, on_click=action_callback).classes('btn btn-primary mt-4')
+                ui.button(action_text, on_click=action_callback).classes(
+                    "btn btn-primary mt-4"
+                )
 
         if in_card:
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-body text-center'):
+            with ui.element("div").classes("card"):
+                with ui.element("div").classes("card-body text-center"):
                     render_content()
         else:
-            with ui.element('div').classes(container_classes):
+            with ui.element("div").classes(container_classes):
                 render_content()
 
     @staticmethod
     def no_results(
         title: str = "No results found",
         message: str = "Try adjusting your search or filters",
-        in_card: bool = True
+        in_card: bool = True,
     ):
         """
         Render a standard "no results" empty state for filtered lists.
@@ -86,20 +90,17 @@ class EmptyState:
                 EmptyState.no_results()
         """
         EmptyState.render(
-            icon='search_off',
-            title=title,
-            message=message,
-            in_card=in_card
+            icon="search_off", title=title, message=message, in_card=in_card
         )
 
     @staticmethod
     def no_items(
         item_name: str,
         message: Optional[str] = None,
-        icon: str = 'inbox',
+        icon: str = "inbox",
         action_text: Optional[str] = None,
         action_callback: Optional[Callable] = None,
-        in_card: bool = True
+        in_card: bool = True,
     ):
         """
         Render a standard "no items" empty state for empty lists.
@@ -122,7 +123,11 @@ class EmptyState:
         """
         title = f"No {item_name} found"
         if message is None:
-            message = "Click 'Add' to create one" if not action_text else f"Click '{action_text}' to get started"
+            message = (
+                "Click 'Add' to create one"
+                if not action_text
+                else f"Click '{action_text}' to get started"
+            )
 
         EmptyState.render(
             icon=icon,
@@ -130,7 +135,7 @@ class EmptyState:
             message=message,
             action_text=action_text,
             action_callback=action_callback,
-            in_card=in_card
+            in_card=in_card,
         )
 
     @staticmethod
@@ -145,19 +150,19 @@ class EmptyState:
         Example:
             EmptyState.loading("Loading users...")
         """
-        container_classes = 'text-center py-8'
+        container_classes = "text-center py-8"
 
         def render_content():
-            with ui.element('div').props('role="status" aria-live="polite"'):
-                ui.spinner(size='lg')
-                ui.label(message).classes('text-secondary mt-4')
+            with ui.element("div").props('role="status" aria-live="polite"'):
+                ui.spinner(size="lg")
+                ui.label(message).classes("text-secondary mt-4")
 
         if in_card:
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-body text-center'):
+            with ui.element("div").classes("card"):
+                with ui.element("div").classes("card-body text-center"):
                     render_content()
         else:
-            with ui.element('div').classes(container_classes):
+            with ui.element("div").classes(container_classes):
                 render_content()
 
     @staticmethod
@@ -165,7 +170,7 @@ class EmptyState:
         title: str = "Error loading data",
         message: Optional[str] = None,
         retry_callback: Optional[Callable] = None,
-        in_card: bool = True
+        in_card: bool = True,
     ):
         """
         Render an error state with optional retry button.
@@ -188,19 +193,19 @@ class EmptyState:
         action_text = "Retry" if retry_callback else None
 
         EmptyState.render(
-            icon='error',
+            icon="error",
             title=title,
             message=message,
             action_text=action_text,
             action_callback=retry_callback,
-            in_card=in_card
+            in_card=in_card,
         )
 
     @staticmethod
     def hidden(
         title: str = "Content Hidden",
         message: str = "You do not have permission to view this content",
-        in_card: bool = True
+        in_card: bool = True,
     ):
         """
         Render a hidden/restricted content state.
@@ -215,17 +220,12 @@ class EmptyState:
                 EmptyState.hidden()
         """
         EmptyState.render(
-            icon='visibility_off',
-            title=title,
-            message=message,
-            in_card=in_card
+            icon="visibility_off", title=title, message=message, in_card=in_card
         )
 
     @staticmethod
     def coming_soon(
-        feature_name: str,
-        message: Optional[str] = None,
-        in_card: bool = True
+        feature_name: str, message: Optional[str] = None, in_card: bool = True
     ):
         """
         Render a "coming soon" placeholder state.
@@ -243,8 +243,5 @@ class EmptyState:
             message = "This feature is currently under development"
 
         EmptyState.render(
-            icon='schedule',
-            title=title,
-            message=message,
-            in_card=in_card
+            icon="schedule", title=title, message=message, in_card=in_card
         )

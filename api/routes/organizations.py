@@ -33,7 +33,9 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
     },
 )
 async def list_organizations(
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> OrganizationListResponse:
     """
     List all organizations.
@@ -68,7 +70,9 @@ async def list_organizations(
 )
 async def get_organization(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> OrganizationOut:
     """
     Get organization details.
@@ -110,8 +114,7 @@ async def get_organization(
     status_code=201,
 )
 async def create_organization(
-    data: OrganizationCreateRequest,
-    current_user: User = Depends(get_current_user)
+    data: OrganizationCreateRequest, current_user: User = Depends(get_current_user)
 ) -> OrganizationOut:
     """
     Create a new organization (superadmin only).
@@ -134,13 +137,12 @@ async def create_organization(
         current_user=current_user,
         name=data.name,
         description=data.description,
-        is_active=data.is_active
+        is_active=data.is_active,
     )
 
     if not organization:
         raise HTTPException(
-            status_code=403,
-            detail="Only superadmin users can create organizations"
+            status_code=403, detail="Only superadmin users can create organizations"
         )
 
     return OrganizationOut.model_validate(organization)
@@ -164,7 +166,7 @@ async def create_organization(
 async def update_organization(
     data: OrganizationUpdateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationOut:
     """
     Update an organization (superadmin only).
@@ -195,14 +197,19 @@ async def update_organization(
         current_user=current_user,
         organization_id=organization_id,
         name=data.name if data.name is not None else current_org.name,
-        description=data.description if data.description is not None else current_org.description,
-        is_active=data.is_active if data.is_active is not None else current_org.is_active
+        description=(
+            data.description
+            if data.description is not None
+            else current_org.description
+        ),
+        is_active=(
+            data.is_active if data.is_active is not None else current_org.is_active
+        ),
     )
 
     if not organization:
         raise HTTPException(
-            status_code=403,
-            detail="Only superadmin users can update organizations"
+            status_code=403, detail="Only superadmin users can update organizations"
         )
 
     return OrganizationOut.model_validate(organization)
@@ -226,7 +233,9 @@ async def update_organization(
 )
 async def list_organization_members(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> OrganizationMemberListResponse:
     """
     List organization members.
@@ -248,8 +257,7 @@ async def list_organization_members(
     for member in members:
         # Fetch permissions for this member
         permission_names = await service.list_member_permissions(
-            organization_id,
-            member.user_id
+            organization_id, member.user_id
         )
 
         items.append(
@@ -285,7 +293,7 @@ async def update_member_permissions(
     data: OrganizationMemberPermissionsUpdateRequest,
     organization_id: int = Path(..., description="Organization ID"),
     user_id: int = Path(..., description="User ID of the member"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationMemberOut:
     """
     Update member permissions.
@@ -319,17 +327,19 @@ async def update_member_permissions(
         current_user=current_user,
         organization_id=organization_id,
         user_id=user_id,
-        permission_names=data.permission_names
+        permission_names=data.permission_names,
     )
 
     if not success:
         raise HTTPException(
             status_code=403,
-            detail="Only organization admins can manage member permissions"
+            detail="Only organization admins can manage member permissions",
         )
 
     # Fetch updated permissions
-    updated_permissions = await service.list_member_permissions(organization_id, user_id)
+    updated_permissions = await service.list_member_permissions(
+        organization_id, user_id
+    )
 
     return OrganizationMemberOut(
         id=member.id,
@@ -359,7 +369,9 @@ async def update_member_permissions(
 )
 async def list_organization_permissions(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)  # noqa: ARG001 - authentication required
+    current_user: User = Depends(
+        get_current_user
+    ),  # noqa: ARG001 - authentication required
 ) -> OrganizationPermissionListResponse:
     """
     List organization permissions.
@@ -398,7 +410,7 @@ async def list_organization_permissions(
 async def create_organization_permission(
     data: OrganizationPermissionCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> OrganizationPermissionOut:
     """
     Create organization permission.
@@ -424,13 +436,12 @@ async def create_organization_permission(
         current_user=current_user,
         organization_id=organization_id,
         permission_name=data.permission_name,
-        description=data.description
+        description=data.description,
     )
 
     if not permission:
         raise HTTPException(
-            status_code=403,
-            detail="Only organization admins can create permissions"
+            status_code=403, detail="Only organization admins can create permissions"
         )
 
     return OrganizationPermissionOut.model_validate(permission)
@@ -453,7 +464,7 @@ async def create_organization_permission(
 async def delete_organization_permission(
     organization_id: int = Path(..., description="Organization ID"),
     permission_name: str = Path(..., description="Permission name to delete"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete organization permission.
@@ -476,9 +487,11 @@ async def delete_organization_permission(
     deleted_count = await service.delete_permission(
         current_user=current_user,
         organization_id=organization_id,
-        permission_name=permission_name
+        permission_name=permission_name,
     )
 
     if deleted_count == 0:
         # Could be unauthorized or not found - treat as not found for API consistency
-        raise HTTPException(status_code=404, detail="Permission not found or insufficient permissions")
+        raise HTTPException(
+            status_code=404, detail="Permission not found or insufficient permissions"
+        )

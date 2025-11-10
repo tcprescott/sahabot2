@@ -11,11 +11,11 @@ from typing import Optional
 from dataclasses import dataclass
 
 from models import User, Permission
-from application.authorization.policy_engine import (
-    PolicyEngine,
-    AuthorizationContext
+from application.authorization.policy_engine import PolicyEngine, AuthorizationContext
+from application.authorization.policy_cache import (
+    invalidate_user_cache,
+    invalidate_organization_cache,
 )
-from application.authorization.policy_cache import invalidate_user_cache, invalidate_organization_cache
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class AuthorizationResult:
     """Result of an authorization check with additional context."""
+
     allowed: bool
     reason: str
     user_id: int
@@ -48,7 +49,7 @@ class AuthorizationServiceV2:
         user: User,
         action: str,
         resource: str,
-        organization_id: Optional[int] = None
+        organization_id: Optional[int] = None,
     ) -> AuthorizationResult:
         """
         Check if a user is authorized to perform an action on a resource.
@@ -82,7 +83,7 @@ class AuthorizationServiceV2:
             user_id=user.id,
             action=action,
             resource=resource,
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         # Evaluate policy
@@ -95,7 +96,7 @@ class AuthorizationServiceV2:
             user_id=user.id,
             action=action,
             resource=resource,
-            organization_id=organization_id
+            organization_id=organization_id,
         )
 
         # Log authorization decision
@@ -106,7 +107,7 @@ class AuthorizationServiceV2:
                 action,
                 resource,
                 organization_id,
-                result.reason
+                result.reason,
             )
         else:
             logger.debug(
@@ -114,7 +115,7 @@ class AuthorizationServiceV2:
                 user.id,
                 action,
                 resource,
-                organization_id
+                organization_id,
             )
 
         return result
@@ -124,7 +125,7 @@ class AuthorizationServiceV2:
         user: User,
         action: str,
         resource: str,
-        organization_id: Optional[int] = None
+        organization_id: Optional[int] = None,
     ) -> None:
         """
         Require authorization for an action, raising exception if denied.
@@ -163,7 +164,7 @@ class AuthorizationServiceV2:
         user: User,
         action: str,
         resource: str,
-        organization_id: Optional[int] = None
+        organization_id: Optional[int] = None,
     ) -> bool:
         """
         Simple boolean check for authorization.
@@ -244,7 +245,9 @@ class AuthorizationServiceV2:
         """
         return f"{resource_type}:{operation}"
 
-    def get_resource_identifier(self, resource_type: str, resource_id: Optional[int] = None) -> str:
+    def get_resource_identifier(
+        self, resource_type: str, resource_id: Optional[int] = None
+    ) -> str:
         """
         Build a resource identifier string.
 

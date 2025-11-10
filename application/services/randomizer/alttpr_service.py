@@ -37,7 +37,7 @@ class ALTTPRService:
         endpoint: str = "/api/randomizer",
         tournament: bool = True,
         spoilers: str = "off",
-        allow_quickswap: bool = False
+        allow_quickswap: bool = False,
     ) -> RandomizerResult:
         """
         Generate an ALTTPR seed.
@@ -60,30 +60,26 @@ class ALTTPRService:
             httpx.HTTPError: If the API request fails
         """
         if baseurl is None:
-            baseurl = getattr(settings, 'ALTTPR_BASEURL', 'https://alttpr.com')
+            baseurl = getattr(settings, "ALTTPR_BASEURL", "https://alttpr.com")
 
         # Apply additional settings
-        settings_dict['tournament'] = tournament
-        settings_dict['spoilers'] = spoilers
-        if 'allow_quickswap' not in settings_dict:
-            settings_dict['allow_quickswap'] = allow_quickswap
+        settings_dict["tournament"] = tournament
+        settings_dict["spoilers"] = spoilers
+        if "allow_quickswap" not in settings_dict:
+            settings_dict["allow_quickswap"] = allow_quickswap
 
         url = f"{baseurl}{endpoint}"
 
         logger.info("Generating ALTTPR seed with endpoint %s", endpoint)
 
         async with httpx.AsyncClient() as client:
-            response = await client.post(
-                url,
-                json=settings_dict,
-                timeout=60.0
-            )
+            response = await client.post(url, json=settings_dict, timeout=60.0)
             response.raise_for_status()
             result = response.json()
 
         # Extract data from response
-        hash_id = result.get('hash', result.get('seed', {}).get('hash', 'unknown'))
-        permalink = result.get('permalink', result.get('url'))
+        hash_id = result.get("hash", result.get("seed", {}).get("hash", "unknown"))
+        permalink = result.get("permalink", result.get("url"))
 
         logger.info("Generated ALTTPR seed with hash %s", hash_id)
 
@@ -91,10 +87,12 @@ class ALTTPRService:
             url=permalink,
             hash_id=hash_id,
             settings=settings_dict,
-            randomizer='alttpr',
+            randomizer="alttpr",
             permalink=permalink,
-            spoiler_url=result.get('spoiler', {}).get('download') if spoilers != 'off' else None,
-            metadata=result
+            spoiler_url=(
+                result.get("spoiler", {}).get("download") if spoilers != "off" else None
+            ),
+            metadata=result,
         )
 
     async def generate_from_preset(
@@ -104,7 +102,7 @@ class ALTTPRService:
         tournament: bool = True,
         spoilers: str = "off",
         allow_quickswap: bool = False,
-        endpoint: str = "/api/randomizer"
+        endpoint: str = "/api/randomizer",
     ) -> RandomizerResult:
         """
         Generate an ALTTPR seed from a preset.
@@ -125,16 +123,15 @@ class ALTTPRService:
             PermissionError: If user cannot access preset
             httpx.HTTPError: If the API request fails
         """
-        from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
+        from application.repositories.randomizer_preset_repository import (
+            RandomizerPresetRepository,
+        )
 
         # Load preset from database
         preset_repo = RandomizerPresetRepository()
 
         # Get preset by name
-        preset = await preset_repo.get_by_name(
-            randomizer='alttpr',
-            name=preset_name
-        )
+        preset = await preset_repo.get_by_name(randomizer="alttpr", name=preset_name)
 
         if not preset:
             raise ValueError(f"Preset '{preset_name}' not found")
@@ -143,12 +140,14 @@ class ALTTPRService:
         if not preset.is_public and preset.user_id != user_id:
             logger.warning(
                 "User %s attempted to access private preset %s owned by %s",
-                user_id, preset_name, preset.user_id
+                user_id,
+                preset_name,
+                preset.user_id,
             )
             raise PermissionError(f"Not authorized to access preset '{preset_name}'")
 
         # Extract settings from preset
-        settings_dict = preset.settings.get('settings', preset.settings)
+        settings_dict = preset.settings.get("settings", preset.settings)
 
         # Generate seed using preset settings
         return await self.generate(
@@ -156,6 +155,5 @@ class ALTTPRService:
             tournament=tournament,
             spoilers=spoilers,
             allow_quickswap=allow_quickswap,
-            endpoint=endpoint
+            endpoint=endpoint,
         )
-

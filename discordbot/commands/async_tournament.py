@@ -12,7 +12,9 @@ from datetime import datetime, timedelta, timezone
 
 from models import User
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
-from application.services.tournaments.async_tournament_service import AsyncTournamentService
+from application.services.tournaments.async_tournament_service import (
+    AsyncTournamentService,
+)
 from discordbot.async_tournament_views import AsyncTournamentMainView
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,12 @@ class AsyncTournamentCommands(commands.Cog):
         """Add persistent views when bot is ready."""
         if not self._views_added:
             self.bot.add_view(AsyncTournamentMainView())
-            from discordbot.async_tournament_views import RaceReadyView, RaceInProgressView, RaceCompletedView
+            from discordbot.async_tournament_views import (
+                RaceReadyView,
+                RaceInProgressView,
+                RaceCompletedView,
+            )
+
             self.bot.add_view(RaceReadyView())
             self.bot.add_view(RaceInProgressView())
             self.bot.add_view(RaceCompletedView())
@@ -48,70 +55,67 @@ class AsyncTournamentCommands(commands.Cog):
 
     @app_commands.command(
         name="async_post_embed",
-        description="Post the async tournament embed in this channel"
+        description="Post the async tournament embed in this channel",
     )
     @app_commands.default_permissions(administrator=True)
     async def post_embed(self, interaction: discord.Interaction):
         """Post the async tournament embed with action buttons."""
-        tournament = await AsyncTournament.get_or_none(discord_channel_id=interaction.channel_id)
+        tournament = await AsyncTournament.get_or_none(
+            discord_channel_id=interaction.channel_id
+        )
 
         if not tournament:
             await interaction.response.send_message(
                 "This channel is not configured for async tournaments. "
                 "Please configure it via the web interface first.",
-                ephemeral=True
+                ephemeral=True,
             )
             return
 
         embed = discord.Embed(
             title=tournament.name,
             description=tournament.description or "Async Tournament",
-            color=discord.Color.blue()
+            color=discord.Color.blue(),
         )
         embed.add_field(
             name="How to Participate",
             value="Click 'Start New Async Run' below to begin a new race.",
-            inline=False
+            inline=False,
         )
         embed.add_field(
             name="Status",
             value="Active" if tournament.is_active else "Inactive",
-            inline=True
+            inline=True,
         )
         embed.add_field(
-            name="Runs Per Pool",
-            value=str(tournament.runs_per_pool),
-            inline=True
+            name="Runs Per Pool", value=str(tournament.runs_per_pool), inline=True
         )
         embed.set_footer(text=f"Tournament ID: {tournament.id}")
 
         await interaction.response.send_message(
-            embed=embed,
-            view=AsyncTournamentMainView()
+            embed=embed, view=AsyncTournamentMainView()
         )
 
     @app_commands.command(
         name="async_extend_timeout",
-        description="Extend the timeout for a race in this thread"
+        description="Extend the timeout for a race in this thread",
     )
     @app_commands.describe(minutes="Number of minutes to extend")
     async def extend_timeout(self, interaction: discord.Interaction, minutes: int):
         """Extend the timeout for a pending race."""
         race = await AsyncTournamentRace.get_or_none(
             discord_thread_id=interaction.channel_id
-        ).prefetch_related('tournament')
+        ).prefetch_related("tournament")
 
         if not race:
             await interaction.response.send_message(
-                "This is not a valid race thread.",
-                ephemeral=True
+                "This is not a valid race thread.", ephemeral=True
             )
             return
 
-        if race.status != 'pending':
+        if race.status != "pending":
             await interaction.response.send_message(
-                "Can only extend timeout for pending races.",
-                ephemeral=True
+                "Can only extend timeout for pending races.", ephemeral=True
             )
             return
 
@@ -121,11 +125,12 @@ class AsyncTournamentCommands(commands.Cog):
             await interaction.response.send_message("User not found.", ephemeral=True)
             return
 
-        can_manage = await self.service.can_manage_async_tournaments(user, race.tournament.organization_id)
+        can_manage = await self.service.can_manage_async_tournaments(
+            user, race.tournament.organization_id
+        )
         if not can_manage:
             await interaction.response.send_message(
-                "You don't have permission to manage this tournament.",
-                ephemeral=True
+                "You don't have permission to manage this tournament.", ephemeral=True
             )
             return
 
@@ -153,16 +158,17 @@ class AsyncTournamentCommands(commands.Cog):
 
     @app_commands.command(
         name="async_calculate_scores",
-        description="Recalculate scores for this tournament"
+        description="Recalculate scores for this tournament",
     )
     async def calculate_scores(self, interaction: discord.Interaction):
         """Manually trigger score calculation."""
-        tournament = await AsyncTournament.get_or_none(discord_channel_id=interaction.channel_id)
+        tournament = await AsyncTournament.get_or_none(
+            discord_channel_id=interaction.channel_id
+        )
 
         if not tournament:
             await interaction.response.send_message(
-                "This channel is not configured for async tournaments.",
-                ephemeral=True
+                "This channel is not configured for async tournaments.", ephemeral=True
             )
             return
 
@@ -171,11 +177,12 @@ class AsyncTournamentCommands(commands.Cog):
             await interaction.response.send_message("User not found.", ephemeral=True)
             return
 
-        can_manage = await self.service.can_manage_async_tournaments(user, tournament.organization_id)
+        can_manage = await self.service.can_manage_async_tournaments(
+            user, tournament.organization_id
+        )
         if not can_manage:
             await interaction.response.send_message(
-                "You don't have permission to manage this tournament.",
-                ephemeral=True
+                "You don't have permission to manage this tournament.", ephemeral=True
             )
             return
 
@@ -186,9 +193,13 @@ class AsyncTournamentCommands(commands.Cog):
         )
 
         if success:
-            await interaction.followup.send("Scores recalculated successfully!", ephemeral=True)
+            await interaction.followup.send(
+                "Scores recalculated successfully!", ephemeral=True
+            )
         else:
-            await interaction.followup.send("Failed to recalculate scores.", ephemeral=True)
+            await interaction.followup.send(
+                "Failed to recalculate scores.", ephemeral=True
+            )
 
 
 async def setup(bot: commands.Bot):

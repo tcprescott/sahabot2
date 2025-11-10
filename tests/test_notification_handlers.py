@@ -27,6 +27,7 @@ class TestBaseNotificationHandler:
 
     def test_subclass_must_implement_send_notification(self):
         """Verify subclasses must implement send_notification."""
+
         class IncompleteHandler(BaseNotificationHandler):
             pass
 
@@ -35,6 +36,7 @@ class TestBaseNotificationHandler:
 
     def test_subclass_with_implementation_works(self):
         """Verify valid subclass can be instantiated."""
+
         class CompleteHandler(BaseNotificationHandler):
             async def send_notification(self, user, event_type, event_data):
                 return (NotificationDeliveryStatus.SENT, None)
@@ -56,7 +58,10 @@ class TestDiscordNotificationHandler:
     @pytest.fixture
     def handler(self, mock_bot):
         """Create a Discord notification handler with mocked bot."""
-        with patch('application.services.notifications.handlers.discord_handler.get_bot_instance', return_value=mock_bot):
+        with patch(
+            "application.services.notifications.handlers.discord_handler.get_bot_instance",
+            return_value=mock_bot,
+        ):
             handler = DiscordNotificationHandler()
             return handler
 
@@ -73,10 +78,12 @@ class TestDiscordNotificationHandler:
     async def test_implements_base_interface(self, handler):
         """Verify Discord handler implements BaseNotificationHandler interface."""
         assert isinstance(handler, BaseNotificationHandler)
-        assert hasattr(handler, 'send_notification')
+        assert hasattr(handler, "send_notification")
         assert callable(handler.send_notification)
 
-    async def test_send_notification_routes_to_specific_handler(self, handler, user, mock_bot):
+    async def test_send_notification_routes_to_specific_handler(
+        self, handler, user, mock_bot
+    ):
         """Verify send_notification routes to event-specific handler."""
         # Mock Discord user
         mock_discord_user = MagicMock()
@@ -85,16 +92,14 @@ class TestDiscordNotificationHandler:
 
         # Send match scheduled notification
         event_data = {
-            'tournament_name': 'Test Tournament',
-            'opponent_name': 'Opponent',
-            'scheduled_time': '2025-11-03 12:00 UTC',
-            'round_name': 'Quarterfinals',
+            "tournament_name": "Test Tournament",
+            "opponent_name": "Opponent",
+            "scheduled_time": "2025-11-03 12:00 UTC",
+            "round_name": "Quarterfinals",
         }
 
         status, error = await handler.send_notification(
-            user,
-            NotificationEventType.MATCH_SCHEDULED,
-            event_data
+            user, NotificationEventType.MATCH_SCHEDULED, event_data
         )
 
         # Verify success
@@ -107,11 +112,13 @@ class TestDiscordNotificationHandler:
 
         # Verify embed was created
         call_args = mock_discord_user.send.call_args
-        assert 'embed' in call_args.kwargs
-        assert isinstance(call_args.kwargs['embed'], discord.Embed)
-        assert '⚔️ Match Scheduled' in call_args.kwargs['embed'].title
+        assert "embed" in call_args.kwargs
+        assert isinstance(call_args.kwargs["embed"], discord.Embed)
+        assert "⚔️ Match Scheduled" in call_args.kwargs["embed"].title
 
-    async def test_send_notification_handles_unknown_event_type(self, handler, user, mock_bot):
+    async def test_send_notification_handles_unknown_event_type(
+        self, handler, user, mock_bot
+    ):
         """Verify unknown event types fall back to generic handler."""
         # Mock Discord user
         mock_discord_user = MagicMock()
@@ -122,9 +129,11 @@ class TestDiscordNotificationHandler:
         # This simulates a future event type not yet implemented
         class FutureEventType:
             value = 999
-            name = 'FUTURE_EVENT'
+            name = "FUTURE_EVENT"
 
-        with patch.object(handler, '_send_discord_dm', new_callable=AsyncMock) as mock_send_dm:
+        with patch.object(
+            handler, "_send_discord_dm", new_callable=AsyncMock
+        ) as mock_send_dm:
             mock_send_dm.return_value = (NotificationDeliveryStatus.SENT, None)
 
             # Temporarily add future event to handler_map to test fallback
@@ -141,9 +150,7 @@ class TestDiscordNotificationHandler:
             handler.send_notification = send_with_unknown_event
 
             status, error = await handler.send_notification(
-                user,
-                FutureEventType(),
-                {'test': 'data'}
+                user, FutureEventType(), {"test": "data"}
             )
 
             assert status == NotificationDeliveryStatus.SENT
@@ -151,7 +158,10 @@ class TestDiscordNotificationHandler:
 
     async def test_send_discord_dm_handles_bot_not_available(self, user):
         """Verify handler fails gracefully when bot is not available."""
-        with patch('application.services.notifications.handlers.discord_handler.get_bot_instance', return_value=None):
+        with patch(
+            "application.services.notifications.handlers.discord_handler.get_bot_instance",
+            return_value=None,
+        ):
             handler = DiscordNotificationHandler()
 
             status, error = await handler._send_discord_dm(user, "Test message")
@@ -159,12 +169,18 @@ class TestDiscordNotificationHandler:
             assert status == NotificationDeliveryStatus.FAILED
             assert "Discord bot not initialized" in error
 
-    async def test_send_discord_dm_handles_user_dms_disabled(self, handler, user, mock_bot):
+    async def test_send_discord_dm_handles_user_dms_disabled(
+        self, handler, user, mock_bot
+    ):
         """Verify handler handles users with DMs disabled."""
         # Mock Discord user fetch to raise Forbidden
         mock_bot.fetch_user.return_value = MagicMock()
         mock_discord_user = await mock_bot.fetch_user(int(user.discord_id))
-        mock_discord_user.send = AsyncMock(side_effect=discord.Forbidden(MagicMock(), "Cannot send messages to this user"))
+        mock_discord_user.send = AsyncMock(
+            side_effect=discord.Forbidden(
+                MagicMock(), "Cannot send messages to this user"
+            )
+        )
 
         status, error = await handler._send_discord_dm(user, "Test message")
 
@@ -194,6 +210,7 @@ class TestDiscordNotificationHandler:
         # Get handler map from send_notification method
         # We'll need to inspect the method to extract the handler_map
         import inspect
+
         source = inspect.getsource(handler.send_notification)
 
         # Extract event types mentioned in handler_map
@@ -225,5 +242,7 @@ class TestDiscordNotificationHandler:
         # Verify handler methods exist for each expected type
         for event_type in expected_handlers:
             method_name = f"_send_{event_type.name.lower()}"
-            assert hasattr(handler, method_name), f"Missing handler method: {method_name}"
+            assert hasattr(
+                handler, method_name
+            ), f"Missing handler method: {method_name}"
             assert callable(getattr(handler, method_name))

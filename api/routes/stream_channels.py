@@ -23,7 +23,7 @@ router = APIRouter(prefix="/stream-channels", tags=["stream-channels"])
 )
 async def list_stream_channels(
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> StreamChannelListResponse:
     """
     List stream channels for an organization.
@@ -60,7 +60,7 @@ async def list_stream_channels(
 async def create_stream_channel(
     data: StreamChannelCreateRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> StreamChannelOut:
     """
     Create a new stream channel.
@@ -82,11 +82,14 @@ async def create_stream_channel(
         organization_id=organization_id,
         name=data.name,
         stream_url=data.stream_url,
-        is_active=data.is_active
+        is_active=data.is_active,
     )
 
     if not channel:
-        raise HTTPException(status_code=403, detail="Not authorized to create channels in this organization")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to create channels in this organization",
+        )
 
     return StreamChannelOut.model_validate(channel)
 
@@ -101,7 +104,7 @@ async def create_stream_channel(
 async def get_stream_channel(
     organization_id: int = Path(..., description="Organization ID"),
     channel_id: int = Path(..., description="Channel ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> StreamChannelOut:
     """
     Get stream channel details.
@@ -140,7 +143,7 @@ async def update_stream_channel(
     data: StreamChannelUpdateRequest,
     organization_id: int = Path(..., description="Organization ID"),
     channel_id: int = Path(..., description="Channel ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> StreamChannelOut:
     """
     Update stream channel.
@@ -164,11 +167,13 @@ async def update_stream_channel(
         channel_id=channel_id,
         name=data.name,
         stream_url=data.stream_url,
-        is_active=data.is_active
+        is_active=data.is_active,
     )
 
     if not channel:
-        raise HTTPException(status_code=404, detail="Channel not found or not authorized")
+        raise HTTPException(
+            status_code=404, detail="Channel not found or not authorized"
+        )
 
     return StreamChannelOut.model_validate(channel)
 
@@ -183,7 +188,7 @@ async def update_stream_channel(
 async def delete_stream_channel(
     organization_id: int = Path(..., description="Organization ID"),
     channel_id: int = Path(..., description="Channel ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete stream channel.
@@ -198,10 +203,10 @@ async def delete_stream_channel(
     """
     service = StreamChannelService()
     success = await service.delete_channel(
-        user=current_user,
-        organization_id=organization_id,
-        channel_id=channel_id
+        user=current_user, organization_id=organization_id, channel_id=channel_id
     )
 
     if not success:
-        raise HTTPException(status_code=404, detail="Channel not found or not authorized")
+        raise HTTPException(
+            status_code=404, detail="Channel not found or not authorized"
+        )

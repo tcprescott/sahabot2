@@ -5,6 +5,7 @@ This module contains handler functions for different task types.
 Each handler is registered with the TaskSchedulerService and executed
 when a task of that type is due to run.
 """
+
 import logging
 import discord
 import httpx
@@ -13,8 +14,12 @@ from models.scheduled_task import ScheduledTask, TaskType
 from models.async_tournament import AsyncTournament, AsyncTournamentRace
 from models import SYSTEM_USER_ID
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
-from application.services.tournaments.async_tournament_service import AsyncTournamentService
-from application.services.tournaments.async_live_race_service import AsyncLiveRaceService
+from application.services.tournaments.async_tournament_service import (
+    AsyncTournamentService,
+)
+from application.services.tournaments.async_live_race_service import (
+    AsyncLiveRaceService,
+)
 from discordbot.client import get_bot_instance
 from racetime.client import get_all_racetime_bot_instances
 
@@ -39,7 +44,7 @@ async def handle_example_log(task: ScheduledTask) -> None:
     logger.info("Example task executed! Task ID: %s, Name: %s", task.id, task.name)
 
     if task.task_config:
-        message = task.task_config.get('message', 'No custom message')
+        message = task.task_config.get("message", "No custom message")
         logger.info("Custom message: %s", message)
     else:
         logger.info("No custom message configured")
@@ -69,12 +74,12 @@ async def handle_racetime_open_room(task: ScheduledTask) -> None:
 
     # Extract configuration
     config = task.task_config or {}
-    category = config.get('category')
-    goal = config.get('goal', 'Beat the game')
-    info = config.get('info', '')
-    unlisted = config.get('unlisted', False)
-    invitational = config.get('invitational', False)
-    team_race = config.get('team_race', False)
+    category = config.get("category")
+    goal = config.get("goal", "Beat the game")
+    info = config.get("info", "")
+    unlisted = config.get("unlisted", False)
+    invitational = config.get("invitational", False)
+    team_race = config.get("team_race", False)
 
     if not category:
         raise ValueError("category is required in task_config")
@@ -84,7 +89,12 @@ async def handle_racetime_open_room(task: ScheduledTask) -> None:
     # For now, we just log the intent
     logger.info(
         "Would open racetime room: category=%s, goal=%s, info=%s, unlisted=%s, invitational=%s, team_race=%s",
-        category, goal, info, unlisted, invitational, team_race
+        category,
+        goal,
+        info,
+        unlisted,
+        invitational,
+        team_race,
     )
 
     # Future implementation will use the racetime bot to create a room:
@@ -129,36 +139,44 @@ async def handle_cleanup_tournament_usage(task: ScheduledTask) -> None:
     Args:
         task: ScheduledTask to execute
     """
-    from application.services.tournaments.tournament_usage_service import TournamentUsageService
+    from application.services.tournaments.tournament_usage_service import (
+        TournamentUsageService,
+    )
 
     logger.info("Starting tournament usage cleanup task: %s", task.name)
 
     # Extract configuration
     config = task.task_config or {}
-    days_to_keep = config.get('days_to_keep', 90)
-    keep_per_user = config.get('keep_per_user', 10)
-    cleanup_strategy = config.get('cleanup_strategy', 'both')
+    days_to_keep = config.get("days_to_keep", 90)
+    keep_per_user = config.get("keep_per_user", 10)
+    cleanup_strategy = config.get("cleanup_strategy", "both")
 
     usage_service = TournamentUsageService()
     total_deleted = 0
 
     try:
         # Clean up by age
-        if cleanup_strategy in ('age', 'both'):
+        if cleanup_strategy in ("age", "both"):
             age_deleted = await usage_service.cleanup_old_usage(days_to_keep)
             total_deleted += age_deleted
-            logger.info("Cleaned up %d entries older than %d days", age_deleted, days_to_keep)
+            logger.info(
+                "Cleaned up %d entries older than %d days", age_deleted, days_to_keep
+            )
 
         # Clean up by count per user
-        if cleanup_strategy in ('count', 'both'):
+        if cleanup_strategy in ("count", "both"):
             count_deleted = await usage_service.cleanup_excess_usage(keep_per_user)
             total_deleted += count_deleted
-            logger.info("Cleaned up %d excess entries (keeping %d per user)", count_deleted, keep_per_user)
+            logger.info(
+                "Cleaned up %d excess entries (keeping %d per user)",
+                count_deleted,
+                keep_per_user,
+            )
 
         logger.info(
             "Tournament usage cleanup completed: %d total entries removed (strategy: %s)",
             total_deleted,
-            cleanup_strategy
+            cleanup_strategy,
         )
     except Exception as e:
         logger.error("Error during tournament usage cleanup: %s", e, exc_info=True)
@@ -191,20 +209,21 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
 
     # Extract configuration
     config = task.task_config or {}
-    warning_minutes = config.get('warning_minutes', 10)
-    timeout_minutes = config.get('timeout_minutes', 20)
+    warning_minutes = config.get("warning_minutes", 10)
+    timeout_minutes = config.get("timeout_minutes", 20)
 
     try:
         pending_races = await AsyncTournamentRace.filter(
-            status='pending',
-            discord_thread_id__isnull=False
-        ).prefetch_related('user')
+            status="pending", discord_thread_id__isnull=False
+        ).prefetch_related("user")
 
         for race in pending_races:
             # Set default timeout if not set
             if not race.thread_timeout_time:
                 if race.thread_open_time:
-                    race.thread_timeout_time = race.thread_open_time + timedelta(minutes=timeout_minutes)
+                    race.thread_timeout_time = race.thread_open_time + timedelta(
+                        minutes=timeout_minutes
+                    )
                     await race.save()
 
             if not race.thread_timeout_time:
@@ -221,12 +240,14 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
             now = datetime.now(timezone.utc)
 
             # Send warning only if not already sent
-            if warning_time <= now < forfeit_time and not getattr(race, "warning_sent", False):
+            if warning_time <= now < forfeit_time and not getattr(
+                race, "warning_sent", False
+            ):
                 await thread.send(
                     f"<@{race.user.discord_id}>, your race will be forfeited on "
                     f"{discord.utils.format_dt(forfeit_time, 'f')} "
                     f"({discord.utils.format_dt(forfeit_time, 'R')}) if you don't start it.",
-                    allowed_mentions=discord.AllowedMentions(users=True)
+                    allowed_mentions=discord.AllowedMentions(users=True),
                 )
                 race.warning_sent = True
                 await race.save()
@@ -235,9 +256,9 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
             if forfeit_time <= now:
                 await thread.send(
                     f"<@{race.user.discord_id}>, this race has been automatically forfeited due to timeout.",
-                    allowed_mentions=discord.AllowedMentions(users=True)
+                    allowed_mentions=discord.AllowedMentions(users=True),
                 )
-                race.status = 'forfeit'
+                race.status = "forfeit"
                 await race.save()
 
                 # Create audit log
@@ -251,7 +272,9 @@ async def handle_async_tournament_timeout_pending(task: ScheduledTask) -> None:
 
         logger.info("Completed async tournament pending race timeout task")
     except Exception as e:
-        logger.error("Error during async tournament pending race timeout: %s", e, exc_info=True)
+        logger.error(
+            "Error during async tournament pending race timeout: %s", e, exc_info=True
+        )
         raise
 
 
@@ -270,7 +293,9 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
     Args:
         task: ScheduledTask to execute
     """
-    logger.info("Starting async tournament in-progress race timeout task: %s", task.name)
+    logger.info(
+        "Starting async tournament in-progress race timeout task: %s", task.name
+    )
 
     # Get Discord bot instance
     bot = get_bot_instance()
@@ -280,13 +305,12 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
 
     # Extract configuration
     config = task.task_config or {}
-    max_hours = config.get('max_hours', 12)
+    max_hours = config.get("max_hours", 12)
 
     try:
         in_progress = await AsyncTournamentRace.filter(
-            status='in_progress',
-            discord_thread_id__isnull=False
-        ).prefetch_related('user')
+            status="in_progress", discord_thread_id__isnull=False
+        ).prefetch_related("user")
 
         for race in in_progress:
             if not race.start_time:
@@ -300,10 +324,10 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
                 if thread:
                     await thread.send(
                         f"<@{race.user.discord_id}>, this race has exceeded {max_hours} hours and has been forfeited.",
-                        allowed_mentions=discord.AllowedMentions(users=True)
+                        allowed_mentions=discord.AllowedMentions(users=True),
                     )
 
-                race.status = 'forfeit'
+                race.status = "forfeit"
                 await race.save()
 
                 # Create audit log
@@ -317,7 +341,11 @@ async def handle_async_tournament_timeout_in_progress(task: ScheduledTask) -> No
 
         logger.info("Completed async tournament in-progress race timeout task")
     except Exception as e:
-        logger.error("Error during async tournament in-progress race timeout: %s", e, exc_info=True)
+        logger.error(
+            "Error during async tournament in-progress race timeout: %s",
+            e,
+            exc_info=True,
+        )
         raise
 
 
@@ -342,7 +370,7 @@ async def handle_async_tournament_score_calculation(task: ScheduledTask) -> None
     try:
         # Extract configuration
         config = task.task_config or {}
-        specific_tournament_ids = config.get('tournament_ids')
+        specific_tournament_ids = config.get("tournament_ids")
 
         if specific_tournament_ids:
             # Recalculate for specific tournaments
@@ -361,11 +389,15 @@ async def handle_async_tournament_score_calculation(task: ScheduledTask) -> None
                     system_task=True,  # Bypass authorization for automated task
                 )
             except Exception as e:
-                logger.error("Error calculating scores for tournament %s: %s", tournament.id, e)
+                logger.error(
+                    "Error calculating scores for tournament %s: %s", tournament.id, e
+                )
 
         logger.info("Completed async tournament score calculation task")
     except Exception as e:
-        logger.error("Error during async tournament score calculation: %s", e, exc_info=True)
+        logger.error(
+            "Error during async tournament score calculation: %s", e, exc_info=True
+        )
         raise
 
 
@@ -394,8 +426,8 @@ async def handle_async_live_race_open(task: ScheduledTask) -> None:
     try:
         # Extract configuration
         config = task.task_config or {}
-        live_race_id = config.get('live_race_id')
-        organization_id = config.get('organization_id')
+        live_race_id = config.get("live_race_id")
+        organization_id = config.get("organization_id")
 
         if not live_race_id:
             raise ValueError("live_race_id is required in task_config")
@@ -438,7 +470,9 @@ async def handle_speedgaming_import(task: ScheduledTask) -> None:
     Args:
         task: ScheduledTask to execute
     """
-    from application.services.speedgaming.speedgaming_etl_service import SpeedGamingETLService
+    from application.services.speedgaming.speedgaming_etl_service import (
+        SpeedGamingETLService,
+    )
 
     logger.info("Starting SpeedGaming episode import task: %s", task.name)
 
@@ -451,12 +485,13 @@ async def handle_speedgaming_import(task: ScheduledTask) -> None:
             "%s updated, %s deleted",
             imported,
             updated,
-            deleted
+            deleted,
         )
 
     except Exception as e:
         logger.error("Error during SpeedGaming import: %s", e, exc_info=True)
         raise
+
 
 async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
     """
@@ -479,7 +514,7 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
 
     # Extract configuration
     config = task.task_config or {}
-    days_inactive = config.get('days_inactive', 30)
+    days_inactive = config.get("days_inactive", 30)
 
     try:
         from datetime import datetime, timezone, timedelta
@@ -491,8 +526,7 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
 
         # Find placeholder users
         placeholder_users = await User.filter(
-            is_placeholder=True,
-            updated_at__lt=cutoff_date
+            is_placeholder=True, updated_at__lt=cutoff_date
         ).all()
 
         deleted_count = 0
@@ -509,7 +543,7 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
                 logger.info(
                     "Deleting abandoned placeholder user %s (%s)",
                     user.id,
-                    user.discord_username
+                    user.discord_username,
                 )
                 await user.delete()
                 deleted_count += 1
@@ -519,15 +553,11 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
             "(out of %s placeholders older than %s days)",
             deleted_count,
             len(placeholder_users),
-            days_inactive
+            days_inactive,
         )
 
     except Exception as e:
-        logger.error(
-            "Error during placeholder user cleanup: %s",
-            e,
-            exc_info=True
-        )
+        logger.error("Error during placeholder user cleanup: %s", e, exc_info=True)
         raise
 
 
@@ -552,7 +582,7 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
 
     # Extract configuration
     config = task.task_config or {}
-    enabled_statuses = config.get('enabled_statuses', ['open', 'invitational'])
+    enabled_statuses = config.get("enabled_statuses", ["open", "invitational"])
 
     try:
         # Get all running bot instances
@@ -572,7 +602,7 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
                 # Fetch race list for this category using bot's HTTP methods
                 # RaceTime.gg API endpoint: /{category}/races/data
                 # Note: category is validated by bot initialization and comes from database
-                url = bot.http_uri(f'/{category}/races/data')
+                url = bot.http_uri(f"/{category}/races/data")
 
                 # Use bot's HTTP session if available, otherwise create temporary one
                 if bot.http and not bot.http.closed:
@@ -586,13 +616,13 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
                         resp.raise_for_status()
                         data = await resp.json()
 
-                races = data.get('races', [])
+                races = data.get("races", [])
                 scanned_count += len(races)
 
                 for race_data in races:
                     try:
-                        race_name = race_data.get('name', '')
-                        race_status = race_data.get('status', {}).get('value', '')
+                        race_name = race_data.get("name", "")
+                        race_status = race_data.get("status", {}).get("value", "")
 
                         # Skip if not in enabled statuses
                         if race_status not in enabled_statuses:
@@ -604,42 +634,50 @@ async def handle_racetime_poll_open_rooms(task: ScheduledTask) -> None:
 
                         # Check if we're already handling this race
                         # Bot.handlers is a dict created by the racetime-bot library
-                        if hasattr(bot, 'handlers') and race_name in getattr(bot, 'handlers', {}):
-                            logger.debug("Already handling race %s, skipping", race_name)
+                        if hasattr(bot, "handlers") and race_name in getattr(
+                            bot, "handlers", {}
+                        ):
+                            logger.debug(
+                                "Already handling race %s, skipping", race_name
+                            )
                             continue
 
                         # Join the race room with force=True to bypass should_handle()
-                        logger.info("Joining race room: %s (status: %s)", race_name, race_status)
+                        logger.info(
+                            "Joining race room: %s (status: %s)", race_name, race_status
+                        )
                         handler = await bot.join_race_room(race_name, force=True)
 
                         if handler:
                             joined_count += 1
-                            logger.info("Successfully joined and created handler for race %s", race_name)
+                            logger.info(
+                                "Successfully joined and created handler for race %s",
+                                race_name,
+                            )
                         else:
-                            logger.warning("Failed to create handler for race %s", race_name)
+                            logger.warning(
+                                "Failed to create handler for race %s", race_name
+                            )
 
                     except Exception as e:
                         logger.error(
                             "Error processing race %s in category %s: %s",
-                            race_data.get('name', 'unknown'),
+                            race_data.get("name", "unknown"),
                             category,
-                            e
+                            e,
                         )
                         # Continue with next race
 
             except Exception as e:
                 logger.error(
-                    "Error polling category %s: %s",
-                    category,
-                    e,
-                    exc_info=True
+                    "Error polling category %s: %s", category, e, exc_info=True
                 )
                 # Continue with next category
 
         logger.info(
             "Completed RaceTime race room polling: scanned %s races, joined %s rooms",
             scanned_count,
-            joined_count
+            joined_count,
         )
 
     except Exception as e:
@@ -655,14 +693,35 @@ def register_task_handlers() -> None:
     all task handlers are available when the scheduler runs.
     """
     TaskSchedulerService.register_task_handler(TaskType.EXAMPLE_LOG, handle_example_log)
-    TaskSchedulerService.register_task_handler(TaskType.RACETIME_OPEN_ROOM, handle_racetime_open_room)
-    TaskSchedulerService.register_task_handler(TaskType.CLEANUP_TOURNAMENT_USAGE, handle_cleanup_tournament_usage)
-    TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_TIMEOUT_PENDING, handle_async_tournament_timeout_pending)
-    TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS, handle_async_tournament_timeout_in_progress)
-    TaskSchedulerService.register_task_handler(TaskType.ASYNC_TOURNAMENT_SCORE_CALCULATION, handle_async_tournament_score_calculation)
-    TaskSchedulerService.register_task_handler(TaskType.ASYNC_LIVE_RACE_OPEN, handle_async_live_race_open)
-    TaskSchedulerService.register_task_handler(TaskType.SPEEDGAMING_IMPORT, handle_speedgaming_import)
-    TaskSchedulerService.register_task_handler(TaskType.CLEANUP_PLACEHOLDER_USERS, handle_cleanup_placeholder_users)
-    TaskSchedulerService.register_task_handler(TaskType.RACETIME_POLL_OPEN_ROOMS, handle_racetime_poll_open_rooms)
+    TaskSchedulerService.register_task_handler(
+        TaskType.RACETIME_OPEN_ROOM, handle_racetime_open_room
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.CLEANUP_TOURNAMENT_USAGE, handle_cleanup_tournament_usage
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.ASYNC_TOURNAMENT_TIMEOUT_PENDING,
+        handle_async_tournament_timeout_pending,
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.ASYNC_TOURNAMENT_TIMEOUT_IN_PROGRESS,
+        handle_async_tournament_timeout_in_progress,
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.ASYNC_TOURNAMENT_SCORE_CALCULATION,
+        handle_async_tournament_score_calculation,
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.ASYNC_LIVE_RACE_OPEN, handle_async_live_race_open
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.SPEEDGAMING_IMPORT, handle_speedgaming_import
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.CLEANUP_PLACEHOLDER_USERS, handle_cleanup_placeholder_users
+    )
+    TaskSchedulerService.register_task_handler(
+        TaskType.RACETIME_POLL_OPEN_ROOMS, handle_racetime_poll_open_rooms
+    )
     TaskSchedulerService.register_task_handler(TaskType.CUSTOM, handle_custom_task)
     logger.info("All task handlers registered")

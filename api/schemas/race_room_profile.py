@@ -12,15 +12,21 @@ class RaceRoomProfileBase(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=255, description="Profile name")
     description: Optional[str] = Field(None, description="Profile description")
-    start_delay: int = Field(15, ge=10, le=60, description="Race start delay in seconds")
+    start_delay: int = Field(
+        15, ge=10, le=60, description="Race start delay in seconds"
+    )
     time_limit: int = Field(24, ge=1, le=72, description="Race time limit in hours")
     streaming_required: bool = Field(False, description="Whether streaming is required")
     auto_start: bool = Field(True, description="Whether to auto-start when ready")
     allow_comments: bool = Field(True, description="Whether to allow race comments")
-    hide_comments: bool = Field(False, description="Whether to hide comments until race ends")
+    hide_comments: bool = Field(
+        False, description="Whether to hide comments until race ends"
+    )
     allow_prerace_chat: bool = Field(True, description="Whether to allow pre-race chat")
     allow_midrace_chat: bool = Field(True, description="Whether to allow mid-race chat")
-    allow_non_entrant_chat: bool = Field(True, description="Whether to allow non-entrant chat")
+    allow_non_entrant_chat: bool = Field(
+        True, description="Whether to allow non-entrant chat"
+    )
 
 
 class RaceRoomProfileCreate(RaceRoomProfileBase):

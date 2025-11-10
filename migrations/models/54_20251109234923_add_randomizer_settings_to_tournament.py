@@ -6,6 +6,7 @@ Normally, migrations should ALWAYS be generated using `poetry run aerich migrate
 The MODELS_STATE below was copied from the previous migration and may need to be regenerated
 if there are issues applying it.
 """
+
 from tortoise import BaseDBAsyncClient
 
 RUN_IN_TRANSACTION = True

@@ -19,7 +19,7 @@ from middleware.auth import DiscordAuthService
 def register():
     """Register home page routes."""
 
-    @ui.page('/')
+    @ui.page("/")
     async def home_page():
         """Main home page."""
         # Check authentication to determine page mode
@@ -31,17 +31,22 @@ def register():
 
             async def content(page: BasePage):
                 """Render home page content with dynamic views."""
+
                 # Define content loader functions
                 async def load_overview():
                     """Load the overview content."""
-                    container = page.get_dynamic_content_container() or ui.element('div').classes('page-container')
+                    container = page.get_dynamic_content_container() or ui.element(
+                        "div"
+                    ).classes("page-container")
                     container.clear()
                     with container:
                         await OverviewView.render(page.user)
 
                 async def load_presets():
                     """Load the presets browser."""
-                    container = page.get_dynamic_content_container() or ui.element('div').classes('page-container')
+                    container = page.get_dynamic_content_container() or ui.element(
+                        "div"
+                    ).classes("page-container")
                     container.clear()
                     with container:
                         view = PresetsView(page.user)
@@ -49,16 +54,18 @@ def register():
 
                 async def load_organizations():
                     """Load the organizations selector."""
-                    container = page.get_dynamic_content_container() or ui.element('div').classes('page-container')
+                    container = page.get_dynamic_content_container() or ui.element(
+                        "div"
+                    ).classes("page-container")
                     container.clear()
                     with container:
                         view = TournamentOrgSelectView(page.user)
                         await view.render()
 
                 # Register content loaders
-                page.register_content_loader('overview', load_overview)
-                page.register_content_loader('presets', load_presets)
-                page.register_content_loader('organizations', load_organizations)
+                page.register_content_loader("overview", load_overview)
+                page.register_content_loader("presets", load_presets)
+                page.register_content_loader("organizations", load_organizations)
 
                 # Load initial content only if no view parameter was specified
                 if not page.initial_view:
@@ -66,16 +73,24 @@ def register():
 
             # Create sidebar items with dynamic content loaders
             sidebar_items = [
-                base.create_sidebar_item_with_loader('Overview', 'dashboard', 'overview'),
-                base.create_sidebar_item_with_loader('Presets', 'code', 'presets'),
-                base.create_sidebar_item_with_loader('Organizations', 'group', 'organizations'),
+                base.create_sidebar_item_with_loader(
+                    "Overview", "dashboard", "overview"
+                ),
+                base.create_sidebar_item_with_loader("Presets", "code", "presets"),
+                base.create_sidebar_item_with_loader(
+                    "Organizations", "group", "organizations"
+                ),
                 base.create_separator(),
-                base.create_nav_link('My Profile', 'person', '/profile'),
+                base.create_nav_link("My Profile", "person", "/profile"),
             ]
             # Add admin panel link for admin users
             if user.is_admin():
                 sidebar_items.append(base.create_separator())
-                sidebar_items.append(base.create_nav_link('Admin Panel', 'admin_panel_settings', '/admin'))
+                sidebar_items.append(
+                    base.create_nav_link(
+                        "Admin Panel", "admin_panel_settings", "/admin"
+                    )
+                )
 
             await base.render(content, sidebar_items, use_dynamic_content=True)
         else:
@@ -88,8 +103,8 @@ def register():
 
             # Guest navigation
             sidebar_items = [
-                base.create_nav_link('Welcome', 'home', '/'),
-                base.create_nav_link('Login', 'login', '/auth/login'),
+                base.create_nav_link("Welcome", "home", "/"),
+                base.create_nav_link("Login", "login", "/auth/login"),
             ]
 
             await base.render(content, sidebar_items)

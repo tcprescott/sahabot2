@@ -57,13 +57,12 @@ class AvianartService:
         async with httpx.AsyncClient(timeout=60.0) as client:
             # Step 1: Initiate seed generation
             response = await client.post(
-                f"{self.BASE_URL}/api.php?action=generate&preset={preset}",
-                json=payload
+                f"{self.BASE_URL}/api.php?action=generate&preset={preset}", json=payload
             )
             response.raise_for_status()
             result = response.json()
 
-            hash_id = result['response']['hash']
+            hash_id = result["response"]["hash"]
             logger.info("Avianart seed generation started with hash %s", hash_id)
 
             # Step 2: Poll until generation is complete
@@ -78,22 +77,33 @@ class AvianartService:
                 response.raise_for_status()
                 result = response.json()
 
-                status = result['response'].get('status', 'finished')
+                status = result["response"].get("status", "finished")
 
-                if status == 'finished':
-                    logger.info("Avianart seed %s generated successfully after %s attempts", hash_id, attempts)
+                if status == "finished":
+                    logger.info(
+                        "Avianart seed %s generated successfully after %s attempts",
+                        hash_id,
+                        attempts,
+                    )
                     break
 
-                if status == 'failure':
-                    error_msg = result['response'].get('message', 'Unknown error')
+                if status == "failure":
+                    error_msg = result["response"].get("message", "Unknown error")
                     logger.error("Avianart seed generation failed: %s", error_msg)
                     raise ValueError(f"Failed to generate Avianart seed: {error_msg}")
 
-                logger.debug("Avianart seed %s still generating (attempt %s/%s, status=%s)",
-                            hash_id, attempts, self.MAX_POLL_ATTEMPTS, status)
+                logger.debug(
+                    "Avianart seed %s still generating (attempt %s/%s, status=%s)",
+                    hash_id,
+                    attempts,
+                    self.MAX_POLL_ATTEMPTS,
+                    status,
+                )
 
             if attempts >= self.MAX_POLL_ATTEMPTS:
-                logger.error("Avianart seed generation timed out after %s attempts", attempts)
+                logger.error(
+                    "Avianart seed generation timed out after %s attempts", attempts
+                )
                 raise TimeoutError(
                     f"Seed generation timed out after {attempts * self.POLL_INTERVAL_SECONDS} seconds"
                 )
@@ -103,13 +113,15 @@ class AvianartService:
             file_select_code = self._extract_file_select_code(result)
         except (KeyError, TypeError) as e:
             logger.error("Failed to extract file select code from result: %s", str(e))
-            raise ValueError(f"Invalid API response: missing required data in result") from e
+            raise ValueError(
+                f"Invalid API response: missing required data in result"
+            ) from e
 
         try:
-            version = result['response']['spoiler']['meta'].get('version', 'unknown')
+            version = result["response"]["spoiler"]["meta"].get("version", "unknown")
         except (KeyError, TypeError):
             logger.warning("Failed to extract version from result, using 'unknown'")
-            version = 'unknown'
+            version = "unknown"
 
         url = f"{self.BASE_URL}/perm/{hash_id}"
 
@@ -118,15 +130,15 @@ class AvianartService:
         return RandomizerResult(
             url=url,
             hash_id=hash_id,
-            settings={'preset': preset, 'race': race},
-            randomizer='avianart',
+            settings={"preset": preset, "race": race},
+            randomizer="avianart",
             permalink=url,
             metadata={
-                'file_select_code': file_select_code,
-                'version': version,
-                'preset': preset,
-                'spoiler': result['response'].get('spoiler')
-            }
+                "file_select_code": file_select_code,
+                "version": version,
+                "preset": preset,
+                "spoiler": result["response"].get("spoiler"),
+            },
         )
 
     def _extract_file_select_code(self, result: dict) -> list[str]:
@@ -146,7 +158,7 @@ class AvianartService:
             TypeError: If result structure is invalid
         """
         try:
-            file_select_code_str = result['response']['spoiler']['meta']['hash']
+            file_select_code_str = result["response"]["spoiler"]["meta"]["hash"]
         except KeyError as e:
             logger.error("Missing required key in API response: %s", str(e))
             raise KeyError(f"API response missing required field: {e}") from e
@@ -154,20 +166,20 @@ class AvianartService:
             logger.error("Invalid API response structure: %s", str(e))
             raise TypeError("API response has invalid structure") from e
 
-        code = list(file_select_code_str.split(', '))
+        code = list(file_select_code_str.split(", "))
 
         # Map Avianart names to standard SahasrahBot names
         code_map = {
-            'Bomb': 'Bombs',
-            'Powder': 'Magic Powder',
-            'Rod': 'Ice Rod',
-            'Ocarina': 'Flute',
-            'Bug Net': 'Bugnet',
-            'Bottle': 'Empty Bottle',
-            'Potion': 'Green Potion',
-            'Cane': 'Somaria',
-            'Pearl': 'Moon Pearl',
-            'Key': 'Big Key'
+            "Bomb": "Bombs",
+            "Powder": "Magic Powder",
+            "Rod": "Ice Rod",
+            "Ocarina": "Flute",
+            "Bug Net": "Bugnet",
+            "Bottle": "Empty Bottle",
+            "Potion": "Green Potion",
+            "Cane": "Somaria",
+            "Pearl": "Moon Pearl",
+            "Key": "Big Key",
         }
 
         normalized_code = [code_map.get(item, item) for item in code]

@@ -17,7 +17,10 @@ from application.services.discord.discord_service import DiscordService
 from application.services.racetime.racetime_service import RacetimeService
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
 from application.services.tasks.task_handlers import register_task_handlers
-from application.services.notifications.notification_processor import start_notification_processor, stop_notification_processor
+from application.services.notifications.notification_processor import (
+    start_notification_processor,
+    stop_notification_processor,
+)
 from middleware.security import SecurityHeadersMiddleware, HTTPSRedirectMiddleware
 from api import register_api
 import frontend
@@ -27,17 +30,18 @@ import application.events.listeners  # noqa: F401
 
 # Initialize Sentry (must be done early, before other imports)
 from application.utils.sentry_init import init_sentry
+
 init_sentry()
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
 # Initialize in-memory log handler for admin UI
 from application.utils.log_handler import init_log_handler
+
 init_log_handler(max_records=1000)
 
 
@@ -201,12 +205,7 @@ register_api(app)
 frontend.register_routes(app)
 
 # Initialize NiceGUI with FastAPI
-ui.run_with(
-    app,
-    storage_secret=settings.SECRET_KEY,
-    title="SahaBot2",
-    favicon="🤖"
-)
+ui.run_with(app, storage_secret=settings.SECRET_KEY, title="SahaBot2", favicon="🤖")
 
 
 if __name__ in {"__main__", "__mp_main__"}:
@@ -218,5 +217,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         show=False,
         storage_secret=settings.SECRET_KEY,
         title="SahaBot2",
-        favicon="🤖"
+        favicon="🤖",
     )

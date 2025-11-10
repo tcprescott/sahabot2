@@ -8,7 +8,9 @@ from api.schemas.discord_scheduled_event import (
     SyncEventsResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.discord.discord_scheduled_event_service import DiscordScheduledEventService
+from application.services.discord.discord_scheduled_event_service import (
+    DiscordScheduledEventService,
+)
 from models import User, Permission
 
 router = APIRouter(prefix="/discord-events", tags=["discord-events"])
@@ -17,29 +19,30 @@ router = APIRouter(prefix="/discord-events", tags=["discord-events"])
 async def _can_manage_discord_events(user: User, organization_id: int) -> bool:
     """
     Check if user can manage Discord scheduled events in an organization.
-    
+
     Requires SUPERADMIN global permission OR ADMIN permission in the organization.
     """
     if not user:
         return False
-    
+
     # SUPERADMINs can manage Discord events in any organization
     if user.has_permission(Permission.SUPERADMIN):
         return True
-    
+
     # Check if user has ADMIN permission in the org
     from application.repositories.organization_repository import OrganizationRepository
+
     repo = OrganizationRepository()
     member = await repo.get_member(organization_id, user.id)
-    
+
     if not member:
         return False
-    
+
     # Check if member has admin permissions
-    await member.fetch_related('permissions')
+    await member.fetch_related("permissions")
     permission_names = [p.permission_name for p in member.permissions]
-    
-    return 'ADMIN' in permission_names
+
+    return "ADMIN" in permission_names
 
 
 # ==================== DISCORD SCHEDULED EVENTS ====================
@@ -61,7 +64,7 @@ async def _can_manage_discord_events(user: User, organization_id: int) -> bool:
 async def list_events(
     organization_id: int = Path(..., description="Organization ID"),
     tournament_id: int = Query(None, description="Filter by tournament ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> DiscordScheduledEventListResponse:
     """
     List Discord scheduled events for an organization.
@@ -82,7 +85,9 @@ async def list_events(
     """
     # Check permissions
     if not await _can_manage_discord_events(current_user, organization_id):
-        raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
+        raise HTTPException(
+            status_code=403, detail="Insufficient permissions to manage Discord events"
+        )
 
     service = DiscordScheduledEventService()
 
@@ -111,7 +116,7 @@ async def list_events(
 async def get_match_events(
     organization_id: int = Path(..., description="Organization ID"),
     match_id: int = Path(..., description="Match ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> DiscordScheduledEventListResponse:
     """
     Get all Discord scheduled events for a match.
@@ -131,7 +136,9 @@ async def get_match_events(
     """
     # Check permissions
     if not await _can_manage_discord_events(current_user, organization_id):
-        raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
+        raise HTTPException(
+            status_code=403, detail="Insufficient permissions to manage Discord events"
+        )
 
     service = DiscordScheduledEventService()
     events = await service.repo.list_for_match(organization_id, match_id)
@@ -157,7 +164,7 @@ async def get_match_events(
 async def sync_events(
     data: SyncEventsRequest,
     organization_id: int = Path(..., description="Organization ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> SyncEventsResponse:
     """
     Synchronize Discord scheduled events for a tournament.
@@ -181,7 +188,9 @@ async def sync_events(
     """
     # Check permissions
     if not await _can_manage_discord_events(current_user, organization_id):
-        raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
+        raise HTTPException(
+            status_code=403, detail="Insufficient permissions to manage Discord events"
+        )
 
     service = DiscordScheduledEventService()
     stats = await service.sync_tournament_events(
@@ -192,16 +201,16 @@ async def sync_events(
 
     # Build message
     message_parts = []
-    if stats['created']:
+    if stats["created"]:
         message_parts.append(f"Created {stats['created']} event(s)")
-    if stats['updated']:
+    if stats["updated"]:
         message_parts.append(f"Updated {stats['updated']} event(s)")
-    if stats['deleted']:
+    if stats["deleted"]:
         message_parts.append(f"Deleted {stats['deleted']} event(s)")
-    if stats['skipped']:
+    if stats["skipped"]:
         message_parts.append(f"Skipped {stats['skipped']} event(s)")
 
-    if stats['errors']:
+    if stats["errors"]:
         message_parts.append(f"Encountered {stats['errors']} error(s)")
         message = f"Sync completed with errors: {', '.join(message_parts)}"
         success = False
@@ -236,7 +245,7 @@ async def sync_events(
 async def delete_match_events(
     organization_id: int = Path(..., description="Organization ID"),
     match_id: int = Path(..., description="Match ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
     """
     Delete all Discord scheduled events for a match.
@@ -255,7 +264,9 @@ async def delete_match_events(
     """
     # Check permissions
     if not await _can_manage_discord_events(current_user, organization_id):
-        raise HTTPException(status_code=403, detail="Insufficient permissions to manage Discord events")
+        raise HTTPException(
+            status_code=403, detail="Insufficient permissions to manage Discord events"
+        )
 
     service = DiscordScheduledEventService()
     success = await service.delete_event_for_match(
@@ -265,6 +276,8 @@ async def delete_match_events(
     )
 
     if not success:
-        raise HTTPException(status_code=404, detail="Match not found or events already deleted")
+        raise HTTPException(
+            status_code=404, detail="Match not found or events already deleted"
+        )
 
     return None

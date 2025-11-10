@@ -62,7 +62,9 @@ class NotificationRepository:
         )
         return subscription
 
-    async def get_subscription_by_id(self, subscription_id: int) -> Optional[NotificationSubscription]:
+    async def get_subscription_by_id(
+        self, subscription_id: int
+    ) -> Optional[NotificationSubscription]:
         """Get subscription by ID."""
         return await NotificationSubscription.filter(id=subscription_id).first()
 
@@ -83,7 +85,9 @@ class NotificationRepository:
         Returns:
             List of subscriptions
         """
-        query = NotificationSubscription.filter(user_id=user_id).prefetch_related('organization')
+        query = NotificationSubscription.filter(user_id=user_id).prefetch_related(
+            "organization"
+        )
 
         if is_active is not None:
             query = query.filter(is_active=is_active)
@@ -112,13 +116,13 @@ class NotificationRepository:
             event_type=event_type,
             is_active=True,
         ).prefetch_related("user")
-        
+
         if organization_id is not None:
             # Get subscriptions for this org OR subscriptions with no org specified
             query = query.filter(
                 Q(organization_id=organization_id) | Q(organization_id__isnull=True)
             )
-        
+
         return await query.all()
 
     async def update_subscription(
@@ -141,7 +145,11 @@ class NotificationRepository:
             return None
 
         await subscription.update_from_dict(updates).save()
-        logger.info("Updated notification subscription %s: %s", subscription_id, list(updates.keys()))
+        logger.info(
+            "Updated notification subscription %s: %s",
+            subscription_id,
+            list(updates.keys()),
+        )
         return subscription
 
     async def delete_subscription(self, subscription_id: int) -> bool:

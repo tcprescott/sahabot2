@@ -22,9 +22,7 @@ class FeatureFlagRepository:
         return await OrganizationFeatureFlag.filter(id=flag_id).first()
 
     async def get_by_org_and_key(
-        self,
-        organization_id: int,
-        feature_key: FeatureFlag
+        self, organization_id: int, feature_key: FeatureFlag
     ) -> Optional[OrganizationFeatureFlag]:
         """
         Get feature flag by organization and feature key.
@@ -37,13 +35,11 @@ class FeatureFlagRepository:
             Feature flag if found, None otherwise
         """
         return await OrganizationFeatureFlag.filter(
-            organization_id=organization_id,
-            feature_key=feature_key
+            organization_id=organization_id, feature_key=feature_key
         ).first()
 
     async def list_by_organization(
-        self,
-        organization_id: int
+        self, organization_id: int
     ) -> list[OrganizationFeatureFlag]:
         """
         List all feature flags for an organization.
@@ -54,13 +50,14 @@ class FeatureFlagRepository:
         Returns:
             List of feature flags
         """
-        return await OrganizationFeatureFlag.filter(
-            organization_id=organization_id
-        ).order_by('feature_key').all()
+        return (
+            await OrganizationFeatureFlag.filter(organization_id=organization_id)
+            .order_by("feature_key")
+            .all()
+        )
 
     async def list_enabled_by_organization(
-        self,
-        organization_id: int
+        self, organization_id: int
     ) -> list[OrganizationFeatureFlag]:
         """
         List enabled feature flags for an organization.
@@ -71,14 +68,16 @@ class FeatureFlagRepository:
         Returns:
             List of enabled feature flags
         """
-        return await OrganizationFeatureFlag.filter(
-            organization_id=organization_id,
-            enabled=True
-        ).order_by('feature_key').all()
+        return (
+            await OrganizationFeatureFlag.filter(
+                organization_id=organization_id, enabled=True
+            )
+            .order_by("feature_key")
+            .all()
+        )
 
     async def list_by_feature_key(
-        self,
-        feature_key: FeatureFlag
+        self, feature_key: FeatureFlag
     ) -> list[OrganizationFeatureFlag]:
         """
         List all organizations with a specific feature flag.
@@ -89,9 +88,11 @@ class FeatureFlagRepository:
         Returns:
             List of feature flags
         """
-        return await OrganizationFeatureFlag.filter(
-            feature_key=feature_key
-        ).order_by('organization_id').all()
+        return (
+            await OrganizationFeatureFlag.filter(feature_key=feature_key)
+            .order_by("organization_id")
+            .all()
+        )
 
     async def create(
         self,
@@ -99,7 +100,7 @@ class FeatureFlagRepository:
         feature_key: str,
         enabled: bool,
         enabled_by_id: Optional[int],
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> OrganizationFeatureFlag:
         """
         Create a new feature flag.
@@ -117,15 +118,15 @@ class FeatureFlagRepository:
         from datetime import datetime, timezone
 
         data = {
-            'organization_id': organization_id,
-            'feature_key': feature_key,
-            'enabled': enabled,
-            'notes': notes,
+            "organization_id": organization_id,
+            "feature_key": feature_key,
+            "enabled": enabled,
+            "notes": notes,
         }
 
         if enabled:
-            data['enabled_at'] = datetime.now(timezone.utc)
-            data['enabled_by_id'] = enabled_by_id
+            data["enabled_at"] = datetime.now(timezone.utc)
+            data["enabled_by_id"] = enabled_by_id
 
         return await OrganizationFeatureFlag.create(**data)
 
@@ -134,7 +135,7 @@ class FeatureFlagRepository:
         flag_id: int,
         enabled: Optional[bool] = None,
         enabled_by_id: Optional[int] = None,
-        notes: Optional[str] = None
+        notes: Optional[str] = None,
     ) -> Optional[OrganizationFeatureFlag]:
         """
         Update a feature flag.
@@ -157,16 +158,16 @@ class FeatureFlagRepository:
         updates = {}
 
         if enabled is not None and enabled != flag.enabled:
-            updates['enabled'] = enabled
+            updates["enabled"] = enabled
             if enabled:
-                updates['enabled_at'] = datetime.now(timezone.utc)
-                updates['enabled_by_id'] = enabled_by_id
+                updates["enabled_at"] = datetime.now(timezone.utc)
+                updates["enabled_by_id"] = enabled_by_id
             else:
-                updates['enabled_at'] = None
-                updates['enabled_by_id'] = None
+                updates["enabled_at"] = None
+                updates["enabled_by_id"] = None
 
         if notes is not None:
-            updates['notes'] = notes
+            updates["notes"] = notes
 
         if updates:
             await flag.update_from_dict(updates).save()
@@ -190,11 +191,7 @@ class FeatureFlagRepository:
         await flag.delete()
         return True
 
-    async def is_feature_enabled(
-        self,
-        organization_id: int,
-        feature_key: str
-    ) -> bool:
+    async def is_feature_enabled(self, organization_id: int, feature_key: str) -> bool:
         """
         Check if a feature is enabled for an organization.
 

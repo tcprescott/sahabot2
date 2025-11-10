@@ -13,8 +13,8 @@ from application.services.core.settings_service import SettingsService
 class MOTDDialog(BaseDialog):
     """Dialog for editing the Message of the Day banner."""
 
-    MOTD_KEY = 'motd_text'
-    MOTD_UPDATED_KEY = 'motd_updated_at'
+    MOTD_KEY = "motd_text"
+    MOTD_UPDATED_KEY = "motd_updated_at"
 
     def __init__(self, on_save: Optional[Callable[[], Awaitable[None]]] = None) -> None:
         super().__init__()
@@ -27,51 +27,61 @@ class MOTDDialog(BaseDialog):
         # Load current MOTD
         motd_setting = await self.service.get_global(self.MOTD_KEY)
         if motd_setting:
-            self.current_motd = motd_setting.get('value', '')
+            self.current_motd = motd_setting.get("value", "")
 
-        self.create_dialog(title='Edit Message of the Day', icon='campaign')
+        self.create_dialog(title="Edit Message of the Day", icon="campaign")
         await super().show()
 
     def _render_body(self) -> None:
-        ui.label('Customize the message that appears in the banner at the top of pages.').classes('mb-4')
-        ui.label('HTML formatting is supported. Leave empty to disable the banner.').classes('mb-4 text-secondary')
+        ui.label(
+            "Customize the message that appears in the banner at the top of pages."
+        ).classes("mb-4")
+        ui.label(
+            "HTML formatting is supported. Leave empty to disable the banner."
+        ).classes("mb-4 text-secondary")
 
         # Security note: HTML preview uses ui.html() which renders raw HTML.
         # This is acceptable for admin-only content. Admins are trusted users.
         # If MOTD editing is ever expanded to non-admin users, implement
         # server-side HTML sanitization (e.g., bleach library).
 
-        self.motd_input = ui.textarea(
-            label='MOTD Message',
-            value=self.current_motd,
-            placeholder='Enter your message here...'
-        ).classes('w-full').props('rows=4 autogrow')
+        self.motd_input = (
+            ui.textarea(
+                label="MOTD Message",
+                value=self.current_motd,
+                placeholder="Enter your message here...",
+            )
+            .classes("w-full")
+            .props("rows=4 autogrow")
+        )
 
-        ui.label('Preview:').classes('mt-4 font-bold')
-        with ui.element('div').classes('motd-preview'):
-            self.preview_label = ui.html(self.current_motd or '<em>No message set</em>')
+        ui.label("Preview:").classes("mt-4 font-bold")
+        with ui.element("div").classes("motd-preview"):
+            self.preview_label = ui.html(self.current_motd or "<em>No message set</em>")
 
         # Update preview when input changes
         def update_preview():
-            text = self.motd_input.value or '<em>No message set</em>'
+            text = self.motd_input.value or "<em>No message set</em>"
             self.preview_label.set_content(text)
 
-        self.motd_input.on('input', update_preview)
+        self.motd_input.on("input", update_preview)
 
         with self.create_actions_row():
-            ui.button('Cancel', on_click=self.close).classes('btn')
-            ui.button('Save', on_click=self._save).props('color=positive').classes('btn')
+            ui.button("Cancel", on_click=self.close).classes("btn")
+            ui.button("Save", on_click=self._save).props("color=positive").classes(
+                "btn"
+            )
 
     async def _save(self) -> None:
         """Save the MOTD and update the timestamp."""
-        motd_text = (self.motd_input.value or '').strip() if self.motd_input else ''
+        motd_text = (self.motd_input.value or "").strip() if self.motd_input else ""
 
         # Save MOTD text
         await self.service.set_global(
             key=self.MOTD_KEY,
             value=motd_text,
-            description='Message of the Day banner text',
-            is_public=True  # MOTD is publicly visible
+            description="Message of the Day banner text",
+            is_public=True,  # MOTD is publicly visible
         )
 
         # Update the timestamp to trigger banner re-display for dismissed users
@@ -79,11 +89,11 @@ class MOTDDialog(BaseDialog):
         await self.service.set_global(
             key=self.MOTD_UPDATED_KEY,
             value=current_time,
-            description='Last time MOTD was updated (ISO timestamp)',
-            is_public=True
+            description="Last time MOTD was updated (ISO timestamp)",
+            is_public=True,
         )
 
-        ui.notify('MOTD updated successfully', type='positive')
+        ui.notify("MOTD updated successfully", type="positive")
 
         if self.on_save:
             await self.on_save()

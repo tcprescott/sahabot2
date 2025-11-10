@@ -48,28 +48,28 @@ from views.tournaments import (
 
 __all__ = [
     # Admin views
-    'AdminUsersView',
-    'AdminOrganizationsView',
-    'AdminSettingsView',
+    "AdminUsersView",
+    "AdminOrganizationsView",
+    "AdminSettingsView",
     # Organization views
-    'OrganizationOverviewView',
-    'OrganizationMembersView',
-    'OrganizationPermissionsView',
-    'OrganizationSettingsView',
-    'OrganizationTournamentsView',
-    'OrganizationStreamChannelsView',
+    "OrganizationOverviewView",
+    "OrganizationMembersView",
+    "OrganizationPermissionsView",
+    "OrganizationSettingsView",
+    "OrganizationTournamentsView",
+    "OrganizationStreamChannelsView",
     # Tournament Admin views
-    'TournamentOverviewView',
-    'TournamentPlayersView',
-    'TournamentRacetimeSettingsView',
-    'TournamentSettingsView',
+    "TournamentOverviewView",
+    "TournamentPlayersView",
+    "TournamentRacetimeSettingsView",
+    "TournamentSettingsView",
     # User Profile views
-    'ProfileInfoView',
-    'ApiKeysView',
-    'UserOrganizationsView',
+    "ProfileInfoView",
+    "ApiKeysView",
+    "UserOrganizationsView",
     # Tournament views
-    'TournamentOrgSelectView',
-    'EventScheduleView',
-    'MyMatchesView',
-    'MySettingsView',
+    "TournamentOrgSelectView",
+    "EventScheduleView",
+    "MyMatchesView",
+    "MySettingsView",
 ]

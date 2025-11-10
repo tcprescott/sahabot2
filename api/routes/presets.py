@@ -12,14 +12,21 @@ from api.schemas.preset import (
     RandomizerPresetUpdateRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.randomizer.preset_namespace_service import PresetNamespaceService, NamespaceValidationError
-from application.services.randomizer.randomizer_preset_service import RandomizerPresetService, PresetValidationError
+from application.services.randomizer.preset_namespace_service import (
+    PresetNamespaceService,
+    NamespaceValidationError,
+)
+from application.services.randomizer.randomizer_preset_service import (
+    RandomizerPresetService,
+    PresetValidationError,
+)
 from models import User
 
 router = APIRouter(prefix="/presets", tags=["presets"])
 
 
 # ========== Preset Namespaces ==========
+
 
 @router.get(
     "/namespaces",
@@ -29,7 +36,7 @@ router = APIRouter(prefix="/presets", tags=["presets"])
     description="List all preset namespaces accessible to the user.",
 )
 async def list_namespaces(
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> PresetNamespaceListResponse:
     """
     List all preset namespaces.
@@ -63,8 +70,7 @@ async def list_namespaces(
     status_code=201,
 )
 async def create_namespace(
-    data: PresetNamespaceCreateRequest,
-    current_user: User = Depends(get_current_user)
+    data: PresetNamespaceCreateRequest, current_user: User = Depends(get_current_user)
 ) -> PresetNamespaceOut:
     """
     Create a new preset namespace.
@@ -82,9 +88,7 @@ async def create_namespace(
     service = PresetNamespaceService()
     try:
         namespace = await service.create_namespace(
-            user=current_user,
-            name=data.name,
-            description=data.description
+            user=current_user, name=data.name, description=data.description
         )
         if not namespace:
             raise HTTPException(status_code=400, detail="Failed to create namespace")
@@ -102,7 +106,7 @@ async def create_namespace(
 )
 async def get_namespace(
     namespace_id: int = Path(..., description="Namespace ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> PresetNamespaceOut:
     """
     Get namespace details.
@@ -140,7 +144,7 @@ async def get_namespace(
 async def update_namespace(
     data: PresetNamespaceUpdateRequest,
     namespace_id: int = Path(..., description="Namespace ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> PresetNamespaceOut:
     """
     Update namespace.
@@ -159,12 +163,12 @@ async def update_namespace(
     service = PresetNamespaceService()
     try:
         namespace = await service.update_namespace(
-            user=current_user,
-            namespace_id=namespace_id,
-            description=data.description
+            user=current_user, namespace_id=namespace_id, description=data.description
         )
         if not namespace:
-            raise HTTPException(status_code=404, detail="Namespace not found or not authorized")
+            raise HTTPException(
+                status_code=404, detail="Namespace not found or not authorized"
+            )
         return PresetNamespaceOut.model_validate(namespace)
     except NamespaceValidationError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -179,7 +183,7 @@ async def update_namespace(
 )
 async def delete_namespace(
     namespace_id: int = Path(..., description="Namespace ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete namespace.
@@ -193,14 +197,16 @@ async def delete_namespace(
     """
     service = PresetNamespaceService()
     success = await service.delete_namespace(
-        user=current_user,
-        namespace_id=namespace_id
+        user=current_user, namespace_id=namespace_id
     )
     if not success:
-        raise HTTPException(status_code=404, detail="Namespace not found or not authorized")
+        raise HTTPException(
+            status_code=404, detail="Namespace not found or not authorized"
+        )
 
 
 # ========== Randomizer Presets ==========
+
 
 @router.get(
     "/",
@@ -213,7 +219,7 @@ async def list_presets(
     randomizer: str | None = Query(None, description="Filter by randomizer type"),
     namespace_id: int | None = Query(None, description="Filter by namespace ID"),
     include_public: bool = Query(True, description="Include public presets"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RandomizerPresetListResponse:
     """
     List randomizer presets.
@@ -233,17 +239,14 @@ async def list_presets(
 
     # Get user's presets
     user_presets = await service.list_user_presets(
-        user=current_user,
-        randomizer=randomizer,
-        namespace_id=namespace_id
+        user=current_user, randomizer=randomizer, namespace_id=namespace_id
     )
 
     # Get public presets if requested
     public_presets = []
     if include_public:
         public_presets = await service.list_public_presets(
-            randomizer=randomizer,
-            namespace_id=namespace_id
+            randomizer=randomizer, namespace_id=namespace_id
         )
 
     # Combine and deduplicate
@@ -268,8 +271,7 @@ async def list_presets(
     status_code=201,
 )
 async def create_preset(
-    data: RandomizerPresetCreateRequest,
-    current_user: User = Depends(get_current_user)
+    data: RandomizerPresetCreateRequest, current_user: User = Depends(get_current_user)
 ) -> RandomizerPresetOut:
     """
     Create a new randomizer preset.
@@ -293,7 +295,7 @@ async def create_preset(
             yaml_content=data.settings_yaml,
             description=data.description,
             is_public=data.is_public,
-            is_global=False  # API doesn't support global presets (requires namespace)
+            is_global=False,  # API doesn't support global presets (requires namespace)
         )
         if not preset:
             raise HTTPException(status_code=400, detail="Failed to create preset")
@@ -311,7 +313,7 @@ async def create_preset(
 )
 async def get_preset(
     preset_id: int = Path(..., description="Preset ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RandomizerPresetOut:
     """
     Get preset details.
@@ -349,7 +351,7 @@ async def get_preset(
 async def update_preset(
     data: RandomizerPresetUpdateRequest,
     preset_id: int = Path(..., description="Preset ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> RandomizerPresetOut:
     """
     Update preset.
@@ -373,10 +375,12 @@ async def update_preset(
             yaml_content=data.settings_yaml,
             name=data.name,
             description=data.description,
-            is_public=data.is_public
+            is_public=data.is_public,
         )
         if not preset:
-            raise HTTPException(status_code=404, detail="Preset not found or not authorized")
+            raise HTTPException(
+                status_code=404, detail="Preset not found or not authorized"
+            )
         return RandomizerPresetOut.model_validate(preset)
     except PresetValidationError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -391,7 +395,7 @@ async def update_preset(
 )
 async def delete_preset(
     preset_id: int = Path(..., description="Preset ID"),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ) -> None:
     """
     Delete preset.
@@ -404,9 +408,8 @@ async def delete_preset(
         HTTPException: 404 if not found, 403 if not authorized
     """
     service = RandomizerPresetService()
-    success = await service.delete_preset(
-        user=current_user,
-        preset_id=preset_id
-    )
+    success = await service.delete_preset(user=current_user, preset_id=preset_id)
     if not success:
-        raise HTTPException(status_code=404, detail="Preset not found or not authorized")
+        raise HTTPException(
+            status_code=404, detail="Preset not found or not authorized"
+        )

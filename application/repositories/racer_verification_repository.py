@@ -57,31 +57,25 @@ class RacerVerificationRepository:
         return await RacerVerification.filter(id=verification_id).first()
 
     async def list_by_organization(
-        self,
-        organization_id: int,
-        active_only: bool = True
+        self, organization_id: int, active_only: bool = True
     ) -> list[RacerVerification]:
         """List all racer verifications for an organization."""
         query = RacerVerification.filter(organization_id=organization_id)
         if active_only:
             query = query.filter(is_active=True)
-        return await query.order_by('-created_at').all()
+        return await query.order_by("-created_at").all()
 
     async def list_by_guild(
-        self,
-        guild_id: int,
-        active_only: bool = True
+        self, guild_id: int, active_only: bool = True
     ) -> list[RacerVerification]:
         """List all racer verifications for a Discord guild."""
         query = RacerVerification.filter(guild_id=guild_id)
         if active_only:
             query = query.filter(is_active=True)
-        return await query.order_by('-created_at').all()
+        return await query.order_by("-created_at").all()
 
     async def update(
-        self,
-        verification_id: int,
-        **updates
+        self, verification_id: int, **updates
     ) -> Optional[RacerVerification]:
         """Update racer verification."""
         verification = await self.get_by_id(verification_id)
@@ -131,47 +125,42 @@ class UserRacerVerificationRepository:
             race_count=race_count,
         )
 
-    async def get_by_id(self, user_verification_id: int) -> Optional[UserRacerVerification]:
+    async def get_by_id(
+        self, user_verification_id: int
+    ) -> Optional[UserRacerVerification]:
         """Get user racer verification by ID."""
         return await UserRacerVerification.filter(id=user_verification_id).first()
 
     async def get_by_verification_and_user(
-        self,
-        verification_id: int,
-        user_id: int
+        self, verification_id: int, user_id: int
     ) -> Optional[UserRacerVerification]:
         """Get user racer verification by verification and user."""
         return await UserRacerVerification.filter(
-            verification_id=verification_id,
-            user_id=user_id
+            verification_id=verification_id, user_id=user_id
         ).first()
 
     async def list_by_verification(
-        self,
-        verification_id: int,
-        verified_only: bool = False
+        self, verification_id: int, verified_only: bool = False
     ) -> list[UserRacerVerification]:
         """List all user verifications for a racer verification."""
         query = UserRacerVerification.filter(verification_id=verification_id)
         if verified_only:
             query = query.filter(is_verified=True)
-        return await query.prefetch_related('user').order_by('-verified_at').all()
+        return await query.prefetch_related("user").order_by("-verified_at").all()
 
     async def list_by_user(
-        self,
-        user_id: int,
-        verified_only: bool = False
+        self, user_id: int, verified_only: bool = False
     ) -> list[UserRacerVerification]:
         """List all verifications for a user."""
         query = UserRacerVerification.filter(user_id=user_id)
         if verified_only:
             query = query.filter(is_verified=True)
-        return await query.prefetch_related('verification').order_by('-verified_at').all()
+        return (
+            await query.prefetch_related("verification").order_by("-verified_at").all()
+        )
 
     async def update(
-        self,
-        user_verification_id: int,
-        **updates
+        self, user_verification_id: int, **updates
     ) -> Optional[UserRacerVerification]:
         """Update user racer verification."""
         user_verification = await self.get_by_id(user_verification_id)

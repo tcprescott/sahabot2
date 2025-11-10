@@ -12,7 +12,12 @@ For backward compatibility, all dialogs are re-exported from this module.
 """
 
 # Common dialogs (used across multiple views)
-from components.dialogs.common import BaseDialog, TournamentDialog, ConfirmDialog, ViewYamlDialog
+from components.dialogs.common import (
+    BaseDialog,
+    TournamentDialog,
+    ConfirmDialog,
+    ViewYamlDialog,
+)
 
 # Admin dialogs
 from components.dialogs.admin import (
@@ -67,44 +72,44 @@ from components.dialogs.user_profile import (
 
 __all__ = [
     # Common
-    'BaseDialog',
-    'TournamentDialog',
-    'ConfirmDialog',
-    'ViewYamlDialog',
+    "BaseDialog",
+    "TournamentDialog",
+    "ConfirmDialog",
+    "ViewYamlDialog",
     # Admin
-    'UserEditDialog',
-    'UserAddDialog',
-    'OrganizationDialog',
-    'GlobalSettingDialog',
-    'RacetimeBotAddDialog',
-    'RacetimeBotEditDialog',
-    'RacetimeBotOrganizationsDialog',
-    'ApproveOrgRequestDialog',
-    'RejectOrgRequestDialog',
-    'ViewNamespaceDialog',
+    "UserEditDialog",
+    "UserAddDialog",
+    "OrganizationDialog",
+    "GlobalSettingDialog",
+    "RacetimeBotAddDialog",
+    "RacetimeBotEditDialog",
+    "RacetimeBotOrganizationsDialog",
+    "ApproveOrgRequestDialog",
+    "RejectOrgRequestDialog",
+    "ViewNamespaceDialog",
     # Organization
-    'OrgSettingDialog',
-    'MemberPermissionsDialog',
-    'InviteMemberDialog',
-    'OrganizationInviteDialog',
-    'StreamChannelDialog',
-    'ViewPresetDialog',
+    "OrgSettingDialog",
+    "MemberPermissionsDialog",
+    "InviteMemberDialog",
+    "OrganizationInviteDialog",
+    "StreamChannelDialog",
+    "ViewPresetDialog",
     # Tournaments
-    'SubmitMatchDialog',
-    'RegisterPlayerDialog',
-    'MatchSeedDialog',
-    'EditMatchDialog',
-    'CreateMatchDialog',
-    'AsyncTournamentDialog',
-    'MatchWinnerDialog',
-    'CheckInDialog',
+    "SubmitMatchDialog",
+    "RegisterPlayerDialog",
+    "MatchSeedDialog",
+    "EditMatchDialog",
+    "CreateMatchDialog",
+    "AsyncTournamentDialog",
+    "MatchWinnerDialog",
+    "CheckInDialog",
     # User profile
-    'CreateApiKeyDialog',
-    'DisplayTokenDialog',
-    'LeaveOrganizationDialog',
-    'RenameNamespaceDialog',
-    'AddPermissionDialog',
-    'EditPermissionDialog',
-    'ManagePermissionsDialog',
-    'RequestOrganizationDialog',
+    "CreateApiKeyDialog",
+    "DisplayTokenDialog",
+    "LeaveOrganizationDialog",
+    "RenameNamespaceDialog",
+    "AddPermissionDialog",
+    "EditPermissionDialog",
+    "ManagePermissionsDialog",
+    "RequestOrganizationDialog",
 ]

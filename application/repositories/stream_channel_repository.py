@@ -17,17 +17,33 @@ class StreamChannelRepository:
 
     async def list_by_org(self, organization_id: int) -> List[StreamChannel]:
         """List stream channels for a specific organization ordered by name."""
-        return await StreamChannel.filter(organization_id=organization_id).order_by('name')
+        return await StreamChannel.filter(organization_id=organization_id).order_by(
+            "name"
+        )
 
-    async def get_by_name(self, organization_id: int, name: str) -> Optional[StreamChannel]:
+    async def get_by_name(
+        self, organization_id: int, name: str
+    ) -> Optional[StreamChannel]:
         """Get a stream channel by name within an organization (case-sensitive)."""
-        return await StreamChannel.get_or_none(organization_id=organization_id, name=name)
+        return await StreamChannel.get_or_none(
+            organization_id=organization_id, name=name
+        )
 
-    async def get_for_org(self, organization_id: int, channel_id: int) -> Optional[StreamChannel]:
+    async def get_for_org(
+        self, organization_id: int, channel_id: int
+    ) -> Optional[StreamChannel]:
         """Get a stream channel by id ensuring it belongs to the organization."""
-        return await StreamChannel.get_or_none(id=channel_id, organization_id=organization_id)
+        return await StreamChannel.get_or_none(
+            id=channel_id, organization_id=organization_id
+        )
 
-    async def create(self, organization_id: int, name: str, stream_url: Optional[str] = None, is_active: bool = True) -> StreamChannel:
+    async def create(
+        self,
+        organization_id: int,
+        name: str,
+        stream_url: Optional[str] = None,
+        is_active: bool = True,
+    ) -> StreamChannel:
         """Create a stream channel in the given organization."""
         channel = await StreamChannel.create(
             organization_id=organization_id,
@@ -38,7 +54,15 @@ class StreamChannelRepository:
         logger.info("Created stream channel %s in org %s", channel.id, organization_id)
         return channel
 
-    async def update(self, organization_id: int, channel_id: int, *, name: Optional[str] = None, stream_url: Optional[str] = None, is_active: Optional[bool] = None) -> Optional[StreamChannel]:
+    async def update(
+        self,
+        organization_id: int,
+        channel_id: int,
+        *,
+        name: Optional[str] = None,
+        stream_url: Optional[str] = None,
+        is_active: Optional[bool] = None,
+    ) -> Optional[StreamChannel]:
         """Update a stream channel, enforcing org ownership."""
         channel = await self.get_for_org(organization_id, channel_id)
         if not channel:

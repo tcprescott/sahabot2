@@ -42,14 +42,14 @@ def test_log_handler():
 
     # Test filtering by level
     print("\n2. Testing level filtering:")
-    error_records = handler.get_records(level='ERROR')
+    error_records = handler.get_records(level="ERROR")
     print(f"   ✓ Found {len(error_records)} ERROR records")
     for r in error_records:
         print(f"     - {r.level}: {r.message}")
 
     # Test search filtering
     print("\n3. Testing search filtering:")
-    search_records = handler.get_records(search='warning')
+    search_records = handler.get_records(search="warning")
     print(f"   ✓ Found {len(search_records)} records matching 'warning'")
     for r in search_records:
         print(f"     - {r.level}: {r.message}")
@@ -71,7 +71,7 @@ def test_log_handler():
     print("\n5. Testing circular buffer (max=10):")
     for i in range(15):
         logger.info(f"Message {i}")
-    
+
     all_records = handler.get_records()
     print(f"   ✓ Buffer has {len(all_records)} records (should be 10)")
     print(f"     - First message: {all_records[0].message}")
@@ -94,5 +94,5 @@ def test_log_handler():
     print("\n✅ All tests passed!")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_log_handler()

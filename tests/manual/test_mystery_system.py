@@ -9,7 +9,7 @@ import sys
 import os
 
 # Add parent directory to path so we can import from application
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
 
@@ -20,13 +20,7 @@ def test_basic_mystery():
 
     service = ALTTPRMysteryService()
 
-    mystery_weights = {
-        'weights': {
-            'open': 10,
-            'standard': 5,
-            'inverted': 3
-        }
-    }
+    mystery_weights = {"weights": {"open": 10, "standard": 5, "inverted": 3}}
 
     # Validate
     is_valid, error = service.validate_mystery_weights(mystery_weights)
@@ -51,16 +45,8 @@ def test_mystery_with_subweights():
     service = ALTTPRMysteryService()
 
     mystery_weights = {
-        'weights': {
-            'open': 10,
-            'standard': 5
-        },
-        'subweights': {
-            'open': {
-                'normal': 5,
-                'hard': 3
-            }
-        }
+        "weights": {"open": 10, "standard": 5},
+        "subweights": {"open": {"normal": 5, "hard": 3}},
     }
 
     # Validate
@@ -86,14 +72,8 @@ def test_mystery_with_entrance():
     service = ALTTPRMysteryService()
 
     mystery_weights = {
-        'weights': {
-            'open': 10
-        },
-        'entrance_weights': {
-            'none': 5,
-            'simple': 3,
-            'restricted': 1
-        }
+        "weights": {"open": 10},
+        "entrance_weights": {"none": 5, "simple": 3, "restricted": 1},
     }
 
     # Validate
@@ -119,19 +99,11 @@ def test_mystery_with_customizer():
     service = ALTTPRMysteryService()
 
     mystery_weights = {
-        'weights': {
-            'open': 10
+        "weights": {"open": 10},
+        "customizer": {
+            "eq": {"progressive": 5, "basic": 3},
+            "item_pool": {"normal": 7, "hard": 2},
         },
-        'customizer': {
-            'eq': {
-                'progressive': 5,
-                'basic': 3
-            },
-            'item_pool': {
-                'normal': 7,
-                'hard': 2
-            }
-        }
     }
 
     # Validate
@@ -158,13 +130,17 @@ def test_invalid_mystery():
 
     # Empty mystery
     is_valid, error = service.validate_mystery_weights({})
-    print(f"  Empty mystery: {'✓ PASS (correctly rejected)' if not is_valid else '✗ FAIL (should reject)'}")
+    print(
+        f"  Empty mystery: {'✓ PASS (correctly rejected)' if not is_valid else '✗ FAIL (should reject)'}"
+    )
     if error:
         print(f"    Error message: {error}")
 
     # Non-dict mystery
     is_valid, error = service.validate_mystery_weights("not a dict")
-    print(f"  Non-dict mystery: {'✓ PASS (correctly rejected)' if not is_valid else '✗ FAIL (should reject)'}")
+    print(
+        f"  Non-dict mystery: {'✓ PASS (correctly rejected)' if not is_valid else '✗ FAIL (should reject)'}"
+    )
     if error:
         print(f"    Error message: {error}")
 
@@ -193,6 +169,7 @@ def main():
         except Exception as e:
             print(f"\n✗ Test failed with exception: {e}")
             import traceback
+
             traceback.print_exc()
             results.append(False)
 
@@ -203,6 +180,6 @@ def main():
     return all(results)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = main()
     sys.exit(0 if success else 1)

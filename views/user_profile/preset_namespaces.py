@@ -34,12 +34,14 @@ class PresetNamespacesView:
 
     async def render(self) -> None:
         """Render the preset namespaces management view."""
-        with ui.column().classes('w-full gap-4') as self.container:
+        with ui.column().classes("w-full gap-4") as self.container:
             # Page header
-            with ui.row().classes('items-center justify-between w-full'):
-                with ui.column().classes('gap-1'):
-                    ui.label('Preset Namespaces').classes('text-2xl font-bold')
-                    ui.label('Manage your preset namespaces and delegate permissions to other users.').classes('text-secondary')
+            with ui.row().classes("items-center justify-between w-full"):
+                with ui.column().classes("gap-1"):
+                    ui.label("Preset Namespaces").classes("text-2xl font-bold")
+                    ui.label(
+                        "Manage your preset namespaces and delegate permissions to other users."
+                    ).classes("text-secondary")
 
             await self._render_content()
 
@@ -50,60 +52,69 @@ class PresetNamespacesView:
 
         if not namespaces:
             # Empty state
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-body text-center py-8'):
-                    ui.icon('folder_open', size='64px').classes('text-secondary')
-                    ui.label('No preset namespaces found').classes('text-xl text-secondary mt-2')
-                    ui.label('Your personal namespace will be created automatically when you create your first preset.').classes('text-sm text-secondary')
+            with ui.element("div").classes("card"):
+                with ui.element("div").classes("card-body text-center py-8"):
+                    ui.icon("folder_open", size="64px").classes("text-secondary")
+                    ui.label("No preset namespaces found").classes(
+                        "text-xl text-secondary mt-2"
+                    )
+                    ui.label(
+                        "Your personal namespace will be created automatically when you create your first preset."
+                    ).classes("text-sm text-secondary")
         else:
             # Namespaces table
-            with ui.element('div').classes('card'):
+            with ui.element("div").classes("card"):
+
                 async def render_name_cell(namespace):
-                    with ui.column().classes('gap-1'):
-                        ui.label(namespace.display_name).classes('font-bold')
-                        ui.label(f'ID: {namespace.name}').classes('text-sm text-secondary')
+                    with ui.column().classes("gap-1"):
+                        ui.label(namespace.display_name).classes("font-bold")
+                        ui.label(f"ID: {namespace.name}").classes(
+                            "text-sm text-secondary"
+                        )
 
                 async def render_description_cell(namespace):
                     if namespace.description:
-                        ui.label(namespace.description).classes('text-sm')
+                        ui.label(namespace.description).classes("text-sm")
                     else:
-                        ui.label('—').classes('text-secondary')
+                        ui.label("—").classes("text-secondary")
 
                 async def render_visibility_cell(namespace):
-                    visibility_class = 'badge-success' if namespace.is_public else 'badge-warning'
-                    visibility_text = 'Public' if namespace.is_public else 'Private'
-                    with ui.element('span').classes(f'badge {visibility_class}'):
+                    visibility_class = (
+                        "badge-success" if namespace.is_public else "badge-warning"
+                    )
+                    visibility_text = "Public" if namespace.is_public else "Private"
+                    with ui.element("span").classes(f"badge {visibility_class}"):
                         ui.label(visibility_text)
 
                 async def render_created_cell(namespace):
                     DateTimeLabel.create(namespace.created_at)
 
                 async def render_actions_cell(namespace):
-                    with ui.row().classes('gap-1'):
+                    with ui.row().classes("gap-1"):
                         # Rename button
                         async def rename_namespace():
                             await self._show_rename_dialog(namespace)
 
-                        ui.button(
-                            icon='edit',
-                            on_click=rename_namespace
-                        ).classes('btn btn-sm').props('flat color=primary').tooltip('Rename Namespace')
+                        ui.button(icon="edit", on_click=rename_namespace).classes(
+                            "btn btn-sm"
+                        ).props("flat color=primary").tooltip("Rename Namespace")
 
                         # Manage permissions button
                         async def manage_permissions():
                             await self._show_permissions_dialog(namespace)
 
-                        ui.button(
-                            icon='people',
-                            on_click=manage_permissions
-                        ).classes('btn btn-sm').props('flat color=primary').tooltip('Manage Permissions')
+                        ui.button(icon="people", on_click=manage_permissions).classes(
+                            "btn btn-sm"
+                        ).props("flat color=primary").tooltip("Manage Permissions")
 
                 columns = [
-                    TableColumn(label='Name', cell_render=render_name_cell),
-                    TableColumn(label='Description', cell_render=render_description_cell),
-                    TableColumn(label='Visibility', cell_render=render_visibility_cell),
-                    TableColumn(label='Created', cell_render=render_created_cell),
-                    TableColumn(label='Actions', cell_render=render_actions_cell),
+                    TableColumn(label="Name", cell_render=render_name_cell),
+                    TableColumn(
+                        label="Description", cell_render=render_description_cell
+                    ),
+                    TableColumn(label="Visibility", cell_render=render_visibility_cell),
+                    TableColumn(label="Created", cell_render=render_created_cell),
+                    TableColumn(label="Actions", cell_render=render_actions_cell),
                 ]
 
                 table = ResponsiveTable(columns=columns, rows=namespaces)

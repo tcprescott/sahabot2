@@ -31,12 +31,14 @@ class ALTTPRRaceHandler(SahaRaceHandler):
 
         Usage: !mystery <preset_name>
         """
-        from application.services.randomizer.alttpr_mystery_service import ALTTPRMysteryService
+        from application.services.randomizer.alttpr_mystery_service import (
+            ALTTPRMysteryService,
+        )
         from application.repositories.user_repository import UserRepository
 
         # Extract racetime user info
-        user_data = message.get('user', {})
-        racetime_user_id = user_data.get('id', '')
+        user_data = message.get("user", {})
+        racetime_user_id = user_data.get("id", "")
 
         if not args:
             await self.send_message("Usage: !mystery <preset_name>")
@@ -53,7 +55,9 @@ class ALTTPRRaceHandler(SahaRaceHandler):
             )
 
         if not user:
-            await self.send_message("You must be authenticated to generate mystery seeds.")
+            await self.send_message(
+                "You must be authenticated to generate mystery seeds."
+            )
             return
 
         preset_name = args[0]
@@ -64,21 +68,23 @@ class ALTTPRRaceHandler(SahaRaceHandler):
                 mystery_preset_name=preset_name,
                 user_id=user.id,
                 tournament=True,
-                spoilers='off'
+                spoilers="off",
             )
 
             # Format description
             desc_parts = []
-            if 'preset' in description:
+            if "preset" in description:
                 desc_parts.append(f"Preset: {description['preset']}")
-            if 'subweight' in description:
+            if "subweight" in description:
                 desc_parts.append(f"Subweight: {description['subweight']}")
-            if 'entrance' in description and description['entrance'] != 'none':
+            if "entrance" in description and description["entrance"] != "none":
                 desc_parts.append(f"Entrance: {description['entrance']}")
-            if 'customizer' in description:
+            if "customizer" in description:
                 desc_parts.append("Customizer: enabled")
 
-            desc_text = " | ".join(desc_parts) if desc_parts else "Mystery seed generated"
+            desc_text = (
+                " | ".join(desc_parts) if desc_parts else "Mystery seed generated"
+            )
 
             await self.send_message(
                 f"Mystery seed generated! {result.url} | {desc_text} | Hash: {result.hash_id}"
@@ -92,7 +98,9 @@ class ALTTPRRaceHandler(SahaRaceHandler):
             await self.send_message(f"Error: {str(e)}")
         except Exception as e:
             logger.exception("Unexpected error generating mystery seed")
-            await self.send_message(f"An error occurred generating mystery seed: {str(e)}")
+            await self.send_message(
+                f"An error occurred generating mystery seed: {str(e)}"
+            )
 
     async def ex_custommystery(self, args, message):
         """
@@ -119,8 +127,8 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         from application.repositories.user_repository import UserRepository
 
         # Extract racetime user info
-        user_data = message.get('user', {})
-        racetime_user_id = user_data.get('id', '')
+        user_data = message.get("user", {})
+        racetime_user_id = user_data.get("id", "")
 
         if not args:
             await self.send_message("Usage: !vt <preset_name> [branch]")
@@ -145,7 +153,9 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         # Optional branch parameter (not currently used in sahabot2, but preserving API)
         # branch = args[1] if len(args) > 1 else 'live'
 
-        await self.send_message("Generating game, please wait. If nothing happens after a minute, contact support.")
+        await self.send_message(
+            "Generating game, please wait. If nothing happens after a minute, contact support."
+        )
 
         try:
             service = ALTTPRService()
@@ -153,13 +163,13 @@ class ALTTPRRaceHandler(SahaRaceHandler):
                 preset_name=preset_name,
                 user_id=user.id,
                 tournament=True,
-                spoilers='off',
-                allow_quickswap=True
+                spoilers="off",
+                allow_quickswap=True,
             )
 
             # Format race info
             race_info = f"{preset_name} - {result.url}"
-            if result.hash_id and result.hash_id != 'unknown':
+            if result.hash_id and result.hash_id != "unknown":
                 race_info += f" - ({result.hash_id})"
 
             await self.send_message(result.url)
@@ -189,8 +199,8 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         from application.repositories.user_repository import UserRepository
 
         # Extract racetime user info
-        user_data = message.get('user', {})
-        racetime_user_id = user_data.get('id', '')
+        user_data = message.get("user", {})
+        racetime_user_id = user_data.get("id", "")
 
         if not args:
             await self.send_message("Usage: !vtspoiler <preset_name> [studytime]")
@@ -218,7 +228,9 @@ class ALTTPRRaceHandler(SahaRaceHandler):
         except (ValueError, IndexError):
             studytime = 900
 
-        await self.send_message("Generating game, please wait. If nothing happens after a minute, contact support.")
+        await self.send_message(
+            "Generating game, please wait. If nothing happens after a minute, contact support."
+        )
 
         try:
             service = ALTTPRService()
@@ -226,13 +238,13 @@ class ALTTPRRaceHandler(SahaRaceHandler):
                 preset_name=preset_name,
                 user_id=user.id,
                 tournament=True,
-                spoilers='on',  # Generate with spoiler log
-                allow_quickswap=False
+                spoilers="on",  # Generate with spoiler log
+                allow_quickswap=False,
             )
 
             # Format race info
             race_info = f"spoiler {preset_name} - {result.url}"
-            if result.hash_id and result.hash_id != 'unknown':
+            if result.hash_id and result.hash_id != "unknown":
                 race_info += f" - ({result.hash_id})"
 
             await self.send_message(result.url)
@@ -245,7 +257,9 @@ class ALTTPRRaceHandler(SahaRaceHandler):
                     f"A {studytime}s study time is recommended before starting the race."
                 )
             else:
-                await self.send_message("Note: Spoiler log generation may not be available.")
+                await self.send_message(
+                    "Note: Spoiler log generation may not be available."
+                )
 
             await self.send_message(f"Seed rolling complete. {race_info}")
 
@@ -281,21 +295,20 @@ class ALTTPRRaceHandler(SahaRaceHandler):
 
         preset_name = args[0]
 
-        await self.send_message("Generating Avianart seed, please wait. If nothing happens after a minute, contact support.")
+        await self.send_message(
+            "Generating Avianart seed, please wait. If nothing happens after a minute, contact support."
+        )
 
         try:
             service = AvianartService()
-            result = await service.generate(
-                preset=preset_name,
-                race=True
-            )
+            result = await service.generate(preset=preset_name, race=True)
 
             # Extract file select code and format it
-            file_select_code = result.metadata.get('file_select_code', [])
-            code_str = '/'.join(file_select_code)
+            file_select_code = result.metadata.get("file_select_code", [])
+            code_str = "/".join(file_select_code)
 
             # Extract version
-            version = result.metadata.get('version', 'unknown')
+            version = result.metadata.get("version", "unknown")
 
             await self.send_message(
                 f"Avianart seed generated! {result.url} | "
@@ -307,7 +320,11 @@ class ALTTPRRaceHandler(SahaRaceHandler):
             await self.send_message(f"Error: {str(e)}")
         except TimeoutError as e:
             logger.error("Avianart timeout: %s", str(e))
-            await self.send_message("Seed generation timed out. Please try again or contact support.")
+            await self.send_message(
+                "Seed generation timed out. Please try again or contact support."
+            )
         except Exception as e:
             logger.exception("Unexpected error generating Avianart seed")
-            await self.send_message(f"An error occurred generating Avianart seed: {str(e)}")
+            await self.send_message(
+                f"An error occurred generating Avianart seed: {str(e)}"
+            )

@@ -34,13 +34,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 async def get_me(current_user: User = Depends(get_current_user)) -> UserOut:
     """
     Get current authenticated user profile.
-    
+
     Returns the full profile information for the user associated with the
     provided Bearer token.
-    
+
     Args:
         current_user: Injected current user from Bearer token
-        
+
     Returns:
         UserOut: User profile data
     """
@@ -71,22 +71,21 @@ async def get_me(current_user: User = Depends(get_current_user)) -> UserOut:
 async def list_users(
     current_user: User = Depends(get_current_user),
     include_inactive: bool = Query(
-        False,
-        description="Include inactive/disabled users in the results"
-    )
+        False, description="Include inactive/disabled users in the results"
+    ),
 ) -> UserListResponse:
     """
     List all users (admin only).
-    
+
     Retrieve a list of all users in the system. By default, only active users
     are returned. Set include_inactive=true to include disabled users.
-    
+
     Authorization is enforced at the service layer.
-    
+
     Args:
         current_user: Authenticated user making the request
         include_inactive: Whether to include inactive users
-        
+
     Returns:
         UserListResponse: List of users and total count (empty if unauthorized)
     """
@@ -126,21 +125,21 @@ async def search_users(
         ...,
         min_length=2,
         max_length=100,
-        description="Search query for username (minimum 2 characters)"
-    )
+        description="Search query for username (minimum 2 characters)",
+    ),
 ) -> UserListResponse:
     """
     Search users by username (moderator+).
-    
+
     Search for users whose Discord username contains the search query.
     Case-insensitive partial match search.
-    
+
     Authorization is enforced at the service layer.
-    
+
     Args:
         current_user: Authenticated user making the request
         q: Search query string (2-100 characters)
-        
+
     Returns:
         UserListResponse: Matching users and total count (empty if unauthorized)
     """
@@ -175,73 +174,69 @@ async def search_users(
     },
 )
 async def start_impersonation(
-    user_id: int,
-    request: Request,
-    current_user: User = Depends(get_current_user)
+    user_id: int, request: Request, current_user: User = Depends(get_current_user)
 ) -> UserOut:
     """
     Start impersonating another user (SUPERADMIN only).
-    
+
     Only SUPERADMIN users can impersonate others.
     Cannot impersonate yourself.
     All impersonation actions are audit logged with IP address.
-    
+
     Args:
         user_id: ID of user to impersonate
         request: FastAPI request (for IP address)
         current_user: Currently authenticated user
-        
+
     Returns:
         UserOut: The user being impersonated
-        
+
     Raises:
         HTTPException: 403 if unauthorized, 404 if user not found
     """
     # Get IP address
     ip_address = request.client.host if request.client else None
-    
+
     # Start impersonation via service (handles permissions and audit)
     service = UserService()
     target_user = await service.start_impersonation(
-        admin_user=current_user,
-        target_user_id=user_id,
-        ip_address=ip_address
+        admin_user=current_user, target_user_id=user_id, ip_address=ip_address
     )
-    
+
     if not target_user:
         # Check if it's a permission issue or user not found
         if not current_user.has_permission(Permission.SUPERADMIN):
             logger.warning(
                 "Unauthorized impersonation attempt by user %s (permission: %s) for user %s",
-                current_user.id, current_user.permission.name, user_id
+                current_user.id,
+                current_user.permission.name,
+                user_id,
             )
             raise HTTPException(
-                status_code=403,
-                detail="Only SUPERADMIN users can impersonate others"
+                status_code=403, detail="Only SUPERADMIN users can impersonate others"
             )
         elif current_user.id == user_id:
-            logger.warning("User %s attempted to impersonate themselves", current_user.id)
-            raise HTTPException(
-                status_code=400,
-                detail="Cannot impersonate yourself"
+            logger.warning(
+                "User %s attempted to impersonate themselves", current_user.id
             )
+            raise HTTPException(status_code=400, detail="Cannot impersonate yourself")
         else:
             logger.warning(
                 "User %s attempted to impersonate non-existent user %s",
-                current_user.id, user_id
+                current_user.id,
+                user_id,
             )
-            raise HTTPException(
-                status_code=404,
-                detail="User not found"
-            )
-    
+            raise HTTPException(status_code=404, detail="User not found")
+
     # Set impersonation in session
     await DiscordAuthService.start_impersonation(target_user)
     logger.info(
         "User %s started impersonating user %s from IP %s",
-        current_user.id, target_user.id, ip_address
+        current_user.id,
+        target_user.id,
+        ip_address,
     )
-    
+
     return UserOut.model_validate(target_user)
 
 
@@ -267,54 +262,51 @@ async def start_impersonation(
     },
 )
 async def stop_impersonation(
-    request: Request,
-    current_user: User = Depends(get_current_user)
+    request: Request, current_user: User = Depends(get_current_user)
 ) -> UserOut:
     """
     Stop impersonating and return to original user.
-    
+
     Can only be called when impersonation is active.
     All impersonation actions are audit logged with IP address.
-    
+
     Args:
         request: FastAPI request (for IP address)
         current_user: Currently authenticated user (impersonated user)
-        
+
     Returns:
         UserOut: The original user
-        
+
     Raises:
         HTTPException: 400 if not currently impersonating
     """
     # Check if impersonation is active
     if not DiscordAuthService.is_impersonating():
         logger.warning("Stop impersonation called when not impersonating")
-        raise HTTPException(
-            status_code=400,
-            detail="Not currently impersonating"
-        )
-    
+        raise HTTPException(status_code=400, detail="Not currently impersonating")
+
     # Get original user and impersonated user
     original_user = await DiscordAuthService.get_original_user()
     impersonated_user = current_user  # This is the impersonated user
-    
+
     # Get IP address
     ip_address = request.client.host if request.client else None
-    
+
     # Stop impersonation via service (audit logging)
     service = UserService()
     await service.stop_impersonation(
         original_user=original_user,
         impersonated_user=impersonated_user,
-        ip_address=ip_address
+        ip_address=ip_address,
     )
-    
+
     # Clear impersonation from session
     await DiscordAuthService.stop_impersonation()
     logger.info(
         "User %s stopped impersonating user %s from IP %s",
-        original_user.id, impersonated_user.id, ip_address
+        original_user.id,
+        impersonated_user.id,
+        ip_address,
     )
-    
-    return UserOut.model_validate(original_user)
 
+    return UserOut.model_validate(original_user)

@@ -20,7 +20,9 @@ class _InMemoryLimiter:
         self._buckets: Dict[int, Deque[float]] = defaultdict(deque)
         self._locks: Dict[int, asyncio.Lock] = defaultdict(asyncio.Lock)
 
-    async def check_and_consume(self, user_id: int, limit: int, window_seconds: int) -> Tuple[bool, float]:
+    async def check_and_consume(
+        self, user_id: int, limit: int, window_seconds: int
+    ) -> Tuple[bool, float]:
         """
         Attempt to consume one request for user_id.
 
@@ -51,5 +53,9 @@ class RateLimitService:
     def __init__(self) -> None:
         self._limiter = _InMemoryLimiter()
 
-    async def enforce(self, user_id: int, per_minute: int, window_seconds: int) -> Tuple[bool, float]:
-        return await self._limiter.check_and_consume(user_id, per_minute, window_seconds)
+    async def enforce(
+        self, user_id: int, per_minute: int, window_seconds: int
+    ) -> Tuple[bool, float]:
+        return await self._limiter.check_and_consume(
+            user_id, per_minute, window_seconds
+        )
