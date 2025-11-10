@@ -14,6 +14,9 @@ from views.tournament_admin.tournament_settings import TournamentSettingsView
 from views.tournament_admin.tournament_randomizer_settings import (
     TournamentRandomizerSettingsView,
 )
+from views.tournament_admin.tournament_preset_selection_rules import (
+    TournamentPresetSelectionRulesView,
+)
 
 __all__ = [
     "TournamentOverviewView",
@@ -22,4 +25,5 @@ __all__ = [
     "TournamentDiscordEventsView",
     "TournamentSettingsView",
     "TournamentRandomizerSettingsView",
+    "TournamentPresetSelectionRulesView",
 ]

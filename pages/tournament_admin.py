@@ -17,6 +17,7 @@ from views.tournament_admin import (
     TournamentDiscordEventsView,
     TournamentSettingsView,
     TournamentRandomizerSettingsView,
+    TournamentPresetSelectionRulesView,
 )
 
 
@@ -127,6 +128,17 @@ def register():
                         )
                         await view.render()
 
+            async def load_preset_rules():
+                """Load preset selection rules."""
+                container = page.get_dynamic_content_container()
+                if container:
+                    container.clear()
+                    with container:
+                        view = TournamentPresetSelectionRulesView(
+                            page.user, org, tournament
+                        )
+                        await view.render()
+
             # Register loaders
             page.register_content_loader("overview", load_overview)
             page.register_content_loader("players", load_players)
@@ -135,6 +147,7 @@ def register():
             page.register_content_loader(
                 "randomizer-settings", load_randomizer_settings
             )
+            page.register_content_loader("preset-rules", load_preset_rules)
             page.register_content_loader("settings", load_settings)
 
             # Load initial content only if no view parameter was specified
@@ -159,6 +172,9 @@ def register():
             ),
             base.create_sidebar_item_with_loader(
                 "Randomizer Settings", "casino", "randomizer-settings"
+            ),
+            base.create_sidebar_item_with_loader(
+                "Preset Selection Rules", "rule", "preset-rules"
             ),
             base.create_sidebar_item_with_loader("Settings", "tune", "settings"),
         ]
