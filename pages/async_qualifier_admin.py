@@ -50,30 +50,30 @@ def register():
                 return
 
             # Get async qualifier
-            tournament = await async_service.get_tournament(
-                page.user, organization_id, tournament_id
+            qualifier = await async_service.get_tournament(
+                page.user, organization_id, qualifier_id
             )
-            if not tournament:
-                ui.label("Async tournament not found").classes("text-negative")
+            if not qualifier:
+                ui.label("Async qualifier not found").classes("text-negative")
                 return
 
-            # Tournament header
+            # Qualifier header
             with ui.element("div").classes("card mb-4"):
                 with ui.element("div").classes("card-header"):
                     with ui.row().classes("items-center justify-between w-full"):
-                        ui.label(tournament.name).classes("text-2xl font-bold")
+                        ui.label(qualifier.name).classes("text-2xl font-bold")
                         ui.button(
                             "View Dashboard",
                             icon="visibility",
                             on_click=lambda: ui.navigate.to(
-                                f"/org/{organization_id}/async/{tournament_id}"
+                                f"/org/{organization_id}/async/{qualifier_id}"
                             ),
                         ).classes("btn")
 
             # Register content loaders for different sections
             async def load_overview():
                 """Load async qualifier overview/dashboard."""
-                view = AsyncDashboardView(page.user, tournament)
+                view = AsyncDashboardView(page.user, qualifier)
                 await page.load_view_into_container(view)
 
             async def load_settings():

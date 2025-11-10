@@ -73,8 +73,8 @@ class AsyncQualifierCommands(commands.Cog):
             return
 
         embed = discord.Embed(
-            title=tournament.name,
-            description=tournament.description or "Async Tournament",
+            title=qualifier.name,
+            description=qualifier.description or "Async Qualifier",
             color=discord.Color.blue(),
         )
         embed.add_field(
@@ -88,9 +88,9 @@ class AsyncQualifierCommands(commands.Cog):
             inline=True,
         )
         embed.add_field(
-            name="Runs Per Pool", value=str(tournament.runs_per_pool), inline=True
+            name="Runs Per Pool", value=str(qualifier.runs_per_pool), inline=True
         )
-        embed.set_footer(text=f"Tournament ID: {tournament.id}")
+        embed.set_footer(text=f"Qualifier ID: {qualifier.id}")
 
         await interaction.response.send_message(
             embed=embed, view=AsyncQualifierMainView()

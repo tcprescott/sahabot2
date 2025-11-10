@@ -49,7 +49,7 @@ class AsyncQualifierMainView(ui.View):
 
         if not qualifier.is_active:
             await interaction.response.send_message(
-                "This tournament is not currently active.", ephemeral=True
+                "This qualifier is not currently active.", ephemeral=True
             )
             return
 
@@ -84,7 +84,7 @@ class AsyncQualifierMainView(ui.View):
 
         if not is_member:
             await interaction.response.send_message(
-                "You must be a member of this tournament's organization to participate.",
+                "You must be a member of this qualifier's organization to participate.",
                 ephemeral=True,
             )
             return
@@ -92,8 +92,8 @@ class AsyncQualifierMainView(ui.View):
         # Check if user already has an active race
         existing_races = await service.get_active_races_for_user(
             user=user,
-            organization_id=tournament.organization_id,
-            tournament_id=tournament.id,
+            organization_id=qualifier.organization_id,
+            qualifier_id=qualifier.id,
         )
 
         if existing_races:
@@ -145,7 +145,7 @@ class AsyncQualifierMainView(ui.View):
             return
 
         # Show pool selection
-        view = PoolSelectionView(available_pools, tournament, user)
+        view = PoolSelectionView(available_pools, qualifier, user)
         await interaction.response.send_message(
             "You must start your race within 10 minutes of clicking 'Confirm'.\n"
             "Failure to do so will result in a forfeit.\n\n"
@@ -162,7 +162,7 @@ class PoolSelectionView(ui.View):
     def __init__(self, pools, qualifier: AsyncQualifier, user: User):
         super().__init__(timeout=60)
         self.pools = pools
-        self.tournament = tournament
+        self.qualifier = qualifier
         self.user = user
         self.selected_pool = None
 
@@ -223,7 +223,7 @@ class PoolSelectionView(ui.View):
         # Get user's race history for this pool
         user_pool_races = await AsyncQualifierRace.filter(
             user_id=self.user.id,
-            tournament_id=self.tournament.id,
+            tournament_id=self.qualifier.id,
             permalink__pool_id=self.selected_pool.id,
             reattempted=False,
         ).prefetch_related("permalink")
@@ -251,8 +251,8 @@ class PoolSelectionView(ui.View):
         # Create race record
         race = await service.create_race(
             user=self.user,
-            organization_id=self.tournament.organization_id,
-            tournament_id=self.tournament.id,
+            organization_id=self.qualifier.organization_id,
+            qualifier_id=self.qualifier.id,
             permalink_id=permalink.id,
             discord_thread_id=thread.id,
         )

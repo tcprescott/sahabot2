@@ -55,7 +55,7 @@ async def list_async_qualifiers(
         AsyncQualifierListResponse: List of async qualifiers (empty if unauthorized)
     """
     service = AsyncQualifierService()
-    tournaments = await service.list_org_qualifiers(current_user, organization_id)
+    tournaments = await service.list_org_tournaments(current_user, organization_id)
     items = [
         AsyncQualifierOut.model_validate(tournament) for tournament in tournaments
     ]
@@ -100,7 +100,7 @@ async def create_async_qualifier(
         HTTPException: 403 if user lacks permission
     """
     service = AsyncQualifierService()
-    tournament, warnings = await service.create_qualifier(
+    tournament, warnings = await service.create_tournament(
         user=current_user,
         organization_id=organization_id,
         name=data.name,
@@ -159,7 +159,7 @@ async def get_async_qualifier(
         HTTPException: 404 if tournament not found
     """
     service = AsyncQualifierService()
-    tournament = await service.get_qualifier(
+    tournament = await service.get_tournament(
         current_user, organization_id, tournament_id
     )
 
@@ -227,10 +227,10 @@ async def update_async_qualifier(
     if data.runs_per_pool is not None:
         update_fields["runs_per_pool"] = data.runs_per_pool
 
-    tournament, warnings = await service.update_qualifier(
+    tournament, warnings = await service.update_tournament(
         user=current_user,
         organization_id=organization_id,
-        tournament_id=tournament_id,
+        qualifier_id=tournament_id,
         **update_fields
     )
 
@@ -280,8 +280,8 @@ async def delete_async_qualifier(
         HTTPException: 404 if tournament not found
     """
     service = AsyncQualifierService()
-    success = await service.delete_qualifier(
-        user=current_user, organization_id=organization_id, tournament_id=tournament_id
+    success = await service.delete_tournament(
+        user=current_user, organization_id=organization_id, qualifier_id=tournament_id
     )
 
     if not success:
@@ -355,7 +355,7 @@ async def get_review_queue(
     races = await service.get_review_queue(
         user=current_user,
         organization_id=organization_id,
-        tournament_id=tournament_id,
+        qualifier_id=tournament_id,
         status=status_filter,
         review_status=review_status_filter,
         reviewed_by_id=reviewer_filter,
