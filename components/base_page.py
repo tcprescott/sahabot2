@@ -357,9 +357,14 @@ class BasePage:
             await ui.run_javascript(f"""
                 const currentPath = window.location.pathname;
                 const pathParts = currentPath.split('/').filter(p => p);
-                // Remove last part if it looks like a view (not a number)
-                if (pathParts.length > 0 && isNaN(pathParts[pathParts.length - 1])) {{
-                    pathParts.pop();
+                // Remove last part if it's not purely numeric (i.e., it's likely a view identifier)
+                // View identifiers are typically kebab-case or snake_case strings
+                if (pathParts.length > 0) {{
+                    const lastPart = pathParts[pathParts.length - 1];
+                    // If last part is not a pure number, remove it (it's likely a previous view)
+                    if (isNaN(parseInt(lastPart)) || lastPart !== String(parseInt(lastPart))) {{
+                        pathParts.pop();
+                    }}
                 }}
                 pathParts.push('{key}');
                 const newPath = '/' + pathParts.join('/');

@@ -74,7 +74,7 @@ def register():
                     "You must be a member of this organization to view organization features.",
                     color="negative",
                 )
-                ui.navigate.to("/organizations")
+                ui.navigate.to("/?view=organizations")
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -85,7 +85,7 @@ def register():
                     with ui.element("div").classes("card-body"):
                         ui.button(
                             "Back to Organizations",
-                            on_click=lambda: ui.navigate.to("/organizations"),
+                            on_click=lambda: ui.navigate.to("/?view=organizations"),
                         ).classes("btn")
                 return
 
@@ -105,7 +105,7 @@ def register():
         # Create sidebar items
         sidebar_items = [
             base.create_nav_link(
-                "Back to Organizations", "arrow_back", "/organizations"
+                "Back to Organizations", "arrow_back", "/?view=organizations"
             ),
             base.create_separator(),
             base.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
@@ -188,7 +188,7 @@ def register():
                     "You must be a member of this organization to view organization features.",
                     color="negative",
                 )
-                ui.navigate.to("/organizations")
+                ui.navigate.to("/?view=organizations")
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -199,7 +199,7 @@ def register():
                     with ui.element("div").classes("card-body"):
                         ui.button(
                             "Back to Organizations",
-                            on_click=lambda: ui.navigate.to("/organizations"),
+                            on_click=lambda: ui.navigate.to("/?view=organizations"),
                         ).classes("btn")
                 return
 
@@ -382,7 +382,7 @@ def register():
                     "You must be a member of this organization to view organization features.",
                     color="negative",
                 )
-                ui.navigate.to("/organizations")
+                ui.navigate.to("/?view=organizations")
                 return
 
             org = await org_service.get_organization(organization_id)
@@ -393,7 +393,7 @@ def register():
                     with ui.element("div").classes("card-body"):
                         ui.button(
                             "Back to Organizations",
-                            on_click=lambda: ui.navigate.to("/organizations"),
+                            on_click=lambda: ui.navigate.to("/?view=organizations"),
                         ).classes("btn")
                 return
 
