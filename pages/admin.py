@@ -67,54 +67,16 @@ def register():
 
             # Register content loaders
             page.register_content_loader("overview", load_overview)
-            page.register_content_loader(
-                "users",
-                page.create_instance_view_loader(lambda: AdminUsersView(page.user)),
-            )
-            page.register_content_loader(
-                "organizations",
-                page.create_instance_view_loader(
-                    lambda: AdminOrganizationsView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "org-requests",
-                page.create_instance_view_loader(lambda: OrgRequestsView(page.user)),
-            )
-            page.register_content_loader(
-                "racetime-bots",
-                page.create_instance_view_loader(
-                    lambda: AdminRacetimeBotsView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "presets",
-                page.create_instance_view_loader(
-                    lambda: PresetsView(page.user, RandomizerPresetService())
-                ),
-            )
-            page.register_content_loader(
-                "namespaces",
-                page.create_instance_view_loader(
-                    lambda: PresetNamespacesView(page.user)
-                ),
-            )
-            page.register_content_loader(
-                "scheduled-tasks",
-                page.create_instance_view_loader(lambda: ScheduledTasksView(page.user)),
-            )
-            page.register_content_loader(
-                "audit-logs",
-                page.create_instance_view_loader(lambda: AdminAuditLogsView(page.user)),
-            )
-            page.register_content_loader(
-                "logs",
-                page.create_instance_view_loader(lambda: AdminLogsView(page.user)),
-            )
-            page.register_content_loader(
-                "settings",
-                page.create_instance_view_loader(lambda: AdminSettingsView(page.user)),
-            )
+            page.register_instance_view("users", lambda: AdminUsersView(page.user))
+            page.register_instance_view("organizations", lambda: AdminOrganizationsView(page.user))
+            page.register_instance_view("org-requests", lambda: OrgRequestsView(page.user))
+            page.register_instance_view("racetime-bots", lambda: AdminRacetimeBotsView(page.user))
+            page.register_instance_view("presets", lambda: PresetsView(page.user, RandomizerPresetService()))
+            page.register_instance_view("namespaces", lambda: PresetNamespacesView(page.user))
+            page.register_instance_view("scheduled-tasks", lambda: ScheduledTasksView(page.user))
+            page.register_instance_view("audit-logs", lambda: AdminAuditLogsView(page.user))
+            page.register_instance_view("logs", lambda: AdminLogsView(page.user))
+            page.register_instance_view("settings", lambda: AdminSettingsView(page.user))
 
             # Load initial content only if no view parameter was specified
             if not page.initial_view:
@@ -124,27 +86,19 @@ def register():
         sidebar_items = [
             base.create_nav_link("Home", "home", "/"),
             base.create_separator(),
-            base.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
-            base.create_sidebar_item_with_loader("Users", "people", "users"),
-            base.create_sidebar_item_with_loader(
-                "Organizations", "domain", "organizations"
-            ),
-            base.create_sidebar_item_with_loader(
-                "Org Requests", "pending_actions", "org-requests"
-            ),
-            base.create_sidebar_item_with_loader(
-                "RaceTime Bots", "smart_toy", "racetime-bots"
-            ),
-            base.create_sidebar_item_with_loader("Presets", "code", "presets"),
-            base.create_sidebar_item_with_loader("Namespaces", "folder", "namespaces"),
-            base.create_sidebar_item_with_loader(
-                "Scheduled Tasks", "schedule", "scheduled-tasks"
-            ),
-            base.create_sidebar_item_with_loader("Audit Logs", "history", "audit-logs"),
-            base.create_sidebar_item_with_loader(
-                "Application Logs", "terminal", "logs"
-            ),
-            base.create_sidebar_item_with_loader("Settings", "settings", "settings"),
         ]
+        sidebar_items.extend(base.create_sidebar_items([
+            ("Overview", "dashboard", "overview"),
+            ("Users", "people", "users"),
+            ("Organizations", "domain", "organizations"),
+            ("Org Requests", "pending_actions", "org-requests"),
+            ("RaceTime Bots", "smart_toy", "racetime-bots"),
+            ("Presets", "code", "presets"),
+            ("Namespaces", "folder", "namespaces"),
+            ("Scheduled Tasks", "schedule", "scheduled-tasks"),
+            ("Audit Logs", "history", "audit-logs"),
+            ("Application Logs", "terminal", "logs"),
+            ("Settings", "settings", "settings"),
+        ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)

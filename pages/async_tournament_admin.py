@@ -73,12 +73,8 @@ def register():
             # Register content loaders for different sections
             async def load_overview():
                 """Load async tournament overview/dashboard."""
-                container = page.get_dynamic_content_container()
-                if container:
-                    container.clear()
-                    with container:
-                        view = AsyncDashboardView(page.user, tournament)
-                        await view.render()
+                view = AsyncDashboardView(page.user, tournament)
+                await page.load_view_into_container(view)
 
             async def load_settings():
                 """Load async tournament settings."""
@@ -111,8 +107,10 @@ def register():
                 f"/orgs/{organization_id}/admin?view=async_tournaments",
             ),
             base.create_separator(),
-            base.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
-            base.create_sidebar_item_with_loader("Settings", "tune", "settings"),
         ]
+        sidebar_items.extend(base.create_sidebar_items([
+            ("Overview", "dashboard", "overview"),
+            ("Settings", "tune", "settings"),
+        ]))
 
         await base.render(content, sidebar_items, use_dynamic_content=True)
