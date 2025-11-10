@@ -45,6 +45,7 @@ class AsyncTournamentDialog(BaseDialog):
         self.hide_results_switch: Optional[ui.switch] = None
         self.require_racetime_switch: Optional[ui.switch] = None
         self.runs_per_pool_input: Optional[ui.number] = None
+        self.max_reattempts_input: Optional[ui.number] = None
         self.discord_channel_select: Optional[ui.select] = None
         self.manual_channel_input: Optional[ui.input] = None
 
@@ -118,6 +119,23 @@ class AsyncTournamentDialog(BaseDialog):
                     )
                     .classes("w-full")
                     .props("outlined")
+                )
+
+            with ui.element("div"):
+                self.max_reattempts_input = (
+                    ui.number(
+                        label="Max Re-attempts",
+                        value=self.tournament.max_reattempts if self.tournament else -1,
+                        min=-1,
+                        max=100,
+                        step=1,
+                        precision=0,
+                    )
+                    .classes("w-full")
+                    .props("outlined")
+                )
+                ui.label("Maximum number of re-attempts per player (-1 = unlimited, 0 = none)").classes(
+                    "text-sm text-secondary"
                 )
                 ui.label("How many times each pool can be attempted").classes(
                     "text-sm text-secondary"
@@ -260,6 +278,10 @@ class AsyncTournamentDialog(BaseDialog):
             ui.notify("Runs per pool must be at least 1", type="warning")
             return
 
+        if self.max_reattempts_input and self.max_reattempts_input.value < -1:
+            ui.notify("Max re-attempts must be -1 (unlimited) or greater", type="warning")
+            return
+
         # Determine Discord channel ID (manual input takes precedence)
         discord_channel_id = None
         if (
@@ -299,6 +321,7 @@ class AsyncTournamentDialog(BaseDialog):
                 else False
             ),
             "runs_per_pool": int(self.runs_per_pool_input.value),
+            "max_reattempts": int(self.max_reattempts_input.value) if self.max_reattempts_input else -1,
             "discord_channel_id": discord_channel_id,
         }
 

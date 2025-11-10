@@ -46,6 +46,7 @@ class AsyncTournamentRepository:
         hide_results: bool = False,
         discord_channel_id: Optional[int] = None,
         runs_per_pool: int = 1,
+        max_reattempts: int = -1,
         require_racetime_for_async_runs: bool = False,
     ) -> AsyncTournament:
         """Create a new async tournament."""
@@ -57,6 +58,7 @@ class AsyncTournamentRepository:
             hide_results=hide_results,
             discord_channel_id=discord_channel_id,
             runs_per_pool=runs_per_pool,
+            max_reattempts=max_reattempts,
             require_racetime_for_async_runs=require_racetime_for_async_runs,
         )
         logger.info(
@@ -491,4 +493,52 @@ class AsyncTournamentRepository:
             review_status,
             reviewer_id,
         )
+        return race
+
+    async def count_reattempted_races(
+        self, user_id: int, tournament_id: int
+    ) -> int:
+        """
+        Count number of reattempted races for a user in a tournament.
+
+        Args:
+            user_id: User ID
+            tournament_id: Tournament ID
+
+        Returns:
+            Number of reattempted races
+        """
+        count = (
+            await AsyncTournamentRace.filter(
+                user_id=user_id, tournament_id=tournament_id, reattempted=True
+            ).count()
+        )
+        logger.debug(
+            "User %s has %d reattempted races in tournament %s",
+            user_id,
+            count,
+            tournament_id,
+        )
+        return count
+
+    async def mark_race_reattempted(
+        self, race_id: int
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Mark a race as reattempted.
+
+        Args:
+            race_id: Race ID to mark
+
+        Returns:
+            Updated race or None if not found
+        """
+        race = await AsyncTournamentRace.get_or_none(id=race_id)
+        if not race:
+            logger.warning("Race %s not found for reattempt marking", race_id)
+            return None
+
+        race.reattempted = True
+        await race.save()
+        logger.info("Marked race %s as reattempted", race_id)
         return race

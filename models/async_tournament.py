@@ -42,6 +42,9 @@ class AsyncTournament(Model):
     runs_per_pool = fields.SmallIntField(
         default=1
     )  # Number of runs each player can do per pool
+    max_reattempts = fields.SmallIntField(
+        default=-1
+    )  # Maximum number of re-attempts allowed per player (-1 = unlimited, 0 = none)
     require_racetime_for_async_runs = fields.BooleanField(
         default=False
     )  # Require RaceTime.gg account for async runs

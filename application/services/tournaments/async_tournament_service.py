@@ -209,6 +209,7 @@ class AsyncTournamentService:
         hide_results: bool = False,
         discord_channel_id: Optional[int] = None,
         runs_per_pool: int = 1,
+        max_reattempts: int = -1,
         require_racetime_for_async_runs: bool = False,
     ) -> Tuple[Optional[AsyncTournament], List[str]]:
         """
@@ -260,6 +261,7 @@ class AsyncTournamentService:
             hide_results=hide_results,
             discord_channel_id=discord_channel_id,
             runs_per_pool=runs_per_pool,
+            max_reattempts=max_reattempts,
             require_racetime_for_async_runs=require_racetime_for_async_runs,
         )
 
@@ -1354,3 +1356,140 @@ class AsyncTournamentService:
             )
 
         return updated_race
+
+    async def get_reattempt_count(
+        self, user: User, organization_id: int, tournament_id: int
+    ) -> int:
+        """
+        Get the number of times a user has re-attempted races in a tournament.
+
+        Args:
+            user: User to check
+            organization_id: Organization ID
+            tournament_id: Tournament ID
+
+        Returns:
+            Number of re-attempted races
+        """
+        # Verify access
+        tournament = await self.get_tournament(user, organization_id, tournament_id)
+        if not tournament:
+            return 0
+
+        # Count races marked as reattempted by this user
+        count = await self.repo.count_reattempted_races(user.id, tournament_id)
+        logger.debug(
+            "User %s has %d reattempted races in tournament %s",
+            user.id,
+            count,
+            tournament_id,
+        )
+        return count
+
+    async def can_reattempt_race(
+        self, user: User, organization_id: int, race_id: int
+    ) -> tuple[bool, Optional[str]]:
+        """
+        Check if a user can re-attempt a specific race.
+
+        Args:
+            user: User attempting to re-attempt
+            organization_id: Organization ID
+            race_id: Race ID to re-attempt
+
+        Returns:
+            Tuple of (can_reattempt: bool, reason: Optional[str])
+            reason is None if can_reattempt is True, otherwise contains error message
+        """
+        # Get the race
+        race = await self.repo.get_race_by_id(race_id)
+        if not race:
+            return False, "Race not found"
+
+        # Verify race belongs to the user
+        if race.user_id != user.id:
+            return False, "You can only re-attempt your own races"
+
+        # Verify race status (can only reattempt finished or forfeit races)
+        if race.status not in ["finished", "forfeit"]:
+            return (
+                False,
+                f"You can only re-attempt completed or forfeited races (current status: {race.status})",
+            )
+
+        # Verify race hasn't already been reattempted
+        if race.reattempted:
+            return False, "This race has already been marked as re-attempted"
+
+        # Get the tournament
+        await race.fetch_related("tournament")
+        tournament = race.tournament
+
+        # Verify access to tournament
+        tournament_check = await self.get_tournament(
+            user, organization_id, tournament.id
+        )
+        if not tournament_check:
+            return False, "You do not have access to this tournament"
+
+        # Check re-attempt limit (-1 = unlimited, 0 = none allowed, >0 = specific limit)
+        if tournament.max_reattempts == 0:
+            return False, "Re-attempts are not allowed for this tournament"
+        
+        if tournament.max_reattempts > 0:
+            current_count = await self.get_reattempt_count(
+                user, organization_id, tournament.id
+            )
+            if current_count >= tournament.max_reattempts:
+                return (
+                    False,
+                    f"You have reached the maximum number of re-attempts ({tournament.max_reattempts})",
+                )
+
+        return True, None
+
+    async def mark_race_as_reattempted(
+        self, user: User, organization_id: int, race_id: int
+    ) -> Optional[AsyncTournamentRace]:
+        """
+        Mark a race as re-attempted, excluding it from scoring.
+
+        Args:
+            user: User re-attempting the race
+            organization_id: Organization ID
+            race_id: Race ID to mark as reattempted
+
+        Returns:
+            Updated race or None if failed
+        """
+        # Check if reattempt is allowed
+        can_reattempt, reason = await self.can_reattempt_race(
+            user, organization_id, race_id
+        )
+        if not can_reattempt:
+            logger.warning(
+                "User %s cannot re-attempt race %s: %s", user.id, race_id, reason
+            )
+            return None
+
+        # Mark race as reattempted
+        race = await self.repo.mark_race_reattempted(race_id)
+        if not race:
+            logger.error("Failed to mark race %s as reattempted", race_id)
+            return None
+
+        # Create audit log
+        await race.fetch_related("tournament")
+        await self.repo.create_audit_log(
+            tournament_id=race.tournament_id,
+            action="mark_race_reattempted",
+            details=f"User {user.id} marked race {race_id} as reattempted",
+            user_id=user.id,
+        )
+
+        # Recalculate scores since this race is now excluded
+        await race.fetch_related("permalink")
+        await self.calculate_permalink_scores(race.permalink_id, organization_id)
+
+        logger.info("User %s marked race %s as reattempted", user.id, race_id)
+        return race

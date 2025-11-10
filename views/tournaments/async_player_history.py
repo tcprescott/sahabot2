@@ -10,6 +10,7 @@ from models import User
 from models.async_tournament import AsyncTournament
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
+from components.dialogs.tournaments import RaceReattemptDialog
 from application.services.tournaments.async_tournament_service import (
     AsyncTournamentService,
 )
@@ -95,6 +96,7 @@ class AsyncPlayerHistoryView:
             TableColumn(
                 label="Reattempted", cell_render=lambda r: self._render_reattempted(r)
             ),
+            TableColumn(label="Actions", cell_render=lambda r: self._render_actions(r)),
         ]
 
         # Fetch related data for all races
@@ -150,3 +152,34 @@ class AsyncPlayerHistoryView:
             ui.label("Yes").classes("badge badge-warning")
         else:
             ui.label("—")
+
+    def _render_actions(self, race):
+        """Render actions cell."""
+        # Only show re-attempt button for the current user's races
+        if self.current_user.id != self.player_id:
+            ui.label("—")
+            return
+
+        # Only show re-attempt for finished or forfeit races that haven't been reattempted
+        if race.status in ["finished", "forfeit"] and not race.reattempted:
+            ui.button(
+                icon="replay",
+                on_click=lambda r=race: self._show_reattempt_dialog(r),
+            ).classes("btn btn-sm").tooltip("Re-attempt Race")
+        else:
+            ui.label("—")
+
+    async def _show_reattempt_dialog(self, race):
+        """Show the re-attempt dialog for a race."""
+        dialog = RaceReattemptDialog(
+            race=race,
+            current_user=self.current_user,
+            organization_id=self.tournament.organization_id,
+            on_success=self._on_reattempt_success,
+        )
+        await dialog.show()
+
+    async def _on_reattempt_success(self):
+        """Handle successful re-attempt."""
+        # Re-render the view to show updated status
+        await self.render()
