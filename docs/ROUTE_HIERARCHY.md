@@ -4,6 +4,13 @@ This document provides a comprehensive overview of all routes in the SahaBot2 ap
 
 **Last Updated**: November 10, 2024
 
+> **⚠️ Important**: This document must be kept up-to-date whenever routes are added, removed, or modified. When making changes to routes:
+> - **Adding routes**: Add the new route to the appropriate section
+> - **Removing routes**: Remove the route from this document
+> - **Changing paths**: Update the path in the corresponding table
+> - **Adding views**: Document available views for dynamic content pages
+> - **Update the "Last Updated" date** at the top of this file
+
 ---
 
 ## Table of Contents

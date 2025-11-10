@@ -67,7 +67,25 @@ def init_frontend():
 
 If the page should appear in navigation, update `components/sidebar.py` or `components/header.py`.
 
-### Step 4: Test
+### Step 4: Update Route Documentation
+
+**Always update `docs/ROUTE_HIERARCHY.md`** when adding a new page:
+
+```markdown
+# In docs/ROUTE_HIERARCHY.md
+
+## UI Routes (NiceGUI Pages)
+
+### [Appropriate Section]
+
+| Route | Description | File |
+|-------|-------------|------|
+| `/my-feature` | My feature landing page | `pages/my_feature.py` |
+```
+
+If the page supports dynamic views (uses `/{view}` pattern), document all available views.
+
+### Step 5: Test
 
 1. Start the application: `./start.sh dev`
 2. Navigate to `/my-feature`
@@ -972,7 +990,27 @@ def register_routes(app):
     app.include_router(my_routes.router)
 ```
 
-### Step 3: Test API
+### Step 3: Update Route Documentation
+
+**Always update `docs/ROUTE_HIERARCHY.md`** when adding API endpoints:
+
+```markdown
+# In docs/ROUTE_HIERARCHY.md
+
+## REST API Routes (FastAPI)
+
+### [Appropriate Section]
+
+Base path: `/api/my-items`
+
+| Method | Route | Description | Auth Required | File |
+|--------|-------|-------------|---------------|------|
+| GET | `/` | List items for organization | Yes | `api/routes/my_routes.py` |
+| POST | `/` | Create new item | Yes | `api/routes/my_routes.py` |
+| GET | `/{item_id}` | Get item details | Yes | `api/routes/my_routes.py` |
+```
+
+### Step 4: Test API
 
 1. Start application
 2. Navigate to `/docs` (Swagger UI)
