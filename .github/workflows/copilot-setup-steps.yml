@@ -54,7 +54,7 @@ jobs:
       
       - name: Set up test environment
         run: |
-          poetry run python setup_test_env.py --preset tiny --skip-data
+          poetry run python tools/setup_test_env.py --preset tiny --skip-data
           echo "Test environment configured successfully"
       
       - name: Verify environment
