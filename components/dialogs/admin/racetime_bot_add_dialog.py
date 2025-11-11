@@ -42,6 +42,7 @@ class RacetimeBotAddDialog(BaseDialog):
         self.client_secret = ""
         self.name = ""
         self.description = ""
+        self.handler_class = "SahaRaceHandler"
         self.is_active = True
 
     async def show(self) -> None:
@@ -114,6 +115,31 @@ class RacetimeBotAddDialog(BaseDialog):
                         lambda e: setattr(self, "description", e.args.strip()),
                     )
 
+            # Handler class selection
+            with ui.row().classes("full-width items-center gap-2"):
+                ui.label("Handler Class *").classes("font-medium")
+                ui.icon("info").classes("text-grey-7").tooltip(
+                    "The Python handler class that provides race room commands and behavior. "
+                    "Choose a category-specific handler (e.g., ALTTPRRaceHandler) or use the default SahaRaceHandler."
+                )
+
+            handler_options = [
+                "SahaRaceHandler",
+                "ALTTPRRaceHandler",
+                "SMRaceHandler",
+                "SMZ3RaceHandler",
+                "AsyncLiveRaceHandler",
+            ]
+            handler_select = ui.select(
+                options=handler_options,
+                value=self.handler_class,
+                label="Handler",
+            ).classes("w-full")
+            handler_select.on(
+                "update:model-value",
+                lambda e: setattr(self, "handler_class", e.args),
+            )
+
             # Active status
             status_checkbox = ui.checkbox("Active", value=self.is_active)
             status_checkbox.on(
@@ -152,6 +178,7 @@ class RacetimeBotAddDialog(BaseDialog):
                 client_secret=self.client_secret,
                 name=self.name,
                 description=self.description if self.description else None,
+                handler_class=self.handler_class,
                 is_active=self.is_active,
                 current_user=self.current_user,
             )

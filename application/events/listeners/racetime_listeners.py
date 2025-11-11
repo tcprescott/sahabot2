@@ -119,6 +119,26 @@ async def advance_match_on_race_status_changed(
                     "Match %s already finished, skipping auto-advance", event.match_id
                 )
 
+        elif event.new_status == "cancelled":
+            # Race cancelled - unlink RaceTime room from match
+            from models.racetime_room import RacetimeRoom
+
+            room = await RacetimeRoom.filter(
+                slug=event.room_slug, match_id=event.match_id
+            ).first()
+            if room:
+                await room.delete()
+                logger.info(
+                    "Auto-unlinked RaceTime room %s from match %s (race cancelled)",
+                    event.room_slug,
+                    event.match_id,
+                )
+            else:
+                logger.debug(
+                    "No RaceTime room found for match %s to unlink (race cancelled)",
+                    event.match_id,
+                )
+
     except Exception as e:
         logger.exception(
             "Failed to auto-advance match %s on race status change: %s",

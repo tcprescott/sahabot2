@@ -45,6 +45,7 @@ class RacetimeBotEditDialog(BaseDialog):
         self.client_secret = bot.client_secret
         self.name = bot.name
         self.description = bot.description or ""
+        self.handler_class = bot.handler_class
         self.is_active = bot.is_active
 
     async def show(self) -> None:
@@ -116,6 +117,31 @@ class RacetimeBotEditDialog(BaseDialog):
                         lambda e: setattr(self, "description", e.args.strip()),
                     )
 
+            # Handler class selection
+            with ui.row().classes("full-width items-center gap-2"):
+                ui.label("Handler Class *").classes("font-medium")
+                ui.icon("info").classes("text-grey-7").tooltip(
+                    "The Python handler class that provides race room commands and behavior. "
+                    "Choose a category-specific handler (e.g., ALTTPRRaceHandler) or use the default SahaRaceHandler."
+                )
+
+            handler_options = [
+                "SahaRaceHandler",
+                "ALTTPRRaceHandler",
+                "SMRaceHandler",
+                "SMZ3RaceHandler",
+                "AsyncLiveRaceHandler",
+            ]
+            handler_select = ui.select(
+                options=handler_options,
+                value=self.handler_class,
+                label="Handler",
+            ).classes("w-full")
+            handler_select.on(
+                "update:model-value",
+                lambda e: setattr(self, "handler_class", e.args),
+            )
+
             # Active status
             status_checkbox = ui.checkbox("Active", value=self.is_active)
             status_checkbox.on(
@@ -158,6 +184,8 @@ class RacetimeBotEditDialog(BaseDialog):
             updates["name"] = self.name
         if self.description != (self.bot.description or ""):
             updates["description"] = self.description if self.description else None
+        if self.handler_class != self.bot.handler_class:
+            updates["handler_class"] = self.handler_class
         if self.is_active != self.bot.is_active:
             updates["is_active"] = self.is_active
 
