@@ -36,6 +36,8 @@ from typing import Optional
 import aiohttp
 from racetime_bot import Bot, RaceHandler
 from models import BotStatus, SYSTEM_USER_ID
+from models.match_schedule import Match
+from models.racetime_room import RacetimeRoom
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
 from application.events import (
@@ -441,6 +443,20 @@ class SahaRaceHandler(RaceHandler):
                 "Race %s status changed: %s -> %s", room_slug, old_status, new_status
             )
 
+            # Get match_id and tournament_id if this is a match handler (has MatchRaceMixin)
+            match_id = getattr(self, "match_id", None)
+            tournament_id = None
+            if match_id:
+                # Query tournament_id from match
+                try:
+                    match = await Match.filter(id=match_id).select_related("tournament").first()
+                    if match:
+                        tournament_id = match.tournament_id
+                except Exception as e:
+                    logger.warning(
+                        "Failed to get tournament_id for match %s: %s", match_id, e
+                    )
+
             # Emit race status changed event
             await EventBus.emit(
                 RacetimeRaceStatusChangedEvent(
@@ -451,6 +467,8 @@ class SahaRaceHandler(RaceHandler):
                     room_name=room_name,
                     old_status=old_status,
                     new_status=new_status,
+                    match_id=match_id,
+                    tournament_id=tournament_id,
                     entrant_count=len(new_race_data.get("entrants", [])),
                     started_at=new_race_data.get("started_at"),
                     ended_at=new_race_data.get("ended_at"),
@@ -1275,6 +1293,9 @@ class RacetimeBot(Bot):
         This is a simplified implementation of the fork's join_race_room() method.
         It fetches race data, creates a handler, and starts the handler task.
 
+        If the room is associated with a match, automatically uses a match-aware handler
+        that combines the bot's configured handler with MatchRaceMixin.
+
         Reference (fork implementation):
         https://github.com/tcprescott/racetime-bot/blob/main/racetime_bot/bot.py#L228-L283
 
@@ -1348,9 +1369,23 @@ class RacetimeBot(Bot):
                 return existing_handler.handler
             return existing_handler
 
+        # Check if this room is associated with a match
+        # If so, use a match-aware handler instead of the base handler
+        match_id = await self._get_match_id_for_room(race_name)
+
         # Create handler for the race
         try:
-            handler = self.create_handler(race_data)
+            if match_id is not None:
+                # Room is for a match - use match handler
+                logger.info(
+                    "Room %s is for match %s, using match handler",
+                    race_name,
+                    match_id,
+                )
+                handler = self.create_match_handler(race_data, match_id)
+            else:
+                # Regular room - use base handler
+                handler = self.create_handler(race_data)
 
             # If force=True, this means the bot created the room (via startrace)
             # Set flag so begin() knows to emit RacetimeBotCreatedRaceEvent
@@ -1363,6 +1398,27 @@ class RacetimeBot(Bot):
         except Exception as e:
             logger.error(
                 "Failed to create handler for race %s: %s", race_name, e, exc_info=True
+            )
+            return None
+
+    async def _get_match_id_for_room(self, room_slug: str) -> Optional[int]:
+        """
+        Check if a race room is associated with a match.
+
+        Args:
+            room_slug: The race room slug (e.g., "alttpr/cool-doge-1234")
+
+        Returns:
+            Match ID if room is for a match, None otherwise
+        """
+        try:
+            room = await RacetimeRoom.filter(slug=room_slug).first()
+            if room and room.match_id:
+                return room.match_id
+            return None
+        except Exception as e:
+            logger.warning(
+                "Failed to check match association for room %s: %s", room_slug, e
             )
             return None
 
@@ -1553,7 +1609,10 @@ async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
     Rejoin all open RaceTime rooms for matches when bot restarts.
 
     Queries the database for all matches with active RaceTime rooms (not finished),
-    and attempts to rejoin those rooms, syncing their status.
+    and attempts to rejoin those rooms using match-aware handlers, syncing their status.
+
+    Note: The join_race_room() method automatically detects if a room is associated
+    with a match and uses the appropriate handler (match handler vs. base handler).
 
     Args:
         bot: The RacetimeBot instance to use for rejoining
@@ -1597,11 +1656,14 @@ async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
                 )
 
                 # Try to join the race room
+                # join_race_room will automatically detect the match association
+                # and use a match-aware handler (combining MatchRaceMixin with
+                # the bot's configured handler class)
                 handler = await bot.join_race_room(room.slug, force=True)
 
                 if handler:
                     rejoined_count += 1
-                    logger.info("Successfully rejoined room %s", room.slug)
+                    logger.info("Successfully rejoined room %s with match handler", room.slug)
 
                     # Sync the room status to the match
                     try:
