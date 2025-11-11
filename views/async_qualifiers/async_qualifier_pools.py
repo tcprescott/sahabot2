@@ -9,7 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncQualifier, AsyncQualifierPool
 from components.card import Card
-from components.dialogs.tournaments import PoolDialog, PermalinkDialog
+from components.dialogs.async_qualifiers import PoolDialog, PermalinkDialog
 from components.dialogs.common import ConfirmDialog
 from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,

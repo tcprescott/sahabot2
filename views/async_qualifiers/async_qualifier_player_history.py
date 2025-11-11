@@ -10,7 +10,7 @@ from models import User
 from models.async_tournament import AsyncQualifier
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
-from components.dialogs.tournaments import RaceReattemptDialog
+from components.dialogs.async_qualifiers import RaceReattemptDialog
 from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )

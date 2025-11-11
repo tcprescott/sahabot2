@@ -6,6 +6,31 @@ This module loads and validates all configuration settings from environment vari
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
+from pathlib import Path
+
+
+def _get_env_file() -> Optional[str]:
+    """
+    Determine which .env file to use for configuration.
+
+    Priority:
+    1. .env (if it exists)
+    2. .env.test (fallback for testing/CI environments)
+    3. None (rely on environment variables only)
+
+    Returns:
+        Optional[str]: Path to the .env file to use, or None if no file should be loaded
+    """
+    env_file = Path(".env")
+    env_test_file = Path(".env.test")
+
+    if env_file.exists():
+        return str(env_file)
+    elif env_test_file.exists():
+        return str(env_test_file)
+    else:
+        # No .env file found - pydantic will only use environment variables
+        return None
 
 
 class Settings(BaseSettings):
@@ -13,9 +38,12 @@ class Settings(BaseSettings):
     Application settings loaded from environment variables.
 
     All settings are loaded from .env file or environment variables.
+    Falls back to .env.test if .env doesn't exist (for testing/CI).
     """
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(
+        env_file=_get_env_file(), env_file_encoding="utf-8", extra="ignore"
+    )
 
     # Database Configuration
     DB_HOST: str = "localhost"
