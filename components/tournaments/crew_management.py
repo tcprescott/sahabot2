@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Callable, Awaitable
 from nicegui import ui
 from models import CrewRole
 from models.match_schedule import Match
+from components.dialogs.tournaments import AddCrewDialog
 
 if TYPE_CHECKING:
     from models import User, Organization
@@ -120,8 +121,6 @@ class CrewManagement:
         self, match: Match, default_role: CrewRole = CrewRole.COMMENTATOR
     ) -> None:
         """Open dialog to add crew to a match (admin action)."""
-        from components.dialogs.tournaments import AddCrewDialog
-
         async def on_save():
             await self.on_refresh()
 

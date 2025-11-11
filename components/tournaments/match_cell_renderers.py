@@ -6,13 +6,9 @@ Provides reusable rendering functions for table cells in match schedules.
 
 from __future__ import annotations
 import logging
-from typing import TYPE_CHECKING
 from nicegui import ui
 from models.match_schedule import Match
 from components.datetime_label import DateTimeLabel
-
-if TYPE_CHECKING:
-    from models import User, Organization
 
 logger = logging.getLogger(__name__)
 

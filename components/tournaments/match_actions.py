@@ -6,9 +6,12 @@ Handles actions like generating seeds, creating RaceTime rooms, and managing mat
 
 from __future__ import annotations
 import logging
+from datetime import datetime, timezone, timedelta
 from typing import TYPE_CHECKING, Callable, Awaitable, Optional
 from nicegui import ui
 from models.match_schedule import Match
+from components.dialogs import MatchSeedDialog, EditMatchDialog
+from application.services.randomizer.randomizer_service import RandomizerService
 from config import Settings
 
 if TYPE_CHECKING:
@@ -45,7 +48,7 @@ class MatchActions:
         self.can_manage_tournaments = can_manage_tournaments
         self.on_refresh = on_refresh
 
-    async def generate_seed(self, match_id: int, match_title: str, button: ui.button = None) -> None:
+    async def generate_seed(self, match_id: int, match_title: str, button: Optional[ui.button] = None) -> None:
         """Generate a seed using tournament's randomizer settings.
 
         Args:
@@ -53,32 +56,32 @@ class MatchActions:
             match_title: Match title for error messages
             button: Button reference for spinner state (optional)
         """
-        # Show spinner on button if provided
+        # Get match info via service to check if we can proceed
+        match = await self.service.get_match(
+            self.user, self.organization.id, match_id
+        )
+        if not match:
+            ui.notify("Match not found", type="negative")
+            return
+
+        # Fetch related data
+        await match.fetch_related("tournament", "tournament__randomizer_preset")
+
+        # Check if tournament has randomizer configured
+        if not match.tournament.randomizer:
+            ui.notify(
+                "Randomizer not configured for this tournament. "
+                "Please configure it in Tournament Admin > Randomizer Settings.",
+                type="warning",
+            )
+            return
+
+        # Show spinner on button if provided (only after validation)
         if button:
             button.props("loading")
             button.disable()
 
         try:
-            # Get current match to get tournament info
-            match = await Match.filter(id=match_id).prefetch_related("tournament", "tournament__randomizer_preset").first()
-            if not match:
-                ui.notify("Match not found", type="negative")
-                return
-
-            # Check if tournament has randomizer configured
-            if not match.tournament.randomizer:
-                ui.notify(
-                    "Randomizer not configured for this tournament. "
-                    "Please configure it in Tournament Admin > Randomizer Settings.",
-                    type="warning",
-                )
-                return
-
-            # Import randomizer service
-            from application.services.randomizer.randomizer_service import (
-                RandomizerService,
-            )
-
             randomizer_service = RandomizerService()
 
             # Get the randomizer
@@ -92,8 +95,6 @@ class MatchActions:
 
             # Generate seed (use preset if configured)
             if match.tournament.randomizer_preset_id:
-                # Load the preset
-                await match.tournament.fetch_related("randomizer_preset")
                 preset = match.tournament.randomizer_preset
                 if preset:
                     # Extract settings from preset
@@ -135,14 +136,12 @@ class MatchActions:
                 button.props(remove="loading")
                 button.enable()
 
-    async def open_seed_dialog(self, match_id: int, match_title: str, matches: list) -> None:
-        """Open dialog to set/edit seed for a match."""
-        from components.dialogs import MatchSeedDialog
-
-        # Get current match to get seed info
-        match = next((m for m in matches if m.id == match_id), None)
-        if not match:
-            return
+    async def open_seed_dialog(self, match: Match) -> None:
+        """Open dialog to set/edit seed for a match.
+        
+        Args:
+            match: Match object with seed information
+        """
 
         seed = getattr(match, "seed", None)
         if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
@@ -154,20 +153,20 @@ class MatchActions:
 
         async def on_submit(url: str, description: Optional[str]):
             await self.service.set_match_seed(
-                self.user, self.organization.id, match_id, url, description
+                self.user, self.organization.id, match.id, url, description
             )
             ui.notify("Seed updated", type="positive")
             await self.on_refresh()
 
         async def on_delete():
             await self.service.delete_match_seed(
-                self.user, self.organization.id, match_id
+                self.user, self.organization.id, match.id
             )
             ui.notify("Seed deleted", type="positive")
             await self.on_refresh()
 
         dialog = MatchSeedDialog(
-            match_title=match_title or f"Match #{match_id}",
+            match_title=match.title or f"Match #{match.id}",
             initial_url=initial_url,
             initial_description=initial_description,
             on_submit=on_submit,
@@ -175,8 +174,12 @@ class MatchActions:
         )
         await dialog.show()
 
-    def render_seed(self, match: Match, matches: list) -> None:
-        """Render seed/ROM link if available with action buttons."""
+    def render_seed(self, match: Match) -> None:
+        """Render seed/ROM link if available with action buttons.
+        
+        Args:
+            match: Match object to render seed for
+        """
         # Check if seed exists (1:1 relationship)
         seed = getattr(match, "seed", None)
 
@@ -207,19 +210,15 @@ class MatchActions:
                 with ui.row().classes("gap-1"):
                     # Generate Seed button (with dice icon) - only if tournament has randomizer configured
                     if match.tournament.randomizer:
-                        # Create button with closure-safe reference
-                        button_ref = [None]  # Use list to allow modification in closure
-                        async def on_generate_click(m=match, btn_ref=button_ref):
-                            await self.generate_seed(m.id, m.title, btn_ref[0])
-                        
-                        button_ref[0] = ui.button(
+                        # Create button and attach callback directly
+                        button = ui.button(
                             icon="casino",
-                            on_click=on_generate_click,
                         ).classes("btn btn-sm").props(
                             "flat color=positive size=sm"
                         ).tooltip(
                             "Generate seed using tournament randomizer"
                         )
+                        button.on_click = lambda m=match, btn=button: self.generate_seed(m.id, m.title, btn)
 
                     # Set/Edit Seed button (manual URL entry)
                     icon = "edit" if seed else "add"
@@ -228,16 +227,14 @@ class MatchActions:
                     )
                     ui.button(
                         icon=icon,
-                        on_click=lambda m=match: self.open_seed_dialog(
-                            m.id, m.title, matches
-                        ),
+                        on_click=lambda m=match: self.open_seed_dialog(m),
                     ).classes("btn btn-sm").props(
                         "flat color=primary size=sm"
                     ).tooltip(
                         tooltip
                     )
 
-    async def create_racetime_room(self, match_id: int, button: ui.button = None) -> None:
+    async def create_racetime_room(self, match_id: int, button: Optional[ui.button] = None) -> None:
         """Create a RaceTime room for a match (moderator action).
 
         Args:
@@ -336,23 +333,17 @@ class MatchActions:
 
                 # Show "Create Room" button for moderators
                 if self.can_manage_tournaments:
-                    # Create button with closure-safe reference
-                    button_ref = [None]  # Use list to allow modification in closure
-                    async def on_create_room_click(m=match, btn_ref=button_ref):
-                        await self.create_racetime_room(m.id, btn_ref[0])
-                    
-                    button_ref[0] = ui.button(
+                    # Create button with direct reference
+                    button = ui.button(
                         "Create Room",
                         icon="add",
-                        on_click=on_create_room_click,
                     ).classes("btn btn-sm").props(
                         "flat color=positive size=sm"
                     )
+                    button.on_click = lambda m=match, btn=button: self.create_racetime_room(m.id, btn)
 
             # Show countdown timer if room should open soon
             if match.scheduled_at and not room:
-                from datetime import datetime, timezone, timedelta
-
                 room_open_minutes = getattr(
                     match.tournament, "room_open_minutes_before", 60
                 )
@@ -390,20 +381,18 @@ class MatchActions:
                             "text-xs text-secondary"
                         )
 
-    async def open_edit_match_dialog(self, match_id: int, matches: list) -> None:
-        """Open dialog to edit a match."""
-        from components.dialogs import EditMatchDialog
-
-        # Get current match
-        match = next((m for m in matches if m.id == match_id), None)
-        if not match:
-            return
+    async def open_edit_match_dialog(self, match: Match) -> None:
+        """Open dialog to edit a match.
+        
+        Args:
+            match: Match object to edit
+        """
 
         async def on_save(title: str, scheduled_at, stream_id, comment):
             result = await self.service.update_match(
                 self.user,
                 self.organization.id,
-                match_id,
+                match.id,
                 title=title,
                 scheduled_at=scheduled_at,
                 stream_channel_id=stream_id,
@@ -422,8 +411,13 @@ class MatchActions:
         )
         await dialog.show()
 
-    def render_actions(self, match: Match, matches: list, can_edit_matches: bool) -> None:
-        """Render action buttons for moderators/tournament admins."""
+    def render_actions(self, match: Match, can_edit_matches: bool) -> None:
+        """Render action buttons for moderators/tournament admins.
+        
+        Args:
+            match: Match object to render actions for
+            can_edit_matches: Whether user can edit matches
+        """
         # Check if match is from SpeedGaming (read-only)
         is_speedgaming = (
             hasattr(match, "speedgaming_episode_id")
@@ -437,7 +431,7 @@ class MatchActions:
             with ui.row().classes("gap-1"):
                 ui.button(
                     icon="edit",
-                    on_click=lambda m=match: self.open_edit_match_dialog(m.id, matches),
+                    on_click=lambda m=match: self.open_edit_match_dialog(m),
                 ).classes("btn btn-sm").props(
                     "flat color=primary size=sm"
                 ).tooltip(

@@ -685,14 +685,14 @@ class EventScheduleView:
 
                     # Delegate seed rendering to match_actions component
                     def render_seed(match: Match):
-                        self.match_actions.render_seed(match, matches)
+                        self.match_actions.render_seed(match)
 
                     # Delegate racetime and actions rendering to match_actions component
                     def render_racetime(match: Match):
                         self.match_actions.render_racetime(match)
 
                     def render_actions(match: Match):
-                        self.match_actions.render_actions(match, matches, self.can_edit_matches)
+                        self.match_actions.render_actions(match, self.can_edit_matches)
 
                     columns = [
                         TableColumn("Tournament", cell_render=renderers.render_tournament),
