@@ -7,7 +7,7 @@ to provide both match processing and category-specific commands.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from racetime.match_race_handler import MatchRaceMixin, create_match_handler_class
+from racetime.match_race_handler import create_match_handler_class
 from racetime.alttpr_handler import ALTTPRRaceHandler
 from racetime.sm_race_handler import SMRaceHandler
 from racetime.smz3_race_handler import SMZ3RaceHandler
@@ -118,7 +118,6 @@ class TestMatchRaceMixin:
 
         # Create mock handler instance
         mock_bot = MagicMock()
-        mock_ws = MagicMock()
 
         # Mock the parent class __init__ to avoid websocket setup
         with patch.object(SahaRaceHandler, "__init__", return_value=None):

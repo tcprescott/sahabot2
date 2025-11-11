@@ -1149,25 +1149,23 @@ class RacetimeBot(Bot):
         logger.debug("Using handler class: %s", self.handler_class_name)
         return handler_class
 
-    def create_handler(self, race_data: dict):
+    def _setup_handler_connection(self, race_data: dict):
         """
-        Create a handler instance for a race.
+        Set up websocket connection and handler kwargs for a race handler.
 
-        Override of Bot.create_handler() to inject bot_instance parameter
-        that our custom handlers require.
-
-        This follows the upstream library's pattern but adds bot_instance to kwargs.
+        This is a helper method to avoid code duplication between create_handler()
+        and create_match_handler().
 
         Args:
             race_data: Race data from racetime.gg API
 
         Returns:
-            Handler instance for the race
+            Tuple of (handler_kwargs, race_name)
         """
         # Import websockets for connection setup
         import websockets
 
-        # Set up websocket connection parameters (from upstream Bot.create_handler)
+        # Set up websocket connection parameters
         connect_kwargs = {
             "additional_headers": {
                 "Authorization": "Bearer " + self.access_token,
@@ -1194,12 +1192,33 @@ class RacetimeBot(Bot):
         if race_name not in self.state:
             self.state[race_name] = {}
 
-        # Get handler class and create kwargs
-        handler_class = self.get_handler_class()
+        # Get handler kwargs
         kwargs = self.get_handler_kwargs(ws_conn, self.state[race_name])
 
         # Inject bot_instance for our custom handlers
         kwargs["bot_instance"] = self
+
+        return kwargs, race_name
+
+    def create_handler(self, race_data: dict):
+        """
+        Create a handler instance for a race.
+
+        Override of Bot.create_handler() to inject bot_instance parameter
+        that our custom handlers require.
+
+        This follows the upstream library's pattern but adds bot_instance to kwargs.
+
+        Args:
+            race_data: Race data from racetime.gg API
+
+        Returns:
+            Handler instance for the race
+        """
+        kwargs, race_name = self._setup_handler_connection(race_data)
+
+        # Get handler class
+        handler_class = self.get_handler_class()
 
         # Create handler with all required parameters
         handler = handler_class(**kwargs)
@@ -1224,46 +1243,15 @@ class RacetimeBot(Bot):
         Returns:
             Handler instance for the match race
         """
-        # Import websockets for connection setup
-        import websockets
         from racetime.match_race_handler import create_match_handler_class
 
-        # Set up websocket connection parameters (same as create_handler)
-        connect_kwargs = {
-            "additional_headers": {
-                "Authorization": "Bearer " + self.access_token,
-            },
-        }
-
-        # BC for websockets<14 (from upstream)
-        try:
-            ws_version = int(websockets.version.version.split(".")[0])
-        except (AttributeError, TypeError, ValueError):
-            ws_version = 14
-        if ws_version < 14:
-            connect_kwargs["extra_headers"] = connect_kwargs.pop("additional_headers")
-
-        if self.ssl_context is not None and self.racetime_secure:
-            connect_kwargs["ssl"] = self.ssl_context
-
-        ws_conn = websockets.connect(
-            self.ws_uri(race_data.get("websocket_bot_url")),
-            **connect_kwargs,
-        )
-
-        race_name = race_data.get("name")
-        if race_name not in self.state:
-            self.state[race_name] = {}
+        kwargs, race_name = self._setup_handler_connection(race_data)
 
         # Get the base handler class and create a match variant
         base_handler_class = self.get_handler_class()
         match_handler_class = create_match_handler_class(base_handler_class)
 
-        # Get handler kwargs
-        kwargs = self.get_handler_kwargs(ws_conn, self.state[race_name])
-
-        # Inject bot_instance and match_id for the match handler
-        kwargs["bot_instance"] = self
+        # Inject match_id for the match handler
         kwargs["match_id"] = match_id
 
         # Create handler with all required parameters

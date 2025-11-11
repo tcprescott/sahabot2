@@ -10,6 +10,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Cache for created match handler classes to avoid recreating the same class multiple times
+_match_handler_class_cache = {}
+
 
 class MatchRaceMixin:
     """
@@ -39,9 +42,15 @@ class MatchRaceMixin:
         Initialize match race mixin.
 
         Args:
-            match_id: ID of the Match
+            match_id: ID of the Match (must be passed as keyword argument)
             *args: Arguments for parent handler
             **kwargs: Keyword arguments for parent handler
+
+        Note:
+            The match_id parameter must always be provided as a keyword argument
+            (e.g., match_id=123) due to its placement between *args and **kwargs.
+            This is intentional to maintain compatibility with the parent class
+            signature while ensuring match_id is always explicitly specified.
         """
         super().__init__(*args, **kwargs)
         self.match_id = match_id
@@ -120,12 +129,19 @@ def create_match_handler_class(base_handler_class):
     """
     Create a match handler class that combines MatchRaceMixin with a base handler.
 
+    This function caches created classes to avoid recreating the same class multiple
+    times, improving performance when handlers are created repeatedly.
+
     Args:
         base_handler_class: The base handler class to combine with (e.g., ALTTPRRaceHandler)
 
     Returns:
-        A new class that combines MatchRaceMixin with the base handler
+        A class that combines MatchRaceMixin with the base handler
     """
+    # Check cache first to avoid recreating the same class
+    cache_key = base_handler_class.__name__
+    if cache_key in _match_handler_class_cache:
+        return _match_handler_class_cache[cache_key]
 
     class CombinedMatchRaceHandler(MatchRaceMixin, base_handler_class):
         """
@@ -143,5 +159,8 @@ def create_match_handler_class(base_handler_class):
     base_name = base_handler_class.__name__
     CombinedMatchRaceHandler.__name__ = f"Match{base_name}"
     CombinedMatchRaceHandler.__qualname__ = f"Match{base_name}"
+
+    # Cache the created class
+    _match_handler_class_cache[cache_key] = CombinedMatchRaceHandler
 
     return CombinedMatchRaceHandler
