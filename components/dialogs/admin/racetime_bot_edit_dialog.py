@@ -11,6 +11,7 @@ from nicegui import ui
 from models import User, RacetimeBot
 from application.services.racetime.racetime_bot_service import RacetimeBotService
 from components.dialogs.common.base_dialog import BaseDialog
+from racetime import AVAILABLE_HANDLER_CLASSES
 import logging
 
 logger = logging.getLogger(__name__)
@@ -125,15 +126,8 @@ class RacetimeBotEditDialog(BaseDialog):
                     "Choose a category-specific handler (e.g., ALTTPRRaceHandler) or use the default SahaRaceHandler."
                 )
 
-            handler_options = [
-                "SahaRaceHandler",
-                "ALTTPRRaceHandler",
-                "SMRaceHandler",
-                "SMZ3RaceHandler",
-                "AsyncLiveRaceHandler",
-            ]
             handler_select = ui.select(
-                options=handler_options,
+                options=AVAILABLE_HANDLER_CLASSES,
                 value=self.handler_class,
                 label="Handler",
             ).classes("w-full")
