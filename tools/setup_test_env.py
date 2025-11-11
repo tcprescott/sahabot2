@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 # Add project root to path for imports
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 # Configure logging
 logging.basicConfig(
@@ -35,14 +35,16 @@ async def setup_environment():
     """
     Set up environment variables for testing.
     """
-    env_test_file = Path(__file__).parent / ".env.test"
+    # .env files are in the project root, not in tools/
+    project_root = Path(__file__).parent.parent
+    env_test_file = project_root / ".env.test"
 
     if not env_test_file.exists():
         logger.error(".env.test file not found. Cannot set up test environment.")
         return False
 
     # Copy .env.test to .env if .env doesn't exist
-    env_file = Path(__file__).parent / ".env"
+    env_file = project_root / ".env"
     if not env_file.exists():
         logger.info("Creating .env from .env.test...")
         env_file.write_text(env_test_file.read_text())
