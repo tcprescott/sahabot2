@@ -331,8 +331,8 @@ class EventScheduleView:
                                     if player.assigned_station:
                                         with ui.row().classes("gap-1 items-center"):
                                             ui.label(display_name).classes("text-sm")
-                                            ui.html(
-                                                f"<i>({player.assigned_station})</i>"
+                                            ui.label(
+                                                f"({player.assigned_station})"
                                             ).classes("text-sm text-secondary")
                                     else:
                                         ui.label(display_name).classes("text-sm")
@@ -798,596 +798,596 @@ class EventScheduleView:
                     if dialog.role_input and default_role:
                         dialog.role_input.value = default_role.value
 
-                def render_commentator(match: Match):
-                    """Render commentator(s) with approval status color, signup button, and approval controls."""
-                    # Check if match is from SpeedGaming (read-only)
-                    is_speedgaming = (
-                        hasattr(match, "speedgaming_episode_id")
-                        and match.speedgaming_episode_id
-                    )
+                    def render_commentator(match: Match):
+                        """Render commentator(s) with approval status color, signup button, and approval controls."""
+                        # Check if match is from SpeedGaming (read-only)
+                        is_speedgaming = (
+                            hasattr(match, "speedgaming_episode_id")
+                            and match.speedgaming_episode_id
+                        )
 
-                    # Get crew members with commentator role
-                    commentators = [
-                        crew
-                        for crew in getattr(match, "crew_members", [])
-                        if crew.role == CrewRole.COMMENTATOR
-                    ]
+                        # Get crew members with commentator role
+                        commentators = [
+                            crew
+                            for crew in getattr(match, "crew_members", [])
+                            if crew.role == CrewRole.COMMENTATOR
+                        ]
 
-                    # Check if current user is signed up
-                    user_signed_up = any(
-                        crew.user_id == self.user.id for crew in commentators
-                    )
+                        # Check if current user is signed up
+                        user_signed_up = any(
+                            crew.user_id == self.user.id for crew in commentators
+                        )
 
-                    with ui.column().classes("gap-2"):
-                        if commentators:
-                            with ui.column().classes("gap-1"):
-                                for crew in commentators:
-                                    with ui.row().classes("items-center gap-2"):
-                                        # Green for approved, yellow for unapproved
-                                        color_class = (
-                                            "text-positive"
-                                            if crew.approved
-                                            else "text-warning"
-                                        )
-                                        ui.label(crew.user.get_display_name()).classes(
-                                            color_class
-                                        )
+                        with ui.column().classes("gap-2"):
+                            if commentators:
+                                with ui.column().classes("gap-1"):
+                                    for crew in commentators:
+                                        with ui.row().classes("items-center gap-2"):
+                                            # Green for approved, yellow for unapproved
+                                            color_class = (
+                                                "text-positive"
+                                                if crew.approved
+                                                else "text-warning"
+                                            )
+                                            ui.label(crew.user.get_display_name()).classes(
+                                                color_class
+                                            )
 
-                                        # Show approval controls if user has permission and not SpeedGaming
-                                        if self.can_approve_crew and not is_speedgaming:
-                                            if crew.approved:
-                                                # Show unapprove button
-                                                ui.button(
-                                                    icon="close",
-                                                    on_click=lambda c=crew: unapprove_crew_signup(
-                                                        c.id, CrewRole.COMMENTATOR
-                                                    ),
-                                                ).props(
-                                                    "flat round dense size=sm color=negative"
-                                                ).tooltip(
-                                                    "Remove approval"
-                                                )
-                                            else:
-                                                # Show approve button
-                                                ui.button(
-                                                    icon="check",
-                                                    on_click=lambda c=crew: approve_crew_signup(
-                                                        c.id, CrewRole.COMMENTATOR
-                                                    ),
-                                                ).props(
-                                                    "flat round dense size=sm color=positive"
-                                                ).tooltip(
-                                                    "Approve commentator"
-                                                )
-                        else:
-                            ui.label("—").classes("text-secondary")
-
-                        # For SpeedGaming matches, don't show buttons (managed externally)
-                        if not is_speedgaming:
-                            # Admin add commentator button (for admins/tournament managers)
-                            if self.can_approve_crew:
-                                ui.button(
-                                    icon="mic",
-                                    on_click=lambda m=match: open_add_crew_dialog(
-                                        m, CrewRole.COMMENTATOR
-                                    ),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=primary size=sm"
-                                ).tooltip(
-                                    "Add Commentator"
-                                )
-
-                            # Sign up or remove button (for regular users)
-                            if user_signed_up:
-                                ui.button(
-                                    icon="remove_circle",
-                                    on_click=lambda m=match: remove_crew(
-                                        m.id, CrewRole.COMMENTATOR
-                                    ),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=negative size=sm"
-                                ).tooltip(
-                                    "Remove your commentator signup"
-                                )
+                                            # Show approval controls if user has permission and not SpeedGaming
+                                            if self.can_approve_crew and not is_speedgaming:
+                                                if crew.approved:
+                                                    # Show unapprove button
+                                                    ui.button(
+                                                        icon="close",
+                                                        on_click=lambda c=crew: unapprove_crew_signup(
+                                                            c.id, CrewRole.COMMENTATOR
+                                                        ),
+                                                    ).props(
+                                                        "flat round dense size=sm color=negative"
+                                                    ).tooltip(
+                                                        "Remove approval"
+                                                    )
+                                                else:
+                                                    # Show approve button
+                                                    ui.button(
+                                                        icon="check",
+                                                        on_click=lambda c=crew: approve_crew_signup(
+                                                            c.id, CrewRole.COMMENTATOR
+                                                        ),
+                                                    ).props(
+                                                        "flat round dense size=sm color=positive"
+                                                    ).tooltip(
+                                                        "Approve commentator"
+                                                    )
                             else:
-                                ui.button(
-                                    icon="add_circle",
-                                    on_click=lambda m=match: signup_crew(
-                                        m.id, CrewRole.COMMENTATOR
-                                    ),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=positive size=sm"
-                                ).tooltip(
-                                    "Sign up as commentator"
-                                )
+                                ui.label("—").classes("text-secondary")
 
-                def render_tracker(match: Match):
-                    """Render tracker(s) with approval status color, signup button, and approval controls."""
-                    # Check if match is from SpeedGaming (read-only)
-                    is_speedgaming = (
-                        hasattr(match, "speedgaming_episode_id")
-                        and match.speedgaming_episode_id
-                    )
-
-                    # Get crew members with tracker role
-                    trackers = [
-                        crew
-                        for crew in getattr(match, "crew_members", [])
-                        if crew.role == CrewRole.TRACKER
-                    ]
-
-                    # Check if tracker is enabled for this tournament
-                    tracker_enabled = getattr(match.tournament, "tracker_enabled", True)
-
-                    # Check if current user is signed up
-                    user_signed_up = any(
-                        crew.user_id == self.user.id for crew in trackers
-                    )
-
-                    with ui.column().classes("gap-2"):
-                        if trackers:
-                            with ui.column().classes("gap-1"):
-                                for crew in trackers:
-                                    with ui.row().classes("items-center gap-2"):
-                                        # Green for approved, yellow for unapproved
-                                        color_class = (
-                                            "text-positive"
-                                            if crew.approved
-                                            else "text-warning"
-                                        )
-                                        ui.label(crew.user.get_display_name()).classes(
-                                            color_class
-                                        )
-
-                                        # Show approval controls if user has permission and not SpeedGaming
-                                        if self.can_approve_crew and not is_speedgaming:
-                                            if crew.approved:
-                                                # Show unapprove button
-                                                ui.button(
-                                                    icon="close",
-                                                    on_click=lambda c=crew: unapprove_crew_signup(
-                                                        c.id, CrewRole.TRACKER
-                                                    ),
-                                                ).props(
-                                                    "flat round dense size=sm color=negative"
-                                                ).tooltip(
-                                                    "Remove approval"
-                                                )
-                                            else:
-                                                # Show approve button
-                                                ui.button(
-                                                    icon="check",
-                                                    on_click=lambda c=crew: approve_crew_signup(
-                                                        c.id, CrewRole.TRACKER
-                                                    ),
-                                                ).props(
-                                                    "flat round dense size=sm color=positive"
-                                                ).tooltip(
-                                                    "Approve tracker"
-                                                )
-                        else:
-                            ui.label("—").classes("text-secondary")
-
-                        # For SpeedGaming matches, don't show buttons (managed externally)
-                        if not is_speedgaming and tracker_enabled:
-                            # Admin add tracker button (for admins/tournament managers)
-                            if self.can_approve_crew:
-                                ui.button(
-                                    icon="timeline",
-                                    on_click=lambda m=match: open_add_crew_dialog(
-                                        m, CrewRole.TRACKER
-                                    ),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=primary size=sm"
-                                ).tooltip(
-                                    "Add Tracker"
-                                )
-
-                            # Sign up or remove button (only if tracker enabled for this tournament)
-                            if user_signed_up:
-                                ui.button(
-                                    icon="remove_circle",
-                                    on_click=lambda m=match: remove_crew(
-                                        m.id, CrewRole.TRACKER
-                                    ),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=negative size=sm"
-                                ).tooltip(
-                                    "Remove your tracker signup"
-                                )
-                            else:
-                                ui.button(
-                                    icon="add_circle",
-                                    on_click=lambda m=match: signup_crew(
-                                        m.id, CrewRole.TRACKER
-                                    ),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=positive size=sm"
-                                ).tooltip(
-                                    "Sign up as tracker"
-                                )
-                        elif not is_speedgaming:
-                            # Show disabled button with tooltip explaining why (only for non-SpeedGaming matches)
-                            ui.button(icon="block", on_click=None).classes(
-                                "btn btn-sm"
-                            ).props("flat disable size=sm").tooltip(
-                                "Tracker role not enabled for this tournament"
-                            )
-
-                async def generate_seed(match_id: int, match_title: str):
-                    """Generate a seed using tournament's randomizer settings."""
-                    # Get current match to get tournament info
-                    match = next((m for m in matches if m.id == match_id), None)
-                    if not match:
-                        ui.notify("Match not found", type="negative")
-                        return
-
-                    # Check if tournament has randomizer configured
-                    if not match.tournament.randomizer:
-                        ui.notify(
-                            "Randomizer not configured for this tournament. "
-                            "Please configure it in Tournament Admin > Randomizer Settings.",
-                            type="warning",
-                        )
-                        return
-
-                    # Import randomizer service
-                    from application.services.randomizer.randomizer_service import (
-                        RandomizerService,
-                    )
-
-                    randomizer_service = RandomizerService()
-
-                    try:
-                        # Get the randomizer
-                        randomizer = randomizer_service.get_randomizer(
-                            match.tournament.randomizer
-                        )
-
-                        # Prepare settings
-                        settings_dict = {}
-                        description = f"Generated {match.tournament.randomizer} seed"
-
-                        # Generate seed (use preset if configured)
-                        if match.tournament.randomizer_preset_id:
-                            # Load the preset
-                            await match.tournament.fetch_related("randomizer_preset")
-                            preset = match.tournament.randomizer_preset
-                            if preset:
-                                # Extract settings from preset
-                                settings_dict = preset.settings.get(
-                                    "settings", preset.settings
-                                )
-                                description = f"Generated {match.tournament.randomizer} seed using preset: {preset.name}"
-                            else:
-                                # Preset not found, log warning but continue with defaults
-                                logger.warning(
-                                    "Preset %s not found for tournament %s",
-                                    match.tournament.randomizer_preset_id,
-                                    match.tournament.id,
-                                )
-
-                        # Generate the seed with settings
-                        result = await randomizer.generate(settings_dict)
-
-                        # Set the seed for the match
-                        await self.service.set_match_seed(
-                            self.user,
-                            self.organization.id,
-                            match_id,
-                            result.url,
-                            description,
-                        )
-                        ui.notify("Seed generated successfully", type="positive")
-                        await self._refresh()
-
-                    except ValueError as e:
-                        logger.error("Failed to generate seed: %s", e)
-                        ui.notify(f"Failed to generate seed: {str(e)}", type="negative")
-                    except Exception as e:
-                        logger.error("Failed to generate seed: %s", e)
-                        ui.notify(f"Error generating seed: {str(e)}", type="negative")
-
-                async def open_seed_dialog(match_id: int, match_title: str):
-                    """Open dialog to set/edit seed for a match."""
-                    # Get current match to get seed info
-                    match = next((m for m in matches if m.id == match_id), None)
-                    if not match:
-                        return
-
-                    seed = getattr(match, "seed", None)
-                    if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
-                        seed_list = list(seed) if not isinstance(seed, list) else seed
-                        seed = seed_list[0] if seed_list else None
-
-                    initial_url = seed.url if seed else ""
-                    initial_description = seed.description if seed else None
-
-                    async def on_submit(url: str, description: Optional[str]):
-                        await self.service.set_match_seed(
-                            self.user, self.organization.id, match_id, url, description
-                        )
-                        ui.notify("Seed updated", type="positive")
-                        await self._refresh()
-
-                    async def on_delete():
-                        await self.service.delete_match_seed(
-                            self.user, self.organization.id, match_id
-                        )
-                        ui.notify("Seed deleted", type="positive")
-                        await self._refresh()
-
-                    dialog = MatchSeedDialog(
-                        match_title=match_title or f"Match #{match_id}",
-                        initial_url=initial_url,
-                        initial_description=initial_description,
-                        on_submit=on_submit,
-                        on_delete=on_delete if seed else None,
-                    )
-                    await dialog.show()
-
-                def render_seed(match: Match):
-                    """Render seed/ROM link if available."""
-                    # Check if seed exists (1:1 relationship)
-                    seed = getattr(match, "seed", None)
-
-                    # Handle the case where seed is a ReverseRelation (list)
-                    if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
-                        seed_list = list(seed) if not isinstance(seed, list) else seed
-                        seed = seed_list[0] if seed_list else None
-
-                    with ui.column().classes("gap-2"):
-                        if seed:
-                            # Show link to seed URL
-                            with ui.link(target=seed.url, new_tab=True).classes(
-                                "text-primary"
-                            ):
-                                with ui.row().classes("items-center gap-1"):
-                                    ui.icon("file_download").classes("text-sm")
-                                    ui.label("Seed")
-                            # Show description if available
-                            if seed.description:
-                                ui.label(seed.description).classes(
-                                    "text-secondary text-xs"
-                                )
-                        else:
-                            ui.label("—").classes("text-secondary")
-
-                        # Add buttons for tournament managers
-                        if self.can_manage_tournaments:
-                            with ui.row().classes("gap-1"):
-                                # Generate Seed button (with dice icon) - only if tournament has randomizer configured
-                                if match.tournament.randomizer:
+                            # For SpeedGaming matches, don't show buttons (managed externally)
+                            if not is_speedgaming:
+                                # Admin add commentator button (for admins/tournament managers)
+                                if self.can_approve_crew:
                                     ui.button(
-                                        icon="casino",
-                                        on_click=lambda m=match: generate_seed(
-                                            m.id, m.title
+                                        icon="mic",
+                                        on_click=lambda m=match: open_add_crew_dialog(
+                                            m, CrewRole.COMMENTATOR
+                                        ),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=primary size=sm"
+                                    ).tooltip(
+                                        "Add Commentator"
+                                    )
+
+                                # Sign up or remove button (for regular users)
+                                if user_signed_up:
+                                    ui.button(
+                                        icon="remove_circle",
+                                        on_click=lambda m=match: remove_crew(
+                                            m.id, CrewRole.COMMENTATOR
+                                        ),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=negative size=sm"
+                                    ).tooltip(
+                                        "Remove your commentator signup"
+                                    )
+                                else:
+                                    ui.button(
+                                        icon="add_circle",
+                                        on_click=lambda m=match: signup_crew(
+                                            m.id, CrewRole.COMMENTATOR
                                         ),
                                     ).classes("btn btn-sm").props(
                                         "flat color=positive size=sm"
                                     ).tooltip(
-                                        "Generate seed using tournament randomizer"
+                                        "Sign up as commentator"
                                     )
 
-                                # Set/Edit Seed button (manual URL entry)
-                                icon = "edit" if seed else "add"
-                                tooltip = (
-                                    "Edit seed" if seed else "Set seed URL manually"
+                    def render_tracker(match: Match):
+                        """Render tracker(s) with approval status color, signup button, and approval controls."""
+                        # Check if match is from SpeedGaming (read-only)
+                        is_speedgaming = (
+                            hasattr(match, "speedgaming_episode_id")
+                            and match.speedgaming_episode_id
+                        )
+
+                        # Get crew members with tracker role
+                        trackers = [
+                            crew
+                            for crew in getattr(match, "crew_members", [])
+                            if crew.role == CrewRole.TRACKER
+                        ]
+
+                        # Check if tracker is enabled for this tournament
+                        tracker_enabled = getattr(match.tournament, "tracker_enabled", True)
+
+                        # Check if current user is signed up
+                        user_signed_up = any(
+                            crew.user_id == self.user.id for crew in trackers
+                        )
+
+                        with ui.column().classes("gap-2"):
+                            if trackers:
+                                with ui.column().classes("gap-1"):
+                                    for crew in trackers:
+                                        with ui.row().classes("items-center gap-2"):
+                                            # Green for approved, yellow for unapproved
+                                            color_class = (
+                                                "text-positive"
+                                                if crew.approved
+                                                else "text-warning"
+                                            )
+                                            ui.label(crew.user.get_display_name()).classes(
+                                                color_class
+                                            )
+
+                                            # Show approval controls if user has permission and not SpeedGaming
+                                            if self.can_approve_crew and not is_speedgaming:
+                                                if crew.approved:
+                                                    # Show unapprove button
+                                                    ui.button(
+                                                        icon="close",
+                                                        on_click=lambda c=crew: unapprove_crew_signup(
+                                                            c.id, CrewRole.TRACKER
+                                                        ),
+                                                    ).props(
+                                                        "flat round dense size=sm color=negative"
+                                                    ).tooltip(
+                                                        "Remove approval"
+                                                    )
+                                                else:
+                                                    # Show approve button
+                                                    ui.button(
+                                                        icon="check",
+                                                        on_click=lambda c=crew: approve_crew_signup(
+                                                            c.id, CrewRole.TRACKER
+                                                        ),
+                                                    ).props(
+                                                        "flat round dense size=sm color=positive"
+                                                    ).tooltip(
+                                                        "Approve tracker"
+                                                    )
+                            else:
+                                ui.label("—").classes("text-secondary")
+
+                            # For SpeedGaming matches, don't show buttons (managed externally)
+                            if not is_speedgaming and tracker_enabled:
+                                # Admin add tracker button (for admins/tournament managers)
+                                if self.can_approve_crew:
+                                    ui.button(
+                                        icon="timeline",
+                                        on_click=lambda m=match: open_add_crew_dialog(
+                                            m, CrewRole.TRACKER
+                                        ),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=primary size=sm"
+                                    ).tooltip(
+                                        "Add Tracker"
+                                    )
+
+                                # Sign up or remove button (only if tracker enabled for this tournament)
+                                if user_signed_up:
+                                    ui.button(
+                                        icon="remove_circle",
+                                        on_click=lambda m=match: remove_crew(
+                                            m.id, CrewRole.TRACKER
+                                        ),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=negative size=sm"
+                                    ).tooltip(
+                                        "Remove your tracker signup"
+                                    )
+                                else:
+                                    ui.button(
+                                        icon="add_circle",
+                                        on_click=lambda m=match: signup_crew(
+                                            m.id, CrewRole.TRACKER
+                                        ),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=positive size=sm"
+                                    ).tooltip(
+                                        "Sign up as tracker"
+                                    )
+                            elif not is_speedgaming:
+                                # Show disabled button with tooltip explaining why (only for non-SpeedGaming matches)
+                                ui.button(icon="block", on_click=None).classes(
+                                    "btn btn-sm"
+                                ).props("flat disable size=sm").tooltip(
+                                    "Tracker role not enabled for this tournament"
                                 )
+
+                    async def generate_seed(match_id: int, match_title: str):
+                        """Generate a seed using tournament's randomizer settings."""
+                        # Get current match to get tournament info
+                        match = next((m for m in matches if m.id == match_id), None)
+                        if not match:
+                            ui.notify("Match not found", type="negative")
+                            return
+
+                        # Check if tournament has randomizer configured
+                        if not match.tournament.randomizer:
+                            ui.notify(
+                                "Randomizer not configured for this tournament. "
+                                "Please configure it in Tournament Admin > Randomizer Settings.",
+                                type="warning",
+                            )
+                            return
+
+                        # Import randomizer service
+                        from application.services.randomizer.randomizer_service import (
+                            RandomizerService,
+                        )
+
+                        randomizer_service = RandomizerService()
+
+                        try:
+                            # Get the randomizer
+                            randomizer = randomizer_service.get_randomizer(
+                                match.tournament.randomizer
+                            )
+
+                            # Prepare settings
+                            settings_dict = {}
+                            description = f"Generated {match.tournament.randomizer} seed"
+
+                            # Generate seed (use preset if configured)
+                            if match.tournament.randomizer_preset_id:
+                                # Load the preset
+                                await match.tournament.fetch_related("randomizer_preset")
+                                preset = match.tournament.randomizer_preset
+                                if preset:
+                                    # Extract settings from preset
+                                    settings_dict = preset.settings.get(
+                                        "settings", preset.settings
+                                    )
+                                    description = f"Generated {match.tournament.randomizer} seed using preset: {preset.name}"
+                                else:
+                                    # Preset not found, log warning but continue with defaults
+                                    logger.warning(
+                                        "Preset %s not found for tournament %s",
+                                        match.tournament.randomizer_preset_id,
+                                        match.tournament.id,
+                                    )
+
+                            # Generate the seed with settings
+                            result = await randomizer.generate(settings_dict)
+
+                            # Set the seed for the match
+                            await self.service.set_match_seed(
+                                self.user,
+                                self.organization.id,
+                                match_id,
+                                result.url,
+                                description,
+                            )
+                            ui.notify("Seed generated successfully", type="positive")
+                            await self._refresh()
+
+                        except ValueError as e:
+                            logger.error("Failed to generate seed: %s", e)
+                            ui.notify(f"Failed to generate seed: {str(e)}", type="negative")
+                        except Exception as e:
+                            logger.error("Failed to generate seed: %s", e)
+                            ui.notify(f"Error generating seed: {str(e)}", type="negative")
+
+                    async def open_seed_dialog(match_id: int, match_title: str):
+                        """Open dialog to set/edit seed for a match."""
+                        # Get current match to get seed info
+                        match = next((m for m in matches if m.id == match_id), None)
+                        if not match:
+                            return
+
+                        seed = getattr(match, "seed", None)
+                        if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
+                            seed_list = list(seed) if not isinstance(seed, list) else seed
+                            seed = seed_list[0] if seed_list else None
+
+                        initial_url = seed.url if seed else ""
+                        initial_description = seed.description if seed else None
+
+                        async def on_submit(url: str, description: Optional[str]):
+                            await self.service.set_match_seed(
+                                self.user, self.organization.id, match_id, url, description
+                            )
+                            ui.notify("Seed updated", type="positive")
+                            await self._refresh()
+
+                        async def on_delete():
+                            await self.service.delete_match_seed(
+                                self.user, self.organization.id, match_id
+                            )
+                            ui.notify("Seed deleted", type="positive")
+                            await self._refresh()
+
+                        dialog = MatchSeedDialog(
+                            match_title=match_title or f"Match #{match_id}",
+                            initial_url=initial_url,
+                            initial_description=initial_description,
+                            on_submit=on_submit,
+                            on_delete=on_delete if seed else None,
+                        )
+                        await dialog.show()
+
+                    def render_seed(match: Match):
+                        """Render seed/ROM link if available."""
+                        # Check if seed exists (1:1 relationship)
+                        seed = getattr(match, "seed", None)
+
+                        # Handle the case where seed is a ReverseRelation (list)
+                        if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
+                            seed_list = list(seed) if not isinstance(seed, list) else seed
+                            seed = seed_list[0] if seed_list else None
+
+                        with ui.column().classes("gap-2"):
+                            if seed:
+                                # Show link to seed URL
+                                with ui.link(target=seed.url, new_tab=True).classes(
+                                    "text-primary"
+                                ):
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.icon("file_download").classes("text-sm")
+                                        ui.label("Seed")
+                                # Show description if available
+                                if seed.description:
+                                    ui.label(seed.description).classes(
+                                        "text-secondary text-xs"
+                                    )
+                            else:
+                                ui.label("—").classes("text-secondary")
+
+                            # Add buttons for tournament managers
+                            if self.can_manage_tournaments:
+                                with ui.row().classes("gap-1"):
+                                    # Generate Seed button (with dice icon) - only if tournament has randomizer configured
+                                    if match.tournament.randomizer:
+                                        ui.button(
+                                            icon="casino",
+                                            on_click=lambda m=match: generate_seed(
+                                                m.id, m.title
+                                            ),
+                                        ).classes("btn btn-sm").props(
+                                            "flat color=positive size=sm"
+                                        ).tooltip(
+                                            "Generate seed using tournament randomizer"
+                                        )
+
+                                    # Set/Edit Seed button (manual URL entry)
+                                    icon = "edit" if seed else "add"
+                                    tooltip = (
+                                        "Edit seed" if seed else "Set seed URL manually"
+                                    )
+                                    ui.button(
+                                        icon=icon,
+                                        on_click=lambda m=match: open_seed_dialog(
+                                            m.id, m.title
+                                        ),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=primary size=sm"
+                                    ).tooltip(
+                                        tooltip
+                                    )
+
+                    def render_racetime(match: Match):
+                        """Render RaceTime.gg room information and controls."""
+                        with ui.column().classes("gap-2"):
+                            # Check if tournament has RaceTime integration
+                            has_racetime_bot = (
+                                getattr(match.tournament, "racetime_bot_id", None)
+                                is not None
+                            )
+
+                            if not has_racetime_bot:
+                                ui.label("—").classes("text-secondary")
+                                return
+
+                            # Show room link if room exists
+                            room = match.racetime_room
+                            if room:
+                                room_url = f"{settings.RACETIME_URL}/{room.slug}"
+                                with ui.link(target=room_url, new_tab=True).classes(
+                                    "text-primary"
+                                ):
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.icon("sports_esports").classes("text-sm")
+                                        ui.label("Join Room")
+
+                                # Show sync button for admins (if match not finished)
+                                if self.can_manage_tournaments and not match.finished_at:
+                                    ui.button(
+                                        icon="sync",
+                                        on_click=lambda m=match: sync_racetime_status(m.id),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=info size=sm"
+                                    ).tooltip(
+                                        "Sync status from RaceTime"
+                                    )
+
+                                # Show room status
+                                if match.racetime_invitational:
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.icon("lock", size="sm").classes("text-warning")
+                                        ui.label("Invite Only").classes(
+                                            "text-xs text-secondary"
+                                        )
+                            else:
+                                # No room created yet
+                                ui.label("No room").classes("text-secondary text-xs")
+
+                                # Show "Create Room" button for moderators
+                                if self.can_edit_matches:
+                                    ui.button(
+                                        "Create Room",
+                                        icon="add",
+                                        on_click=lambda m=match: create_racetime_room(m.id),
+                                    ).classes("btn btn-sm").props(
+                                        "flat color=positive size=sm"
+                                    )
+
+                            # Show countdown timer if room should open soon
+                            if match.scheduled_at and not room:
+                                from datetime import datetime, timezone, timedelta
+
+                                room_open_minutes = getattr(
+                                    match.tournament, "room_open_minutes_before", 60
+                                )
+                                open_time = match.scheduled_at - timedelta(
+                                    minutes=room_open_minutes
+                                )
+                                now = datetime.now(timezone.utc)
+
+                                if now < open_time:
+                                    # Room not open yet - show countdown
+                                    time_until = open_time - now
+                                    hours = int(time_until.total_seconds() // 3600)
+                                    minutes = int((time_until.total_seconds() % 3600) // 60)
+
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.icon("schedule", size="sm").classes("text-info")
+                                        if hours > 0:
+                                            ui.label(
+                                                f"Opens in {hours}h {minutes}m"
+                                            ).classes("text-xs text-secondary")
+                                        else:
+                                            ui.label(f"Opens in {minutes}m").classes(
+                                                "text-xs text-secondary"
+                                            )
+                                elif now >= match.scheduled_at:
+                                    # Past scheduled time
+                                    pass
+                                else:
+                                    # Between open time and match time - should be open
+                                    with ui.row().classes("items-center gap-1"):
+                                        ui.icon("schedule", size="sm").classes(
+                                            "text-positive"
+                                        )
+                                        ui.label("Should be open").classes(
+                                            "text-xs text-secondary"
+                                        )
+
+                    async def create_racetime_room(match_id: int):
+                        """Create a RaceTime room for a match (moderator action)."""
+                        try:
+                            await self.service.create_racetime_room(
+                                user=self.user,
+                                organization_id=self.organization.id,
+                                match_id=match_id,
+                            )
+                            ui.notify("RaceTime room created", type="positive")
+                            await self._refresh()
+                        except Exception as e:
+                            logger.error("Failed to create RaceTime room: %s", e)
+                            ui.notify(f"Failed to create room: {str(e)}", type="negative")
+
+                    async def sync_racetime_status(match_id: int):
+                        """Manually sync match status from RaceTime room."""
+                        try:
+                            result = await self.service.sync_racetime_room_status(
+                                user=self.user,
+                                organization_id=self.organization.id,
+                                match_id=match_id,
+                            )
+                            if result:
+                                ui.notify(
+                                    "Match status synced from RaceTime", type="positive"
+                                )
+                                await self._refresh()
+                            else:
+                                ui.notify("Failed to sync match status", type="negative")
+                        except ValueError as e:
+                            logger.error("Failed to sync RaceTime status: %s", e)
+                            ui.notify(f"Failed: {str(e)}", type="negative")
+                        except Exception as e:
+                            logger.error("Failed to sync RaceTime status: %s", e)
+                            ui.notify(f"Failed to sync status: {str(e)}", type="negative")
+
+                    async def open_edit_match_dialog(match_id: int):
+                        """Open dialog to edit a match."""
+                        # Get current match
+                        match = next((m for m in matches if m.id == match_id), None)
+                        if not match:
+                            return
+
+                        async def on_save(title: str, scheduled_at, stream_id, comment):
+                            result = await self.service.update_match(
+                                self.user,
+                                self.organization.id,
+                                match_id,
+                                title=title,
+                                scheduled_at=scheduled_at,
+                                stream_channel_id=stream_id,
+                                comment=comment,
+                            )
+                            if result:
+                                ui.notify("Match updated", type="positive")
+                                await self._refresh()
+                            else:
+                                ui.notify("Failed to update match", type="negative")
+
+                        dialog = EditMatchDialog(
+                            match=match,
+                            organization_id=self.organization.id,
+                            on_save=on_save,
+                        )
+                        await dialog.show()
+
+                    def render_actions(match: Match):
+                        """Render action buttons for moderators/tournament admins."""
+                        # Check if match is from SpeedGaming (read-only)
+                        is_speedgaming = (
+                            hasattr(match, "speedgaming_episode_id")
+                            and match.speedgaming_episode_id
+                        )
+
+                        if is_speedgaming:
+                            # For SpeedGaming matches, show nothing (badge in Match column is enough)
+                            ui.label("—").classes("text-secondary")
+                        elif self.can_edit_matches:
+                            with ui.row().classes("gap-1"):
                                 ui.button(
-                                    icon=icon,
-                                    on_click=lambda m=match: open_seed_dialog(
-                                        m.id, m.title
-                                    ),
+                                    icon="edit",
+                                    on_click=lambda m=match: open_edit_match_dialog(m.id),
                                 ).classes("btn btn-sm").props(
                                     "flat color=primary size=sm"
                                 ).tooltip(
-                                    tooltip
+                                    "Edit match"
                                 )
-
-                def render_racetime(match: Match):
-                    """Render RaceTime.gg room information and controls."""
-                    with ui.column().classes("gap-2"):
-                        # Check if tournament has RaceTime integration
-                        has_racetime_bot = (
-                            getattr(match.tournament, "racetime_bot_id", None)
-                            is not None
-                        )
-
-                        if not has_racetime_bot:
+                        else:
                             ui.label("—").classes("text-secondary")
-                            return
 
-                        # Show room link if room exists
-                        room = match.racetime_room
-                        if room:
-                            room_url = f"{settings.RACETIME_URL}/{room.slug}"
-                            with ui.link(target=room_url, new_tab=True).classes(
-                                "text-primary"
-                            ):
-                                with ui.row().classes("items-center gap-1"):
-                                    ui.icon("sports_esports").classes("text-sm")
-                                    ui.label("Join Room")
+                    columns = [
+                        TableColumn("Tournament", cell_render=render_tournament),
+                        TableColumn("Match", cell_render=render_title),
+                        TableColumn("Players", cell_render=render_players),
+                        TableColumn("Scheduled", cell_render=render_scheduled_time),
+                        TableColumn("Stream", cell_render=render_stream),
+                        TableColumn("Seed", cell_render=render_seed),
+                        TableColumn("RaceTime", cell_render=render_racetime),
+                        TableColumn("Commentator", cell_render=render_commentator),
+                        TableColumn("Tracker", cell_render=render_tracker),
+                        TableColumn("Status", cell_render=render_status),
+                        TableColumn("Actions", cell_render=render_actions),
+                    ]
 
-                            # Show sync button for admins (if match not finished)
-                            if self.can_manage_tournaments and not match.finished_at:
-                                ui.button(
-                                    icon="sync",
-                                    on_click=lambda m=match: sync_racetime_status(m.id),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=info size=sm"
-                                ).tooltip(
-                                    "Sync status from RaceTime"
-                                )
-
-                            # Show room status
-                            if match.racetime_invitational:
-                                with ui.row().classes("items-center gap-1"):
-                                    ui.icon("lock", size="sm").classes("text-warning")
-                                    ui.label("Invite Only").classes(
-                                        "text-xs text-secondary"
-                                    )
-                        else:
-                            # No room created yet
-                            ui.label("No room").classes("text-secondary text-xs")
-
-                            # Show "Create Room" button for moderators
-                            if self.can_edit_matches:
-                                ui.button(
-                                    "Create Room",
-                                    icon="add",
-                                    on_click=lambda m=match: create_racetime_room(m.id),
-                                ).classes("btn btn-sm").props(
-                                    "flat color=positive size=sm"
-                                )
-
-                        # Show countdown timer if room should open soon
-                        if match.scheduled_at and not room:
-                            from datetime import datetime, timezone, timedelta
-
-                            room_open_minutes = getattr(
-                                match.tournament, "room_open_minutes_before", 60
-                            )
-                            open_time = match.scheduled_at - timedelta(
-                                minutes=room_open_minutes
-                            )
-                            now = datetime.now(timezone.utc)
-
-                            if now < open_time:
-                                # Room not open yet - show countdown
-                                time_until = open_time - now
-                                hours = int(time_until.total_seconds() // 3600)
-                                minutes = int((time_until.total_seconds() % 3600) // 60)
-
-                                with ui.row().classes("items-center gap-1"):
-                                    ui.icon("schedule", size="sm").classes("text-info")
-                                    if hours > 0:
-                                        ui.label(
-                                            f"Opens in {hours}h {minutes}m"
-                                        ).classes("text-xs text-secondary")
-                                    else:
-                                        ui.label(f"Opens in {minutes}m").classes(
-                                            "text-xs text-secondary"
-                                        )
-                            elif now >= match.scheduled_at:
-                                # Past scheduled time
-                                pass
-                            else:
-                                # Between open time and match time - should be open
-                                with ui.row().classes("items-center gap-1"):
-                                    ui.icon("schedule", size="sm").classes(
-                                        "text-positive"
-                                    )
-                                    ui.label("Should be open").classes(
-                                        "text-xs text-secondary"
-                                    )
-
-                async def create_racetime_room(match_id: int):
-                    """Create a RaceTime room for a match (moderator action)."""
-                    try:
-                        await self.service.create_racetime_room(
-                            user=self.user,
-                            organization_id=self.organization.id,
-                            match_id=match_id,
-                        )
-                        ui.notify("RaceTime room created", type="positive")
-                        await self._refresh()
-                    except Exception as e:
-                        logger.error("Failed to create RaceTime room: %s", e)
-                        ui.notify(f"Failed to create room: {str(e)}", type="negative")
-
-                async def sync_racetime_status(match_id: int):
-                    """Manually sync match status from RaceTime room."""
-                    try:
-                        result = await self.service.sync_racetime_room_status(
-                            user=self.user,
-                            organization_id=self.organization.id,
-                            match_id=match_id,
-                        )
-                        if result:
-                            ui.notify(
-                                "Match status synced from RaceTime", type="positive"
-                            )
-                            await self._refresh()
-                        else:
-                            ui.notify("Failed to sync match status", type="negative")
-                    except ValueError as e:
-                        logger.error("Failed to sync RaceTime status: %s", e)
-                        ui.notify(f"Failed: {str(e)}", type="negative")
-                    except Exception as e:
-                        logger.error("Failed to sync RaceTime status: %s", e)
-                        ui.notify(f"Failed to sync status: {str(e)}", type="negative")
-
-                async def open_edit_match_dialog(match_id: int):
-                    """Open dialog to edit a match."""
-                    # Get current match
-                    match = next((m for m in matches if m.id == match_id), None)
-                    if not match:
-                        return
-
-                    async def on_save(title: str, scheduled_at, stream_id, comment):
-                        result = await self.service.update_match(
-                            self.user,
-                            self.organization.id,
-                            match_id,
-                            title=title,
-                            scheduled_at=scheduled_at,
-                            stream_channel_id=stream_id,
-                            comment=comment,
-                        )
-                        if result:
-                            ui.notify("Match updated", type="positive")
-                            await self._refresh()
-                        else:
-                            ui.notify("Failed to update match", type="negative")
-
-                    dialog = EditMatchDialog(
-                        match=match,
-                        organization_id=self.organization.id,
-                        on_save=on_save,
-                    )
-                    await dialog.show()
-
-                def render_actions(match: Match):
-                    """Render action buttons for moderators/tournament admins."""
-                    # Check if match is from SpeedGaming (read-only)
-                    is_speedgaming = (
-                        hasattr(match, "speedgaming_episode_id")
-                        and match.speedgaming_episode_id
-                    )
-
-                    if is_speedgaming:
-                        # For SpeedGaming matches, show nothing (badge in Match column is enough)
-                        ui.label("—").classes("text-secondary")
-                    elif self.can_edit_matches:
-                        with ui.row().classes("gap-1"):
-                            ui.button(
-                                icon="edit",
-                                on_click=lambda m=match: open_edit_match_dialog(m.id),
-                            ).classes("btn btn-sm").props(
-                                "flat color=primary size=sm"
-                            ).tooltip(
-                                "Edit match"
-                            )
-                    else:
-                        ui.label("—").classes("text-secondary")
-
-                columns = [
-                    TableColumn("Tournament", cell_render=render_tournament),
-                    TableColumn("Match", cell_render=render_title),
-                    TableColumn("Players", cell_render=render_players),
-                    TableColumn("Scheduled", cell_render=render_scheduled_time),
-                    TableColumn("Stream", cell_render=render_stream),
-                    TableColumn("Seed", cell_render=render_seed),
-                    TableColumn("RaceTime", cell_render=render_racetime),
-                    TableColumn("Commentator", cell_render=render_commentator),
-                    TableColumn("Tracker", cell_render=render_tracker),
-                    TableColumn("Status", cell_render=render_status),
-                    TableColumn("Actions", cell_render=render_actions),
-                ]
-
-                table = ResponsiveTable(columns, matches)
-                await table.render()
+                    table = ResponsiveTable(columns, matches)
+                    await table.render()
 
     async def _create_match(self) -> None:
         """Open dialog to create a new match."""
