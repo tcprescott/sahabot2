@@ -49,9 +49,8 @@ def register():
 
             # Load initial content only if no view parameter was specified
             if not page.initial_view:
-                await page.create_instance_view_loader(
-                    lambda: ProfileInfoView(page.user)
-                )()
+                view = ProfileInfoView(page.user)
+                await view.render()
 
         # Create sidebar items
         sidebar_items = [

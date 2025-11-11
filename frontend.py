@@ -75,8 +75,9 @@ def register_routes(fastapi_app: FastAPI = None):
         )
 
     # Register pages
-    home.register()
+    # Register more specific routes before catch-all routes
     auth.register()
+    user_profile.register()
     admin.register()
     organization_admin.register()
     tournament_admin.register()
@@ -84,7 +85,8 @@ def register_routes(fastapi_app: FastAPI = None):
     tournaments.register()
     async_qualifiers.register()
     tournament_match_settings.register()
-    user_profile.register()
+    # Home page with /{view} catch-all must be last
+    home.register()
     invite.register()
     racetime_oauth.register()
     twitch_oauth.register()
