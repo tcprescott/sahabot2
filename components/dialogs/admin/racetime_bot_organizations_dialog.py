@@ -64,7 +64,9 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
             ui.label(f"Category: {self.bot.category}").classes("font-bold")
 
         # Instructions
-        with ui.row().classes("items-center gap-2 p-3 rounded bg-info text-white"):
+        with ui.row().classes("items-center gap-2 p-3 rounded").style(
+            "background-color: var(--info-bg); color: var(--info-text);"
+        ):
             ui.icon("info")
             ui.label("Select organizations that can use this RaceTime bot.")
 
@@ -114,7 +116,9 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
                 for org in self.all_organizations:
                     is_assigned = org.id in self.assigned_org_ids
                     with ui.row().classes("items-center gap-2 p-2 rounded").style(
-                        "background: #f5f5f5;" if org.id in self.selected_orgs else ""
+                        "background-color: var(--selected-bg);"
+                        if org.id in self.selected_orgs
+                        else ""
                     ):
                         checkbox = ui.checkbox(
                             text="", value=org.id in self.selected_orgs
@@ -124,12 +128,7 @@ class RacetimeBotOrganizationsDialog(BaseDialog):
                             lambda e, org_id=org.id: self._toggle_org(org_id, e.args),
                         )
 
-                        with ui.column().classes("gap-0"):
-                            ui.label(org.name).classes("font-bold")
-                            if org.description:
-                                ui.label(org.description).classes(
-                                    "text-sm text-secondary"
-                                )
+                        ui.label(org.name).classes("font-bold")
 
                         if is_assigned:
                             ui.badge("Currently Assigned", color="positive")

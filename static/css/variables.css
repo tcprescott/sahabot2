@@ -30,6 +30,11 @@
     --success-color: #2c7b46;
     --info-color: var(--purple-secondary);
 
+    /* Status Backgrounds */
+    --info-bg: rgba(124, 58, 237, 0.1);
+    --info-text: #6d28d9;
+    --selected-bg: rgba(124, 58, 237, 0.1);
+
     /* Spacing - Mobile first, adjusted for desktop */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -82,6 +87,11 @@
     --warning-color: #fbbf24;
     --success-color: #10b981;
     --info-color: var(--purple-secondary);
+
+    /* Status Backgrounds - Dark Mode */
+    --info-bg: rgba(124, 58, 237, 0.2);
+    --info-text: #c4b5fd;
+    --selected-bg: rgba(167, 139, 250, 0.2);
 
     /* Shadows - Dark Mode */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
