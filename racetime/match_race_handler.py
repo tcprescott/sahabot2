@@ -1,42 +1,49 @@
 """
 Match race handler for RaceTime.gg integration.
 
-Extends SahaRaceHandler to add match-specific logic for tournament matches.
+Provides match-specific logic as a mixin for tournament matches.
+This mixin can be combined with category-specific handlers (e.g., ALTTPRRaceHandler)
+to provide both match functionality and category-specific commands.
 """
 
 import logging
-from racetime.client import SahaRaceHandler
 
 logger = logging.getLogger(__name__)
 
 
-class MatchRaceHandler(SahaRaceHandler):
+class MatchRaceMixin:
     """
-    Handler for tournament match races on RaceTime.gg.
+    Mixin for tournament match races on RaceTime.gg.
 
-    Extends SahaRaceHandler to add match-specific functionality:
+    Adds match-specific functionality to any race handler:
     - Automatic race finish processing
     - Automatic result recording for match players
     - Match service integration
+
+    This mixin should be combined with a category-specific handler like:
+        class ALTTPRMatchRaceHandler(MatchRaceMixin, ALTTPRRaceHandler):
+            pass
+
+    The mixin expects the following attributes to be available from the base handler:
+    - self.data: Race data dictionary
+    - self.bot: Bot instance reference
     """
 
     def __init__(
         self,
-        bot_instance,
-        match_id: int,
         *args,
+        match_id: int,
         **kwargs,
     ):
         """
-        Initialize match race handler.
+        Initialize match race mixin.
 
         Args:
-            bot_instance: The RacetimeBot instance
             match_id: ID of the Match
-            *args: Arguments for parent RaceHandler
-            **kwargs: Keyword arguments for parent RaceHandler
+            *args: Arguments for parent handler
+            **kwargs: Keyword arguments for parent handler
         """
-        super().__init__(bot_instance, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.match_id = match_id
         self._race_finished = False
 
@@ -103,3 +110,35 @@ class MatchRaceHandler(SahaRaceHandler):
                     e,
                     exc_info=True,
                 )
+
+
+# Combined handler classes that mix match functionality with category-specific commands
+# These allow tournament matches to use both match processing and category commands
+
+def create_match_handler_class(base_handler_class):
+    """
+    Create a match handler class that combines MatchRaceMixin with a base handler.
+
+    Args:
+        base_handler_class: The base handler class to combine with (e.g., ALTTPRRaceHandler)
+
+    Returns:
+        A new class that combines MatchRaceMixin with the base handler
+    """
+    class CombinedMatchRaceHandler(MatchRaceMixin, base_handler_class):
+        """
+        Combined handler that provides both match functionality and category-specific commands.
+
+        This handler is dynamically created by combining MatchRaceMixin with a category-specific
+        handler like ALTTPRRaceHandler. It inherits:
+        - Match processing from MatchRaceMixin (race finish handling, result recording)
+        - Category commands from the base handler (!mystery, !vt, etc.)
+        """
+        pass
+
+    # Set a descriptive name for the class
+    base_name = base_handler_class.__name__
+    CombinedMatchRaceHandler.__name__ = f"Match{base_name}"
+    CombinedMatchRaceHandler.__qualname__ = f"Match{base_name}"
+
+    return CombinedMatchRaceHandler

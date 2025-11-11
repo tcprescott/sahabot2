@@ -133,19 +133,11 @@ class RacetimeRoomService:
                 logger.error("Failed to create race room for match %s", match.id)
                 return None
 
-            # Replace generic SahaRaceHandler with MatchRaceHandler for automatic result recording
-            from racetime.match_race_handler import MatchRaceHandler
-
-            # Extract race data from the generic handler
+            # Replace the generic handler with a match-specific handler
+            # This combines the bot's configured handler (e.g., ALTTPRRaceHandler)
+            # with MatchRaceMixin to provide both category commands and match processing
             race_data = handler.data
-
-            # Create match-specific handler to monitor race finish events
-            # Constructor: MatchRaceHandler(bot_instance, match_id, race_data, ...)
-            match_handler = MatchRaceHandler(
-                bot,  # bot_instance (positional)
-                match.id,  # match_id (positional)
-                race_data,  # Passed as *args to parent RaceHandler
-            )
+            match_handler = bot.create_match_handler(race_data, match.id)
 
             # Mark that bot created this room (for event emission in begin())
             match_handler._bot_created_room = True

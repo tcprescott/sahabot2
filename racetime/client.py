@@ -1106,8 +1106,13 @@ class RacetimeBot(Bot):
         - ALTTPRRaceHandler (ALTTPR-specific commands)
         - SMRaceHandler (Super Metroid-specific commands)
         - SMZ3RaceHandler (SMZ3-specific commands)
-        - MatchRaceHandler (tournament match handler)
         - AsyncLiveRaceHandler (async tournament live race handler)
+
+        For tournament matches, use combined handlers that include MatchRaceMixin:
+        - MatchALTTPRRaceHandler (ALTTPR commands + match processing)
+        - MatchSMRaceHandler (SM commands + match processing)
+        - MatchSMZ3RaceHandler (SMZ3 commands + match processing)
+        - MatchSahaRaceHandler (base commands + match processing)
 
         Returns:
             Handler class to use for race rooms
@@ -1116,7 +1121,7 @@ class RacetimeBot(Bot):
         from racetime.alttpr_handler import ALTTPRRaceHandler
         from racetime.sm_race_handler import SMRaceHandler
         from racetime.smz3_race_handler import SMZ3RaceHandler
-        from racetime.match_race_handler import MatchRaceHandler
+        from racetime.match_race_handler import create_match_handler_class
         from racetime.live_race_handler import AsyncLiveRaceHandler
 
         handler_map = {
@@ -1124,8 +1129,12 @@ class RacetimeBot(Bot):
             "ALTTPRRaceHandler": ALTTPRRaceHandler,
             "SMRaceHandler": SMRaceHandler,
             "SMZ3RaceHandler": SMZ3RaceHandler,
-            "MatchRaceHandler": MatchRaceHandler,
             "AsyncLiveRaceHandler": AsyncLiveRaceHandler,
+            # Combined match handlers
+            "MatchSahaRaceHandler": create_match_handler_class(SahaRaceHandler),
+            "MatchALTTPRRaceHandler": create_match_handler_class(ALTTPRRaceHandler),
+            "MatchSMRaceHandler": create_match_handler_class(SMRaceHandler),
+            "MatchSMZ3RaceHandler": create_match_handler_class(SMZ3RaceHandler),
         }
 
         handler_class = handler_map.get(self.handler_class_name)
@@ -1197,6 +1206,75 @@ class RacetimeBot(Bot):
         handler.data = race_data
 
         logger.info('Created handler for race %s', race_data.get('name'))
+
+        return handler
+
+    def create_match_handler(self, race_data: dict, match_id: int):
+        """
+        Create a match-specific handler instance for a race.
+
+        This creates a handler that combines the bot's configured handler class
+        with MatchRaceMixin to provide both category-specific commands and
+        match processing functionality.
+
+        Args:
+            race_data: Race data from racetime.gg API
+            match_id: ID of the match this race is for
+
+        Returns:
+            Handler instance for the match race
+        """
+        # Import websockets for connection setup
+        import websockets
+        from racetime.match_race_handler import create_match_handler_class
+
+        # Set up websocket connection parameters (same as create_handler)
+        connect_kwargs = {
+            'additional_headers': {
+                'Authorization': 'Bearer ' + self.access_token,
+            },
+        }
+
+        # BC for websockets<14 (from upstream)
+        try:
+            ws_version = int(websockets.version.version.split('.')[0])
+        except (AttributeError, TypeError, ValueError):
+            ws_version = 14
+        if ws_version < 14:
+            connect_kwargs['extra_headers'] = connect_kwargs.pop('additional_headers')
+
+        if self.ssl_context is not None and self.racetime_secure:
+            connect_kwargs['ssl'] = self.ssl_context
+
+        ws_conn = websockets.connect(
+            self.ws_uri(race_data.get('websocket_bot_url')),
+            **connect_kwargs,
+        )
+
+        race_name = race_data.get('name')
+        if race_name not in self.state:
+            self.state[race_name] = {}
+
+        # Get the base handler class and create a match variant
+        base_handler_class = self.get_handler_class()
+        match_handler_class = create_match_handler_class(base_handler_class)
+
+        # Get handler kwargs
+        kwargs = self.get_handler_kwargs(ws_conn, self.state[race_name])
+
+        # Inject bot_instance and match_id for the match handler
+        kwargs['bot_instance'] = self
+        kwargs['match_id'] = match_id
+
+        # Create handler with all required parameters
+        handler = match_handler_class(**kwargs)
+        handler.data = race_data
+
+        logger.info(
+            'Created match handler for race %s (match_id=%s)',
+            race_data.get('name'),
+            match_id
+        )
 
         return handler
 
