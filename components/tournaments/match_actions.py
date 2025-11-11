@@ -1,0 +1,447 @@
+"""
+Match action handlers for tournament schedules.
+
+Handles actions like generating seeds, creating RaceTime rooms, and managing match status.
+"""
+
+from __future__ import annotations
+import logging
+from typing import TYPE_CHECKING, Callable, Awaitable, Optional
+from nicegui import ui
+from models.match_schedule import Match
+from config import Settings
+
+if TYPE_CHECKING:
+    from models import User, Organization
+    from application.services.tournaments.tournament_service import TournamentService
+
+settings = Settings()
+logger = logging.getLogger(__name__)
+
+
+class MatchActions:
+    """Match action handlers for tournament schedules."""
+
+    def __init__(
+        self,
+        user: User,
+        organization: Organization,
+        service: "TournamentService",
+        can_manage_tournaments: bool,
+        on_refresh: Callable[[], Awaitable[None]],
+    ):
+        """Initialize match actions.
+
+        Args:
+            user: Current user
+            organization: Current organization
+            service: Tournament service instance
+            can_manage_tournaments: Whether user can manage tournaments
+            on_refresh: Callback to refresh the view
+        """
+        self.user = user
+        self.organization = organization
+        self.service = service
+        self.can_manage_tournaments = can_manage_tournaments
+        self.on_refresh = on_refresh
+
+    async def generate_seed(self, match_id: int, match_title: str, button: ui.button = None) -> None:
+        """Generate a seed using tournament's randomizer settings.
+
+        Args:
+            match_id: Match ID
+            match_title: Match title for error messages
+            button: Button reference for spinner state (optional)
+        """
+        # Show spinner on button if provided
+        if button:
+            button.props("loading")
+            button.disable()
+
+        try:
+            # Get current match to get tournament info
+            match = await Match.filter(id=match_id).prefetch_related("tournament", "tournament__randomizer_preset").first()
+            if not match:
+                ui.notify("Match not found", type="negative")
+                return
+
+            # Check if tournament has randomizer configured
+            if not match.tournament.randomizer:
+                ui.notify(
+                    "Randomizer not configured for this tournament. "
+                    "Please configure it in Tournament Admin > Randomizer Settings.",
+                    type="warning",
+                )
+                return
+
+            # Import randomizer service
+            from application.services.randomizer.randomizer_service import (
+                RandomizerService,
+            )
+
+            randomizer_service = RandomizerService()
+
+            # Get the randomizer
+            randomizer = randomizer_service.get_randomizer(
+                match.tournament.randomizer
+            )
+
+            # Prepare settings
+            settings_dict = {}
+            description = f"Generated {match.tournament.randomizer} seed"
+
+            # Generate seed (use preset if configured)
+            if match.tournament.randomizer_preset_id:
+                # Load the preset
+                await match.tournament.fetch_related("randomizer_preset")
+                preset = match.tournament.randomizer_preset
+                if preset:
+                    # Extract settings from preset
+                    settings_dict = preset.settings.get(
+                        "settings", preset.settings
+                    )
+                    description = f"Generated {match.tournament.randomizer} seed using preset: {preset.name}"
+                else:
+                    # Preset not found, log warning but continue with defaults
+                    logger.warning(
+                        "Preset %s not found for tournament %s",
+                        match.tournament.randomizer_preset_id,
+                        match.tournament.id,
+                    )
+
+            # Generate the seed with settings
+            result = await randomizer.generate(settings_dict)
+
+            # Set the seed for the match
+            await self.service.set_match_seed(
+                self.user,
+                self.organization.id,
+                match_id,
+                result.url,
+                description,
+            )
+            ui.notify("Seed generated successfully", type="positive")
+            await self.on_refresh()
+
+        except ValueError as e:
+            logger.error("Failed to generate seed: %s", e)
+            ui.notify(f"Failed to generate seed: {str(e)}", type="negative")
+        except Exception as e:
+            logger.error("Failed to generate seed: %s", e)
+            ui.notify(f"Error generating seed: {str(e)}", type="negative")
+        finally:
+            # Remove spinner from button if provided
+            if button:
+                button.props(remove="loading")
+                button.enable()
+
+    async def open_seed_dialog(self, match_id: int, match_title: str, matches: list) -> None:
+        """Open dialog to set/edit seed for a match."""
+        from components.dialogs import MatchSeedDialog
+
+        # Get current match to get seed info
+        match = next((m for m in matches if m.id == match_id), None)
+        if not match:
+            return
+
+        seed = getattr(match, "seed", None)
+        if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
+            seed_list = list(seed) if not isinstance(seed, list) else seed
+            seed = seed_list[0] if seed_list else None
+
+        initial_url = seed.url if seed else ""
+        initial_description = seed.description if seed else None
+
+        async def on_submit(url: str, description: Optional[str]):
+            await self.service.set_match_seed(
+                self.user, self.organization.id, match_id, url, description
+            )
+            ui.notify("Seed updated", type="positive")
+            await self.on_refresh()
+
+        async def on_delete():
+            await self.service.delete_match_seed(
+                self.user, self.organization.id, match_id
+            )
+            ui.notify("Seed deleted", type="positive")
+            await self.on_refresh()
+
+        dialog = MatchSeedDialog(
+            match_title=match_title or f"Match #{match_id}",
+            initial_url=initial_url,
+            initial_description=initial_description,
+            on_submit=on_submit,
+            on_delete=on_delete if seed else None,
+        )
+        await dialog.show()
+
+    def render_seed(self, match: Match, matches: list) -> None:
+        """Render seed/ROM link if available with action buttons."""
+        # Check if seed exists (1:1 relationship)
+        seed = getattr(match, "seed", None)
+
+        # Handle the case where seed is a ReverseRelation (list)
+        if seed and hasattr(seed, "__iter__") and not isinstance(seed, str):
+            seed_list = list(seed) if not isinstance(seed, list) else seed
+            seed = seed_list[0] if seed_list else None
+
+        with ui.column().classes("gap-2"):
+            if seed:
+                # Show link to seed URL
+                with ui.link(target=seed.url, new_tab=True).classes(
+                    "text-primary"
+                ):
+                    with ui.row().classes("items-center gap-1"):
+                        ui.icon("file_download").classes("text-sm")
+                        ui.label("Seed")
+                # Show description if available
+                if seed.description:
+                    ui.label(seed.description).classes(
+                        "text-secondary text-xs"
+                    )
+            else:
+                ui.label("—").classes("text-secondary")
+
+            # Add buttons for tournament managers
+            if self.can_manage_tournaments:
+                with ui.row().classes("gap-1"):
+                    # Generate Seed button (with dice icon) - only if tournament has randomizer configured
+                    if match.tournament.randomizer:
+                        # Create button with closure-safe reference
+                        button_ref = [None]  # Use list to allow modification in closure
+                        async def on_generate_click(m=match, btn_ref=button_ref):
+                            await self.generate_seed(m.id, m.title, btn_ref[0])
+                        
+                        button_ref[0] = ui.button(
+                            icon="casino",
+                            on_click=on_generate_click,
+                        ).classes("btn btn-sm").props(
+                            "flat color=positive size=sm"
+                        ).tooltip(
+                            "Generate seed using tournament randomizer"
+                        )
+
+                    # Set/Edit Seed button (manual URL entry)
+                    icon = "edit" if seed else "add"
+                    tooltip = (
+                        "Edit seed" if seed else "Set seed URL manually"
+                    )
+                    ui.button(
+                        icon=icon,
+                        on_click=lambda m=match: self.open_seed_dialog(
+                            m.id, m.title, matches
+                        ),
+                    ).classes("btn btn-sm").props(
+                        "flat color=primary size=sm"
+                    ).tooltip(
+                        tooltip
+                    )
+
+    async def create_racetime_room(self, match_id: int, button: ui.button = None) -> None:
+        """Create a RaceTime room for a match (moderator action).
+
+        Args:
+            match_id: Match ID
+            button: Button reference for spinner state (optional)
+        """
+        # Show spinner on button if provided
+        if button:
+            button.props("loading")
+            button.disable()
+
+        try:
+            await self.service.create_racetime_room(
+                user=self.user,
+                organization_id=self.organization.id,
+                match_id=match_id,
+            )
+            ui.notify("RaceTime room created", type="positive")
+            await self.on_refresh()
+        except Exception as e:
+            logger.error("Failed to create RaceTime room: %s", e)
+            ui.notify(f"Failed to create room: {str(e)}", type="negative")
+        finally:
+            # Remove spinner from button if provided
+            if button:
+                button.props(remove="loading")
+                button.enable()
+
+    async def sync_racetime_status(self, match_id: int) -> None:
+        """Manually sync match status from RaceTime room."""
+        try:
+            result = await self.service.sync_racetime_room_status(
+                user=self.user,
+                organization_id=self.organization.id,
+                match_id=match_id,
+            )
+            if result:
+                ui.notify(
+                    "Match status synced from RaceTime", type="positive"
+                )
+                await self.on_refresh()
+            else:
+                ui.notify("Failed to sync match status", type="negative")
+        except ValueError as e:
+            logger.error("Failed to sync RaceTime status: %s", e)
+            ui.notify(f"Failed: {str(e)}", type="negative")
+        except Exception as e:
+            logger.error("Failed to sync RaceTime status: %s", e)
+            ui.notify(f"Failed to sync status: {str(e)}", type="negative")
+
+    def render_racetime(self, match: Match) -> None:
+        """Render RaceTime.gg room information and controls."""
+        with ui.column().classes("gap-2"):
+            # Check if tournament has RaceTime integration
+            has_racetime_bot = (
+                getattr(match.tournament, "racetime_bot_id", None)
+                is not None
+            )
+
+            if not has_racetime_bot:
+                ui.label("—").classes("text-secondary")
+                return
+
+            # Show room link if room exists
+            room = match.racetime_room
+            if room:
+                room_url = f"{settings.RACETIME_URL}/{room.slug}"
+                with ui.link(target=room_url, new_tab=True).classes(
+                    "text-primary"
+                ):
+                    with ui.row().classes("items-center gap-1"):
+                        ui.icon("sports_esports").classes("text-sm")
+                        ui.label("Join Room")
+
+                # Show sync button for admins (if match not finished)
+                if self.can_manage_tournaments and not match.finished_at:
+                    ui.button(
+                        icon="sync",
+                        on_click=lambda m=match: self.sync_racetime_status(m.id),
+                    ).classes("btn btn-sm").props(
+                        "flat color=info size=sm"
+                    ).tooltip(
+                        "Sync status from RaceTime"
+                    )
+
+                # Show room status
+                if match.racetime_invitational:
+                    with ui.row().classes("items-center gap-1"):
+                        ui.icon("lock", size="sm").classes("text-warning")
+                        ui.label("Invite Only").classes(
+                            "text-xs text-secondary"
+                        )
+            else:
+                # No room created yet
+                ui.label("No room").classes("text-secondary text-xs")
+
+                # Show "Create Room" button for moderators
+                if self.can_manage_tournaments:
+                    # Create button with closure-safe reference
+                    button_ref = [None]  # Use list to allow modification in closure
+                    async def on_create_room_click(m=match, btn_ref=button_ref):
+                        await self.create_racetime_room(m.id, btn_ref[0])
+                    
+                    button_ref[0] = ui.button(
+                        "Create Room",
+                        icon="add",
+                        on_click=on_create_room_click,
+                    ).classes("btn btn-sm").props(
+                        "flat color=positive size=sm"
+                    )
+
+            # Show countdown timer if room should open soon
+            if match.scheduled_at and not room:
+                from datetime import datetime, timezone, timedelta
+
+                room_open_minutes = getattr(
+                    match.tournament, "room_open_minutes_before", 60
+                )
+                open_time = match.scheduled_at - timedelta(
+                    minutes=room_open_minutes
+                )
+                now = datetime.now(timezone.utc)
+
+                if now < open_time:
+                    # Room not open yet - show countdown
+                    time_until = open_time - now
+                    hours = int(time_until.total_seconds() // 3600)
+                    minutes = int((time_until.total_seconds() % 3600) // 60)
+
+                    with ui.row().classes("items-center gap-1"):
+                        ui.icon("schedule", size="sm").classes("text-info")
+                        if hours > 0:
+                            ui.label(
+                                f"Opens in {hours}h {minutes}m"
+                            ).classes("text-xs text-secondary")
+                        else:
+                            ui.label(f"Opens in {minutes}m").classes(
+                                "text-xs text-secondary"
+                            )
+                elif now >= match.scheduled_at:
+                    # Past scheduled time
+                    pass
+                else:
+                    # Between open time and match time - should be open
+                    with ui.row().classes("items-center gap-1"):
+                        ui.icon("schedule", size="sm").classes(
+                            "text-positive"
+                        )
+                        ui.label("Should be open").classes(
+                            "text-xs text-secondary"
+                        )
+
+    async def open_edit_match_dialog(self, match_id: int, matches: list) -> None:
+        """Open dialog to edit a match."""
+        from components.dialogs import EditMatchDialog
+
+        # Get current match
+        match = next((m for m in matches if m.id == match_id), None)
+        if not match:
+            return
+
+        async def on_save(title: str, scheduled_at, stream_id, comment):
+            result = await self.service.update_match(
+                self.user,
+                self.organization.id,
+                match_id,
+                title=title,
+                scheduled_at=scheduled_at,
+                stream_channel_id=stream_id,
+                comment=comment,
+            )
+            if result:
+                ui.notify("Match updated", type="positive")
+                await self.on_refresh()
+            else:
+                ui.notify("Failed to update match", type="negative")
+
+        dialog = EditMatchDialog(
+            match=match,
+            organization_id=self.organization.id,
+            on_save=on_save,
+        )
+        await dialog.show()
+
+    def render_actions(self, match: Match, matches: list, can_edit_matches: bool) -> None:
+        """Render action buttons for moderators/tournament admins."""
+        # Check if match is from SpeedGaming (read-only)
+        is_speedgaming = (
+            hasattr(match, "speedgaming_episode_id")
+            and match.speedgaming_episode_id
+        )
+
+        if is_speedgaming:
+            # For SpeedGaming matches, show nothing (badge in Match column is enough)
+            ui.label("—").classes("text-secondary")
+        elif can_edit_matches:
+            with ui.row().classes("gap-1"):
+                ui.button(
+                    icon="edit",
+                    on_click=lambda m=match: self.open_edit_match_dialog(m.id, matches),
+                ).classes("btn btn-sm").props(
+                    "flat color=primary size=sm"
+                ).tooltip(
+                    "Edit match"
+                )
+        else:
+            ui.label("—").classes("text-secondary")
