@@ -620,7 +620,7 @@ class EventScheduleView:
                                                     m.id, "recorded", "Recorded"
                                                 ),
                                             ).classes("btn btn-sm").props(
-                                                "flat color=dark size=sm"
+                                                "flat color=positive size=sm"
                                             ).tooltip(
                                                 "Mark as recorded in bracket"
                                             )

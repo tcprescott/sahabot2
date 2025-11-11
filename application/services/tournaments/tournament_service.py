@@ -1592,8 +1592,19 @@ class TournamentService:
                     "Created RaceTime room %s for match %s", room_slug, match_id
                 )
 
+                # Start the handler to establish websocket connection
+                # This is required before we can invite users
+                import asyncio
+
+                handler_task = asyncio.create_task(handler.handle())
+                logger.info("Started handler task for race %s", room_slug)
+
+                # Give the handler a moment to connect
+                await asyncio.sleep(1)
+
                 # Invite players to the room
-                players = await match.players.prefetch_related("user").all()
+                await match.fetch_related("players__user")
+                players = match.players
                 invited_count = 0
                 skipped_count = 0
 
@@ -1609,6 +1620,7 @@ class TournamentService:
                         continue
 
                     try:
+                        # Use handler's websocket method (handler must be running)
                         await handler.invite_user(user.racetime_id)
                         invited_count += 1
                         logger.info(

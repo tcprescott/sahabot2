@@ -1140,6 +1140,66 @@ class RacetimeBot(Bot):
         logger.debug("Using handler class: %s", self.handler_class_name)
         return handler_class
 
+    def create_handler(self, race_data: dict):
+        """
+        Create a handler instance for a race.
+
+        Override of Bot.create_handler() to inject bot_instance parameter
+        that our custom handlers require.
+
+        This follows the upstream library's pattern but adds bot_instance to kwargs.
+
+        Args:
+            race_data: Race data from racetime.gg API
+
+        Returns:
+            Handler instance for the race
+        """
+        # Import websockets for connection setup
+        import websockets
+        
+        # Set up websocket connection parameters (from upstream Bot.create_handler)
+        connect_kwargs = {
+            'additional_headers': {
+                'Authorization': 'Bearer ' + self.access_token,
+            },
+        }
+
+        # BC for websockets<14 (from upstream)
+        try:
+            ws_version = int(websockets.version.version.split('.')[0])
+        except (AttributeError, TypeError, ValueError):
+            ws_version = 14
+        if ws_version < 14:
+            connect_kwargs['extra_headers'] = connect_kwargs.pop('additional_headers')
+
+        if self.ssl_context is not None and self.racetime_secure:
+            connect_kwargs['ssl'] = self.ssl_context
+            
+        ws_conn = websockets.connect(
+            self.ws_uri(race_data.get('websocket_bot_url')),
+            **connect_kwargs,
+        )
+
+        race_name = race_data.get('name')
+        if race_name not in self.state:
+            self.state[race_name] = {}
+
+        # Get handler class and create kwargs
+        handler_class = self.get_handler_class()
+        kwargs = self.get_handler_kwargs(ws_conn, self.state[race_name])
+        
+        # Inject bot_instance for our custom handlers
+        kwargs['bot_instance'] = self
+
+        # Create handler with all required parameters
+        handler = handler_class(**kwargs)
+        handler.data = race_data
+
+        logger.info('Created handler for race %s', race_data.get('name'))
+
+        return handler
+
     async def join_race_room(
         self, race_name: str, force: bool = False
     ) -> Optional[SahaRaceHandler]:
@@ -1360,6 +1420,63 @@ class RacetimeBot(Bot):
         except Exception as e:
             logger.error("Failed to create race room: %s", e, exc_info=True)
             return None
+
+    async def invite_user_to_race(
+        self, race_slug: str, racetime_user_id: str
+    ) -> bool:
+        """
+        Invite a user to a race room via HTTP API.
+
+        This method uses the HTTP API to send an invitation, which doesn't require
+        an active websocket connection like the handler's invite_user() method does.
+
+        Args:
+            race_slug: Full race slug (e.g., "alttpr/disco-stanley-3420")
+            racetime_user_id: RaceTime.gg user ID to invite
+
+        Returns:
+            True if invite was sent successfully, False otherwise
+        """
+        if not self.http or not self.access_token:
+            logger.error("Bot not initialized - no HTTP session or access token")
+            return False
+
+        try:
+            url = self.http_uri(f"/{race_slug}/message")
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+            payload = {
+                "action": "invite",
+                "user": racetime_user_id,
+            }
+
+            async with self.http.post(
+                url, data=payload, headers=headers, ssl=self.ssl_context
+            ) as resp:
+                if resp.status == 204:
+                    logger.info(
+                        "Successfully invited user %s to race %s",
+                        racetime_user_id,
+                        race_slug,
+                    )
+                    return True
+                else:
+                    logger.error(
+                        "Failed to invite user %s to race %s: HTTP %s",
+                        racetime_user_id,
+                        race_slug,
+                        resp.status,
+                    )
+                    return False
+
+        except Exception as e:
+            logger.error(
+                "Exception while inviting user %s to race %s: %s",
+                racetime_user_id,
+                race_slug,
+                e,
+                exc_info=True,
+            )
+            return False
 
 
 # Map of category -> bot instance

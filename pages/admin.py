@@ -1,17 +1,7 @@
 """
-Admin page for SahaBot2.
-
-This module provides administrative functionality using BasePage's dynamic content loading.
-
-The page uses a single route with dynamic content switching via sidebar navigation:
-- Overview: Dashboard with welcome message and statistics
-- Users: User management interface
-- Settings: Application settings
-
-This pattern is reusable for other multi-section pages via BasePage.
+Global admin pages (SUPERADMIN and ADMIN only).
 """
 
-from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from views.admin import (
@@ -23,84 +13,181 @@ from views.admin import (
     PresetNamespacesView,
     OrgRequestsView,
     ScheduledTasksView,
+    RacetimeAccountsView,
     AdminAuditLogsView,
     AdminLogsView,
 )
-from views.home import overview
-from application.services.randomizer.randomizer_preset_service import (
-    RandomizerPresetService,
-)
+
+
+def _create_admin_sidebar(base: BasePage, active: str):
+    """Create common sidebar for admin pages."""
+    return [
+        base.create_nav_link("Back to Home", "arrow_back", "/"),
+        base.create_separator(),
+        base.create_nav_link("Overview", "dashboard", "/admin", active=(active == "overview")),
+        base.create_nav_link("Users", "people", "/admin/users", active=(active == "users")),
+        base.create_nav_link("Organizations", "business", "/admin/organizations", active=(active == "organizations")),
+        base.create_nav_link("Org Requests", "how_to_reg", "/admin/org-requests", active=(active == "org-requests")),
+        base.create_separator(),
+        base.create_nav_link("RaceTime Bots", "smart_toy", "/admin/racetime-bots", active=(active == "racetime-bots")),
+        base.create_nav_link("Presets", "tune", "/admin/presets", active=(active == "presets")),
+        base.create_nav_link("Namespaces", "folder", "/admin/namespaces", active=(active == "namespaces")),
+        base.create_separator(),
+        base.create_nav_link("Scheduled Tasks", "schedule", "/admin/scheduled-tasks", active=(active == "scheduled-tasks")),
+        base.create_nav_link("Audit Logs", "history", "/admin/audit-logs", active=(active == "audit-logs")),
+        base.create_nav_link("Application Logs", "description", "/admin/logs", active=(active == "logs")),
+        base.create_separator(),
+        base.create_nav_link("Settings", "settings", "/admin/settings", active=(active == "settings")),
+    ]
 
 
 def register():
-    """Register admin page routes."""
+    """Register admin routes."""
 
     @ui.page("/admin")
-    @ui.page("/admin/{view}")
-    async def admin_page(view: Optional[str] = None):
-        """Admin dashboard page with dynamic content switching."""
-        base = BasePage.admin_page(title="SahaBot2 - Admin", view=view)
+    async def admin_overview_page():
+        """Admin overview/dashboard page."""
+        base = BasePage.admin_page(title="Admin Panel")
 
         async def content(page: BasePage):
-            """Render the admin page with dynamic content container."""
+            """Render overview content."""
+            with ui.element('div').classes('card'):
+                with ui.element('div').classes('card-header'):
+                    ui.label('Admin Panel').classes('text-xl')
+                with ui.element('div').classes('card-body'):
+                    ui.label('Select a section from the sidebar to manage.')
 
-            # Define content loader functions
-            async def load_overview():
-                """Load the overview content."""
-                container = page.get_dynamic_content_container() or ui.element(
-                    "div"
-                ).classes("page-container")
-                container.clear()
-                with container:
-                    # Header
-                    with ui.element("div").classes("card"):
-                        with ui.element("div").classes("card-header"):
-                            ui.label("Admin Dashboard").classes("text-2xl font-bold")
-                    with ui.element("div").classes("card-body"):
-                        ui.label(f"Welcome, {page.user.get_display_name()}").classes(
-                            "text-primary"
-                        )
-                        ui.label(
-                            f"Permission Level: {page.user.permission.name}"
-                        ).classes(
-                            "text-secondary"
-                        )  # Render overview
-                    await overview.OverviewView.render(page.user)
+        sidebar_items = _create_admin_sidebar(base, "overview")
+        await base.render(content, sidebar_items)
 
-            # Register content loaders
-            page.register_content_loader("overview", load_overview)
-            page.register_instance_view("users", lambda: AdminUsersView(page.user))
-            page.register_instance_view("organizations", lambda: AdminOrganizationsView(page.user))
-            page.register_instance_view("org-requests", lambda: OrgRequestsView(page.user))
-            page.register_instance_view("racetime-bots", lambda: AdminRacetimeBotsView(page.user))
-            page.register_instance_view("presets", lambda: PresetsView(page.user, RandomizerPresetService()))
-            page.register_instance_view("namespaces", lambda: PresetNamespacesView(page.user))
-            page.register_instance_view("scheduled-tasks", lambda: ScheduledTasksView(page.user))
-            page.register_instance_view("audit-logs", lambda: AdminAuditLogsView(page.user))
-            page.register_instance_view("logs", lambda: AdminLogsView(page.user))
-            page.register_instance_view("settings", lambda: AdminSettingsView(page.user))
+    @ui.page("/admin/users")
+    async def admin_users_page():
+        """Admin users management page."""
+        base = BasePage.admin_page(title="User Management")
 
-            # Load initial content only if no view parameter was specified
-            if not page.initial_view:
-                await load_overview()
+        async def content(page: BasePage):
+            """Render users content."""
+            view = AdminUsersView(page.user)
+            await view.render()
 
-        # Create sidebar items with dynamic content loaders
-        sidebar_items = [
-            base.create_nav_link("Home", "home", "/"),
-            base.create_separator(),
-        ]
-        sidebar_items.extend(base.create_sidebar_items([
-            ("Overview", "dashboard", "overview"),
-            ("Users", "people", "users"),
-            ("Organizations", "domain", "organizations"),
-            ("Org Requests", "pending_actions", "org-requests"),
-            ("RaceTime Bots", "smart_toy", "racetime-bots"),
-            ("Presets", "code", "presets"),
-            ("Namespaces", "folder", "namespaces"),
-            ("Scheduled Tasks", "schedule", "scheduled-tasks"),
-            ("Audit Logs", "history", "audit-logs"),
-            ("Application Logs", "terminal", "logs"),
-            ("Settings", "settings", "settings"),
-        ]))
+        sidebar_items = _create_admin_sidebar(base, "users")
+        await base.render(content, sidebar_items)
 
-        await base.render(content, sidebar_items, use_dynamic_content=True)
+    @ui.page("/admin/organizations")
+    async def admin_organizations_page():
+        """Admin organizations management page."""
+        base = BasePage.admin_page(title="Organizations")
+
+        async def content(page: BasePage):
+            """Render organizations content."""
+            view = AdminOrganizationsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "organizations")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/org-requests")
+    async def admin_org_requests_page():
+        """Admin organization requests page."""
+        base = BasePage.admin_page(title="Organization Requests")
+
+        async def content(page: BasePage):
+            """Render org requests content."""
+            view = OrgRequestsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "org-requests")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/racetime-bots")
+    async def admin_racetime_bots_page():
+        """Admin RaceTime bots management page."""
+        base = BasePage.admin_page(title="RaceTime Bots")
+
+        async def content(page: BasePage):
+            """Render RaceTime bots content."""
+            view = AdminRacetimeBotsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "racetime-bots")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/presets")
+    async def admin_presets_page():
+        """Admin presets management page."""
+        base = BasePage.admin_page(title="Randomizer Presets")
+
+        async def content(page: BasePage):
+            """Render presets content."""
+            from application.services.randomizer.randomizer_preset_service import RandomizerPresetService
+            service = RandomizerPresetService()
+            view = PresetsView(page.user, service)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "presets")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/namespaces")
+    async def admin_namespaces_page():
+        """Admin namespaces management page."""
+        base = BasePage.admin_page(title="Preset Namespaces")
+
+        async def content(page: BasePage):
+            """Render namespaces content."""
+            view = PresetNamespacesView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "namespaces")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/scheduled-tasks")
+    async def admin_scheduled_tasks_page():
+        """Admin scheduled tasks page."""
+        base = BasePage.admin_page(title="Scheduled Tasks")
+
+        async def content(page: BasePage):
+            """Render scheduled tasks content."""
+            view = ScheduledTasksView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "scheduled-tasks")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/audit-logs")
+    async def admin_audit_logs_page():
+        """Admin audit logs page."""
+        base = BasePage.admin_page(title="Audit Logs")
+
+        async def content(page: BasePage):
+            """Render audit logs content."""
+            view = AdminAuditLogsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "audit-logs")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/logs")
+    async def admin_application_logs_page():
+        """Admin application logs page."""
+        base = BasePage.admin_page(title="Application Logs")
+
+        async def content(page: BasePage):
+            """Render logs content."""
+            view = AdminLogsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "logs")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/admin/settings")
+    async def admin_settings_page():
+        """Admin settings page."""
+        base = BasePage.admin_page(title="Admin Settings")
+
+        async def content(page: BasePage):
+            """Render settings content."""
+            view = AdminSettingsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_admin_sidebar(base, "settings")
+        await base.render(content, sidebar_items)

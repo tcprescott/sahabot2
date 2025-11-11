@@ -4,6 +4,14 @@ Welcome to the SahaBot2 documentation! This directory contains all technical doc
 
 ## 📚 Documentation Index
 
+### 📢 Latest Updates
+
+**November 10, 2025 - Architecture Update**
+- **[Architecture Update - November 2025](ARCHITECTURE_UPDATE_NOVEMBER_2025.md)** - Dynamic content loading removal and transition guide
+- Updated **[BasePage Guide](core/BASEPAGE_GUIDE.md)** - Multi-page pattern examples
+- Updated **[Adding Features Guide](ADDING_FEATURES.md)** - New page creation patterns
+- See **[Dynamic Content Removal - Complete](../DYNAMIC_CONTENT_REMOVAL_COMPLETE.md)** for implementation details
+
 ### 🎯 Getting Started
 
 Start here if you're new to the codebase:

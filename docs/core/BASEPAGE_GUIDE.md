@@ -207,141 +207,131 @@ async def content(page: BasePage):
         ui.label(f'Permission: {page.user.permission.name}')
 ```
 
-## Examples
+## Navigation Links with Active State
 
-See `/pages/example.py` for complete working examples of:
-- Simple public page
-- Authenticated page
-- Admin page
-
-Visit the following URLs to see the examples:
-- `/example` - Public page
-- `/example/protected` - Requires login
-- `/example/admin` - Requires admin permission
-
-## Dynamic Content & View Management
-
-BasePage provides several helper methods to reduce boilerplate when working with dynamic content and views.
-
-### Loading Views into Container
-
-The `load_view_into_container()` method simplifies the pattern of clearing and rendering views:
+BasePage provides the `create_nav_link()` method to create sidebar navigation items with automatic active state highlighting:
 
 ```python
-# Before - verbose boilerplate
-async def load_players():
-    container = page.get_dynamic_content_container()
-    if container:
-        container.clear()
-        with container:
-            view = TournamentPlayersView(page.user, org, tournament)
-            await view.render()
-
-# After - clean and concise
-async def load_players():
-    view = TournamentPlayersView(page.user, org, tournament)
-    await page.load_view_into_container(view)
-```
-
-### Registering View Loaders
-
-#### `register_view_loader(key, view_factory)`
-
-Combines view instantiation and loader registration:
-
-```python
-# Register a view loader that will be called when the view is selected
-page.register_view_loader(
-    "players",
-    lambda: TournamentPlayersView(page.user, org, tournament)
-)
-```
-
-#### `register_instance_view(key, view_factory)`
-
-Shorthand for instance views (uses `create_instance_view_loader` internally):
-
-```python
-# Before - verbose
-page.register_content_loader(
-    "profile",
-    page.create_instance_view_loader(lambda: ProfileInfoView(page.user))
+# Create a navigation link with active highlighting
+base.create_nav_link(
+    label="Members",
+    icon="people",
+    to="/orgs/1/admin/members",
+    active=True  # Highlight this link if currently on this page
 )
 
-# After - concise
-page.register_instance_view("profile", lambda: ProfileInfoView(page.user))
+# Example: Create sidebar with multiple links
+def _create_sidebar(base, org_id: int, active_page: str):
+    """Create organization admin sidebar."""
+    return [
+        base.create_nav_link("Overview", "dashboard", f"/orgs/{org_id}/admin", 
+                            active=(active_page == "overview")),
+        base.create_nav_link("Members", "people", f"/orgs/{org_id}/admin/members", 
+                            active=(active_page == "members")),
+        base.create_nav_link("Settings", "settings", f"/orgs/{org_id}/admin/settings", 
+                            active=(active_page == "settings")),
+        base.create_separator(),
+        base.create_nav_link("Back", "arrow_back", "/orgs"),
+    ]
 ```
 
-#### `register_multiple_views(view_mappings)`
+## Multi-Page Patterns
 
-Batch register multiple views at once:
+The recommended pattern for pages with multiple related sections is to create separate `@ui.page()` routes for each section and use helper functions to generate consistent sidebars.
 
-```python
-page.register_multiple_views([
-    ("overview", lambda: OverviewView(org, user)),
-    ("members", lambda: MembersView(org, user)),
-    ("settings", lambda: SettingsView(org, user)),
-])
-```
+### Example: Organization Admin with Multiple Pages
 
-### Creating Sidebar Items
-
-#### `create_sidebar_items(items)`
-
-Batch create multiple sidebar items from tuples:
-
-```python
-# Before - repetitive
-sidebar_items = [
-    base.create_sidebar_item_with_loader("Overview", "dashboard", "overview"),
-    base.create_sidebar_item_with_loader("Members", "people", "members"),
-    base.create_sidebar_item_with_loader("Settings", "settings", "settings"),
-]
-
-# After - concise list of tuples
-sidebar_items = base.create_sidebar_items([
-    ("Overview", "dashboard", "overview"),
-    ("Members", "people", "members"),
-    ("Settings", "settings", "settings"),
-])
-```
-
-### Complete Example with Dynamic Content
+**File: `pages/organization_admin.py`**
 
 ```python
 from nicegui import ui
 from components import BasePage
+from views.organization import OrgOverviewView, OrgMembersView, OrgSettingsView
 
-@ui.page('/org/{org_id}/admin')
-async def org_admin(org_id: int):
-    base = BasePage.authenticated_page(title="Organization Admin")
-
-    async def content(page: BasePage):
-        # Batch register multiple views
-        page.register_multiple_views([
-            ("overview", lambda: OverviewView(org, page.user)),
-            ("members", lambda: MembersView(org, page.user)),
-            ("settings", lambda: SettingsView(org, page.user)),
-        ])
-
-        # Load initial content
-        if not page.initial_view:
-            view = OverviewView(org, page.user)
-            await page.load_view_into_container(view)
-
-    # Create sidebar with batch helper
-    sidebar_items = [
-        base.create_nav_link("Back", "arrow_back", "/"),
+def _create_org_sidebar(base, org_id: int, active: str):
+    """Create organization admin sidebar with active highlighting."""
+    return [
+        base.create_nav_link("Overview", "dashboard", f"/orgs/{org_id}/admin", 
+                            active=(active == "overview")),
+        base.create_nav_link("Members", "people", f"/orgs/{org_id}/admin/members", 
+                            active=(active == "members")),
+        base.create_nav_link("Settings", "settings", f"/orgs/{org_id}/admin/settings", 
+                            active=(active == "settings")),
         base.create_separator(),
+        base.create_nav_link("Organizations", "arrow_back", "/organizations"),
     ]
-    sidebar_items.extend(base.create_sidebar_items([
-        ("Overview", "dashboard", "overview"),
-        ("Members", "people", "members"),
-        ("Settings", "settings", "settings"),
-    ]))
 
-    await base.render(content, sidebar_items, use_dynamic_content=True)
+async def _get_org_context(organization_id: int):
+    """Load and validate organization context."""
+    from application.services.organization_service import OrganizationService
+    service = OrganizationService()
+    org = await service.get_organization(organization_id)
+    if not org:
+        ui.navigate.to('/organizations?error=organization_not_found')
+        return None
+    return org
+
+def register():
+    """Register organization admin pages."""
+    
+    @ui.page('/orgs/{org_id}/admin')
+    async def org_overview(org_id: int):
+        """Organization overview page."""
+        base = BasePage.authenticated_page(title="Organization Admin - Overview")
+        
+        async def content(page: BasePage):
+            org = await _get_org_context(org_id)
+            if not org:
+                return
+            view = OrgOverviewView(page.user, org)
+            await view.render()
+        
+        sidebar_items = _create_org_sidebar(base, org_id, "overview")
+        await base.render(content, sidebar_items)()
+    
+    @ui.page('/orgs/{org_id}/admin/members')
+    async def org_members(org_id: int):
+        """Organization members page."""
+        base = BasePage.authenticated_page(title="Organization Admin - Members")
+        
+        async def content(page: BasePage):
+            org = await _get_org_context(org_id)
+            if not org:
+                return
+            view = OrgMembersView(page.user, org)
+            await view.render()
+        
+        sidebar_items = _create_org_sidebar(base, org_id, "members")
+        await base.render(content, sidebar_items)()
+    
+    @ui.page('/orgs/{org_id}/admin/settings')
+    async def org_settings(org_id: int):
+        """Organization settings page."""
+        base = BasePage.authenticated_page(title="Organization Admin - Settings")
+        
+        async def content(page: BasePage):
+            org = await _get_org_context(org_id)
+            if not org:
+                return
+            view = OrgSettingsView(page.user, org)
+            await view.render()
+        
+        sidebar_items = _create_org_sidebar(base, org_id, "settings")
+        await base.render(content, sidebar_items)()
 ```
+
+**Benefits of this pattern:**
+- ✅ Each page has a unique URL (better for bookmarking and history)
+- ✅ Sidebar automatically highlights the current page
+- ✅ Helper functions reduce code duplication
+- ✅ Easy to add or remove pages without complex routing logic
+- ✅ Clear separation of concerns
+
+See real implementations in:
+- `pages/user_profile.py` - 9 separate profile pages
+- `pages/organization_admin.py` - 12 organization admin pages
+- `pages/tournament_admin.py` - 7 tournament admin pages
+- `pages/admin.py` - 11 site admin pages
 
 ## Architecture Notes
 

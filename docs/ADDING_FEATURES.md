@@ -16,9 +16,13 @@ Step-by-step guides for common development tasks.
 
 ## New Page
 
-### Step 1: Create Page File
+### Overview
 
-Create a new file in `pages/` directory:
+SahaBot2 uses dedicated page routes instead of dynamic content loading. Each page section has its own `@ui.page()` route with a unique URL. This makes pages bookmarkable, improves browser history, and simplifies the codebase.
+
+### Pattern: Single Page
+
+For a simple page with no sections:
 
 ```python
 # pages/my_feature.py
@@ -26,73 +30,162 @@ Create a new file in `pages/` directory:
 
 from nicegui import ui
 from components.base_page import BasePage
+from views.my_feature import MyFeatureView
 
 def register():
     """Register my feature page routes."""
     
     @ui.page('/my-feature')
     async def my_feature_page():
-        """My feature landing page."""
-        # Choose appropriate page type
-        base = BasePage.authenticated_page(
-            title="My Feature",
-            active_nav="my_feature"
-        )
+        """My feature page."""
+        base = BasePage.authenticated_page(title="My Feature")
         
         async def content(page: BasePage):
             """Render page content."""
-            with ui.element('div').classes('card'):
-                with ui.element('div').classes('card-header'):
-                    ui.label('My Feature').classes('text-xl')
-                
-                with ui.element('div').classes('card-body'):
-                    ui.label(f'Welcome, {page.user.discord_username}!')
+            view = MyFeatureView(page.user)
+            await view.render()
         
         await base.render(content)()
 ```
 
-### Step 2: Register in frontend.py
+### Pattern: Multiple Related Pages (Recommended)
+
+For pages with multiple sections, create separate routes with a helper function for the sidebar:
+
+```python
+# pages/organization_feature.py
+"""Organization feature pages."""
+
+from nicegui import ui
+from components.base_page import BasePage
+from views.organization import (
+    OrgOverviewView, OrgMembersView, OrgSettingsView
+)
+from application.services.organization_service import OrganizationService
+
+def _create_sidebar(base, org_id: int, active: str):
+    """Create sidebar with active page highlighting."""
+    return [
+        base.create_nav_link("Overview", "dashboard", 
+                            f"/orgs/{org_id}/admin", 
+                            active=(active == "overview")),
+        base.create_nav_link("Members", "people", 
+                            f"/orgs/{org_id}/admin/members", 
+                            active=(active == "members")),
+        base.create_nav_link("Settings", "settings", 
+                            f"/orgs/{org_id}/admin/settings", 
+                            active=(active == "settings")),
+        base.create_separator(),
+        base.create_nav_link("Back", "arrow_back", "/organizations"),
+    ]
+
+async def _get_org_context(org_id: int):
+    """Load and validate organization context."""
+    service = OrganizationService()
+    org = await service.get_organization(org_id)
+    if not org:
+        ui.navigate.to('/organizations?error=org_not_found')
+        return None
+    return org
+
+def register():
+    """Register organization admin pages."""
+    
+    @ui.page('/orgs/{org_id}/admin')
+    async def org_overview(org_id: int):
+        """Organization overview."""
+        base = BasePage.authenticated_page(title="Organization Admin")
+        
+        async def content(page: BasePage):
+            org = await _get_org_context(org_id)
+            if not org:
+                return
+            view = OrgOverviewView(page.user, org)
+            await view.render()
+        
+        sidebar = _create_sidebar(base, org_id, "overview")
+        await base.render(content, sidebar)()
+    
+    @ui.page('/orgs/{org_id}/admin/members')
+    async def org_members(org_id: int):
+        """Organization members."""
+        base = BasePage.authenticated_page(title="Organization Members")
+        
+        async def content(page: BasePage):
+            org = await _get_org_context(org_id)
+            if not org:
+                return
+            view = OrgMembersView(page.user, org)
+            await view.render()
+        
+        sidebar = _create_sidebar(base, org_id, "members")
+        await base.render(content, sidebar)()
+    
+    @ui.page('/orgs/{org_id}/admin/settings')
+    async def org_settings(org_id: int):
+        """Organization settings."""
+        base = BasePage.authenticated_page(title="Organization Settings")
+        
+        async def content(page: BasePage):
+            org = await _get_org_context(org_id)
+            if not org:
+                return
+            view = OrgSettingsView(page.user, org)
+            await view.render()
+        
+        sidebar = _create_sidebar(base, org_id, "settings")
+        await base.render(content, sidebar)()
+```
+
+**Key points:**
+- `_create_sidebar()` helper generates sidebar with `active` highlighting
+- `_get_org_context()` helper handles shared context loading and error handling
+- Each page gets its own `@ui.page()` route
+- The `active` parameter highlights the current page in the sidebar
+
+### Step 1: Register in frontend.py
 
 ```python
 # frontend.py
 def init_frontend():
     # ... existing imports ...
-    from pages import my_feature  # Add import
+    from pages import my_feature  # or organization_feature
     
     # ... existing registrations ...
-    my_feature.register()  # Add registration
+    my_feature.register()  # or organization_feature.register()
 ```
 
-### Step 3: Add to Navigation (Optional)
+### Step 2: Update Route Documentation
 
-If the page should appear in navigation, update `components/sidebar.py` or `components/header.py`.
-
-### Step 4: Update Route Documentation
-
-**Always update `docs/ROUTE_HIERARCHY.md`** when adding a new page:
+**Always update `docs/ROUTE_HIERARCHY.md`** when adding pages:
 
 ```markdown
-# In docs/ROUTE_HIERARCHY.md
-
 ## UI Routes (NiceGUI Pages)
 
-### [Appropriate Section]
+### My Feature
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/my-feature` | My feature landing page | `pages/my_feature.py` |
+| `/my-feature` | My feature page | `pages/my_feature.py` |
+
+### Organization Admin
+
+| Route | Description | File |
+|-------|-------------|------|
+| `/orgs/{org_id}/admin` | Organization overview | `pages/organization_feature.py` |
+| `/orgs/{org_id}/admin/members` | Organization members | `pages/organization_feature.py` |
+| `/orgs/{org_id}/admin/settings` | Organization settings | `pages/organization_feature.py` |
 ```
 
-If the page supports dynamic views (uses `/{view}` pattern), document all available views.
-
-### Step 5: Test
+### Step 3: Test
 
 1. Start the application: `./start.sh dev`
-2. Navigate to `/my-feature`
-3. Verify authentication works
-4. Check navbar highlighting
+2. Navigate to your routes
+3. Verify sidebar highlighting works
+4. Test browser back/forward buttons
+5. Try bookmarking a page
 
-**See**: [`docs/core/BASEPAGE_GUIDE.md`](core/BASEPAGE_GUIDE.md) for advanced page patterns.
+**See**: [`docs/core/BASEPAGE_GUIDE.md`](core/BASEPAGE_GUIDE.md) for more examples and patterns.
 
 ## New Dialog
 

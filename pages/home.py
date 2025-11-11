@@ -1,15 +1,14 @@
 """
 Home page for SahaBot2.
 
-This module provides the main landing page with dynamic content loading.
+This module provides the main landing page routes.
 
-For authenticated users, the page supports multiple views:
-- Overview: Dashboard with user information
-- Presets: Randomizer presets browser
-- Organizations: Organization selector and management
+Routes:
+- /: Main overview page (authenticated users) or welcome page (guests)
+- /presets: Randomizer presets browser
+- /organizations: Organization selector and management
 """
 
-from typing import Optional
 from nicegui import ui
 from components import BasePage
 from views.home import OverviewView, WelcomeView, PresetsView
@@ -17,82 +16,55 @@ from views.tournaments import TournamentOrgSelectView
 from middleware.auth import DiscordAuthService
 
 
+def _create_sidebar(base: BasePage, active: str) -> list:
+    """
+    Create sidebar for authenticated users.
+    
+    Args:
+        base: BasePage instance
+        active: Active page identifier
+        
+    Returns:
+        List of sidebar items
+    """
+    user = base.user
+    items = [
+        base.create_nav_link("Overview", "dashboard", "/", active=(active == "overview")),
+        base.create_nav_link("Presets", "code", "/presets", active=(active == "presets")),
+        base.create_nav_link("Organizations", "group", "/organizations", active=(active == "organizations")),
+        base.create_separator(),
+        base.create_nav_link("My Profile", "person", "/profile"),
+    ]
+    
+    # Add admin panel link for admin users
+    if user and user.has_permission(user.permission.ADMIN):
+        items.append(base.create_separator())
+        items.append(base.create_nav_link("Admin Panel", "admin_panel_settings", "/admin"))
+    
+    return items
+
+
 def register():
     """Register home page routes."""
 
     @ui.page("/")
-    @ui.page("/{view}")
-    async def home_page(view: Optional[str] = None):
-        """Main home page."""
+    async def home_page():
+        """Main home page - overview for authenticated users, welcome for guests."""
         # Check authentication to determine page mode
         user = await DiscordAuthService.get_current_user()
 
         if user:
-            # Authenticated user - dynamic content page
-            base = BasePage.authenticated_page(title="SahaBot2 - Home", view=view)
+            # Authenticated user - show overview
+            base = BasePage.authenticated_page(title="SahaBot2 - Home")
 
             async def content(page: BasePage):
-                """Render home page content with dynamic views."""
+                """Render overview content."""
+                await OverviewView.render(page.user)
 
-                # Define content loader functions
-                async def load_overview():
-                    """Load the overview content."""
-                    container = page.get_dynamic_content_container() or ui.element(
-                        "div"
-                    ).classes("page-container")
-                    container.clear()
-                    with container:
-                        await OverviewView.render(page.user)
-
-                async def load_presets():
-                    """Load the presets browser."""
-                    container = page.get_dynamic_content_container() or ui.element(
-                        "div"
-                    ).classes("page-container")
-                    container.clear()
-                    with container:
-                        view = PresetsView(page.user)
-                        await view.render()
-
-                async def load_organizations():
-                    """Load the organizations selector."""
-                    container = page.get_dynamic_content_container() or ui.element(
-                        "div"
-                    ).classes("page-container")
-                    container.clear()
-                    with container:
-                        view = TournamentOrgSelectView(page.user)
-                        await view.render()
-
-                # Register content loaders
-                page.register_content_loader("overview", load_overview)
-                page.register_content_loader("presets", load_presets)
-                page.register_content_loader("organizations", load_organizations)
-
-                # Load initial content only if no view parameter was specified
-                if not page.initial_view:
-                    await load_overview()
-
-            # Create sidebar items with dynamic content loaders
-            sidebar_items = base.create_sidebar_items([
-                ("Overview", "dashboard", "overview"),
-                ("Presets", "code", "presets"),
-                ("Organizations", "group", "organizations"),
-            ])
-            sidebar_items.append(base.create_separator())
-            sidebar_items.append(base.create_nav_link("My Profile", "person", "/profile"))
-            # Add admin panel link for admin users
-            if user.is_admin():
-                sidebar_items.append(base.create_separator())
-                sidebar_items.append(
-                    base.create_nav_link(
-                        "Admin Panel", "admin_panel_settings", "/admin"
-                    )
-                )
-
-            await base.render(content, sidebar_items, use_dynamic_content=True)
+            sidebar_items = _create_sidebar(base, "overview")
+            await base.render(content, sidebar_items)
         else:
-            # Guest - simple static page
+            # Guest - show welcome page
             base = BasePage.simple_page(title="SahaBot2 - Home")
 
             async def content(_page: BasePage):
@@ -106,3 +78,29 @@ def register():
             ]
 
             await base.render(content, sidebar_items)
+
+    @ui.page("/presets")
+    async def presets_page():
+        """Presets browser page."""
+        base = BasePage.authenticated_page(title="SahaBot2 - Presets")
+
+        async def content(page: BasePage):
+            """Render presets browser."""
+            view = PresetsView(page.user)
+            await view.render()
+
+        sidebar_items = _create_sidebar(base, "presets")
+        await base.render(content, sidebar_items)
+
+    @ui.page("/organizations")
+    async def organizations_page():
+        """Organizations selector page."""
+        base = BasePage.authenticated_page(title="SahaBot2 - Organizations")
+
+        async def content(page: BasePage):
+            """Render organizations selector."""
+            view = TournamentOrgSelectView(page.user)
+            await view.render()
+
+        sidebar_items = _create_sidebar(base, "organizations")
+        await base.render(content, sidebar_items)

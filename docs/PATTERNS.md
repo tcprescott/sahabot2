@@ -158,8 +158,18 @@ ui.navigate.to('/tournaments?error=permission_denied')
 # Shows: "Permission Denied" (red)
 
 # Info message
+```python
+# Info message
 ui.navigate.to('/tournaments?message=changes_saved')
 # Shows: "Changes Saved" (blue)
+```
+
+**Message Formatting**:
+- Underscores converted to spaces
+- Title-cased automatically
+- `tournament_created` → "Tournament Created"
+
+## Service Usage
 ```
 
 **Message Formatting**:
