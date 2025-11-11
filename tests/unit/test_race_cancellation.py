@@ -47,13 +47,13 @@ class TestRaceCancellation:
         mock_room.match_id = 42
         mock_room.delete = AsyncMock()
 
-        with patch("models.match_schedule.Match") as mock_match_model:
+        with patch("application.events.listeners.racetime_listeners.Match") as mock_match_model:
             mock_filter = MagicMock()
             mock_filter.first = AsyncMock(return_value=mock_match)
             mock_match_model.filter = MagicMock(return_value=mock_filter)
 
             with patch(
-                "models.racetime_room.RacetimeRoom"
+                "application.events.listeners.racetime_listeners.RacetimeRoom"
             ) as mock_room_model:
                 mock_room_filter = MagicMock()
                 mock_room_filter.first = AsyncMock(return_value=mock_room)
@@ -89,13 +89,13 @@ class TestRaceCancellation:
         mock_match = MagicMock()
         mock_match.id = 42
 
-        with patch("models.match_schedule.Match") as mock_match_model:
+        with patch("application.events.listeners.racetime_listeners.Match") as mock_match_model:
             mock_filter = MagicMock()
             mock_filter.first = AsyncMock(return_value=mock_match)
             mock_match_model.filter = MagicMock(return_value=mock_filter)
 
             with patch(
-                "models.racetime_room.RacetimeRoom"
+                "application.events.listeners.racetime_listeners.RacetimeRoom"
             ) as mock_room_model:
                 # Return None (no room found)
                 mock_room_filter = MagicMock()
@@ -131,7 +131,7 @@ class TestRaceCancellation:
         mock_match.finished_at = None
         mock_match.save = AsyncMock()
 
-        with patch("models.match_schedule.Match") as mock_match_model:
+        with patch("application.events.listeners.racetime_listeners.Match") as mock_match_model:
             mock_filter = MagicMock()
             mock_filter.first = AsyncMock(return_value=mock_match)
             mock_match_model.filter = MagicMock(return_value=mock_filter)
@@ -167,12 +167,12 @@ class TestRaceCancellation:
         mock_match.finished_at = None
         mock_match.save = AsyncMock()
 
-        with patch("models.match_schedule.Match") as mock_match_model:
+        with patch("application.events.listeners.racetime_listeners.Match") as mock_match_model:
             mock_filter = MagicMock()
             mock_filter.first = AsyncMock(return_value=mock_match)
             mock_match_model.filter = MagicMock(return_value=mock_filter)
 
-            with patch("application.events.EventBus") as mock_bus:
+            with patch("application.events.listeners.racetime_listeners.EventBus") as mock_bus:
                 # Mock emit to avoid actual event emission
                 mock_bus.emit = AsyncMock()
 

@@ -54,7 +54,7 @@ class TestMatchHandlerSelection:
             bot.http.get = MagicMock(return_value=mock_get)
 
             # Mock _get_match_id_for_room to return a match ID
-            with patch.object(bot, "_get_match_id_for_room", return_value=AsyncMock(return_value=42)):
+            with patch.object(bot, "_get_match_id_for_room", new=AsyncMock(return_value=42)):
                 # Mock create_match_handler to verify it's called
                 mock_match_handler = MagicMock()
                 mock_match_handler._bot_created_room = False
@@ -111,7 +111,7 @@ class TestMatchHandlerSelection:
             bot.http.get = MagicMock(return_value=mock_get)
 
             # Mock _get_match_id_for_room to return None (no match)
-            with patch.object(bot, "_get_match_id_for_room", return_value=AsyncMock(return_value=None)):
+            with patch.object(bot, "_get_match_id_for_room", new=AsyncMock(return_value=None)):
                 # Mock create_handler to verify it's called
                 mock_base_handler = MagicMock()
                 mock_base_handler._bot_created_room = False

@@ -36,6 +36,8 @@ from typing import Optional
 import aiohttp
 from racetime_bot import Bot, RaceHandler
 from models import BotStatus, SYSTEM_USER_ID
+from models.match_schedule import Match
+from models.racetime_room import RacetimeRoom
 from application.repositories.racetime_bot_repository import RacetimeBotRepository
 from application.repositories.user_repository import UserRepository
 from application.events import (
@@ -447,8 +449,6 @@ class SahaRaceHandler(RaceHandler):
             if match_id:
                 # Query tournament_id from match
                 try:
-                    from models.match_schedule import Match
-
                     match = await Match.filter(id=match_id).select_related("tournament").first()
                     if match:
                         tournament_id = match.tournament_id
@@ -1412,8 +1412,6 @@ class RacetimeBot(Bot):
             Match ID if room is for a match, None otherwise
         """
         try:
-            from models.racetime_room import RacetimeRoom
-
             room = await RacetimeRoom.filter(slug=room_slug).first()
             if room and room.match_id:
                 return room.match_id

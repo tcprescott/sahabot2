@@ -6,12 +6,15 @@ Priority: NORMAL - runs after audit logging.
 """
 
 import logging
+from datetime import datetime, timezone
 from application.events import EventBus, EventPriority
 from application.events.types import (
     RacetimeRoomOpenedEvent,
     RacetimeRaceStatusChangedEvent,
     MatchFinishedEvent,
 )
+from models.match_schedule import Match
+from models.racetime_room import RacetimeRoom
 
 logger = logging.getLogger(__name__)
 
@@ -19,9 +22,6 @@ logger = logging.getLogger(__name__)
 @EventBus.on(RacetimeRoomOpenedEvent, priority=EventPriority.NORMAL)
 async def advance_match_on_room_opened(event: RacetimeRoomOpenedEvent) -> None:
     """Advance match to 'checked_in' status when RaceTime room is opened."""
-    from models.match_schedule import Match
-    from datetime import datetime, timezone
-
     if not event.match_id:
         return
 
@@ -58,9 +58,6 @@ async def advance_match_on_race_status_changed(
     event: RacetimeRaceStatusChangedEvent,
 ) -> None:
     """Advance match status when RaceTime race status changes."""
-    from models.match_schedule import Match
-    from datetime import datetime, timezone
-
     if not event.match_id:
         return
 
@@ -121,8 +118,6 @@ async def advance_match_on_race_status_changed(
 
         elif event.new_status == "cancelled":
             # Race cancelled - unlink RaceTime room from match
-            from models.racetime_room import RacetimeRoom
-
             room = await RacetimeRoom.filter(
                 slug=event.room_slug, match_id=event.match_id
             ).first()
