@@ -115,6 +115,7 @@ class MatchRaceMixin:
 # Combined handler classes that mix match functionality with category-specific commands
 # These allow tournament matches to use both match processing and category commands
 
+
 def create_match_handler_class(base_handler_class):
     """
     Create a match handler class that combines MatchRaceMixin with a base handler.
@@ -125,6 +126,7 @@ def create_match_handler_class(base_handler_class):
     Returns:
         A new class that combines MatchRaceMixin with the base handler
     """
+
     class CombinedMatchRaceHandler(MatchRaceMixin, base_handler_class):
         """
         Combined handler that provides both match functionality and category-specific commands.
@@ -134,6 +136,7 @@ def create_match_handler_class(base_handler_class):
         - Match processing from MatchRaceMixin (race finish handling, result recording)
         - Category commands from the base handler (!mystery, !vt, etc.)
         """
+
         pass
 
     # Set a descriptive name for the class

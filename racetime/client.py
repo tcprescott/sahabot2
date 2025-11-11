@@ -1166,46 +1166,46 @@ class RacetimeBot(Bot):
         """
         # Import websockets for connection setup
         import websockets
-        
+
         # Set up websocket connection parameters (from upstream Bot.create_handler)
         connect_kwargs = {
-            'additional_headers': {
-                'Authorization': 'Bearer ' + self.access_token,
+            "additional_headers": {
+                "Authorization": "Bearer " + self.access_token,
             },
         }
 
         # BC for websockets<14 (from upstream)
         try:
-            ws_version = int(websockets.version.version.split('.')[0])
+            ws_version = int(websockets.version.version.split(".")[0])
         except (AttributeError, TypeError, ValueError):
             ws_version = 14
         if ws_version < 14:
-            connect_kwargs['extra_headers'] = connect_kwargs.pop('additional_headers')
+            connect_kwargs["extra_headers"] = connect_kwargs.pop("additional_headers")
 
         if self.ssl_context is not None and self.racetime_secure:
-            connect_kwargs['ssl'] = self.ssl_context
-            
+            connect_kwargs["ssl"] = self.ssl_context
+
         ws_conn = websockets.connect(
-            self.ws_uri(race_data.get('websocket_bot_url')),
+            self.ws_uri(race_data.get("websocket_bot_url")),
             **connect_kwargs,
         )
 
-        race_name = race_data.get('name')
+        race_name = race_data.get("name")
         if race_name not in self.state:
             self.state[race_name] = {}
 
         # Get handler class and create kwargs
         handler_class = self.get_handler_class()
         kwargs = self.get_handler_kwargs(ws_conn, self.state[race_name])
-        
+
         # Inject bot_instance for our custom handlers
-        kwargs['bot_instance'] = self
+        kwargs["bot_instance"] = self
 
         # Create handler with all required parameters
         handler = handler_class(**kwargs)
         handler.data = race_data
 
-        logger.info('Created handler for race %s', race_data.get('name'))
+        logger.info("Created handler for race %s", race_data.get("name"))
 
         return handler
 
@@ -1230,28 +1230,28 @@ class RacetimeBot(Bot):
 
         # Set up websocket connection parameters (same as create_handler)
         connect_kwargs = {
-            'additional_headers': {
-                'Authorization': 'Bearer ' + self.access_token,
+            "additional_headers": {
+                "Authorization": "Bearer " + self.access_token,
             },
         }
 
         # BC for websockets<14 (from upstream)
         try:
-            ws_version = int(websockets.version.version.split('.')[0])
+            ws_version = int(websockets.version.version.split(".")[0])
         except (AttributeError, TypeError, ValueError):
             ws_version = 14
         if ws_version < 14:
-            connect_kwargs['extra_headers'] = connect_kwargs.pop('additional_headers')
+            connect_kwargs["extra_headers"] = connect_kwargs.pop("additional_headers")
 
         if self.ssl_context is not None and self.racetime_secure:
-            connect_kwargs['ssl'] = self.ssl_context
+            connect_kwargs["ssl"] = self.ssl_context
 
         ws_conn = websockets.connect(
-            self.ws_uri(race_data.get('websocket_bot_url')),
+            self.ws_uri(race_data.get("websocket_bot_url")),
             **connect_kwargs,
         )
 
-        race_name = race_data.get('name')
+        race_name = race_data.get("name")
         if race_name not in self.state:
             self.state[race_name] = {}
 
@@ -1263,17 +1263,17 @@ class RacetimeBot(Bot):
         kwargs = self.get_handler_kwargs(ws_conn, self.state[race_name])
 
         # Inject bot_instance and match_id for the match handler
-        kwargs['bot_instance'] = self
-        kwargs['match_id'] = match_id
+        kwargs["bot_instance"] = self
+        kwargs["match_id"] = match_id
 
         # Create handler with all required parameters
         handler = match_handler_class(**kwargs)
         handler.data = race_data
 
         logger.info(
-            'Created match handler for race %s (match_id=%s)',
-            race_data.get('name'),
-            match_id
+            "Created match handler for race %s (match_id=%s)",
+            race_data.get("name"),
+            match_id,
         )
 
         return handler
@@ -1499,9 +1499,7 @@ class RacetimeBot(Bot):
             logger.error("Failed to create race room: %s", e, exc_info=True)
             return None
 
-    async def invite_user_to_race(
-        self, race_slug: str, racetime_user_id: str
-    ) -> bool:
+    async def invite_user_to_race(self, race_slug: str, racetime_user_id: str) -> bool:
         """
         Invite a user to a race room via HTTP API.
 
