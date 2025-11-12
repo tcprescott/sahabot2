@@ -476,7 +476,7 @@ class AsyncLiveRaceService:
 
         # Import RaceTime bot functions
         from racetime.client import get_racetime_bot_instance
-        from racetime.live_race_handler import AsyncLiveRaceHandler
+        from racetime.handlers.live_race_handler import AsyncLiveRaceHandler
 
         # Get category from tournament (async tournaments use alttpr category)
         category = "alttpr"  # Could be made configurable per tournament in future

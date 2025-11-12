@@ -6,13 +6,11 @@ Commands are defined in code using the ex_ prefix convention.
 """
 
 import logging
-from racetime.client import SahaRaceHandler
+
+from racetime.handlers.base_handler import SahaRaceHandler
 from application.services.randomizer.smz3_service import (
     SMZ3Service,
     DEFAULT_SMZ3_SETTINGS,
-)
-from application.services.randomizer.randomizer_preset_service import (
-    RandomizerPresetService,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,7 +34,11 @@ class SMZ3RaceHandler(SahaRaceHandler):
         """
         try:
             smz3_service = SMZ3Service()
-            preset_service = RandomizerPresetService()
+            from application.repositories.randomizer_preset_repository import (
+                RandomizerPresetRepository,
+            )
+
+            preset_repository = RandomizerPresetRepository()
 
             # Start with default settings
             settings = DEFAULT_SMZ3_SETTINGS.copy()
@@ -46,7 +48,7 @@ class SMZ3RaceHandler(SahaRaceHandler):
             if args:
                 preset_name = args[0]
                 try:
-                    preset = await preset_service.get_preset_by_name(
+                    preset = await preset_repository.get_global_preset(
                         randomizer="smz3", name=preset_name
                     )
                     if preset and preset.settings:
@@ -106,7 +108,11 @@ class SMZ3RaceHandler(SahaRaceHandler):
         """
         try:
             smz3_service = SMZ3Service()
-            preset_service = RandomizerPresetService()
+            from application.repositories.randomizer_preset_repository import (
+                RandomizerPresetRepository,
+            )
+
+            preset_repository = RandomizerPresetRepository()
 
             # Start with default settings
             settings = DEFAULT_SMZ3_SETTINGS.copy()
@@ -116,7 +122,7 @@ class SMZ3RaceHandler(SahaRaceHandler):
             if args:
                 preset_name = args[0]
                 try:
-                    preset = await preset_service.get_preset_by_name(
+                    preset = await preset_repository.get_global_preset(
                         randomizer="smz3", name=preset_name
                     )
                     if preset and preset.settings:

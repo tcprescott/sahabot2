@@ -7,11 +7,11 @@ to provide both match processing and category-specific commands.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from racetime.match_race_handler import create_match_handler_class
-from racetime.alttpr_handler import ALTTPRRaceHandler
-from racetime.sm_race_handler import SMRaceHandler
-from racetime.smz3_race_handler import SMZ3RaceHandler
-from racetime.client import SahaRaceHandler
+from racetime.handlers.match_race_handler import create_match_handler_class
+from racetime.handlers.alttpr_handler import ALTTPRRaceHandler
+from racetime.handlers.sm_race_handler import SMRaceHandler
+from racetime.handlers.smz3_race_handler import SMZ3RaceHandler
+from racetime.handlers.base_handler import SahaRaceHandler
 
 
 class TestMatchRaceMixin:

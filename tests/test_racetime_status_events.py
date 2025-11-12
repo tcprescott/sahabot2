@@ -14,7 +14,7 @@ Verifies that SahaRaceHandler emits events when:
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from racetime.client import SahaRaceHandler
+from racetime.handlers.base_handler import SahaRaceHandler
 from application.events import (
     EventBus,
     RacetimeRaceStatusChangedEvent,

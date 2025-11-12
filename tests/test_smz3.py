@@ -5,10 +5,11 @@ This module tests the SMZ3 service and RaceTime handlers.
 """
 
 import pytest
+from types import MethodType
 from unittest.mock import AsyncMock, patch, MagicMock
 from application.services.randomizer.smz3_service import SMZ3Service
 from application.services.randomizer.randomizer_service import RandomizerResult
-from racetime.smz3_race_handler import SMZ3RaceHandler
+from racetime.handlers.smz3_race_handler import SMZ3RaceHandler
 
 
 @pytest.mark.asyncio
@@ -86,15 +87,15 @@ async def test_smz3_service_generate_with_spoiler():
 async def test_handle_smz3_race_default():
     """Test !race command with default settings."""
     # Create a mock handler with necessary methods
-    handler = MagicMock()
+    handler = MagicMock(spec=SMZ3RaceHandler)
     handler.send_message = AsyncMock()
     handler.data = {"status": {"value": "open"}, "goal": {"name": "Beat the games"}}
 
     # Bind the actual ex_race method to our mock
-    handler.ex_race = SMZ3RaceHandler.ex_race.__get__(handler, SMZ3RaceHandler)
+    handler.ex_race = MethodType(SMZ3RaceHandler.ex_race, handler)
 
     # Mock the SMZ3 service
-    with patch("racetime.smz3_race_handler.SMZ3Service") as mock_service_class:
+    with patch("racetime.handlers.smz3_race_handler.SMZ3Service") as mock_service_class:
         mock_service = MagicMock()
         mock_result = RandomizerResult(
             url="https://samus.link/seed/test-123",
@@ -105,10 +106,10 @@ async def test_handle_smz3_race_default():
         mock_service.generate = AsyncMock(return_value=mock_result)
         mock_service_class.return_value = mock_service
 
-        # Mock preset service
-        with patch("racetime.smz3_race_handler.RandomizerPresetService"):
+        # Mock preset repository (imported inside the method)
+        with patch("application.repositories.randomizer_preset_repository.RandomizerPresetRepository"):
             # Call the handler method
-            await handler.ex_race([], None)
+            await handler.ex_race([], None)  # pyright: ignore
 
             # Verify send_message was called with expected content
             handler.send_message.assert_called_once()
@@ -121,17 +122,17 @@ async def test_handle_smz3_race_default():
 async def test_handle_smz3_preset():
     """Test !preset command with specified preset."""
     # Create a mock handler with necessary methods
-    handler = MagicMock()
+    handler = MagicMock(spec=SMZ3RaceHandler)
     handler.send_message = AsyncMock()
     handler.data = {"status": {"value": "open"}, "goal": {"name": "Beat the games"}}
 
     # Bind the actual ex_preset method to our mock
-    handler.ex_preset = SMZ3RaceHandler.ex_preset.__get__(handler, SMZ3RaceHandler)
-    handler.ex_race = SMZ3RaceHandler.ex_race.__get__(handler, SMZ3RaceHandler)
+    handler.ex_preset = MethodType(SMZ3RaceHandler.ex_preset, handler)
+    handler.ex_race = MethodType(SMZ3RaceHandler.ex_race, handler)
 
     # Mock services
-    with patch("racetime.smz3_race_handler.SMZ3Service") as mock_service_class, patch(
-        "racetime.smz3_race_handler.RandomizerPresetService"
+    with patch("racetime.handlers.smz3_race_handler.SMZ3Service") as mock_service_class, patch(
+        "application.repositories.randomizer_preset_repository.RandomizerPresetRepository"
     ) as mock_preset_class:
 
         # Mock SMZ3 service
@@ -145,15 +146,15 @@ async def test_handle_smz3_preset():
         mock_service.generate = AsyncMock(return_value=mock_result)
         mock_service_class.return_value = mock_service
 
-        # Mock preset service
-        mock_preset_service = MagicMock()
+        # Mock preset repository
+        mock_preset_repository = MagicMock()
         mock_preset = MagicMock()
         mock_preset.settings = {"logic": "hard", "mode": "normal"}
-        mock_preset_service.get_preset_by_name = AsyncMock(return_value=mock_preset)
-        mock_preset_class.return_value = mock_preset_service
+        mock_preset_repository.get_global_preset = AsyncMock(return_value=mock_preset)
+        mock_preset_class.return_value = mock_preset_repository
 
         # Call the handler method
-        await handler.ex_preset(["hard-mode"], None)
+        await handler.ex_preset(["hard-mode"], None)  # pyright: ignore
 
         # Verify send_message was called with expected content
         handler.send_message.assert_called_once()
@@ -166,16 +167,16 @@ async def test_handle_smz3_preset():
 async def test_handle_smz3_spoiler():
     """Test !spoiler command."""
     # Create a mock handler with necessary methods
-    handler = MagicMock()
+    handler = MagicMock(spec=SMZ3RaceHandler)
     handler.send_message = AsyncMock()
     handler.data = {"status": {"value": "open"}, "goal": {"name": "Beat the games"}}
 
     # Bind the actual ex_spoiler method to our mock
-    handler.ex_spoiler = SMZ3RaceHandler.ex_spoiler.__get__(handler, SMZ3RaceHandler)
+    handler.ex_spoiler = MethodType(SMZ3RaceHandler.ex_spoiler, handler)
 
     # Mock services
-    with patch("racetime.smz3_race_handler.SMZ3Service") as mock_service_class, patch(
-        "racetime.smz3_race_handler.RandomizerPresetService"
+    with patch("racetime.handlers.smz3_race_handler.SMZ3Service") as mock_service_class, patch(
+        "application.repositories.randomizer_preset_repository.RandomizerPresetRepository"
     ):
 
         # Mock SMZ3 service with spoiler
@@ -191,7 +192,7 @@ async def test_handle_smz3_spoiler():
         mock_service_class.return_value = mock_service
 
         # Call the handler method
-        await handler.ex_spoiler([], None)
+        await handler.ex_spoiler([], None)  # pyright: ignore
 
         # Verify send_message was called with expected content
         handler.send_message.assert_called_once()

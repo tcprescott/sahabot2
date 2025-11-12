@@ -448,11 +448,6 @@ async def tournament_info(interaction: discord.Interaction, tournament_id: int):
 poetry install
 ```
 
-### Server Management
-- Development server typically already running
-- **Do NOT** attempt to start server in tool calls
-- Use `./start.sh dev` (port 8080, auto-reload) or `./start.sh prod` (port 80) only when requested
-
 ### Database Migrations
 
 **Critical**: NEVER manually create migration files. Always use `aerich migrate` to generate them.

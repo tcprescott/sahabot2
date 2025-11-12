@@ -6,7 +6,8 @@ Commands are defined in code using the ex_ prefix convention.
 """
 
 import logging
-from racetime.client import SahaRaceHandler
+
+from racetime.handlers.base_handler import SahaRaceHandler
 from application.services.randomizer.sm_service import SMService
 from application.services.randomizer.sm_defaults import (
     get_varia_settings,

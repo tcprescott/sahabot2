@@ -5,9 +5,10 @@ Tests the ex_avianart method that processes !avianart commands in race rooms.
 """
 
 import pytest
+from types import MethodType
 from unittest.mock import AsyncMock, patch, MagicMock
 from application.services.randomizer.randomizer_service import RandomizerResult
-from racetime.alttpr_handler import ALTTPRRaceHandler
+from racetime.handlers.alttpr_handler import ALTTPRRaceHandler
 
 
 class TestAvianartCommand:
@@ -26,9 +27,7 @@ class TestAvianartCommand:
         }
 
         # Bind the actual ex_avianart method to our mock
-        handler.ex_avianart = ALTTPRRaceHandler.ex_avianart.__get__(
-            handler, ALTTPRRaceHandler
-        )
+        handler.ex_avianart = MethodType(ALTTPRRaceHandler.ex_avianart, handler)
 
         return handler
 

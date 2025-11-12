@@ -5,7 +5,8 @@ Extends SahaRaceHandler to add live race-specific logic.
 """
 
 import logging
-from racetime.client import SahaRaceHandler
+
+from racetime.handlers.base_handler import SahaRaceHandler
 
 logger = logging.getLogger(__name__)
 

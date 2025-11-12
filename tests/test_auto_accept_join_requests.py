@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from models import User, Permission
 from models.match_schedule import Match, MatchPlayers
-from racetime.client import SahaRaceHandler
+from racetime.handlers.base_handler import SahaRaceHandler
 
 
 @pytest.mark.asyncio
