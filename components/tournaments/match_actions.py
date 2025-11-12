@@ -48,35 +48,24 @@ class MatchActions:
         self.can_manage_tournaments = can_manage_tournaments
         self.on_refresh = on_refresh
 
-    async def generate_seed(self, match_id: int, match_title: str, button: Optional[ui.button] = None) -> None:
+    async def generate_seed(
+        self, 
+        match_id: int, 
+        match_title: str, 
+        randomizer_type: str,
+        randomizer_preset_id: Optional[int],
+        button: Optional[ui.button] = None
+    ) -> None:
         """Generate a seed using tournament's randomizer settings.
 
         Args:
             match_id: Match ID
             match_title: Match title for error messages
+            randomizer_type: Type of randomizer (alttpr, smz3, etc.)
+            randomizer_preset_id: ID of randomizer preset to use (if any)
             button: Button reference for spinner state (optional)
         """
-        # Get match info via service to check if we can proceed
-        match = await self.service.get_match(
-            self.user, self.organization.id, match_id
-        )
-        if not match:
-            ui.notify("Match not found", type="negative")
-            return
-
-        # Fetch related data
-        await match.fetch_related("tournament", "tournament__randomizer_preset")
-
-        # Check if tournament has randomizer configured
-        if not match.tournament.randomizer:
-            ui.notify(
-                "Randomizer not configured for this tournament. "
-                "Please configure it in Tournament Admin > Randomizer Settings.",
-                type="warning",
-            )
-            return
-
-        # Show spinner on button if provided (only after validation)
+        # Show spinner on button if provided
         if button:
             button.props("loading")
             button.disable()
@@ -85,29 +74,29 @@ class MatchActions:
             randomizer_service = RandomizerService()
 
             # Get the randomizer
-            randomizer = randomizer_service.get_randomizer(
-                match.tournament.randomizer
-            )
+            randomizer = randomizer_service.get_randomizer(randomizer_type)
 
             # Prepare settings
             settings_dict = {}
-            description = f"Generated {match.tournament.randomizer} seed"
+            description = f"Generated {randomizer_type} seed"
 
             # Generate seed (use preset if configured)
-            if match.tournament.randomizer_preset_id:
-                preset = match.tournament.randomizer_preset
+            if randomizer_preset_id:
+                # Import here to avoid circular dependency
+                from application.repositories.randomizer_preset_repository import RandomizerPresetRepository
+                preset_repo = RandomizerPresetRepository()
+                preset = await preset_repo.get_by_id(randomizer_preset_id)
                 if preset:
                     # Extract settings from preset
                     settings_dict = preset.settings.get(
                         "settings", preset.settings
                     )
-                    description = f"Generated {match.tournament.randomizer} seed using preset: {preset.name}"
+                    description = f"Generated {randomizer_type} seed using preset: {preset.name}"
                 else:
                     # Preset not found, log warning but continue with defaults
                     logger.warning(
-                        "Preset %s not found for tournament %s",
-                        match.tournament.randomizer_preset_id,
-                        match.tournament.id,
+                        "Preset %s not found",
+                        randomizer_preset_id,
                     )
 
             # Generate the seed with settings
@@ -210,7 +199,7 @@ class MatchActions:
                 with ui.row().classes("gap-1"):
                     # Generate Seed button (with dice icon) - only if tournament has randomizer configured
                     if match.tournament.randomizer:
-                        # Create button and attach callback directly
+                        # Create button reference first
                         button = ui.button(
                             icon="casino",
                         ).classes("btn btn-sm").props(
@@ -218,7 +207,19 @@ class MatchActions:
                         ).tooltip(
                             "Generate seed using tournament randomizer"
                         )
-                        button.on_click = lambda m=match, btn=button: self.generate_seed(m.id, m.title, btn)
+                        
+                        # Create async handler that captures match data and button
+                        async def handle_generate_seed(
+                            m_id=match.id, 
+                            m_title=match.title,
+                            rand_type=match.tournament.randomizer,
+                            preset_id=match.tournament.randomizer_preset_id,
+                            btn=button
+                        ):
+                            await self.generate_seed(m_id, m_title, rand_type, preset_id, btn)
+                        
+                        # Assign the async handler
+                        button.on_click(handle_generate_seed)
 
                     # Set/Edit Seed button (manual URL entry)
                     icon = "edit" if seed else "add"
@@ -333,14 +334,20 @@ class MatchActions:
 
                 # Show "Create Room" button for moderators
                 if self.can_manage_tournaments:
-                    # Create button with direct reference
+                    # Create button reference first
                     button = ui.button(
                         "Create Room",
                         icon="add",
                     ).classes("btn btn-sm").props(
                         "flat color=positive size=sm"
                     )
-                    button.on_click = lambda m=match, btn=button: self.create_racetime_room(m.id, btn)
+                    
+                    # Create async handler that captures button and match
+                    async def handle_create_room(m_id=match.id, btn=button):
+                        await self.create_racetime_room(m_id, btn)
+                    
+                    # Assign the async handler
+                    button.on_click(handle_create_room)
 
             # Show countdown timer if room should open soon
             if match.scheduled_at and not room:

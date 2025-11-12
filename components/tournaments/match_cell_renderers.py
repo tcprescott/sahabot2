@@ -64,6 +64,11 @@ class MatchCellRenderers:
             with ui.column().classes("gap-1"):
                 for player in players:
                     display_name = player.user.get_display_name()
+                    # Add checkmark for winner (finish_rank == 1)
+                    is_winner = player.finish_rank == 1
+                    if is_winner:
+                        display_name = f"✓ {display_name}"
+                    
                     # Show station number if assigned (onsite tournaments)
                     if player.assigned_station:
                         with ui.row().classes("gap-1 items-center"):
