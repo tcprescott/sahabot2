@@ -274,6 +274,10 @@ website: https://github.com/sahabot2
 type: builtin  # or "external"
 category: competition  # competition, integration, utility, etc.
 
+# Organization defaults
+enabled_by_default: true  # Whether plugin is enabled for new organizations
+private: false            # If true, requires global admin to grant org access
+
 # Dependencies
 requires:
   sahabot2: ">=1.0.0"
@@ -452,6 +456,8 @@ CREATE TABLE plugins (
     version VARCHAR(50) NOT NULL,
     type ENUM('builtin', 'external') NOT NULL,
     is_installed BOOLEAN DEFAULT TRUE,
+    enabled_by_default BOOLEAN DEFAULT TRUE,  -- Default state for new organizations
+    private BOOLEAN DEFAULT FALSE,            -- Requires admin to grant org access
     installed_at DATETIME,
     installed_by_id INT REFERENCES users(id),
     config JSON,  -- Plugin-specific configuration
@@ -465,6 +471,9 @@ CREATE TABLE organization_plugins (
     organization_id INT NOT NULL REFERENCES organizations(id),
     plugin_id VARCHAR(100) NOT NULL,
     enabled BOOLEAN DEFAULT TRUE,
+    has_access BOOLEAN DEFAULT TRUE,          -- For private plugins, admin must grant access
+    access_granted_at DATETIME,               -- When access was granted
+    access_granted_by_id INT REFERENCES users(id),  -- Global admin who granted access
     enabled_at DATETIME,
     enabled_by_id INT REFERENCES users(id),
     config JSON,  -- Organization-specific plugin config overrides
@@ -502,6 +511,8 @@ class Plugin(Model):
     version = fields.CharField(max_length=50)
     type = fields.CharEnumField(PluginType)  # builtin, external
     is_installed = fields.BooleanField(default=True)
+    enabled_by_default = fields.BooleanField(default=True)  # Default for new orgs
+    private = fields.BooleanField(default=False)  # Requires admin to grant access
     installed_at = fields.DatetimeField(null=True)
     installed_by = fields.ForeignKeyField("models.User", null=True)
     config = fields.JSONField(null=True)
@@ -520,6 +531,11 @@ class OrganizationPlugin(Model):
     )
     plugin_id = fields.CharField(max_length=100)
     enabled = fields.BooleanField(default=True)
+    has_access = fields.BooleanField(default=True)  # For private plugins
+    access_granted_at = fields.DatetimeField(null=True)
+    access_granted_by = fields.ForeignKeyField(
+        "models.User", null=True, related_name="granted_plugin_access"
+    )
     enabled_at = fields.DatetimeField(null=True)
     enabled_by = fields.ForeignKeyField("models.User", null=True)
     config = fields.JSONField(null=True)  # Overrides
@@ -531,19 +547,102 @@ class OrganizationPlugin(Model):
         unique_together = (("organization", "plugin_id"),)
 ```
 
+## Plugin Access Control
+
+### Default Enablement
+
+When a new organization is created, the system automatically creates `OrganizationPlugin` records for all installed plugins:
+
+```python
+async def initialize_org_plugins(organization_id: int):
+    """Initialize plugin records for a new organization."""
+    plugins = await Plugin.filter(is_installed=True).all()
+    
+    for plugin in plugins:
+        # Skip private plugins - they need explicit admin access grant
+        if plugin.private:
+            continue
+            
+        await OrganizationPlugin.create(
+            organization_id=organization_id,
+            plugin_id=plugin.plugin_id,
+            enabled=plugin.enabled_by_default,
+            has_access=True,  # Non-private plugins have access by default
+        )
+```
+
+### Private Plugin Access
+
+Private plugins require a global admin (SUPERADMIN) to grant access:
+
+```python
+async def grant_plugin_access(
+    plugin_id: str,
+    organization_id: int,
+    admin_user: User,
+    enable_immediately: bool = False
+) -> OrganizationPlugin:
+    """Grant organization access to a private plugin (SUPERADMIN only)."""
+    if admin_user.permission < Permission.SUPERADMIN:
+        raise PermissionError("Only global admins can grant private plugin access")
+    
+    plugin = await Plugin.get(plugin_id=plugin_id)
+    if not plugin.private:
+        raise ValueError("Plugin is not private")
+    
+    org_plugin, created = await OrganizationPlugin.get_or_create(
+        organization_id=organization_id,
+        plugin_id=plugin_id,
+        defaults={
+            "has_access": True,
+            "access_granted_at": datetime.now(timezone.utc),
+            "access_granted_by": admin_user,
+            "enabled": enable_immediately,
+        }
+    )
+    
+    if not created:
+        org_plugin.has_access = True
+        org_plugin.access_granted_at = datetime.now(timezone.utc)
+        org_plugin.access_granted_by = admin_user
+        if enable_immediately:
+            org_plugin.enabled = True
+        await org_plugin.save()
+    
+    return org_plugin
+```
+
+### Plugin Visibility Rules
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     Plugin Visibility Matrix                     │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  Plugin Type    │  Org Admins See?  │  Can Enable?              │
+│  ───────────────┼───────────────────┼─────────────────────────  │
+│  Public         │  Always           │  Yes                      │
+│  Private        │  Only if granted  │  Only if has_access=True  │
+│                                                                  │
+│  enabled_by_default=true:  Auto-enabled for new orgs            │
+│  enabled_by_default=false: Visible but disabled for new orgs    │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
 ## Configuration Flow
 
 ### Plugin Configuration Hierarchy
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│              Configuration Priority (highest first)          │
-├─────────────────────────────────────────────────────────────┤
-│  1. Organization-specific config (organization_plugins.config)│
-│  2. Plugin installation config (plugins.config)              │
-│  3. Plugin manifest defaults (manifest.yaml)                 │
-│  4. Code defaults (in plugin implementation)                 │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│              Configuration Priority (highest first)              │
+├─────────────────────────────────────────────────────────────────┤
+│  1. Organization-specific config (organization_plugins.config)  │
+│  2. Plugin installation config (plugins.config)                 │
+│  3. Plugin manifest defaults (manifest.yaml)                    │
+│  4. Code defaults (in plugin implementation)                    │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Benefits of This Architecture

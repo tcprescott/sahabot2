@@ -30,6 +30,8 @@ class PluginManifest(BaseModel):
     author: str
     type: str  # "builtin" or "external"
     category: str
+    enabled_by_default: bool = True  # Whether enabled for new organizations
+    private: bool = False  # If true, requires global admin to grant org access
     requires: Dict[str, Any] = {}
     provides: Dict[str, Any] = {}
     permissions: Dict[str, Any] = {}
