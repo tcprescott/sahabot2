@@ -39,23 +39,23 @@ This directory contains the comprehensive technical planning documentation for t
 ### Plugin Types
 
 - **Built-in Plugins**: Ship with application, can be disabled but not uninstalled
-- **External Plugins**: Installable by users, require approval for untrusted sources
+- **External Plugins**: Installable by users (trusted by default)
 
 ### Organization-Level Control
 
-Plugins can be enabled/disabled per organization, allowing each tenant to customize their experience while maintaining isolation.
+Plugins can be enabled/disabled per organization, replacing the existing feature flag system. This allows each tenant to customize their experience while maintaining isolation.
 
 ### Backwards Compatibility
 
-The migration plan uses wrapper imports with deprecation warnings to maintain backwards compatibility during transition.
+The migration plan uses wrapper imports with deprecation warnings during transition. These wrappers will be removed in a later release once migration is complete.
 
-### Security Model
+### Feature Flag Replacement
 
-Defense-in-depth approach with:
-- Plugin validation before loading
-- Runtime resource isolation
-- Capability-based authorization
-- Activity monitoring and auditing
+The plugin system will replace the existing `OrganizationFeatureFlag` system. Plugins provide a more flexible and extensible way to manage organization-specific features.
+
+### Trust Model
+
+All plugins (built-in and external) are considered 100% trusted. Security features such as sandboxing and code scanning may be added in future releases as needed.
 
 ## Estimated Timeline
 
@@ -64,10 +64,28 @@ Defense-in-depth approach with:
 | Phase 1 | 2-3 weeks | Core infrastructure |
 | Phase 2 | 2-3 weeks | Tournament plugin |
 | Phase 3 | 2 weeks | AsyncQualifier plugin |
-| Phase 4 | 1-2 weeks | Integration testing |
-| Phase 5 | 1 week | Cleanup & documentation |
+| Phase 4 | 3-4 weeks | Randomizer plugins (10 plugins) |
+| Phase 5 | 1-2 weeks | Integration testing |
+| Phase 6 | 1 week | Cleanup & documentation |
 
-**Total**: 8-11 weeks
+**Total**: 11-15 weeks
+
+## Planned Built-in Plugins
+
+| Plugin | Type | Description |
+|--------|------|-------------|
+| Tournament | Competition | Live tournament management |
+| AsyncQualifier | Competition | Asynchronous qualifier races |
+| ALTTPR | Randomizer | A Link to the Past Randomizer |
+| SM | Randomizer | Super Metroid Randomizer |
+| SMZ3 | Randomizer | Super Metroid + ALTTP Combo |
+| OOTR | Randomizer | Ocarina of Time Randomizer |
+| AOSR | Randomizer | Aria of Sorrow Randomizer |
+| Z1R | Randomizer | Zelda 1 Randomizer |
+| FFR | Randomizer | Final Fantasy Randomizer |
+| SMB3R | Randomizer | Super Mario Bros 3 Randomizer |
+| CTJets | Randomizer | Chrono Trigger Jets of Time |
+| Bingosync | Utility | Bingo card generation |
 
 ## Risk Assessment
 
@@ -86,7 +104,7 @@ Defense-in-depth approach with:
 
 ## Success Criteria
 
-1. Tournament and AsyncQualifier work identically after migration
+1. Tournament, AsyncQualifier, and all Randomizers work identically after migration
 2. No measurable performance degradation
 3. Creating a new plugin takes < 1 day
 4. At least 1 external plugin contributed within 6 months

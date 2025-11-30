@@ -1081,7 +1081,7 @@ def check_api_compatibility(plugin_api_version: str) -> bool:
 
 - Review **PLUGIN_MIGRATION_PLAN.md** for migration steps
 - Review **PLUGIN_IMPLEMENTATION_GUIDE.md** for examples
-- Review **PLUGIN_SECURITY_MODEL.md** for security considerations
+- Review **PLUGIN_SECURITY_MODEL.md** for trust model and best practices
 
 ---
 

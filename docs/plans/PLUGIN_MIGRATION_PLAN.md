@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a detailed step-by-step plan for migrating the Tournament and AsyncQualifier systems to the plugin architecture. The migration is designed to be incremental, backwards-compatible, and reversible at each phase.
+This document provides a detailed step-by-step plan for migrating the Tournament, AsyncQualifier, and Randomizer systems to the plugin architecture. The migration is designed to be incremental, backwards-compatible, and reversible at each phase.
 
 ## Migration Overview
 
@@ -21,10 +21,11 @@ This document provides a detailed step-by-step plan for migrating the Tournament
 | Phase 1 | Foundation & Core Infrastructure | 2-3 weeks | Low |
 | Phase 2 | Tournament Plugin Creation | 2-3 weeks | Medium |
 | Phase 3 | AsyncQualifier Plugin Creation | 2 weeks | Medium |
-| Phase 4 | Integration & Testing | 1-2 weeks | Low |
-| Phase 5 | Cleanup & Documentation | 1 week | Low |
+| Phase 4 | Randomizer Plugins Creation | 3-4 weeks | Medium |
+| Phase 5 | Integration & Testing | 1-2 weeks | Low |
+| Phase 6 | Cleanup & Documentation | 1 week | Low |
 
-**Total Estimated Duration**: 8-11 weeks
+**Total Estimated Duration**: 11-15 weeks
 
 ## Phase 1: Foundation & Core Infrastructure
 
@@ -725,9 +726,267 @@ plugins/builtin/async_qualifier/
 12. [ ] Register plugin
 13. [ ] Full integration testing
 
-## Phase 4: Integration & Testing
+## Phase 4: Randomizer Plugins Creation
 
-### 4.1 Integration Testing
+**Duration**: 3-4 weeks
+**Risk**: Medium
+
+### 4.1 Overview
+
+Each randomizer will become its own built-in plugin, encapsulating:
+- Seed generation service
+- Preset management specific to that randomizer
+- RaceTime.gg race handlers (where applicable)
+- Discord commands for seed generation
+- API endpoints for external integrations
+
+### 4.2 Plugin List
+
+| Plugin | Priority | Complexity | RaceTime Handler |
+|--------|----------|------------|------------------|
+| **ALTTPR** | High | High | Yes (alttpr_handler.py) |
+| **SM** | High | High | Yes (sm_race_handler.py) |
+| **SMZ3** | High | Medium | Yes (smz3_race_handler.py) |
+| **OOTR** | Medium | Medium | No |
+| **AOSR** | Low | Low | No |
+| **Z1R** | Low | Low | No |
+| **FFR** | Low | Low | No |
+| **SMB3R** | Low | Low | No |
+| **CTJets** | Low | Low | No |
+| **Bingosync** | Medium | Low | No |
+
+### 4.3 ALTTPR Plugin (Priority: High)
+
+**Duration**: 4-5 days
+**Dependencies**: Phase 1, Phase 2 (Tournament plugin for RaceTime integration)
+
+```
+plugins/builtin/alttpr/
+├── manifest.yaml
+├── __init__.py
+├── plugin.py               # ALTTPRPlugin(BasePlugin)
+├── services/
+│   ├── __init__.py
+│   ├── alttpr_service.py   # Seed generation
+│   └── mystery_service.py  # Mystery mode weights
+├── handlers/
+│   ├── __init__.py
+│   └── alttpr_handler.py   # RaceTime.gg race handler
+├── commands/
+│   ├── __init__.py
+│   └── alttpr_commands.py  # Discord !seed, !preset commands
+├── api/
+│   ├── __init__.py
+│   └── routes.py           # /api/plugins/alttpr/generate
+└── presets/                # Default preset configurations
+    └── defaults.yaml
+```
+
+**Tasks**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Create manifest.yaml with ALTTPR metadata
+3. [ ] Migrate `alttpr_service.py` to plugin
+4. [ ] Migrate `alttpr_mystery_service.py` to plugin
+5. [ ] Migrate `alttpr_handler.py` to plugin
+6. [ ] Create ALTTPR-specific Discord commands
+7. [ ] Create API routes for seed generation
+8. [ ] Implement ALTTPRPlugin class with lifecycle hooks
+9. [ ] Register plugin with registry
+10. [ ] Integration testing
+
+### 4.4 SM Plugin (Priority: High)
+
+**Duration**: 3-4 days
+**Dependencies**: Phase 1
+
+```
+plugins/builtin/sm/
+├── manifest.yaml
+├── plugin.py               # SMPlugin(BasePlugin)
+├── services/
+│   ├── __init__.py
+│   ├── sm_service.py       # VARIA/DASH seed generation
+│   └── sm_defaults.py      # Default configurations
+├── handlers/
+│   └── sm_race_handler.py  # RaceTime.gg race handler
+├── commands/
+│   └── sm_commands.py
+└── api/
+    └── routes.py
+```
+
+**Tasks**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Migrate `sm_service.py` to plugin
+3. [ ] Migrate `sm_defaults.py` to plugin
+4. [ ] Migrate `sm_race_handler.py` to plugin
+5. [ ] Create SM-specific Discord commands
+6. [ ] Create API routes
+7. [ ] Implement SMPlugin class
+8. [ ] Integration testing
+
+### 4.5 SMZ3 Plugin (Priority: High)
+
+**Duration**: 2-3 days
+**Dependencies**: Phase 1
+
+```
+plugins/builtin/smz3/
+├── manifest.yaml
+├── plugin.py               # SMZ3Plugin(BasePlugin)
+├── services/
+│   └── smz3_service.py
+├── handlers/
+│   └── smz3_race_handler.py
+├── commands/
+│   └── smz3_commands.py
+└── api/
+    └── routes.py
+```
+
+**Tasks**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Migrate `smz3_service.py` to plugin
+3. [ ] Migrate `smz3_race_handler.py` to plugin
+4. [ ] Create SMZ3-specific Discord commands
+5. [ ] Create API routes
+6. [ ] Implement SMZ3Plugin class
+7. [ ] Integration testing
+
+### 4.6 OOTR Plugin (Priority: Medium)
+
+**Duration**: 2 days
+
+```
+plugins/builtin/ootr/
+├── manifest.yaml
+├── plugin.py
+├── services/
+│   └── ootr_service.py
+├── commands/
+│   └── ootr_commands.py
+└── api/
+    └── routes.py
+```
+
+**Tasks**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Migrate `ootr_service.py` to plugin
+3. [ ] Create OOTR-specific Discord commands
+4. [ ] Create API routes
+5. [ ] Implement OOTRPlugin class
+6. [ ] Integration testing
+
+### 4.7 Other Randomizer Plugins (Priority: Low)
+
+**Duration**: 1 day each
+
+The following randomizers follow a simpler pattern (no RaceTime handlers):
+
+| Plugin | Source Service |
+|--------|----------------|
+| **AOSR** | `aosr_service.py` |
+| **Z1R** | `z1r_service.py` |
+| **FFR** | `ffr_service.py` |
+| **SMB3R** | `smb3r_service.py` |
+| **CTJets** | `ctjets_service.py` |
+| **Bingosync** | `bingosync_service.py` |
+
+**Standard structure for simple plugins**:
+
+```
+plugins/builtin/<randomizer>/
+├── manifest.yaml
+├── plugin.py
+├── services/
+│   └── <randomizer>_service.py
+├── commands/
+│   └── <randomizer>_commands.py
+└── api/
+    └── routes.py
+```
+
+**Tasks per plugin**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Migrate service to plugin
+3. [ ] Create Discord commands (if applicable)
+4. [ ] Create API routes
+5. [ ] Implement plugin class
+6. [ ] Integration testing
+
+### 4.8 Shared Randomizer Infrastructure
+
+**Duration**: 2 days
+
+Create shared infrastructure that randomizer plugins can use:
+
+```
+plugins/builtin/_randomizer_base/
+├── __init__.py
+├── base_randomizer_plugin.py  # BaseRandomizerPlugin(BasePlugin)
+├── result.py                  # RandomizerResult dataclass
+├── preset_mixin.py            # Preset management mixin
+└── command_mixin.py           # Common Discord command patterns
+```
+
+**Tasks**:
+
+1. [ ] Create `BaseRandomizerPlugin` abstract class
+2. [ ] Create `RandomizerResult` dataclass (already exists, move here)
+3. [ ] Create preset management mixin
+4. [ ] Create common Discord command patterns
+5. [ ] Update randomizer plugins to use shared base
+6. [ ] Documentation for creating new randomizer plugins
+
+### 4.9 Migration of Existing RandomizerService
+
+**Duration**: 1 day
+
+Update the `RandomizerService` factory to use plugins:
+
+```python
+# Before (current)
+from application.services.randomizer import RandomizerService
+
+service = RandomizerService()
+alttpr = service.get_randomizer('alttpr')
+
+# After (plugin-based)
+from application.plugins import PluginRegistry
+
+alttpr_plugin = PluginRegistry.get('alttpr')
+alttpr = alttpr_plugin.get_service()
+```
+
+**Tasks**:
+
+1. [ ] Update `RandomizerService` to use plugin registry
+2. [ ] Add backwards-compatible wrapper
+3. [ ] Add deprecation warnings
+4. [ ] Update all callers to use new pattern
+5. [ ] Integration testing
+
+### 4.10 Verification
+
+**Before Phase 5**:
+
+1. [ ] All 10 randomizer plugins created and registered
+2. [ ] Each plugin can generate seeds independently
+3. [ ] RaceTime handlers work correctly (ALTTPR, SM, SMZ3)
+4. [ ] Discord commands work for each randomizer
+5. [ ] API routes accessible for each randomizer
+6. [ ] Presets work with plugin-based system
+7. [ ] No performance degradation
+8. [ ] Backwards compatibility maintained
+
+## Phase 5: Integration & Testing
+
+### 5.1 Integration Testing
 
 **Duration**: 3-4 days
 **Risk**: Low
@@ -806,12 +1065,13 @@ Verify all data accessible through plugins:
 
 1. [ ] Verify existing Tournament data accessible
 2. [ ] Verify existing AsyncQualifier data accessible
-3. [ ] Verify no data loss or corruption
-4. [ ] Verify queries perform correctly
+3. [ ] Verify existing Randomizer functionality works
+4. [ ] Verify no data loss or corruption
+5. [ ] Verify queries perform correctly
 
-## Phase 5: Cleanup & Documentation
+## Phase 6: Cleanup & Documentation
 
-### 5.1 Remove Deprecated Code
+### 6.1 Remove Deprecated Code
 
 **Duration**: 2-3 days
 **Risk**: Medium
@@ -828,16 +1088,64 @@ Verify all data accessible through plugins:
 6. [ ] Remove old API route files
 7. [ ] Clean up `models/__init__.py`
 8. [ ] Clean up `application/services/__init__.py`
+9. [ ] Remove backwards compatibility wrappers
 
 **Verification**:
 ```bash
 # Search for deprecated imports
 grep -r "from models.match_schedule" .
 grep -r "from application.services.tournaments" .
-# Should return no results (except in deprecation warnings)
+# Should return no results
 ```
 
-### 5.2 Update Documentation
+### 6.2 Remove Feature Flag System
+
+**Duration**: 1-2 days
+**Risk**: Low
+
+Replace the feature flag system with plugin enablement:
+
+**Tasks**:
+
+1. [ ] Migrate feature flag data to plugin enablement records
+2. [ ] Update UI to use plugin enablement instead of feature flags
+3. [ ] Remove `OrganizationFeatureFlag` model
+4. [ ] Remove `FeatureFlagService`
+5. [ ] Remove feature flag API routes
+6. [ ] Update documentation to reference plugin enablement
+7. [ ] Remove feature flag migration files (keep in archive)
+
+**Migration Script**:
+
+```python
+# Migrate feature flags to plugin enablement
+async def migrate_feature_flags():
+    """Convert feature flags to plugin enablement."""
+    from models import OrganizationFeatureFlag, FeatureFlag
+    from application.plugins import PluginRegistry
+    
+    # Mapping from feature flags to plugins
+    flag_to_plugin = {
+        FeatureFlag.LIVE_RACES: 'tournament',
+        FeatureFlag.RACETIME_BOT: 'tournament',
+        FeatureFlag.DISCORD_EVENTS: 'tournament',
+        FeatureFlag.ADVANCED_PRESETS: None,  # Built into randomizer plugins
+        FeatureFlag.SCHEDULED_TASKS: None,   # Core feature, always enabled
+    }
+    
+    flags = await OrganizationFeatureFlag.all()
+    for flag in flags:
+        plugin_id = flag_to_plugin.get(flag.feature_key)
+        if plugin_id:
+            await PluginRegistry.set_enabled(
+                plugin_id=plugin_id,
+                organization_id=flag.organization_id,
+                enabled=flag.enabled,
+                enabled_by_id=flag.enabled_by_id
+            )
+```
+
+### 6.3 Update Documentation
 
 **Duration**: 2-3 days
 **Risk**: Low
@@ -850,10 +1158,12 @@ grep -r "from application.services.tournaments" .
 4. [ ] Create `docs/plugins/PLUGIN_DEVELOPMENT.md`
 5. [ ] Create `docs/plugins/TOURNAMENT_PLUGIN.md`
 6. [ ] Create `docs/plugins/ASYNC_QUALIFIER_PLUGIN.md`
-7. [ ] Update Copilot instructions
-8. [ ] Update README.md
+7. [ ] Create `docs/plugins/RANDOMIZER_PLUGINS.md`
+8. [ ] Remove feature flag documentation
+9. [ ] Update Copilot instructions
+10. [ ] Update README.md
 
-### 5.3 Update Copilot Instructions
+### 6.4 Update Copilot Instructions
 
 **Duration**: 1 day
 **Risk**: Low
@@ -864,8 +1174,10 @@ Update `.github/copilot-instructions.md` with plugin architecture:
 
 1. [ ] Add plugin architecture overview
 2. [ ] Add plugin development guidelines
-3. [ ] Update file organization section
-4. [ ] Update import conventions
+3. [ ] Add randomizer plugin development guidelines
+4. [ ] Update file organization section
+5. [ ] Update import conventions
+6. [ ] Remove feature flag references
 
 ## Rollback Plan
 

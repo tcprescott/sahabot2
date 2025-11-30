@@ -147,7 +147,30 @@ models/
 - **Installation**: Cannot be uninstalled
 - **Updates**: Updated with application updates
 - **Enablement**: Can be disabled per-organization
-- **Examples**: Tournament, AsyncQualifier
+
+**Planned Built-in Plugins**:
+
+| Plugin | Description | Key Features |
+|--------|-------------|--------------|
+| **Tournament** | Live tournament management | Matches, scheduling, crew signups, RaceTime integration |
+| **AsyncQualifier** | Asynchronous qualifier races | Pools, permalinks, scoring, leaderboards |
+| **ALTTPR** | A Link to the Past Randomizer | Seed generation, presets, mystery weights |
+| **SM** | Super Metroid Randomizer | VARIA/DASH support, multiworld |
+| **SMZ3** | Super Metroid + ALTTP Combo | Combined randomizer integration |
+| **OOTR** | Ocarina of Time Randomizer | API integration, seed generation |
+| **AOSR** | Aria of Sorrow Randomizer | Enemy/room randomization |
+| **Z1R** | Zelda 1 Randomizer | Flag-based configuration |
+| **FFR** | Final Fantasy Randomizer | Flag-based seed generation |
+| **SMB3R** | Super Mario Bros 3 Randomizer | Seed generation |
+| **CTJets** | Chrono Trigger Jets of Time | Settings-based generation |
+| **Bingosync** | Bingo card generation | Room creation, game type support |
+
+Each randomizer plugin encapsulates:
+- Seed generation service
+- Preset management specific to that randomizer
+- RaceTime.gg race handlers (where applicable)
+- Discord commands for seed generation
+- API endpoints for external integrations
 
 #### External Plugins
 
@@ -156,21 +179,47 @@ models/
 - **Installation**: Can be installed/uninstalled
 - **Updates**: Independent update cycle
 - **Enablement**: Can be enabled/disabled per-organization
+- **Trust**: All plugins are trusted by default (no sandboxing)
 - **Examples**: Community-developed plugins
+
+### Feature Flag Replacement
+
+The plugin enablement system replaces the existing `OrganizationFeatureFlag` system. This provides several advantages:
+
+1. **Unified Model**: One system for both features and extensions
+2. **Extensibility**: Plugins can contribute more than just a toggle
+3. **Configuration**: Plugins can have organization-specific configuration
+4. **Lifecycle**: Plugins have proper lifecycle hooks (enable/disable/upgrade)
+
+**Migration**: Existing feature flags will be mapped to plugin enablement during migration:
+
+| Feature Flag | Plugin |
+|--------------|--------|
+| `LIVE_RACES` | Tournament plugin |
+| `ADVANCED_PRESETS` | (Built into randomizer plugins) |
+| `RACETIME_BOT` | Tournament plugin |
+| `SCHEDULED_TASKS` | Core (always enabled) |
+| `DISCORD_EVENTS` | Tournament plugin |
 
 ### Organization-Level Control
 
+Organizations can enable/disable plugins based on their needs. For example, an ALTTPR community may only enable ALTTPR and SMZ3 randomizers, while a speedrunning community might enable all randomizers.
+
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Organization: ALTTPR                     │
-├─────────────────────────────────────────────────────────────┤
-│  Plugin                │  Status    │  Configuration        │
-├────────────────────────┼────────────┼───────────────────────┤
-│  Tournament (built-in) │  Enabled   │  [Settings...]        │
-│  AsyncQualifier (b-i)  │  Enabled   │  [Settings...]        │
-│  SMZ3 Support (ext)    │  Disabled  │  -                    │
-│  Custom Tracker (ext)  │  Enabled   │  [Settings...]        │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                     Organization: ALTTPR Community               │
+├─────────────────────────────────────────────────────────────────┤
+│  Plugin                 │  Status    │  Configuration           │
+├─────────────────────────┼────────────┼──────────────────────────┤
+│  Tournament (built-in)  │  Enabled   │  [Settings...]           │
+│  AsyncQualifier (b-i)   │  Enabled   │  [Settings...]           │
+│  ALTTPR (built-in)      │  Enabled   │  [Presets, Mystery...]   │
+│  SMZ3 (built-in)        │  Enabled   │  [Presets...]            │
+│  OOTR (built-in)        │  Disabled  │  -                       │
+│  SM (built-in)          │  Disabled  │  -                       │
+│  FFR (built-in)         │  Disabled  │  -                       │
+│  Custom Tracker (ext)   │  Enabled   │  [Settings...]           │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## Plugin Structure
