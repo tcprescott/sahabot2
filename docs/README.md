@@ -121,6 +121,17 @@ Current planning and reorganization documents:
 - **[Documentation Gap Analysis](DOCUMENTATION_GAP_ANALYSIS.md)** - Comprehensive analysis of all undocumented services, APIs, and models
 - **[Documentation Checklist](DOCUMENTATION_CHECKLIST.md)** - Complete tracking list for documentation work (100+ items to document)
 
+### 🔌 Plugin Architecture Plan
+
+Comprehensive planning documentation for transitioning Tournament and AsyncQualifier systems to a plugin architecture:
+
+- **[Plugin Plans Index](plans/README.md)** - Overview and quick start for plugin architecture planning
+- **[Plugin Architecture](plans/PLUGIN_ARCHITECTURE.md)** - High-level architecture, plugin types, core components
+- **[Plugin API Specification](plans/PLUGIN_API_SPECIFICATION.md)** - Interface contracts, lifecycle hooks, manifest schema
+- **[Plugin Migration Plan](plans/PLUGIN_MIGRATION_PLAN.md)** - Step-by-step migration plan with phases and verification
+- **[Plugin Implementation Guide](plans/PLUGIN_IMPLEMENTATION_GUIDE.md)** - Developer guide with code examples
+- **[Plugin Security Model](plans/PLUGIN_SECURITY_MODEL.md)** - Security considerations, threat model, and permissions
+
 ### 📦 Archive
 
 Historical documentation (completed implementations, migrations, and analyses):
@@ -171,4 +182,4 @@ Found outdated documentation? See something missing?
 
 ---
 
-**Last Updated**: November 4, 2025
+**Last Updated**: November 30, 2025
