@@ -150,27 +150,130 @@ models/
 
 **Planned Built-in Plugins**:
 
-| Plugin | Description | Key Features |
-|--------|-------------|--------------|
-| **Tournament** | Live tournament management | Matches, scheduling, crew signups, RaceTime integration |
-| **AsyncQualifier** | Asynchronous qualifier races | Pools, permalinks, scoring, leaderboards |
-| **ALTTPR** | A Link to the Past Randomizer | Seed generation, presets, mystery weights |
-| **SM** | Super Metroid Randomizer | VARIA/DASH support, multiworld |
-| **SMZ3** | Super Metroid + ALTTP Combo | Combined randomizer integration |
-| **OOTR** | Ocarina of Time Randomizer | API integration, seed generation |
-| **AOSR** | Aria of Sorrow Randomizer | Enemy/room randomization |
-| **Z1R** | Zelda 1 Randomizer | Flag-based configuration |
-| **FFR** | Final Fantasy Randomizer | Flag-based seed generation |
-| **SMB3R** | Super Mario Bros 3 Randomizer | Seed generation |
-| **CTJets** | Chrono Trigger Jets of Time | Settings-based generation |
-| **Bingosync** | Bingo card generation | Room creation, game type support |
+| Plugin | Category | Description | Key Features |
+|--------|----------|-------------|--------------|
+| **Tournament** | Competition | Live tournament management | Matches, scheduling, crew signups |
+| **AsyncQualifier** | Competition | Asynchronous qualifier races | Pools, permalinks, scoring, leaderboards |
+| **Presets** | Core | Preset management system | Namespaces, preset storage, permissions, sharing |
+| **RaceTime** | Integration | RaceTime.gg integration | Bot management, room profiles, race handlers |
+| **SpeedGaming** | Integration | SpeedGaming.org integration | Schedule sync, ETL, match import |
+| **DiscordEvents** | Integration | Discord scheduled events | Event creation, match linking, status sync |
+| **RacerVerification** | Utility | Discord role verification | Race count requirements, role granting |
+| **Notifications** | Utility | Event notifications | Discord DM, subscriptions, delivery |
+| **ALTTPR** | Randomizer | A Link to the Past Randomizer | Seed generation, ALTTPR-specific presets, mystery |
+| **SM** | Randomizer | Super Metroid Randomizer | VARIA/DASH support, SM-specific presets |
+| **SMZ3** | Randomizer | Super Metroid + ALTTP Combo | Combined randomizer, SMZ3-specific presets |
+| **OOTR** | Randomizer | Ocarina of Time Randomizer | API integration, OOTR-specific presets |
+| **AOSR** | Randomizer | Aria of Sorrow Randomizer | Enemy/room randomization, AOSR presets |
+| **Z1R** | Randomizer | Zelda 1 Randomizer | Flag-based configuration, Z1R presets |
+| **FFR** | Randomizer | Final Fantasy Randomizer | Flag-based seed generation, FFR presets |
+| **SMB3R** | Randomizer | Super Mario Bros 3 Randomizer | Seed generation, SMB3R presets |
+| **CTJets** | Randomizer | Chrono Trigger Jets of Time | Settings-based generation, CTJets presets |
+| **Bingosync** | Utility | Bingo card generation | Room creation, game type support |
 
-Each randomizer plugin encapsulates:
-- Seed generation service
-- Preset management specific to that randomizer
-- RaceTime.gg race handlers (where applicable)
-- Discord commands for seed generation
-- API endpoints for external integrations
+**Plugin Dependencies**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        Plugin Dependency Graph                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  Core Plugins (no dependencies):                                         │
+│    - Presets                                                             │
+│    - Notifications                                                       │
+│    - Bingosync                                                           │
+│                                                                          │
+│  Integration Plugins:                                                    │
+│    - RaceTime (no deps)                                                  │
+│    - SpeedGaming (no deps)                                               │
+│    - DiscordEvents (no deps)                                             │
+│    - RacerVerification ─── requires: RaceTime                            │
+│                                                                          │
+│  Competition Plugins:                                                    │
+│    - Tournament ─────────── requires: RaceTime (optional)                │
+│    - AsyncQualifier ──────── requires: RaceTime, Presets                 │
+│                                                                          │
+│  Randomizer Plugins:                                                     │
+│    - ALTTPR  ──┐                                                         │
+│    - SM      ──┼── requires: Presets                                     │
+│    - SMZ3    ──┤   optional: RaceTime (for race handlers)                │
+│    - OOTR    ──┤                                                         │
+│    - AOSR    ──┤                                                         │
+│    - Z1R     ──┤                                                         │
+│    - FFR     ──┤                                                         │
+│    - SMB3R   ──┤                                                         │
+│    - CTJets  ──┘                                                         │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Plugin Descriptions
+
+#### Core Plugins
+
+**Presets Plugin** provides:
+- `PresetNamespace` model and repository
+- `Preset` base model (without randomizer-specific fields)
+- Preset CRUD services
+- Preset sharing and permissions
+- Namespace management
+
+**Notifications Plugin** provides:
+- `NotificationSubscription` model
+- `NotificationLog` model
+- Notification delivery (Discord DM, future: email, webhooks)
+- Subscription management UI
+- Event-to-notification mapping
+
+#### Integration Plugins
+
+**RaceTime Plugin** provides:
+- `RacetimeBot`, `RacetimeBotOrganization` models
+- `RacetimeRoom`, `RaceRoomProfile` models
+- RaceTime API client service
+- Bot lifecycle management
+- Race room profile management
+- Base race handler infrastructure
+
+**SpeedGaming Plugin** provides:
+- SpeedGaming API client
+- Schedule ETL (Extract, Transform, Load)
+- Match import from SpeedGaming.org
+- Sync task for schedule updates
+
+**DiscordEvents Plugin** provides:
+- `DiscordScheduledEvent` model
+- Discord API integration for events
+- Match-to-event linking
+- Event status synchronization
+- Orphaned event cleanup task
+
+**RacerVerification Plugin** provides:
+- `RacerVerification`, `UserRacerVerification` models
+- RaceTime race count verification
+- Discord role granting
+- Verification requirements configuration
+
+#### Competition Plugins
+
+**Tournament Plugin** (existing) extends with:
+- Optional RaceTime integration for live rooms
+- Optional SpeedGaming integration for schedule sync
+- Optional DiscordEvents integration for event creation
+
+**AsyncQualifier Plugin** (existing) extends with:
+- Required Presets integration for preset selection
+- Required RaceTime integration for live races
+
+#### Randomizer Plugins
+
+Each **Randomizer Plugin**:
+- Depends on the Presets plugin
+- Extends preset functionality with randomizer-specific validation
+- Provides seed generation service
+- Optionally provides RaceTime.gg race handlers
+- Provides Discord commands for seed generation
+- Provides API endpoints for external integrations
 
 #### External Plugins
 

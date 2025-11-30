@@ -64,27 +64,35 @@ All plugins (built-in and external) are considered 100% trusted. Security featur
 | Phase 1 | 2-3 weeks | Core infrastructure |
 | Phase 2 | 2-3 weeks | Tournament plugin |
 | Phase 3 | 2 weeks | AsyncQualifier plugin |
-| Phase 4 | 3-4 weeks | Randomizer plugins (10 plugins) |
-| Phase 5 | 1-2 weeks | Integration testing |
-| Phase 6 | 1 week | Cleanup & documentation |
+| Phase 4 | 3-4 weeks | Presets & Randomizer plugins |
+| Phase 5 | 2-3 weeks | Integration plugins (RaceTime, SpeedGaming, DiscordEvents) |
+| Phase 6 | 1-2 weeks | Utility plugins (RacerVerification, Notifications) |
+| Phase 7 | 1-2 weeks | Integration testing |
+| Phase 8 | 1 week | Cleanup & documentation |
 
-**Total**: 11-15 weeks
+**Total**: 14-20 weeks
 
 ## Planned Built-in Plugins
 
-| Plugin | Type | Description |
-|--------|------|-------------|
+| Plugin | Category | Description |
+|--------|----------|-------------|
 | Tournament | Competition | Live tournament management |
 | AsyncQualifier | Competition | Asynchronous qualifier races |
-| ALTTPR | Randomizer | A Link to the Past Randomizer |
-| SM | Randomizer | Super Metroid Randomizer |
-| SMZ3 | Randomizer | Super Metroid + ALTTP Combo |
-| OOTR | Randomizer | Ocarina of Time Randomizer |
-| AOSR | Randomizer | Aria of Sorrow Randomizer |
-| Z1R | Randomizer | Zelda 1 Randomizer |
-| FFR | Randomizer | Final Fantasy Randomizer |
-| SMB3R | Randomizer | Super Mario Bros 3 Randomizer |
-| CTJets | Randomizer | Chrono Trigger Jets of Time |
+| Presets | Core | Preset management system (namespaces, storage, sharing) |
+| RaceTime | Integration | RaceTime.gg bot management and race handlers |
+| SpeedGaming | Integration | SpeedGaming.org schedule sync and import |
+| DiscordEvents | Integration | Discord scheduled events for matches |
+| RacerVerification | Utility | Discord role verification based on race count |
+| Notifications | Utility | Event notifications via Discord DM |
+| ALTTPR | Randomizer | A Link to the Past Randomizer (depends on Presets) |
+| SM | Randomizer | Super Metroid Randomizer (depends on Presets) |
+| SMZ3 | Randomizer | Super Metroid + ALTTP Combo (depends on Presets) |
+| OOTR | Randomizer | Ocarina of Time Randomizer (depends on Presets) |
+| AOSR | Randomizer | Aria of Sorrow Randomizer (depends on Presets) |
+| Z1R | Randomizer | Zelda 1 Randomizer (depends on Presets) |
+| FFR | Randomizer | Final Fantasy Randomizer (depends on Presets) |
+| SMB3R | Randomizer | Super Mario Bros 3 Randomizer (depends on Presets) |
+| CTJets | Randomizer | Chrono Trigger Jets of Time (depends on Presets) |
 | Bingosync | Utility | Bingo card generation |
 
 ## Risk Assessment

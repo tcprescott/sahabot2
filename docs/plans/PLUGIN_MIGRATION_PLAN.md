@@ -21,11 +21,13 @@ This document provides a detailed step-by-step plan for migrating the Tournament
 | Phase 1 | Foundation & Core Infrastructure | 2-3 weeks | Low |
 | Phase 2 | Tournament Plugin Creation | 2-3 weeks | Medium |
 | Phase 3 | AsyncQualifier Plugin Creation | 2 weeks | Medium |
-| Phase 4 | Randomizer Plugins Creation | 3-4 weeks | Medium |
-| Phase 5 | Integration & Testing | 1-2 weeks | Low |
-| Phase 6 | Cleanup & Documentation | 1 week | Low |
+| Phase 4 | Presets & Randomizer Plugins | 3-4 weeks | Medium |
+| Phase 5 | Integration Plugins (RaceTime, SpeedGaming, DiscordEvents) | 2-3 weeks | Medium |
+| Phase 6 | Utility Plugins (RacerVerification, Notifications) | 1-2 weeks | Low |
+| Phase 7 | Integration & Testing | 1-2 weeks | Low |
+| Phase 8 | Cleanup & Documentation | 1 week | Low |
 
-**Total Estimated Duration**: 11-15 weeks
+**Total Estimated Duration**: 14-20 weeks
 
 ## Phase 1: Foundation & Core Infrastructure
 
@@ -726,36 +728,125 @@ plugins/builtin/async_qualifier/
 12. [ ] Register plugin
 13. [ ] Full integration testing
 
-## Phase 4: Randomizer Plugins Creation
+## Phase 4: Presets & Randomizer Plugins Creation
 
 **Duration**: 3-4 weeks
 **Risk**: Medium
 
 ### 4.1 Overview
 
-Each randomizer will become its own built-in plugin, encapsulating:
-- Seed generation service
-- Preset management specific to that randomizer
-- RaceTime.gg race handlers (where applicable)
-- Discord commands for seed generation
-- API endpoints for external integrations
+The Presets plugin provides the core preset management system that all randomizer plugins depend on. Each randomizer plugin extends this with randomizer-specific functionality.
 
-### 4.2 Plugin List
+**Plugin Creation Order**:
+1. **Presets Plugin** (first - no dependencies)
+2. **Randomizer Plugins** (depend on Presets)
 
-| Plugin | Priority | Complexity | RaceTime Handler |
-|--------|----------|------------|------------------|
-| **ALTTPR** | High | High | Yes (alttpr_handler.py) |
-| **SM** | High | High | Yes (sm_race_handler.py) |
-| **SMZ3** | High | Medium | Yes (smz3_race_handler.py) |
-| **OOTR** | Medium | Medium | No |
-| **AOSR** | Low | Low | No |
-| **Z1R** | Low | Low | No |
-| **FFR** | Low | Low | No |
-| **SMB3R** | Low | Low | No |
-| **CTJets** | Low | Low | No |
-| **Bingosync** | Medium | Low | No |
+### 4.2 Presets Plugin (Priority: Critical)
 
-### 4.3 ALTTPR Plugin (Priority: High)
+**Duration**: 3-4 days
+**Dependencies**: Phase 1 (Core Infrastructure)
+
+The Presets plugin provides core preset functionality without any randomizer-specific logic.
+
+```
+plugins/builtin/presets/
+├── manifest.yaml
+├── __init__.py
+├── plugin.py               # PresetsPlugin(BasePlugin)
+├── models/
+│   ├── __init__.py
+│   ├── preset_namespace.py # PresetNamespace model
+│   └── preset.py           # Base Preset model (randomizer-agnostic)
+├── services/
+│   ├── __init__.py
+│   ├── preset_namespace_service.py
+│   └── preset_service.py   # Core preset CRUD
+├── repositories/
+│   ├── __init__.py
+│   ├── preset_namespace_repository.py
+│   └── preset_repository.py
+├── pages/
+│   ├── __init__.py
+│   └── presets.py          # Preset management UI
+├── api/
+│   ├── __init__.py
+│   └── routes.py           # /api/plugins/presets/...
+└── events/
+    ├── __init__.py
+    └── types.py            # PresetCreated, PresetUpdated, etc.
+```
+
+**manifest.yaml**:
+```yaml
+id: presets
+name: Preset Management System
+version: 1.0.0
+description: Core preset storage, namespaces, and sharing functionality
+author: SahaBot2 Team
+type: builtin
+category: core
+enabled_by_default: true
+private: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  plugins: []  # No plugin dependencies
+
+provides:
+  models:
+    - PresetNamespace
+    - Preset
+  
+  services:
+    - PresetNamespaceService
+    - PresetService
+  
+  pages:
+    - path: /org/{org_id}/presets
+      name: Preset Management
+  
+  api_routes:
+    prefix: /presets
+    tags: [presets, namespaces]
+  
+  events:
+    - PresetCreatedEvent
+    - PresetUpdatedEvent
+    - PresetDeletedEvent
+    - NamespaceCreatedEvent
+```
+
+**Tasks**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Create manifest.yaml
+3. [ ] Migrate `PresetNamespace` model to plugin
+4. [ ] Create base `Preset` model (without randomizer field)
+5. [ ] Migrate `preset_namespace_service.py` to plugin
+6. [ ] Create core `preset_service.py`
+7. [ ] Create preset management UI page
+8. [ ] Create API routes
+9. [ ] Define preset events
+10. [ ] Implement PresetsPlugin class
+11. [ ] Register plugin with registry
+12. [ ] Integration testing
+
+### 4.3 Randomizer Plugin List
+
+| Plugin | Priority | Complexity | RaceTime Handler | Depends On |
+|--------|----------|------------|------------------|------------|
+| **ALTTPR** | High | High | Yes (alttpr_handler.py) | Presets |
+| **SM** | High | High | Yes (sm_race_handler.py) | Presets |
+| **SMZ3** | High | Medium | Yes (smz3_race_handler.py) | Presets |
+| **OOTR** | Medium | Medium | No | Presets |
+| **AOSR** | Low | Low | No | Presets |
+| **Z1R** | Low | Low | No | Presets |
+| **FFR** | Low | Low | No | Presets |
+| **SMB3R** | Low | Low | No | Presets |
+| **CTJets** | Low | Low | No | Presets |
+| **Bingosync** | Medium | Low | No | None |
+
+### 4.4 ALTTPR Plugin (Priority: High)
 
 **Duration**: 4-5 days
 **Dependencies**: Phase 1, Phase 2 (Tournament plugin for RaceTime integration)
@@ -984,9 +1075,206 @@ alttpr = alttpr_plugin.get_service()
 7. [ ] No performance degradation
 8. [ ] Backwards compatibility maintained
 
-## Phase 5: Integration & Testing
+## Phase 5: Integration Plugins Creation
 
-### 5.1 Integration Testing
+**Duration**: 2-3 weeks
+**Risk**: Medium
+
+### 5.1 RaceTime Plugin
+
+**Duration**: 4-5 days
+**Dependencies**: Phase 1
+
+The RaceTime plugin encapsulates all RaceTime.gg integration functionality.
+
+```
+plugins/builtin/racetime/
+├── manifest.yaml
+├── __init__.py
+├── plugin.py               # RaceTimePlugin(BasePlugin)
+├── models/
+│   ├── __init__.py
+│   ├── racetime_bot.py     # RacetimeBot, RacetimeBotOrganization
+│   ├── racetime_room.py    # RacetimeRoom
+│   └── race_room_profile.py # RaceRoomProfile
+├── services/
+│   ├── __init__.py
+│   ├── racetime_api_service.py
+│   ├── racetime_bot_service.py
+│   ├── racetime_room_service.py
+│   └── race_room_profile_service.py
+├── handlers/
+│   ├── __init__.py
+│   └── base_handler.py     # BaseRaceHandler infrastructure
+├── pages/
+│   ├── __init__.py
+│   └── racetime_admin.py   # Bot management UI
+├── api/
+│   └── routes.py
+└── events/
+    └── types.py            # RaceStarted, RaceFinished, etc.
+```
+
+**Tasks**:
+1. [ ] Create plugin directory structure
+2. [ ] Migrate RaceTime models
+3. [ ] Migrate RaceTime services
+4. [ ] Migrate base race handler infrastructure
+5. [ ] Create RaceTime admin UI
+6. [ ] Create API routes
+7. [ ] Integration testing
+
+### 5.2 SpeedGaming Plugin
+
+**Duration**: 2-3 days
+**Dependencies**: Phase 1
+
+```
+plugins/builtin/speedgaming/
+├── manifest.yaml
+├── plugin.py               # SpeedGamingPlugin(BasePlugin)
+├── services/
+│   ├── speedgaming_service.py
+│   └── speedgaming_etl_service.py
+├── tasks/
+│   └── schedule_sync.py    # Scheduled sync task
+└── api/
+    └── routes.py
+```
+
+**Tasks**:
+1. [ ] Create plugin directory structure
+2. [ ] Migrate SpeedGaming services
+3. [ ] Migrate sync task
+4. [ ] Create API routes
+5. [ ] Integration testing
+
+### 5.3 DiscordEvents Plugin
+
+**Duration**: 2-3 days
+**Dependencies**: Phase 1
+
+```
+plugins/builtin/discord_events/
+├── manifest.yaml
+├── plugin.py               # DiscordEventsPlugin(BasePlugin)
+├── models/
+│   └── discord_scheduled_event.py
+├── services/
+│   └── discord_scheduled_event_service.py
+├── tasks/
+│   ├── scheduled_events_sync.py
+│   └── orphaned_events_cleanup.py
+└── api/
+    └── routes.py
+```
+
+**Tasks**:
+1. [ ] Create plugin directory structure
+2. [ ] Migrate DiscordScheduledEvent model
+3. [ ] Migrate event service
+4. [ ] Migrate sync and cleanup tasks
+5. [ ] Integration testing
+
+### 5.4 Verification
+
+**Before Phase 6**:
+
+1. [ ] RaceTime plugin can manage bots
+2. [ ] RaceTime plugin can create race rooms
+3. [ ] SpeedGaming plugin can sync schedules
+4. [ ] DiscordEvents plugin can create/update events
+5. [ ] All integration plugins work independently
+
+## Phase 6: Utility Plugins Creation
+
+**Duration**: 1-2 weeks
+**Risk**: Low
+
+### 6.1 RacerVerification Plugin
+
+**Duration**: 2-3 days
+**Dependencies**: Phase 1, RaceTime Plugin
+
+```
+plugins/builtin/racer_verification/
+├── manifest.yaml
+├── plugin.py               # RacerVerificationPlugin(BasePlugin)
+├── models/
+│   ├── racer_verification.py
+│   └── user_racer_verification.py
+├── services/
+│   └── racer_verification_service.py
+├── pages/
+│   └── verification_admin.py
+├── tasks/
+│   └── verification_check.py  # Periodic verification task
+└── api/
+    └── routes.py
+```
+
+**manifest.yaml** (example of dependency):
+```yaml
+id: racer_verification
+name: Racer Verification
+requires:
+  plugins:
+    - racetime  # Depends on RaceTime plugin for race data
+```
+
+**Tasks**:
+1. [ ] Create plugin directory structure
+2. [ ] Migrate verification models
+3. [ ] Migrate verification service
+4. [ ] Create admin UI
+5. [ ] Migrate/create verification task
+6. [ ] Integration testing
+
+### 6.2 Notifications Plugin
+
+**Duration**: 2-3 days
+**Dependencies**: Phase 1
+
+```
+plugins/builtin/notifications/
+├── manifest.yaml
+├── plugin.py               # NotificationsPlugin(BasePlugin)
+├── models/
+│   ├── notification_subscription.py
+│   └── notification_log.py
+├── services/
+│   └── notification_service.py
+├── handlers/
+│   ├── __init__.py
+│   ├── base_handler.py
+│   └── discord_handler.py
+├── pages/
+│   └── subscription_settings.py  # User notification preferences
+└── api/
+    └── routes.py
+```
+
+**Tasks**:
+1. [ ] Create plugin directory structure
+2. [ ] Migrate notification models
+3. [ ] Migrate notification service
+4. [ ] Migrate notification handlers
+5. [ ] Create subscription settings UI
+6. [ ] Integration testing
+
+### 6.3 Verification
+
+**Before Phase 7**:
+
+1. [ ] RacerVerification plugin can verify users
+2. [ ] RacerVerification plugin can grant Discord roles
+3. [ ] Notifications plugin can send Discord DMs
+4. [ ] Notifications plugin can manage subscriptions
+5. [ ] All utility plugins work with their dependencies
+
+## Phase 7: Integration & Testing
+
+### 7.1 Integration Testing
 
 **Duration**: 3-4 days
 **Risk**: Low
@@ -1026,7 +1314,7 @@ Comprehensive testing of the plugin system:
    - [ ] Deprecation warnings shown
    - [ ] No breaking changes
 
-### 5.2 Performance Testing
+### 7.2 Performance Testing
 
 **Duration**: 1-2 days
 **Risk**: Low
@@ -1054,7 +1342,7 @@ Verify no performance regression:
 3. [ ] Run benchmarks after migration
 4. [ ] Document results
 
-### 5.3 Migration Data Verification
+### 7.3 Migration Data Verification
 
 **Duration**: 1 day
 **Risk**: Low
@@ -1066,12 +1354,17 @@ Verify all data accessible through plugins:
 1. [ ] Verify existing Tournament data accessible
 2. [ ] Verify existing AsyncQualifier data accessible
 3. [ ] Verify existing Randomizer functionality works
-4. [ ] Verify no data loss or corruption
-5. [ ] Verify queries perform correctly
+4. [ ] Verify RaceTime integration works
+5. [ ] Verify SpeedGaming sync works
+6. [ ] Verify DiscordEvents work
+7. [ ] Verify RacerVerification works
+8. [ ] Verify Notifications work
+9. [ ] Verify no data loss or corruption
+10. [ ] Verify queries perform correctly
 
-## Phase 6: Cleanup & Documentation
+## Phase 8: Cleanup & Documentation
 
-### 6.1 Remove Deprecated Code
+### 8.1 Remove Deprecated Code
 
 **Duration**: 2-3 days
 **Risk**: Medium
@@ -1098,7 +1391,7 @@ grep -r "from application.services.tournaments" .
 # Should return no results
 ```
 
-### 6.2 Remove Feature Flag System
+### 8.2 Remove Feature Flag System
 
 **Duration**: 1-2 days
 **Risk**: Low
@@ -1126,10 +1419,10 @@ async def migrate_feature_flags():
     
     # Mapping from feature flags to plugins
     flag_to_plugin = {
-        FeatureFlag.LIVE_RACES: 'tournament',
-        FeatureFlag.RACETIME_BOT: 'tournament',
-        FeatureFlag.DISCORD_EVENTS: 'tournament',
-        FeatureFlag.ADVANCED_PRESETS: None,  # Built into randomizer plugins
+        FeatureFlag.LIVE_RACES: 'racetime',
+        FeatureFlag.RACETIME_BOT: 'racetime',
+        FeatureFlag.DISCORD_EVENTS: 'discord_events',
+        FeatureFlag.ADVANCED_PRESETS: 'presets',
         FeatureFlag.SCHEDULED_TASKS: None,   # Core feature, always enabled
     }
     
@@ -1145,7 +1438,7 @@ async def migrate_feature_flags():
             )
 ```
 
-### 6.3 Update Documentation
+### 8.3 Update Documentation
 
 **Duration**: 2-3 days
 **Risk**: Low
@@ -1159,11 +1452,13 @@ async def migrate_feature_flags():
 5. [ ] Create `docs/plugins/TOURNAMENT_PLUGIN.md`
 6. [ ] Create `docs/plugins/ASYNC_QUALIFIER_PLUGIN.md`
 7. [ ] Create `docs/plugins/RANDOMIZER_PLUGINS.md`
-8. [ ] Remove feature flag documentation
-9. [ ] Update Copilot instructions
-10. [ ] Update README.md
+8. [ ] Create `docs/plugins/INTEGRATION_PLUGINS.md`
+9. [ ] Create `docs/plugins/UTILITY_PLUGINS.md`
+10. [ ] Remove feature flag documentation
+11. [ ] Update Copilot instructions
+12. [ ] Update README.md
 
-### 6.4 Update Copilot Instructions
+### 8.4 Update Copilot Instructions
 
 **Duration**: 1 day
 **Risk**: Low
@@ -1175,9 +1470,10 @@ Update `.github/copilot-instructions.md` with plugin architecture:
 1. [ ] Add plugin architecture overview
 2. [ ] Add plugin development guidelines
 3. [ ] Add randomizer plugin development guidelines
-4. [ ] Update file organization section
-5. [ ] Update import conventions
-6. [ ] Remove feature flag references
+4. [ ] Add integration plugin guidelines
+5. [ ] Update file organization section
+6. [ ] Update import conventions
+7. [ ] Remove feature flag references
 
 ## Rollback Plan
 
