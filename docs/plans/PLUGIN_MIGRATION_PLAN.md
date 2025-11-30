@@ -1054,7 +1054,7 @@ Verify no performance regression:
 3. [ ] Run benchmarks after migration
 4. [ ] Document results
 
-### 4.3 Migration Data Verification
+### 5.3 Migration Data Verification
 
 **Duration**: 1 day
 **Risk**: Low
