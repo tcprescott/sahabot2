@@ -191,15 +191,7 @@ The plugin enablement system replaces the existing `OrganizationFeatureFlag` sys
 3. **Configuration**: Plugins can have organization-specific configuration
 4. **Lifecycle**: Plugins have proper lifecycle hooks (enable/disable/upgrade)
 
-**Migration**: Existing feature flags will be mapped to plugin enablement during migration:
-
-| Feature Flag | Plugin |
-|--------------|--------|
-| `LIVE_RACES` | Tournament plugin |
-| `ADVANCED_PRESETS` | (Built into randomizer plugins) |
-| `RACETIME_BOT` | Tournament plugin |
-| `SCHEDULED_TASKS` | Core (always enabled) |
-| `DISCORD_EVENTS` | Tournament plugin |
+**Migration**: See [PLUGIN_MIGRATION_PLAN.md](PLUGIN_MIGRATION_PLAN.md#62-remove-feature-flag-system) for the detailed feature flag to plugin mapping.
 
 ### Organization-Level Control
 

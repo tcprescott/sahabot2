@@ -39,7 +39,7 @@ This directory contains the comprehensive technical planning documentation for t
 ### Plugin Types
 
 - **Built-in Plugins**: Ship with application, can be disabled but not uninstalled
-- **External Plugins**: Installable by users (trusted by default)
+- **External Plugins**: Installable by users, run with full trust (review before installing)
 
 ### Organization-Level Control
 

@@ -40,13 +40,26 @@ While plugins are fully trusted, **multi-tenant data isolation is still enforced
 Plugins must respect organization boundaries:
 
 ```python
-# ✅ Correct: Always filter by organization
-async def get_items(self, organization_id: int):
-    return await MyModel.filter(organization_id=organization_id).all()
-
-# ❌ Wrong: Never return cross-tenant data
-async def get_all_items(self):
-    return await MyModel.all()  # Security violation!
+class MyPluginService:
+    """Example service showing organization scoping."""
+    
+    # ✅ Correct: Always filter by organization
+    async def get_items(self, organization_id: int) -> list:
+        """Get items for a specific organization."""
+        return await MyModel.filter(organization_id=organization_id).all()
+    
+    # ✅ Correct: Verify item belongs to organization before returning
+    async def get_item(self, item_id: int, organization_id: int):
+        """Get a single item with organization verification."""
+        return await MyModel.get_or_none(
+            id=item_id, 
+            organization_id=organization_id
+        )
+    
+    # ❌ Wrong: Never return cross-tenant data
+    async def get_all_items_bad(self):
+        """DO NOT DO THIS - returns all data across organizations!"""
+        return await MyModel.all()  # Security violation!
 ```
 
 ### Plugin Enablement
