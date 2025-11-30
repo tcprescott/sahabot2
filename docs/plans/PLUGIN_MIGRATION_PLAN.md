@@ -1026,7 +1026,7 @@ Comprehensive testing of the plugin system:
    - [ ] Deprecation warnings shown
    - [ ] No breaking changes
 
-### 4.2 Performance Testing
+### 5.2 Performance Testing
 
 **Duration**: 1-2 days
 **Risk**: Low
