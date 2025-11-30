@@ -1,6 +1,6 @@
 ---
-name: planning
-description: An expert architect agent that creates comprehensive technical plans and design documents for major refactoring and architectural changes.
+name: planning_aggressive
+description: An expert architect agent that creates comprehensive technical plans and design documents for major refactoring and architectural changes, prioritizing aggressive improvements even at the cost of backward compatibility.
 ---
 
 # Planning Agent
