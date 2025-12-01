@@ -1,0 +1,97 @@
+id: tournament
+name: Tournament System
+version: 1.0.0
+description: Live tournament management with scheduling, crew signups, and RaceTime.gg integration
+author: SahaBot2 Team
+website: https://github.com/tcprescott/sahabot2
+
+type: builtin
+category: competition
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins: []
+
+provides:
+  models:
+    - Tournament
+    - Match
+    - MatchPlayers
+    - TournamentPlayers
+    - StreamChannel
+    - Crew
+    - MatchSeed
+    - TournamentMatchSettings
+
+  pages:
+    - path: /org/{org_id}/tournaments
+      name: Tournament List
+      scope: organization
+    - path: /org/{org_id}/tournaments/{tournament_id}
+      name: Tournament Detail
+      scope: organization
+    - path: /org/{org_id}/tournament-admin
+      name: Tournament Admin
+      scope: organization
+    - path: /org/{org_id}/tournament-admin/{tournament_id}
+      name: Tournament Admin Detail
+      scope: organization
+
+  api_routes:
+    - prefix: /api/org/{org_id}/tournaments
+      scope: organization
+      tags:
+        - tournaments
+        - matches
+
+  events:
+    - TournamentCreatedEvent
+    - TournamentUpdatedEvent
+    - TournamentDeletedEvent
+    - TournamentStartedEvent
+    - TournamentEndedEvent
+    - MatchScheduledEvent
+    - MatchUpdatedEvent
+    - MatchDeletedEvent
+    - MatchCompletedEvent
+    - MatchFinishedEvent
+    - CrewAddedEvent
+    - CrewApprovedEvent
+    - CrewRemovedEvent
+
+  tasks:
+    - speedgaming_sync
+    - auto_room_creation
+
+permissions:
+  actions:
+    - tournament:create
+    - tournament:read
+    - tournament:update
+    - tournament:delete
+    - match:create
+    - match:read
+    - match:update
+    - match:delete
+    - crew:manage
+
+config_schema:
+  type: object
+  properties:
+    enable_racetime_integration:
+      type: boolean
+      default: true
+      description: Enable RaceTime.gg room creation for matches
+    enable_speedgaming_sync:
+      type: boolean
+      default: false
+      description: Enable automatic schedule sync from SpeedGaming.org
+    default_room_visibility:
+      type: string
+      default: unlisted
+      description: Default visibility for RaceTime rooms

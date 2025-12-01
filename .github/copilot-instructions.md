@@ -30,6 +30,87 @@ UI/API (Presentation) → Services (Business Logic) → Repositories (Data Acces
 
 **See**: [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) for detailed architecture
 
+## Plugin Architecture
+
+**New features should be implemented as plugins by default** to maintain separation of domains and concerns. The plugin system enables modular, isolated development of features.
+
+### When to Use Plugins
+
+- ✅ **New domain features** (e.g., new game randomizer, new competition type)
+- ✅ **Integration features** (e.g., new external service integration)
+- ✅ **Optional features** that organizations may enable/disable
+- ✅ **Features with their own models, services, pages, and API routes**
+- ❌ Core infrastructure (authentication, organizations, users)
+- ❌ Shared utilities used across all features
+
+### Plugin Structure
+
+Plugins are located in `plugins/builtin/` and follow this structure:
+
+```
+plugins/builtin/my_plugin/
+├── manifest.yaml              # Plugin metadata and configuration
+├── __init__.py                # Plugin entry point
+├── plugin.py                  # MyPlugin(BasePlugin) class
+├── models/                    # Database models (optional)
+├── services/                  # Business logic
+├── repositories/              # Data access
+├── pages/                     # NiceGUI pages
+├── views/                     # Page views
+├── dialogs/                   # UI dialogs
+├── api/                       # FastAPI routes
+├── commands/                  # Discord commands (optional)
+├── events/                    # Event types and listeners
+└── tasks/                     # Scheduled tasks (optional)
+```
+
+### Creating a New Plugin
+
+1. **Create directory structure** in `plugins/builtin/your_plugin/`
+2. **Create manifest.yaml** with plugin metadata
+3. **Implement plugin class** extending `BasePlugin`
+4. **Register in `plugins/builtin/__init__.py`**
+
+```python
+# plugins/builtin/my_plugin/plugin.py
+from application.plugins.base.plugin import BasePlugin
+from application.plugins.manifest import PluginManifest, PluginType, PluginCategory
+
+class MyPlugin(BasePlugin):
+    @property
+    def plugin_id(self) -> str:
+        return "my_plugin"
+
+    @property
+    def manifest(self) -> PluginManifest:
+        return PluginManifest(
+            id="my_plugin",
+            name="My Plugin",
+            version="1.0.0",
+            description="Description of what my plugin does",
+            type=PluginType.BUILTIN,
+            category=PluginCategory.UTILITY,
+        )
+
+    async def on_load(self) -> None:
+        logger.info("My plugin loaded")
+
+    async def on_enable(self, organization_id: int, config: PluginConfig) -> None:
+        logger.info("My plugin enabled for org %s", organization_id)
+```
+
+### Plugin Benefits
+
+- **Domain Isolation**: Each plugin manages its own domain
+- **Per-Organization Enablement**: Plugins can be enabled/disabled per organization
+- **Independent Development**: Work on features without affecting other code
+- **Clear Dependencies**: Plugins declare dependencies explicitly
+
+**See**:
+- [`docs/plans/PLUGIN_ARCHITECTURE.md`](../docs/plans/PLUGIN_ARCHITECTURE.md) - Full architecture
+- [`docs/plans/PLUGIN_IMPLEMENTATION_GUIDE.md`](../docs/plans/PLUGIN_IMPLEMENTATION_GUIDE.md) - Development guide
+- [`docs/plans/PLUGIN_API_SPECIFICATION.md`](../docs/plans/PLUGIN_API_SPECIFICATION.md) - API contracts
+
 ## Core Principles
 
 ### 1. Responsive Design for All Devices
@@ -585,6 +666,7 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - Return cross-tenant data
 - Display `discord_email` to non-superadmin users
 - Manually create Aerich migration files - always use `aerich migrate`
+- Implement new domain features in core - use plugins instead
 
 **✅ Do:**
 - Use external CSS classes
@@ -614,11 +696,15 @@ DateTimeLabel.create(match.scheduled_at, format_type='datetime')
 - Filter all queries by organization
 - Emit events after successful operations
 - Use `aerich migrate` to generate migrations, then edit the SQL if needed
+- Use plugins for new domain features to maintain separation
 
 ## Adding Features
 
+**New features should be implemented as plugins by default.** See the Plugin Architecture section above.
+
 For step-by-step guides on adding new features, see:
 
+- **[New Plugin](../docs/plans/PLUGIN_IMPLEMENTATION_GUIDE.md)** - Create a new plugin (preferred for new features)
 - **[New Page](../docs/ADDING_FEATURES.md#new-page)** - Create new page with BasePage
 - **[New Dialog](../docs/ADDING_FEATURES.md#new-dialog)** - Extend BaseDialog
 - **[New View](../docs/ADDING_FEATURES.md#new-view-component)** - Page-specific view
@@ -656,4 +742,4 @@ For step-by-step guides on adding new features, see:
 
 **Keep this file focused on essential rules and patterns. For detailed examples and guides, see documentation in `docs/` directory.**
 
-**Last Updated**: November 4, 2025
+**Last Updated**: December 1, 2025
