@@ -8,8 +8,10 @@ Mystery seeds randomly select presets and settings based on configured weights.
 import logging
 import random
 from typing import Dict, Any, Optional, Tuple
-from .alttpr_service import ALTTPRService
-from .randomizer_service import RandomizerResult
+
+# Import directly from plugin to avoid circular import
+from plugins.builtin.alttpr.services.alttpr_service import ALTTPRService
+from plugins.builtin._randomizer_base.result import RandomizerResult
 
 logger = logging.getLogger(__name__)
 
