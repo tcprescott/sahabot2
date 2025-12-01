@@ -7,17 +7,12 @@ should inherit from to ensure consistent behavior and interface.
 
 import logging
 from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List
 
 from application.plugins.base.plugin import BasePlugin
 from application.plugins.manifest import (
-    PluginManifest,
     PluginConfig,
-    PluginType,
     PluginCategory,
-    PluginProvides,
-    PluginRequirements,
-    PluginDependency,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,63 +51,6 @@ class BaseRandomizerPlugin(BasePlugin):
     def category(self) -> PluginCategory:
         """Return the plugin category (always RANDOMIZER)."""
         return PluginCategory.RANDOMIZER
-
-    def _create_manifest(
-        self,
-        plugin_id: str,
-        name: str,
-        version: str,
-        description: str,
-        has_racetime_handler: bool = False,
-        has_discord_commands: bool = True,
-        additional_services: Optional[List[str]] = None,
-        additional_events: Optional[List[str]] = None,
-    ) -> PluginManifest:
-        """
-        Helper method to create a standardized manifest for randomizer plugins.
-
-        Args:
-            plugin_id: Unique plugin identifier
-            name: Display name of the plugin
-            version: Version string
-            description: Plugin description
-            has_racetime_handler: Whether plugin provides RaceTime.gg handler
-            has_discord_commands: Whether plugin provides Discord commands
-            additional_services: Additional service names provided
-            additional_events: Additional event types provided
-
-        Returns:
-            PluginManifest with standard randomizer configuration
-        """
-        services = [f"{name.replace(' ', '')}Service"]
-        if additional_services:
-            services.extend(additional_services)
-
-        events = []
-        if additional_events:
-            events.extend(additional_events)
-
-        return PluginManifest(
-            id=plugin_id,
-            name=name,
-            version=version,
-            description=description,
-            author="SahaBot2 Team",
-            type=PluginType.BUILTIN,
-            category=PluginCategory.RANDOMIZER,
-            enabled_by_default=True,
-            private=False,
-            global_plugin=False,
-            requires=PluginRequirements(
-                sahabot2=">=1.0.0",
-                python=">=3.11",
-                plugins=[PluginDependency(plugin_id="presets")],
-            ),
-            provides=PluginProvides(
-                services=services,
-                events=events,
-            ),
-        )
 
     def get_service(self) -> Any:
         """

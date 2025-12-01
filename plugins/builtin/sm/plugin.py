@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Optional, Type
 
 from application.plugins.manifest import (
     PluginManifest,
-    PluginConfig,
     PluginType,
     PluginCategory,
     PluginProvides,
