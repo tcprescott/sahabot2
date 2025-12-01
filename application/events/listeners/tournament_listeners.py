@@ -5,8 +5,9 @@ Handles audit logging for tournament lifecycle events.
 """
 
 import logging
-from application.events import EventBus, EventPriority
-from application.events.types import (
+from application.events import (
+    EventBus,
+    EventPriority,
     TournamentCreatedEvent,
     TournamentUpdatedEvent,
     TournamentDeletedEvent,

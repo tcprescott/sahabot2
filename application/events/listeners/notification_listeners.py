@@ -7,15 +7,18 @@ Priority: NORMAL - notifications happen after audit logging.
 """
 
 import logging
-from application.events import EventBus, EventPriority
-from application.events.types import (
+from application.events import (
+    EventBus,
+    EventPriority,
     MatchScheduledEvent,
     TournamentMatchSettingsSubmittedEvent,
     TournamentCreatedEvent,
-    InviteCreatedEvent,
     CrewAddedEvent,
     CrewApprovedEvent,
     CrewRemovedEvent,
+)
+from application.events.types import (
+    InviteCreatedEvent,
     # Async Live Race events
     AsyncLiveRaceCreatedEvent,
     AsyncLiveRaceUpdatedEvent,
@@ -105,7 +108,7 @@ async def notify_match_settings_submitted(
     )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
-    from models.match_schedule import MatchPlayers
+    from models import MatchPlayers
 
     notification_service = NotificationService()
     user_repo = UserRepository()
@@ -289,7 +292,7 @@ async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
     )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
-    from models.match_schedule import Match
+    from models import Match
 
     # Only notify if auto-approved (admin added them directly)
     if not event.auto_approved:
@@ -365,7 +368,7 @@ async def notify_crew_approved(event: CrewApprovedEvent) -> None:
     )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
-    from models.match_schedule import Match
+    from models import Match
 
     notification_service = NotificationService()
     user_repo = UserRepository()

@@ -518,8 +518,7 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
 
     try:
         from datetime import datetime, timezone, timedelta
-        from models import User
-        from models.match_schedule import MatchPlayers, Crew
+        from models import User, MatchPlayers, Crew
 
         # Calculate cutoff date
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_inactive)

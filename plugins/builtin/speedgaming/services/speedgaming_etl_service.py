@@ -9,8 +9,8 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 
-from models import User
-from models.match_schedule import (
+from models import (
+    User,
     Tournament,
     Match,
     MatchPlayers,
@@ -28,9 +28,8 @@ from plugins.builtin.speedgaming.services.speedgaming_service import (
     SpeedGamingCrewMember,
     SpeedGamingChannel,
 )
-from application.repositories.tournament_repository import TournamentRepository
+from application.repositories import TournamentRepository, StreamChannelRepository
 from application.repositories.user_repository import UserRepository
-from application.repositories.stream_channel_repository import StreamChannelRepository
 
 logger = logging.getLogger(__name__)
 

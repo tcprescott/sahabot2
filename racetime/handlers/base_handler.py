@@ -22,7 +22,7 @@ from application.events import (
     RacetimeBotActionEvent,
 )
 from models import SYSTEM_USER_ID
-from models.match_schedule import Match
+from models import Match
 
 logger = logging.getLogger(__name__)
 

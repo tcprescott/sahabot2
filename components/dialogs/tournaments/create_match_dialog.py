@@ -5,8 +5,7 @@ from typing import Optional, Callable, List
 from datetime import datetime
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models import User
-from models.match_schedule import Tournament, StreamChannel
+from models import User, Tournament, StreamChannel
 import logging
 
 logger = logging.getLogger(__name__)
@@ -102,9 +101,7 @@ class CreateMatchDialog(BaseDialog):
         async def load_data():
             """Load stream channels and players."""
             try:
-                from application.services.tournaments.stream_channel_service import (
-                    StreamChannelService,
-                )
+                from application.services.tournaments import StreamChannelService
                 from application.services.organizations.organization_service import (
                     OrganizationService,
                 )
@@ -216,9 +213,7 @@ class CreateMatchDialog(BaseDialog):
 
         # Call the service to create the match
         try:
-            from application.services.tournaments.tournament_service import (
-                TournamentService,
-            )
+            from application.services.tournaments import TournamentService
 
             service = TournamentService()
             match = await service.create_match(

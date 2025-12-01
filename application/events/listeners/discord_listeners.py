@@ -6,8 +6,9 @@ Priority: NORMAL - runs after audit logging.
 """
 
 import logging
-from application.events import EventBus, EventPriority
-from application.events.types import (
+from application.events import (
+    EventBus,
+    EventPriority,
     MatchScheduledEvent,
     MatchUpdatedEvent,
     MatchDeletedEvent,

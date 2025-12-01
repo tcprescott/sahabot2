@@ -6,8 +6,8 @@ and the event bus operates correctly.
 """
 
 import pytest
-from application.events import EventBus, EventPriority
-from application.events.types import UserCreatedEvent, TournamentCreatedEvent
+from application.events import EventBus, EventPriority, TournamentCreatedEvent
+from application.events.types import UserCreatedEvent
 
 
 class TestEventBus:

@@ -8,7 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.match_schedule import Tournament
+from models import Tournament
 
 
 class TournamentRacetimeSettingsView:
@@ -383,9 +383,7 @@ class TournamentRacetimeSettingsView:
             default_goal: Default race goal text
             racetime_bot_id: ID of the RaceTime bot to use (None for no bot)
         """
-        from application.services.tournaments.tournament_service import (
-            TournamentService,
-        )
+        from application.services.tournaments import TournamentService
 
         service = TournamentService()
         await service.update_tournament(

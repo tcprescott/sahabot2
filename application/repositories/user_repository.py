@@ -277,7 +277,7 @@ class UserRepository:
             list[User]: List of placeholder users
         """
         # Import here to avoid circular dependency
-        from models.match_schedule import Match
+        from models import Match
 
         # Get all match IDs for this tournament
         matches = await Match.filter(tournament_id=tournament_id).values_list(

@@ -7,7 +7,7 @@ Shows matches the user is participating in.
 from __future__ import annotations
 from nicegui import ui
 from models import Organization, User
-from models.match_schedule import MatchPlayers
+from models import MatchPlayers
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel

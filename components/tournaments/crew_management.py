@@ -9,7 +9,7 @@ import logging
 from typing import TYPE_CHECKING, Callable, Awaitable
 from nicegui import ui
 from models import CrewRole
-from models.match_schedule import Match
+from models import Match
 from components.dialogs.tournaments import AddCrewDialog
 
 if TYPE_CHECKING:

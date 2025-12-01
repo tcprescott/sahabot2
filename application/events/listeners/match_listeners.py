@@ -5,8 +5,9 @@ Handles audit logging for match scheduling, updates, and completion.
 """
 
 import logging
-from application.events import EventBus, EventPriority
-from application.events.types import (
+from application.events import (
+    EventBus,
+    EventPriority,
     MatchFinishedEvent,
     TournamentMatchSettingsSubmittedEvent,
 )

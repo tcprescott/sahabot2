@@ -5,8 +5,7 @@ from typing import Optional, Callable, List
 from datetime import datetime
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models import User
-from models.match_schedule import Tournament, Match, StreamChannel
+from models import User, Tournament, Match, StreamChannel
 import logging
 
 logger = logging.getLogger(__name__)
@@ -84,7 +83,7 @@ class EditMatchDialog(BaseDialog):
         # Load stream channels async
         async def load_streams():
             try:
-                from models.match_schedule import StreamChannel
+                from models import StreamChannel
 
                 streams = await StreamChannel.filter(
                     organization_id=self.organization_id, is_active=True

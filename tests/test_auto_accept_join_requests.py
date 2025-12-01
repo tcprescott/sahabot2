@@ -7,8 +7,7 @@ if they are listed as a player on the match, their request is automatically acce
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from models import User, Permission
-from models.match_schedule import Match, MatchPlayers
+from models import User, Permission, Match, MatchPlayers
 from racetime.handlers.base_handler import SahaRaceHandler
 
 

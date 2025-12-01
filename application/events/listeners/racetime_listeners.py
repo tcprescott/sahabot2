@@ -7,13 +7,14 @@ Priority: NORMAL - runs after audit logging.
 
 import logging
 from datetime import datetime, timezone
-from application.events import EventBus, EventPriority
-from application.events.types import (
+from application.events import (
+    EventBus,
+    EventPriority,
     RacetimeRoomOpenedEvent,
     RacetimeRaceStatusChangedEvent,
     MatchFinishedEvent,
 )
-from models.match_schedule import Match
+from models import Match
 from models.racetime_room import RacetimeRoom
 
 logger = logging.getLogger(__name__)

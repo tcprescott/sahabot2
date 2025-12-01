@@ -9,7 +9,7 @@ import logging
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.match_schedule import Tournament
+from models import Tournament
 from application.services.randomizer.randomizer_service import RandomizerService
 from application.services.randomizer.randomizer_preset_service import (
     RandomizerPresetService,
@@ -149,9 +149,7 @@ class TournamentRandomizerSettingsView:
             randomizer: Selected randomizer type
             preset_id: Selected preset ID (or None)
         """
-        from application.services.tournaments.tournament_service import (
-            TournamentService,
-        )
+        from application.services.tournaments import TournamentService
 
         # Validate randomizer
         if randomizer and randomizer not in self.randomizer_service.list_randomizers():

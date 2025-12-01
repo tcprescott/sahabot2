@@ -10,7 +10,7 @@ from typing import Optional
 from nicegui import ui
 from models import Organization, User, CrewRole
 from models.user import Permission
-from models.match_schedule import Match
+from models import Match
 from components.data_table import ResponsiveTable, TableColumn
 from components.tournaments import MatchCellRenderers, MatchActions, CrewManagement
 from components.dialogs import (
@@ -833,9 +833,7 @@ class EventScheduleView:
                 # Load data async
                 async def load_data():
                     try:
-                        from application.services.tournaments.stream_channel_service import (
-                            StreamChannelService,
-                        )
+                        from application.services.tournaments import StreamChannelService
                         from application.services.organizations.organization_service import (
                             OrganizationService,
                         )
@@ -875,9 +873,7 @@ class EventScheduleView:
 
             async def _handle_create(self):
                 from datetime import datetime
-                from application.services.tournaments.tournament_service import (
-                    TournamentService,
-                )
+                from application.services.tournaments import TournamentService
 
                 if not self._tournament_select or not self._tournament_select.value:
                     ui.notify("Please select a tournament", type="warning")
