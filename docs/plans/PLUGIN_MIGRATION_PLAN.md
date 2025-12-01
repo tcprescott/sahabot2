@@ -324,7 +324,7 @@ type: builtin
 category: global
 enabled_by_default: true
 private: false
-global: true  # Special flag: always enabled, not organization-scoped
+global_plugin: true  # Special flag: always enabled, not organization-scoped
 
 requires:
   sahabot2: ">=1.0.0"
@@ -346,7 +346,7 @@ provides:
 **Tasks**:
 
 1. [ ] Create plugin directory structure
-2. [ ] Create manifest.yaml with `global: true` flag
+2. [ ] Create manifest.yaml with `global_plugin: true` flag
 3. [ ] Migrate `discordbot/client.py` to plugin
 4. [ ] Create bot lifecycle management service
 5. [ ] Update main.py to use plugin's bot startup
