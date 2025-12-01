@@ -562,6 +562,203 @@ Plugins can define scheduled tasks (built-in or database-stored).
 └─────────────────────────────────────────────────────────────┘
 ```
 
+## URL Route Model
+
+### Overview
+
+The plugin architecture uses a consistent URL routing model to maintain clear separation between different access levels and scopes. This ensures predictable URL structures and proper authorization.
+
+### Route Hierarchy
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        URL Route Model                                   │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  GLOBAL END-USER ROUTES (public-facing, no org scope):                   │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  /                      - Home/landing page                      │    │
+│  │  /auth                  - Authentication (login, logout, OAuth)  │    │
+│  │  /invite/{code}         - Organization invite acceptance        │    │
+│  │  /{plugin_id}           - Plugin's global public pages          │    │
+│  │  /bingosync             - Example: Bingosync public interface   │    │
+│  │  /presets               - Example: Public preset browser        │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+│  GLOBAL ADMIN ROUTES (superadmin access):                                │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  /admin                 - Admin dashboard                        │    │
+│  │  /admin/users           - User management                        │    │
+│  │  /admin/plugins         - Global plugin management               │    │
+│  │  /admin/{plugin_id}     - Plugin's admin pages                   │    │
+│  │  /admin/discordbot      - Example: Discord bot management       │    │
+│  │  /admin/notifications   - Example: Global notification settings │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+│  ORGANIZATION-SCOPED ROUTES (org member access):                         │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  /org/{org_id}                    - Organization dashboard       │    │
+│  │  /org/{org_id}/settings           - Organization settings        │    │
+│  │  /org/{org_id}/members            - Member management           │    │
+│  │  /org/{org_id}/plugins            - Org plugin configuration    │    │
+│  │  /org/{org_id}/{plugin_id}        - Plugin's org pages          │    │
+│  │  /org/{org_id}/tournament         - Example: Tournament list    │    │
+│  │  /org/{org_id}/async              - Example: AsyncQualifier     │    │
+│  │  /org/{org_id}/presets            - Example: Org presets        │    │
+│  │  /org/{org_id}/racetime           - Example: RaceTime config    │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+│  API ROUTES:                                                             │
+│  ┌─────────────────────────────────────────────────────────────────┐    │
+│  │  /api/                            - Public API endpoints         │    │
+│  │  /api/auth                        - Authentication endpoints     │    │
+│  │  /api/{plugin_id}                 - Plugin's public API         │    │
+│  │  /api/admin/                      - Admin API endpoints          │    │
+│  │  /api/admin/{plugin_id}           - Plugin's admin API          │    │
+│  │  /api/org/{org_id}/               - Org-scoped API endpoints    │    │
+│  │  /api/org/{org_id}/{plugin_id}    - Plugin's org API            │    │
+│  └─────────────────────────────────────────────────────────────────┘    │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### Route Categories
+
+| Category | Pattern | Access Level | Example |
+|----------|---------|--------------|---------|
+| **Global Public** | `/{plugin_id}` | Any user | `/bingosync`, `/presets` |
+| **Global Admin** | `/admin/{plugin_id}` | SUPERADMIN | `/admin/discordbot`, `/admin/plugins` |
+| **Org Pages** | `/org/{org_id}/{plugin_id}` | Org member | `/org/1/tournament`, `/org/1/async` |
+| **API Public** | `/api/{plugin_id}` | API token | `/api/presets/list` |
+| **API Admin** | `/api/admin/{plugin_id}` | SUPERADMIN + token | `/api/admin/plugins` |
+| **API Org** | `/api/org/{org_id}/{plugin_id}` | Org member + token | `/api/org/1/tournament/matches` |
+
+### Plugin Route Registration
+
+Plugins specify which routes they provide in their manifest:
+
+```yaml
+# manifest.yaml
+provides:
+  pages:
+    # Global public pages
+    - path: /presets
+      name: Public Preset Browser
+      scope: global
+    
+    # Global admin pages
+    - path: /admin/presets
+      name: Preset Administration
+      scope: admin
+    
+    # Organization-scoped pages
+    - path: /org/{org_id}/presets
+      name: Organization Presets
+      scope: organization
+  
+  api_routes:
+    # Public API
+    - prefix: /api/presets
+      scope: global
+      tags: [presets]
+    
+    # Admin API
+    - prefix: /api/admin/presets
+      scope: admin
+      tags: [admin, presets]
+    
+    # Organization API
+    - prefix: /api/org/{org_id}/presets
+      scope: organization
+      tags: [presets]
+```
+
+### Route Provider Implementation
+
+```python
+# application/plugins/base/route_provider.py
+
+from enum import Enum
+from typing import List
+from pydantic import BaseModel
+
+class RouteScope(Enum):
+    GLOBAL = "global"       # Public access, no org scope
+    ADMIN = "admin"         # Global admin access
+    ORGANIZATION = "organization"  # Org-scoped access
+
+class PageRoute(BaseModel):
+    """Page route definition."""
+    path: str
+    name: str
+    scope: RouteScope
+    requires_auth: bool = True
+
+class APIRoute(BaseModel):
+    """API route definition."""
+    prefix: str
+    scope: RouteScope
+    tags: List[str] = []
+
+class RouteProvider(ABC):
+    """Interface for plugins that provide routes."""
+    
+    @abstractmethod
+    def get_page_routes(self) -> List[PageRoute]:
+        """Return list of page routes this plugin provides."""
+        pass
+    
+    @abstractmethod
+    def get_api_routes(self) -> List[APIRoute]:
+        """Return list of API routes this plugin provides."""
+        pass
+```
+
+### Authorization by Route Scope
+
+| Scope | Page Authorization | API Authorization |
+|-------|-------------------|-------------------|
+| **global** | `BasePage.simple_page()` | Public (rate limited) |
+| **admin** | `BasePage.admin_page()` | Requires SUPERADMIN |
+| **organization** | `BasePage.authenticated_page()` + org membership check | Requires org membership |
+
+### Example: Tournament Plugin Routes
+
+```python
+# plugins/builtin/tournament/routes.py
+
+class TournamentPlugin(BasePlugin, RouteProvider, APIProvider):
+    
+    def get_page_routes(self) -> List[PageRoute]:
+        return [
+            # Org-scoped tournament pages
+            PageRoute(
+                path="/org/{org_id}/tournament",
+                name="Tournament List",
+                scope=RouteScope.ORGANIZATION
+            ),
+            PageRoute(
+                path="/org/{org_id}/tournament/{tournament_id}",
+                name="Tournament Detail",
+                scope=RouteScope.ORGANIZATION
+            ),
+            PageRoute(
+                path="/org/{org_id}/tournament-admin",
+                name="Tournament Admin",
+                scope=RouteScope.ORGANIZATION
+            ),
+        ]
+    
+    def get_api_routes(self) -> List[APIRoute]:
+        return [
+            APIRoute(
+                prefix="/api/org/{org_id}/tournament",
+                scope=RouteScope.ORGANIZATION,
+                tags=["tournaments", "matches"]
+            ),
+        ]
+```
+
 ## Database Schema Changes
 
 ### New Tables
