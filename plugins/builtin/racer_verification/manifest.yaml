@@ -1,0 +1,61 @@
+# RacerVerification Plugin Manifest
+# Provides Discord role-based racer verification for SahaBot2
+
+id: racer_verification
+name: Racer Verification
+version: 1.0.0
+description: Discord role verification based on RaceTime.gg race completion
+author: SahaBot2 Team
+
+# Plugin classification
+type: builtin
+category: utility
+
+# Organization defaults
+enabled_by_default: true
+private: false
+global_plugin: false
+
+# Dependencies
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - plugin_id: racetime
+
+# Feature contributions
+provides:
+  models:
+    - RacerVerification
+    - UserRacerVerification
+
+  services:
+    - RacerVerificationService
+
+  pages:
+    - path: /org/{org_id}/racer-verification
+      name: Racer Verification Settings
+      scope: organization
+
+  api_routes:
+    - prefix: /api/org/{org_id}/racer-verification
+      scope: organization
+      tags: [racer_verification]
+
+  events:
+    - RacerVerifiedEvent
+    - RacerVerificationCreatedEvent
+    - RacerVerificationUpdatedEvent
+
+# Configuration schema
+config_schema:
+  type: object
+  properties:
+    auto_verify_on_link:
+      type: boolean
+      default: true
+      description: Automatically verify users when they link their RaceTime account
+    verification_check_interval_hours:
+      type: integer
+      default: 24
+      description: How often to re-check verification eligibility
