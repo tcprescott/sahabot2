@@ -8,6 +8,11 @@ Plugins in this package:
 - tournament: Live tournament management
 - async_qualifier: Asynchronous qualifier races
 - presets: Preset namespace and management
+- racetime: RaceTime.gg integration
+- speedgaming: SpeedGaming.org integration
+- discord_events: Discord scheduled events integration
+- racer_verification: Discord role-based racer verification
+- notifications: User notification system
 - alttpr: A Link to the Past Randomizer
 - sm: Super Metroid Randomizer (VARIA/DASH)
 - smz3: SMZ3 Combo Randomizer
@@ -24,6 +29,11 @@ Plugins in this package:
 from plugins.builtin.tournament import TournamentPlugin
 from plugins.builtin.async_qualifier import AsyncQualifierPlugin
 from plugins.builtin.presets import PresetsPlugin
+from plugins.builtin.racetime import RaceTimePlugin
+from plugins.builtin.speedgaming import SpeedGamingPlugin
+from plugins.builtin.discord_events import DiscordEventsPlugin
+from plugins.builtin.racer_verification import RacerVerificationPlugin
+from plugins.builtin.notifications import NotificationsPlugin
 from plugins.builtin.alttpr import ALTTPRPlugin
 from plugins.builtin.sm import SMPlugin
 from plugins.builtin.smz3 import SMZ3Plugin
@@ -38,11 +48,20 @@ from plugins.builtin.avianart import AvianartPlugin
 
 # List of built-in plugin classes
 # Order matters: presets must be loaded before randomizer plugins
+# Integration plugins loaded before competition/randomizer plugins
+# Utility plugins loaded after integration plugins
 BUILTIN_PLUGINS = [
     # Core plugins
     TournamentPlugin,
     AsyncQualifierPlugin,
     PresetsPlugin,
+    # Integration plugins
+    RaceTimePlugin,
+    SpeedGamingPlugin,
+    DiscordEventsPlugin,
+    # Utility plugins
+    RacerVerificationPlugin,
+    NotificationsPlugin,
     # Randomizer plugins (high priority)
     ALTTPRPlugin,
     SMPlugin,
@@ -65,6 +84,11 @@ __all__ = [
     "TournamentPlugin",
     "AsyncQualifierPlugin",
     "PresetsPlugin",
+    "RaceTimePlugin",
+    "SpeedGamingPlugin",
+    "DiscordEventsPlugin",
+    "RacerVerificationPlugin",
+    "NotificationsPlugin",
     "ALTTPRPlugin",
     "SMPlugin",
     "SMZ3Plugin",

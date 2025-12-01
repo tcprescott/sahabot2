@@ -1,0 +1,71 @@
+# Notifications Plugin Manifest
+# Provides notification subscription and delivery for SahaBot2
+
+id: notifications
+name: Notification System
+version: 1.0.0
+description: User notification subscriptions and multi-channel delivery
+author: SahaBot2 Team
+
+# Plugin classification
+type: builtin
+category: utility
+
+# Organization defaults
+enabled_by_default: true
+private: false
+global_plugin: false
+
+# Dependencies
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins: []
+
+# Feature contributions
+provides:
+  models:
+    - NotificationSubscription
+    - NotificationLog
+    - NotificationMethod
+    - NotificationEventType
+    - NotificationDeliveryStatus
+
+  services:
+    - NotificationService
+    - NotificationProcessor
+    - BaseNotificationHandler
+    - DiscordNotificationHandler
+
+  pages:
+    - path: /user/notifications
+      name: Notification Settings
+      scope: global
+
+  api_routes:
+    - prefix: /api/user/notifications
+      scope: global
+      tags: [notifications]
+
+  events:
+    - NotificationSentEvent
+    - NotificationFailedEvent
+    - SubscriptionCreatedEvent
+    - SubscriptionUpdatedEvent
+
+# Configuration schema
+config_schema:
+  type: object
+  properties:
+    retry_failed_notifications:
+      type: boolean
+      default: true
+      description: Automatically retry failed notification deliveries
+    max_retry_attempts:
+      type: integer
+      default: 3
+      description: Maximum number of retry attempts for failed notifications
+    retry_delay_seconds:
+      type: integer
+      default: 60
+      description: Delay between retry attempts
