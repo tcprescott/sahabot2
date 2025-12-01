@@ -24,8 +24,6 @@ provides:
     - ALTTPRService
     - ALTTPRMysteryService
 
-  handlers:
-    - alttpr_handler
 
   api_routes:
     - prefix: /api/randomizer/alttpr
