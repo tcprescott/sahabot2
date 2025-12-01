@@ -1,0 +1,66 @@
+# RaceTime Plugin Manifest
+# Provides RaceTime.gg integration for SahaBot2
+
+id: racetime
+name: RaceTime.gg Integration
+version: 1.0.0
+description: RaceTime.gg bot management, room profiles, and race handlers
+author: SahaBot2 Team
+
+# Plugin classification
+type: builtin
+category: integration
+
+# Organization defaults
+enabled_by_default: true
+private: false
+global_plugin: false
+
+# Dependencies
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins: []
+
+# Feature contributions
+provides:
+  models:
+    - RacetimeBot
+    - RacetimeBotOrganization
+    - RacetimeRoom
+    - RaceRoomProfile
+
+  services:
+    - RacetimeService
+    - RacetimeBotService
+    - RacetimeRoomService
+    - RaceRoomProfileService
+    - RacetimeApiService
+
+  pages:
+    - path: /org/{org_id}/racetime
+      name: RaceTime Configuration
+      scope: organization
+
+  api_routes:
+    - prefix: /api/org/{org_id}/racetime
+      scope: organization
+      tags: [racetime]
+
+  events:
+    - RaceRoomCreatedEvent
+    - RaceRoomFinishedEvent
+    - RacetimeBotStatusChangedEvent
+
+# Configuration schema
+config_schema:
+  type: object
+  properties:
+    auto_connect_bots:
+      type: boolean
+      default: true
+      description: Automatically connect bots on startup
+    default_handler_class:
+      type: string
+      default: SahaRaceHandler
+      description: Default race handler class for new bots

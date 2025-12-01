@@ -1,0 +1,54 @@
+# SpeedGaming Plugin Manifest
+# Provides SpeedGaming.org integration for SahaBot2
+
+id: speedgaming
+name: SpeedGaming.org Integration
+version: 1.0.0
+description: SpeedGaming.org schedule sync and match import
+author: SahaBot2 Team
+
+# Plugin classification
+type: builtin
+category: integration
+
+# Organization defaults
+enabled_by_default: true
+private: false
+global_plugin: false
+
+# Dependencies
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - plugin_id: tournament
+
+# Feature contributions
+provides:
+  services:
+    - SpeedGamingService
+    - SpeedGamingETLService
+
+  tasks:
+    - speedgaming_sync
+
+  events:
+    - SpeedGamingSyncStartedEvent
+    - SpeedGamingSyncCompletedEvent
+
+# Configuration schema
+config_schema:
+  type: object
+  properties:
+    sync_interval_minutes:
+      type: integer
+      default: 5
+      description: How often to sync schedule from SpeedGaming
+    auto_create_users:
+      type: boolean
+      default: true
+      description: Automatically create users from SpeedGaming data
+    sync_window_days:
+      type: integer
+      default: 7
+      description: Number of days ahead to sync schedule

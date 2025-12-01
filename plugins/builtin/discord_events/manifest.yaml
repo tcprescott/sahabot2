@@ -1,0 +1,58 @@
+# DiscordEvents Plugin Manifest
+# Provides Discord Scheduled Events integration for SahaBot2
+
+id: discord_events
+name: Discord Scheduled Events
+version: 1.0.0
+description: Discord scheduled events integration for tournament matches
+author: SahaBot2 Team
+
+# Plugin classification
+type: builtin
+category: integration
+
+# Organization defaults
+enabled_by_default: true
+private: false
+global_plugin: false
+
+# Dependencies
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - plugin_id: tournament
+
+# Feature contributions
+provides:
+  models:
+    - DiscordScheduledEvent
+
+  services:
+    - DiscordScheduledEventService
+
+  tasks:
+    - scheduled_events_sync
+    - orphaned_events_cleanup
+
+  events:
+    - DiscordEventCreatedEvent
+    - DiscordEventUpdatedEvent
+    - DiscordEventDeletedEvent
+
+# Configuration schema
+config_schema:
+  type: object
+  properties:
+    auto_create_events:
+      type: boolean
+      default: true
+      description: Automatically create Discord events for matches
+    cleanup_orphaned_events:
+      type: boolean
+      default: true
+      description: Automatically cleanup orphaned Discord events
+    default_event_description:
+      type: string
+      default: "Tournament match scheduled via SahaBot2"
+      description: Default description for created events
