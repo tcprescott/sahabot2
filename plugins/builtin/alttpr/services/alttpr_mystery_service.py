@@ -9,9 +9,8 @@ import logging
 import random
 from typing import Dict, Any, Optional, Tuple
 
-# Import directly from plugin to avoid circular import
 from plugins.builtin.alttpr.services.alttpr_service import ALTTPRService
-from plugins.builtin._randomizer_base.result import RandomizerResult
+from plugins.builtin._randomizer_base import RandomizerResult
 
 logger = logging.getLogger(__name__)
 
