@@ -4,9 +4,12 @@ Tournament Plugin implementation.
 This module contains the TournamentPlugin class that integrates
 tournament functionality into the SahaBot2 plugin system.
 
-Note: This is currently a skeleton implementation. The actual
-tournament functionality is still in the core application and
-will be migrated in a future phase.
+The Tournament plugin provides:
+- Tournament and match management
+- Crew signups and management
+- RaceTime.gg integration for race rooms
+- SpeedGaming.org schedule sync
+- Discord scheduled event integration
 """
 
 import logging
@@ -30,9 +33,8 @@ class TournamentPlugin(BasePlugin):
     Provides live tournament management with scheduling, crew signups,
     and RaceTime.gg integration.
 
-    This is a skeleton implementation that will be fully migrated
-    in a future phase. Currently, tournament functionality is still
-    provided by the core application modules.
+    This plugin re-exports models, services, and events from the core
+    application to provide a unified interface for tournament functionality.
     """
 
     @property
@@ -45,9 +47,8 @@ class TournamentPlugin(BasePlugin):
         """
         Return the plugin manifest.
 
-        Note: This is a code-defined manifest for the skeleton implementation.
-        In a future phase, this will be loaded from manifest.yaml for consistency.
-        The manifest.yaml file serves as the source of truth for documentation.
+        Note: This is a code-defined manifest that mirrors manifest.yaml.
+        The manifest.yaml file serves as documentation for the plugin.
         """
         return PluginManifest(
             id="tournament",
@@ -108,69 +109,144 @@ class TournamentPlugin(BasePlugin):
 
     # ─────────────────────────────────────────────────────────────
     # Contribution Methods
-    # Note: These are skeleton implementations. The actual models,
-    # services, pages, etc. are still in the core application and
-    # will be migrated in a future phase.
     # ─────────────────────────────────────────────────────────────
 
     def get_models(self) -> List[Type]:
         """
         Return database models contributed by this plugin.
 
-        Note: Tournament models are currently in models/match_schedule.py
-        and will be migrated here in a future phase.
+        Returns tournament-related models from the core application.
         """
-        # Future: return [Tournament, Match, MatchPlayers, ...]
-        return []
+        from plugins.builtin.tournament.models import (
+            Tournament,
+            Match,
+            MatchPlayers,
+            MatchSeed,
+            TournamentPlayers,
+            StreamChannel,
+            Crew,
+            TournamentMatchSettings,
+        )
+
+        return [
+            Tournament,
+            Match,
+            MatchPlayers,
+            MatchSeed,
+            TournamentPlayers,
+            StreamChannel,
+            Crew,
+            TournamentMatchSettings,
+        ]
 
     def get_api_router(self) -> Optional[Any]:
         """
         Return FastAPI router for API endpoints.
 
-        Note: Tournament API routes are currently in api/routes/tournaments.py
-        and will be migrated here in a future phase.
+        Returns the tournament API router from the core application.
         """
-        # Future: return router from plugins.builtin.tournament.api
-        return None
+        from plugins.builtin.tournament.api import router
+
+        return router
 
     def get_pages(self) -> List[Dict[str, Any]]:
         """
         Return page registration definitions.
 
-        Note: Tournament pages are currently in pages/tournaments.py
-        and will be migrated here in a future phase.
+        Note: Tournament pages are registered by the core application.
+        This returns metadata about the pages provided by this plugin.
         """
-        # Future: return page registrations
-        return []
+        return [
+            {
+                "path": "/org/{org_id}/tournaments",
+                "title": "Tournaments",
+                "requires_auth": True,
+                "requires_org": True,
+                "active_nav": "tournaments",
+            },
+            {
+                "path": "/org/{org_id}/tournaments/{tournament_id}",
+                "title": "Tournament Detail",
+                "requires_auth": True,
+                "requires_org": True,
+                "active_nav": "tournaments",
+            },
+            {
+                "path": "/org/{org_id}/tournament-admin",
+                "title": "Tournament Admin",
+                "requires_auth": True,
+                "requires_org": True,
+                "active_nav": "tournament-admin",
+            },
+            {
+                "path": "/org/{org_id}/tournament-admin/{tournament_id}",
+                "title": "Tournament Admin Detail",
+                "requires_auth": True,
+                "requires_org": True,
+                "active_nav": "tournament-admin",
+            },
+        ]
 
     def get_event_types(self) -> List[Type]:
         """
         Return event types defined by this plugin.
 
-        Note: Tournament events are currently in application/events/types.py
-        and will be migrated here in a future phase.
+        Returns tournament-related event types from the core application.
         """
-        # Future: return [TournamentCreatedEvent, MatchScheduledEvent, ...]
-        return []
+        from plugins.builtin.tournament.events.types import (
+            TournamentCreatedEvent,
+            TournamentUpdatedEvent,
+            TournamentDeletedEvent,
+            TournamentStartedEvent,
+            TournamentEndedEvent,
+            MatchScheduledEvent,
+            MatchUpdatedEvent,
+            MatchDeletedEvent,
+            MatchCompletedEvent,
+            MatchFinishedEvent,
+            TournamentMatchSettingsSubmittedEvent,
+            CrewAddedEvent,
+            CrewApprovedEvent,
+            CrewRemovedEvent,
+        )
+
+        return [
+            TournamentCreatedEvent,
+            TournamentUpdatedEvent,
+            TournamentDeletedEvent,
+            TournamentStartedEvent,
+            TournamentEndedEvent,
+            MatchScheduledEvent,
+            MatchUpdatedEvent,
+            MatchDeletedEvent,
+            MatchCompletedEvent,
+            MatchFinishedEvent,
+            TournamentMatchSettingsSubmittedEvent,
+            CrewAddedEvent,
+            CrewApprovedEvent,
+            CrewRemovedEvent,
+        ]
 
     def get_event_listeners(self) -> List[Dict[str, Any]]:
         """
         Return event listeners to register.
 
-        Note: Tournament listeners are currently in application/events/listeners.py
-        and will be migrated here in a future phase.
+        Note: Tournament event listeners are registered by the core application.
+        This returns an empty list as listeners are managed centrally.
         """
-        # Future: return listener registrations
+        # Event listeners are registered via application/events/listeners.py
+        # In a future phase, they may be moved here
         return []
 
     def get_scheduled_tasks(self) -> List[Dict[str, Any]]:
         """
         Return scheduled tasks to register.
 
-        Note: Tournament tasks are currently in the task scheduler
-        and will be migrated here in a future phase.
+        Note: Tournament tasks are managed by the core task scheduler.
+        This returns an empty list as tasks are managed centrally.
         """
-        # Future: return task registrations
+        # Tasks are registered via the core task scheduler
+        # In a future phase, they may be moved here
         return []
 
     def get_authorization_actions(self) -> List[str]:

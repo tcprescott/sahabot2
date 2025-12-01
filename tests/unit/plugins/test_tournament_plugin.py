@@ -91,3 +91,61 @@ class TestTournamentPlugin:
         assert "TournamentPlugin" in repr_str
         assert "tournament" in repr_str
         assert "1.0.0" in repr_str
+
+    # ─────────────────────────────────────────────────────────────
+    # Full Implementation Tests
+    # ─────────────────────────────────────────────────────────────
+
+    def test_get_models_returns_models(self, plugin):
+        """Test that get_models returns tournament models."""
+        models = plugin.get_models()
+
+        assert len(models) == 8
+
+        model_names = [m.__name__ for m in models]
+        assert "Tournament" in model_names
+        assert "Match" in model_names
+        assert "MatchPlayers" in model_names
+        assert "MatchSeed" in model_names
+        assert "TournamentPlayers" in model_names
+        assert "StreamChannel" in model_names
+        assert "Crew" in model_names
+        assert "TournamentMatchSettings" in model_names
+
+    def test_get_api_router_returns_router(self, plugin):
+        """Test that get_api_router returns a FastAPI router."""
+        router = plugin.get_api_router()
+
+        assert router is not None
+        # Check it's a FastAPI router
+        from fastapi import APIRouter
+
+        assert isinstance(router, APIRouter)
+
+    def test_get_pages_returns_pages(self, plugin):
+        """Test that get_pages returns page definitions."""
+        pages = plugin.get_pages()
+
+        assert len(pages) == 4
+
+        paths = [p["path"] for p in pages]
+        assert "/org/{org_id}/tournaments" in paths
+        assert "/org/{org_id}/tournaments/{tournament_id}" in paths
+        assert "/org/{org_id}/tournament-admin" in paths
+        assert "/org/{org_id}/tournament-admin/{tournament_id}" in paths
+
+    def test_get_event_types_returns_events(self, plugin):
+        """Test that get_event_types returns event classes."""
+        events = plugin.get_event_types()
+
+        assert len(events) == 14
+
+        event_names = [e.__name__ for e in events]
+        assert "TournamentCreatedEvent" in event_names
+        assert "TournamentUpdatedEvent" in event_names
+        assert "TournamentDeletedEvent" in event_names
+        assert "MatchScheduledEvent" in event_names
+        assert "MatchCompletedEvent" in event_names
+        assert "CrewAddedEvent" in event_names
+        assert "CrewApprovedEvent" in event_names
+        assert "CrewRemovedEvent" in event_names
