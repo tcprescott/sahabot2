@@ -7,14 +7,11 @@ enablement tracking, and configuration management.
 """
 
 import logging
-from typing import Dict, List, Optional, Type
+from typing import Dict, List
 
 from application.plugins.base.plugin import BasePlugin
-from application.plugins.manifest import PluginConfig, PluginManifest
-from application.plugins.exceptions import (
-    PluginNotFoundError,
-    PluginDependencyError,
-)
+from application.plugins.manifest import PluginConfig
+from application.plugins.exceptions import PluginNotFoundError
 
 logger = logging.getLogger(__name__)
 

@@ -6,9 +6,8 @@ This module provides utilities for discovering, loading, and validating plugins.
 
 import importlib
 import logging
-import os
 from pathlib import Path
-from typing import List, Optional, Type
+from typing import List, Type
 
 import yaml
 
@@ -23,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 # Base directory for plugins - resolved from the application root
 # Path(__file__) is application/plugins/loader.py
-# We need to go up to the repository root (4 levels) to find the plugins directory
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+# parents[0] = application/plugins, parents[1] = application, parents[2] = repo root
+_REPO_ROOT = Path(__file__).resolve().parents[2]
 PLUGINS_BASE_DIR = _REPO_ROOT / "plugins"
 BUILTIN_PLUGINS_DIR = PLUGINS_BASE_DIR / "builtin"
 EXTERNAL_PLUGINS_DIR = PLUGINS_BASE_DIR / "external"

@@ -3,7 +3,6 @@ Tests for the PluginLifecycleManager.
 """
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 from application.plugins.lifecycle import PluginLifecycleManager
 from application.plugins.registry import PluginRegistry
@@ -11,7 +10,6 @@ from application.plugins.manifest import PluginManifest, PluginConfig, PluginTyp
 from application.plugins.base.plugin import BasePlugin
 from application.plugins.exceptions import (
     PluginLifecycleError,
-    PluginDependencyError,
     PluginNotFoundError,
 )
 

@@ -143,6 +143,18 @@ class BasePlugin(ABC):
         """
         return None
 
+    def get_additional_routers(self) -> List[Any]:
+        """
+        Return additional FastAPI routers beyond the primary router.
+
+        Some plugins may need multiple routers (e.g., separate routers for
+        different API resource groups).
+
+        Returns:
+            List of APIRouter instances
+        """
+        return []
+
     def get_pages(self) -> List[Dict[str, Any]]:
         """
         Return page registration definitions.
