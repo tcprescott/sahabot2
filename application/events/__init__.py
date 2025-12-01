@@ -22,10 +22,15 @@ Usage:
     async def on_user_created(event: UserCreatedEvent):
         # Handle the event
         pass
+
+Note: Tournament-related events are defined in plugins.builtin.tournament.events.
+For backward compatibility, they are lazily re-exported here via __getattr__.
 """
 
 from application.events.bus import EventBus
 from application.events.base import BaseEvent, EventPriority
+
+# Import non-tournament events from types.py
 from application.events.types import (
     # User events
     UserCreatedEvent,
@@ -39,22 +44,10 @@ from application.events.types import (
     OrganizationMemberAddedEvent,
     OrganizationMemberRemovedEvent,
     OrganizationMemberPermissionChangedEvent,
-    # Tournament events
-    TournamentCreatedEvent,
-    TournamentUpdatedEvent,
-    TournamentDeletedEvent,
-    TournamentStartedEvent,
-    TournamentEndedEvent,
-    # Match/Race events
+    # Race events (async qualifiers)
     RaceSubmittedEvent,
     RaceApprovedEvent,
     RaceRejectedEvent,
-    MatchScheduledEvent,
-    MatchUpdatedEvent,
-    MatchDeletedEvent,
-    MatchCompletedEvent,
-    MatchFinishedEvent,
-    TournamentMatchSettingsSubmittedEvent,
     # Async Live Race events
     AsyncLiveRaceCreatedEvent,
     AsyncLiveRaceUpdatedEvent,
@@ -62,14 +55,6 @@ from application.events.types import (
     AsyncLiveRaceStartedEvent,
     AsyncLiveRaceFinishedEvent,
     AsyncLiveRaceCancelledEvent,
-    # Crew events
-    CrewAddedEvent,
-    CrewApprovedEvent,
-    CrewUnapprovedEvent,
-    CrewRemovedEvent,
-    # Stream Channel events
-    MatchChannelAssignedEvent,
-    MatchChannelUnassignedEvent,
     # Invite events
     InviteCreatedEvent,
     InviteAcceptedEvent,
@@ -101,6 +86,38 @@ from application.events.types import (
     BuiltinTaskOverrideUpdatedEvent,
 )
 
+# Tournament events are now in the plugin.
+# We use __getattr__ for lazy loading to avoid circular imports.
+_TOURNAMENT_EVENTS = {
+    "TournamentCreatedEvent",
+    "TournamentUpdatedEvent",
+    "TournamentDeletedEvent",
+    "TournamentStartedEvent",
+    "TournamentEndedEvent",
+    "MatchScheduledEvent",
+    "MatchUpdatedEvent",
+    "MatchDeletedEvent",
+    "MatchCompletedEvent",
+    "MatchFinishedEvent",
+    "TournamentMatchSettingsSubmittedEvent",
+    "CrewAddedEvent",
+    "CrewApprovedEvent",
+    "CrewUnapprovedEvent",
+    "CrewRemovedEvent",
+    "MatchChannelAssignedEvent",
+    "MatchChannelUnassignedEvent",
+}
+
+
+def __getattr__(name: str):
+    """Lazy load tournament events from the plugin to avoid circular imports."""
+    if name in _TOURNAMENT_EVENTS:
+        from plugins.builtin.tournament.events import types as tournament_events
+
+        return getattr(tournament_events, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
 __all__ = [
     # Core
     "EventBus",
@@ -118,7 +135,7 @@ __all__ = [
     "OrganizationMemberAddedEvent",
     "OrganizationMemberRemovedEvent",
     "OrganizationMemberPermissionChangedEvent",
-    # Tournament events
+    # Tournament events (lazy loaded from plugin)
     "TournamentCreatedEvent",
     "TournamentUpdatedEvent",
     "TournamentDeletedEvent",

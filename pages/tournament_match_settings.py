@@ -14,7 +14,7 @@ from components.base_page import BasePage
 from components.dynamic_form_builder import DynamicFormBuilder
 from components.datetime_label import DateTimeLabel
 from middleware.auth import DiscordAuthService
-from application.services.tournaments.tournament_match_settings_service import (
+from application.services.tournaments import (
     TournamentMatchSettingsService,
 )
 

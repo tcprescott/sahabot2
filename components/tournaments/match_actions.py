@@ -16,7 +16,7 @@ from config import Settings
 
 if TYPE_CHECKING:
     from models import User, Organization
-    from application.services.tournaments.tournament_service import TournamentService
+    from application.services.tournaments import TournamentService
 
 settings = Settings()
 logger = logging.getLogger(__name__)

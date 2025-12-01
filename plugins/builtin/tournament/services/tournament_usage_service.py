@@ -5,10 +5,9 @@ This service handles business logic for tracking which tournaments users access.
 """
 
 import logging
-from models import User, Tournament
-from application.repositories.tournament_usage_repository import (
-    TournamentUsageRepository,
-)
+from models import User
+from plugins.builtin.tournament.models import Tournament
+from plugins.builtin.tournament.repositories import TournamentUsageRepository
 
 logger = logging.getLogger(__name__)
 

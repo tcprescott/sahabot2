@@ -9,15 +9,20 @@ from datetime import datetime, timezone
 import logging
 
 from models import User, SYSTEM_USER_ID
-from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
+from plugins.builtin.tournament.models import (
+    Tournament,
+    Match,
+    MatchPlayers,
+    TournamentPlayers,
+)
 from models.racetime_room import RacetimeRoom
-from application.repositories.tournament_repository import TournamentRepository
+from plugins.builtin.tournament.repositories import TournamentRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import (
     AuthorizationServiceV2,
 )
-from application.events import (
-    EventBus,
+from application.events import EventBus, RacetimeRoomOpenedEvent
+from plugins.builtin.tournament.events import (
     CrewAddedEvent,
     CrewApprovedEvent,
     CrewUnapprovedEvent,
@@ -26,11 +31,10 @@ from application.events import (
     MatchChannelUnassignedEvent,
     MatchScheduledEvent,
     MatchFinishedEvent,
-    RacetimeRoomOpenedEvent,
 )
 
 if TYPE_CHECKING:
-    from models.match_schedule import Crew
+    from plugins.builtin.tournament.models import Crew
 
 logger = logging.getLogger(__name__)
 
@@ -1751,7 +1755,7 @@ class TournamentService:
 
         Users can remove their own signups.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
@@ -1898,7 +1902,7 @@ class TournamentService:
         Raises:
             ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)
@@ -1963,7 +1967,7 @@ class TournamentService:
         Returns:
             The unapproved Crew record or None if unauthorized.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)

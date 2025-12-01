@@ -13,7 +13,7 @@ from application.services.notifications.notification_service import Notification
 from application.services.randomizer.preset_namespace_service import (
     PresetNamespaceService,
 )
-from application.services.tournaments.tournament_usage_service import (
+from application.services.tournaments import (
     TournamentUsageService,
 )
 

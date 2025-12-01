@@ -9,7 +9,7 @@ from nicegui import ui
 from typing import List, Dict, Any, Optional, Callable
 import logging
 
-from application.services.tournaments.preset_selection_service import PresetSelectionService
+from application.services.tournaments import PresetSelectionService
 from models.randomizer_preset import RandomizerPreset
 
 logger = logging.getLogger(__name__)

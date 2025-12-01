@@ -8,17 +8,21 @@ from typing import Optional, List
 import logging
 
 from models import User, SYSTEM_USER_ID
-from models.tournament_match_settings import TournamentMatchSettings
-from models.match_schedule import Match, MatchPlayers
-from application.repositories.tournament_match_settings_repository import (
-    TournamentMatchSettingsRepository,
+from plugins.builtin.tournament.models import (
+    TournamentMatchSettings,
+    Match,
+    MatchPlayers,
 )
-from application.repositories.tournament_repository import TournamentRepository
+from plugins.builtin.tournament.repositories import (
+    TournamentMatchSettingsRepository,
+    TournamentRepository,
+)
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import (
     AuthorizationServiceV2,
 )
-from application.events import EventBus, TournamentMatchSettingsSubmittedEvent
+from application.events import EventBus
+from plugins.builtin.tournament.events import TournamentMatchSettingsSubmittedEvent
 
 logger = logging.getLogger(__name__)
 

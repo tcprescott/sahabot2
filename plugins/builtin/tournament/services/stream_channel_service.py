@@ -8,8 +8,8 @@ from typing import Optional, List
 import logging
 
 from models import User
-from models.match_schedule import StreamChannel
-from application.repositories.stream_channel_repository import StreamChannelRepository
+from plugins.builtin.tournament.models import StreamChannel
+from plugins.builtin.tournament.repositories import StreamChannelRepository
 from application.services.organizations.organization_service import OrganizationService
 
 logger = logging.getLogger(__name__)

@@ -1,10 +1,7 @@
 """
 Tournament plugin events.
 
-This module re-exports tournament-related event types from the core application.
-In a future phase, these events may be moved directly into the plugin.
-
-For now, this provides a stable import path for plugin-internal use.
+This module exports tournament-related event types defined in the plugin.
 """
 
 from plugins.builtin.tournament.events.types import (
@@ -21,7 +18,10 @@ from plugins.builtin.tournament.events.types import (
     TournamentMatchSettingsSubmittedEvent,
     CrewAddedEvent,
     CrewApprovedEvent,
+    CrewUnapprovedEvent,
     CrewRemovedEvent,
+    MatchChannelAssignedEvent,
+    MatchChannelUnassignedEvent,
 )
 
 __all__ = [
@@ -38,5 +38,8 @@ __all__ = [
     "TournamentMatchSettingsSubmittedEvent",
     "CrewAddedEvent",
     "CrewApprovedEvent",
+    "CrewUnapprovedEvent",
     "CrewRemovedEvent",
+    "MatchChannelAssignedEvent",
+    "MatchChannelUnassignedEvent",
 ]

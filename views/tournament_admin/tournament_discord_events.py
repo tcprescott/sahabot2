@@ -9,7 +9,7 @@ from nicegui import ui
 from models import User
 from models.organizations import Organization
 from models.async_tournament import AsyncQualifier
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 from application.services.discord.discord_scheduled_event_service import (
     DiscordScheduledEventService,
 )

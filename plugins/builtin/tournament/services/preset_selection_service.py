@@ -6,13 +6,11 @@ to use for a tournament match based on match properties and player settings.
 """
 
 from __future__ import annotations
-from typing import Optional, Any, Dict, List
+from typing import Optional, Any, Dict
 import re
 import logging
-from datetime import datetime
 
-from models.match_schedule import Match, Tournament
-from models.tournament_match_settings import TournamentMatchSettings
+from plugins.builtin.tournament.models import Match, Tournament, TournamentMatchSettings
 from models.randomizer_preset import RandomizerPreset
 
 logger = logging.getLogger(__name__)

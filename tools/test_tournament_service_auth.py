@@ -26,7 +26,7 @@ from config import settings
 from models import User, Permission
 from models.organizations import Organization, OrganizationMember
 from models.authorization import OrganizationRole, OrganizationMemberRole
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 
 # Configure logging
 logging.basicConfig(

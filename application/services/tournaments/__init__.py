@@ -1,13 +1,21 @@
-"""Tournament management services."""
+"""Tournament management services.
 
-from application.services.tournaments.tournament_service import TournamentService
-from application.services.tournaments.tournament_usage_service import (
+Tournament services are now defined in the tournament plugin.
+This module re-exports them for backward compatibility.
+"""
+
+from plugins.builtin.tournament.services import (
+    TournamentService,
     TournamentUsageService,
+    StreamChannelService,
+    TournamentMatchSettingsService,
+    PresetSelectionService,
 )
-from application.services.tournaments.stream_channel_service import StreamChannelService
 
 __all__ = [
     "TournamentService",
     "TournamentUsageService",
     "StreamChannelService",
+    "TournamentMatchSettingsService",
+    "PresetSelectionService",
 ]

@@ -8,7 +8,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 import logging
 
-from models.tournament_match_settings import TournamentMatchSettings
+from plugins.builtin.tournament.models import TournamentMatchSettings
 
 logger = logging.getLogger(__name__)
 

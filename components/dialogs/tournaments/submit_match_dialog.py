@@ -9,7 +9,7 @@ from typing import Optional, Callable, Awaitable
 from datetime import datetime
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 from models import User, Organization
 import logging
 

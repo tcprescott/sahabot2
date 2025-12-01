@@ -1,13 +1,10 @@
 """
 Tournament plugin models.
 
-This module re-exports tournament-related models from the core application.
-In a future phase, these models may be moved directly into the plugin.
-
-For now, this provides a stable import path for plugin-internal use.
+This module exports tournament-related models defined in the plugin.
 """
 
-from models.match_schedule import (
+from plugins.builtin.tournament.models.match_schedule import (
     Tournament,
     Match,
     MatchPlayers,
@@ -18,7 +15,10 @@ from models.match_schedule import (
     CrewRole,
     DiscordEventFilter,
 )
-from models.tournament_match_settings import TournamentMatchSettings
+from plugins.builtin.tournament.models.tournament_match_settings import (
+    TournamentMatchSettings,
+)
+from plugins.builtin.tournament.models.tournament_usage import TournamentUsage
 
 # Database models (returned by plugin.get_models())
 __all__ = [
@@ -31,6 +31,7 @@ __all__ = [
     "StreamChannel",
     "Crew",
     "TournamentMatchSettings",
+    "TournamentUsage",
     # Enums (not registered as models, but useful for imports)
     "CrewRole",
     "DiscordEventFilter",

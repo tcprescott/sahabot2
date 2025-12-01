@@ -143,12 +143,8 @@ class Match(Model):
     players: fields.ReverseRelation["MatchPlayers"]
     crew_members: fields.ReverseRelation["Crew"]
     seed: fields.ReverseRelation["MatchSeed"]
-    settings_submissions: fields.ReverseRelation[
-        "TournamentMatchSettings"
-    ]  # noqa: F821
-    racetime_room: fields.ReverseRelation[
-        "RacetimeRoom"
-    ]  # OneToOne - active RaceTime room (if any)  # noqa: F821
+    settings_submissions: fields.ReverseRelation["TournamentMatchSettings"]  # noqa: F821
+    racetime_room: fields.ReverseRelation["RacetimeRoom"]  # noqa: F821
 
 
 class MatchSeed(Model):

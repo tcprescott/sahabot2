@@ -10,7 +10,7 @@ from models import Organization, User
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import RegisterPlayerDialog, ConfirmDialog
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 from application.services.organizations.organization_service import OrganizationService
 import logging
 

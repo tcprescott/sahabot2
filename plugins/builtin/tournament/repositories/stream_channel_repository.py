@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Optional, List
 import logging
 
-from models.match_schedule import StreamChannel
+from plugins.builtin.tournament.models import StreamChannel
 
 logger = logging.getLogger(__name__)
 

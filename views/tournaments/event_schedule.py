@@ -20,7 +20,7 @@ from components.dialogs import (
     CheckInDialog,
 )
 from components.dialogs.common import ConfirmDialog
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 from application.services.organizations.organization_service import OrganizationService
 from config import Settings
 

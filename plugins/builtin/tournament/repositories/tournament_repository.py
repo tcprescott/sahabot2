@@ -8,10 +8,15 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 import logging
 
-from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
+from plugins.builtin.tournament.models import (
+    Tournament,
+    Match,
+    MatchPlayers,
+    TournamentPlayers,
+)
 
 if TYPE_CHECKING:
-    from models.match_schedule import Crew
+    from plugins.builtin.tournament.models import Crew
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +361,7 @@ class TournamentRepository:
 
         Returns the Crew record if successful, None if already signed up.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         # Check if already signed up for this role
         existing = await Crew.filter(
@@ -397,7 +402,7 @@ class TournamentRepository:
         Returns:
             The Crew record if successful, None if already signed up.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         # Check if already signed up for this role
         existing = await Crew.filter(
@@ -431,7 +436,7 @@ class TournamentRepository:
 
         Returns True if removed, False if not found.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         crew = await Crew.filter(match_id=match_id, user_id=user_id, role=role).first()
         if not crew:
@@ -464,7 +469,7 @@ class TournamentRepository:
         Returns:
             The updated Crew record if successful, None if not found.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         crew = await Crew.filter(id=crew_id).first()
         if not crew:
@@ -486,7 +491,7 @@ class TournamentRepository:
         Returns:
             The updated Crew record if successful, None if not found.
         """
-        from models.match_schedule import Crew
+        from plugins.builtin.tournament.models import Crew
 
         crew = await Crew.filter(id=crew_id).first()
         if not crew:

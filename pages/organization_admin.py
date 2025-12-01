@@ -7,7 +7,7 @@ Accessible by SUPERADMIN/ADMIN or members with an org-level admin role.
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 from views.organization import (
     OrganizationOverviewView,
     OrganizationMembersView,

@@ -2,6 +2,8 @@
 Database models package for SahaBot2.
 
 This package contains all Tortoise ORM models for the application.
+Tournament-related models are defined in the tournament plugin and re-exported
+here for backward compatibility.
 """
 
 from models.user import (
@@ -14,7 +16,9 @@ from models.user import (
 )
 from models.audit_log import AuditLog
 from models.api_token import ApiToken
-from models.match_schedule import (
+
+# Re-export tournament models from the tournament plugin for backward compatibility
+from plugins.builtin.tournament.models import (
     Tournament,
     Match,
     MatchPlayers,
@@ -24,8 +28,10 @@ from models.match_schedule import (
     Crew,
     CrewRole,
     DiscordEventFilter,
+    TournamentMatchSettings,
+    TournamentUsage,
 )
-from models.tournament_match_settings import TournamentMatchSettings
+
 from models.organizations import (
     Organization,
     OrganizationMember,
@@ -45,7 +51,6 @@ from models.async_tournament import (
 )
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from models.builtin_task_override import BuiltinTaskOverride
-from models.tournament_usage import TournamentUsage
 from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
 from models.preset_namespace_permission import PresetNamespacePermission

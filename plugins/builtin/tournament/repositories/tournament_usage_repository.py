@@ -5,7 +5,8 @@ This repository handles data access for tournament usage history.
 """
 
 import logging
-from models import TournamentUsage, User, Tournament
+from models import User
+from plugins.builtin.tournament.models import TournamentUsage, Tournament
 
 logger = logging.getLogger(__name__)
 

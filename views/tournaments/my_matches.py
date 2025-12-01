@@ -12,7 +12,7 @@ from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from components.dialogs import SubmitMatchDialog
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 
 
 class MyMatchesView:

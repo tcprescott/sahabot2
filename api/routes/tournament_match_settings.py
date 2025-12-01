@@ -9,7 +9,7 @@ from api.schemas.tournament import (
     TournamentMatchSettingsValidateResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.tournaments.tournament_match_settings_service import (
+from application.services.tournaments import (
     TournamentMatchSettingsService,
 )
 from models import User

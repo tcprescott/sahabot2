@@ -8,11 +8,11 @@ from __future__ import annotations
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
-from application.services.tournaments.tournament_service import TournamentService
+from application.services.tournaments import TournamentService
 from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
-from application.services.tournaments.tournament_usage_service import (
+from application.services.tournaments import (
     TournamentUsageService,
 )
 from views.tournaments import (
