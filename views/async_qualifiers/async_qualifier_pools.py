@@ -11,7 +11,7 @@ from models.async_tournament import AsyncQualifier, AsyncQualifierPool
 from components.card import Card
 from components.dialogs.async_qualifiers import PoolDialog, PermalinkDialog
 from components.dialogs.common import ConfirmDialog
-from application.services.async_qualifiers.async_qualifier_service import (
+from plugins.builtin.async_qualifier.services import (
     AsyncQualifierService,
 )
 import logging

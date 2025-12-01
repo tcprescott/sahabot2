@@ -17,8 +17,10 @@ from models.async_tournament import (
     AsyncQualifierLiveRace,
     AsyncQualifierRace,
 )
-from application.repositories.async_live_race_repository import AsyncLiveRaceRepository
-from application.repositories.async_qualifier_repository import (
+from plugins.builtin.async_qualifier.repositories.async_live_race_repository import (
+    AsyncLiveRaceRepository,
+)
+from plugins.builtin.async_qualifier.repositories.async_qualifier_repository import (
     AsyncQualifierRepository,
 )
 from application.services.organizations.organization_service import OrganizationService

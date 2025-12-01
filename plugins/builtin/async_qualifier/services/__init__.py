@@ -1,20 +1,27 @@
 """
 AsyncQualifier plugin services.
 
-This module re-exports async qualifier-related services from the core application.
-In a future phase, these services may be moved directly into the plugin.
-
-For now, this provides a stable import path for plugin-internal use.
+This module provides async qualifier-related services.
 """
 
-from application.services.async_qualifiers.async_qualifier_service import (
+from plugins.builtin.async_qualifier.services.async_qualifier_service import (
     AsyncQualifierService,
+    LeaderboardEntry,
+    MAX_POOL_IMBALANCE,
+    QUALIFIER_MAX_SCORE,
+    QUALIFIER_MIN_SCORE,
 )
-from application.services.async_qualifiers.async_live_race_service import (
+from plugins.builtin.async_qualifier.services.async_live_race_service import (
     AsyncLiveRaceService,
+    LiveRaceEligibility,
 )
 
 __all__ = [
     "AsyncQualifierService",
     "AsyncLiveRaceService",
+    "LeaderboardEntry",
+    "LiveRaceEligibility",
+    "MAX_POOL_IMBALANCE",
+    "QUALIFIER_MAX_SCORE",
+    "QUALIFIER_MIN_SCORE",
 ]

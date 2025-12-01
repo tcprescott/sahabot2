@@ -10,7 +10,7 @@ from api.schemas.async_live_race import (
     EligibleParticipantsResponse,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.async_qualifiers.async_live_race_service import (
+from plugins.builtin.async_qualifier.services import (
     AsyncLiveRaceService,
 )
 from models import User

@@ -206,7 +206,7 @@ class AsyncQualifierPlugin(BasePlugin):
 
         Returns async qualifier-related event types from the core application.
         """
-        from plugins.builtin.async_qualifier.events.types import (
+        from application.events import (
             RaceSubmittedEvent,
             RaceApprovedEvent,
             RaceRejectedEvent,

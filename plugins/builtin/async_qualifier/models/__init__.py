@@ -1,10 +1,14 @@
 """
 AsyncQualifier plugin models.
 
-This module re-exports async qualifier-related models from the core application.
-In a future phase, these models may be moved directly into the plugin.
+Models are defined in the core application at models.async_tournament and
+are re-exported here for convenience within the plugin. Models remain in
+the core because they are tied to database migrations via Tortoise ORM.
 
-For now, this provides a stable import path for plugin-internal use.
+Usage:
+    from plugins.builtin.async_qualifier.models import AsyncQualifier
+    # or directly from core:
+    from models.async_tournament import AsyncQualifier
 """
 
 from models.async_tournament import (

@@ -54,7 +54,7 @@ class AsyncLiveRaceHandler(SahaRaceHandler):
         await super().race_data(data)
 
         # Import here to avoid circular dependency
-        from application.services.async_qualifiers.async_live_race_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncLiveRaceService,
         )
 

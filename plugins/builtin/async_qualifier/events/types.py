@@ -1,34 +1,25 @@
 """
 AsyncQualifier plugin event types.
 
-This module re-exports async qualifier-related event types from the core application.
-These events are used for race submission, review, and live race operations.
+Event types for async qualifier operations are defined in the core application
+at application.events.types. They are part of the core event bus infrastructure.
+
+This file is kept for reference. Import events directly from application.events:
+
+    from application.events import (
+        RaceSubmittedEvent,
+        RaceApprovedEvent,
+        RaceRejectedEvent,
+        AsyncLiveRaceCreatedEvent,
+        AsyncLiveRaceUpdatedEvent,
+        AsyncLiveRaceRoomOpenedEvent,
+        AsyncLiveRaceStartedEvent,
+        AsyncLiveRaceFinishedEvent,
+        AsyncLiveRaceCancelledEvent,
+    )
 """
 
-from application.events.types import (
-    # Race events
-    RaceSubmittedEvent,
-    RaceApprovedEvent,
-    RaceRejectedEvent,
-    # Live race events
-    AsyncLiveRaceCreatedEvent,
-    AsyncLiveRaceUpdatedEvent,
-    AsyncLiveRaceRoomOpenedEvent,
-    AsyncLiveRaceStartedEvent,
-    AsyncLiveRaceFinishedEvent,
-    AsyncLiveRaceCancelledEvent,
-)
+# Events are defined in application.events.types
+# Import them directly from there
 
-__all__ = [
-    # Race events
-    "RaceSubmittedEvent",
-    "RaceApprovedEvent",
-    "RaceRejectedEvent",
-    # Live race events
-    "AsyncLiveRaceCreatedEvent",
-    "AsyncLiveRaceUpdatedEvent",
-    "AsyncLiveRaceRoomOpenedEvent",
-    "AsyncLiveRaceStartedEvent",
-    "AsyncLiveRaceFinishedEvent",
-    "AsyncLiveRaceCancelledEvent",
-]
+__all__: list[str] = []

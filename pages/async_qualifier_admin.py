@@ -10,7 +10,7 @@ from typing import Optional
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
-from application.services.async_qualifiers.async_qualifier_service import (
+from plugins.builtin.async_qualifier.services import (
     AsyncQualifierService,
 )
 from views.async_qualifiers import AsyncDashboardView
