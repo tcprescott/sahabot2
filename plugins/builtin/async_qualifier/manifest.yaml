@@ -1,0 +1,106 @@
+id: async_qualifier
+name: Async Qualifier System
+version: 1.0.0
+description: Async qualifier management with pool-based racing, scoring, and live race events
+author: SahaBot2 Team
+type: builtin
+category: competition
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  plugins: []
+
+provides:
+  models:
+    - AsyncQualifier
+    - AsyncQualifierPool
+    - AsyncQualifierPermalink
+    - AsyncQualifierRace
+    - AsyncQualifierLiveRace
+    - AsyncQualifierAuditLog
+
+  services:
+    - AsyncQualifierService
+    - AsyncLiveRaceService
+
+  repositories:
+    - AsyncQualifierRepository
+    - AsyncLiveRaceRepository
+
+  pages:
+    - path: /org/{org_id}/async
+      name: Async Qualifiers
+      scope: organization
+      requires_auth: true
+
+    - path: /org/{org_id}/async/{qualifier_id}
+      name: Async Qualifier Detail
+      scope: organization
+      requires_auth: true
+
+    - path: /org/{org_id}/async-admin
+      name: Async Qualifier Admin
+      scope: organization
+      requires_auth: true
+
+    - path: /org/{org_id}/async-admin/{qualifier_id}
+      name: Async Qualifier Admin Detail
+      scope: organization
+      requires_auth: true
+
+  api_routes:
+    prefix: /async-qualifiers
+    tags:
+      - async-qualifiers
+      - async-live-races
+
+  events:
+    - RaceSubmittedEvent
+    - RaceApprovedEvent
+    - RaceRejectedEvent
+    - AsyncLiveRaceCreatedEvent
+    - AsyncLiveRaceUpdatedEvent
+    - AsyncLiveRaceRoomOpenedEvent
+    - AsyncLiveRaceStartedEvent
+    - AsyncLiveRaceFinishedEvent
+    - AsyncLiveRaceCancelledEvent
+
+  commands:
+    - AsyncQualifierCog
+
+  tasks:
+    - async_live_race_sync
+    - async_race_timeout_check
+
+permissions:
+  - async_qualifier:create
+  - async_qualifier:read
+  - async_qualifier:update
+  - async_qualifier:delete
+  - async_race:submit
+  - async_race:review
+  - async_live_race:create
+  - async_live_race:manage
+
+config_schema:
+  type: object
+  properties:
+    enable_live_races:
+      type: boolean
+      default: true
+      description: Enable live race feature with RaceTime.gg integration
+    enable_discord_integration:
+      type: boolean
+      default: true
+      description: Enable Discord thread creation for async races
+    default_runs_per_pool:
+      type: integer
+      default: 1
+      description: Default number of runs allowed per pool
+    race_timeout_minutes:
+      type: integer
+      default: 240
+      description: Timeout for async races in minutes (default 4 hours)
