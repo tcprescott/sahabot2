@@ -13,7 +13,7 @@ from models.discord_guild import DiscordGuild
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import AsyncQualifierDialog, ConfirmDialog
-from application.services.async_qualifiers.async_qualifier_service import (
+from plugins.builtin.async_qualifier.services import (
     AsyncQualifierService,
 )
 from discordbot.client import get_bot_instance

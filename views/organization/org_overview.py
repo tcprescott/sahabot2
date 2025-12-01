@@ -26,7 +26,7 @@ class OrganizationOverviewView:
             OrganizationService,
         )
         from application.services.tournaments import TournamentService
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 

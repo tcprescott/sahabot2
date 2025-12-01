@@ -9,7 +9,7 @@ from nicegui import ui
 from models import User
 from models.async_tournament import AsyncQualifierRace
 from components.dialogs.common.base_dialog import BaseDialog
-from application.services.async_qualifiers.async_qualifier_service import (
+from plugins.builtin.async_qualifier.services import (
     AsyncQualifierService,
 )
 

@@ -18,7 +18,7 @@ from models.async_tournament import (
     AsyncQualifierPermalink,
     AsyncQualifierRace,
 )
-from application.repositories.async_qualifier_repository import (
+from plugins.builtin.async_qualifier.repositories.async_qualifier_repository import (
     AsyncQualifierRepository,
 )
 from application.services.organizations.organization_service import OrganizationService

@@ -9,7 +9,7 @@ from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
 from application.services.tournaments import TournamentService
-from application.services.async_qualifiers.async_qualifier_service import (
+from plugins.builtin.async_qualifier.services import (
     AsyncQualifierService,
 )
 from views.async_qualifiers import (
@@ -217,7 +217,7 @@ def register():
         """Async qualifier dashboard - player's own races."""
         base = BasePage.authenticated_page(title="Async Qualifier")
 
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 
@@ -250,7 +250,7 @@ def register():
         """Async qualifier leaderboard."""
         base = BasePage.authenticated_page(title="Async Qualifier Leaderboard")
 
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 
@@ -293,7 +293,7 @@ def register():
         """Async qualifier pools."""
         base = BasePage.authenticated_page(title="Async Qualifier Pools")
 
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 
@@ -338,7 +338,7 @@ def register():
         """Async qualifier player history."""
         base = BasePage.authenticated_page(title="Player History")
 
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 
@@ -380,7 +380,7 @@ def register():
         """Async qualifier permalink view."""
         base = BasePage.authenticated_page(title="Permalink Races")
 
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 
@@ -423,7 +423,7 @@ def register():
         """Async qualifier review queue - for reviewers only."""
         base = BasePage.authenticated_page(title="Race Review Queue")
 
-        from application.services.async_qualifiers.async_qualifier_service import (
+        from plugins.builtin.async_qualifier.services import (
             AsyncQualifierService,
         )
 

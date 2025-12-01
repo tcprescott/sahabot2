@@ -214,7 +214,7 @@ class CreateLiveRaceDialog(BaseDialog):
                 return
 
             # Build request data
-            from application.services.async_qualifiers.async_live_race_service import (
+            from plugins.builtin.async_qualifier.services import (
                 AsyncLiveRaceService,
             )
             from middleware.auth import DiscordAuthService
