@@ -7,7 +7,8 @@ all players with linked RaceTime accounts are automatically invited.
 
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
-from models import User, Permission, Match, Tournament, MatchPlayers
+from models import User, Permission
+from models.match_schedule import Match, Tournament, MatchPlayers
 from application.services.tournaments import TournamentService
 
 
