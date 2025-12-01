@@ -632,6 +632,32 @@ The plugin architecture uses a consistent URL routing model to maintain clear se
 | **API Public** | `/api/{plugin_id}` | API token | `/api/presets/list` |
 | **API Admin** | `/api/admin/{plugin_id}` | SUPERADMIN + token | `/api/admin/plugins` |
 | **API Org** | `/api/org/{org_id}/{plugin_id}` | Org member + token | `/api/org/1/tournament/matches` |
+| **Root (AVOID)** | `/{path}` | Varies | `/racetime-oauth/callback` |
+
+### Root-Level Routes (Use Sparingly)
+
+> ⚠️ **WARNING**: Root-level routes should be avoided unless absolutely necessary.
+
+Some plugins may require root-level routes that don't fit the standard pattern. These should only be used for:
+
+- **OAuth2 callbacks** - External services require specific callback URLs (e.g., `/racetime-oauth/callback`)
+- **Webhooks** - Third-party services sending data to fixed endpoints
+- **Legacy compatibility** - Supporting URLs that cannot be changed
+
+```yaml
+# manifest.yaml - Root-level route (use sparingly!)
+provides:
+  pages:
+    - path: /racetime-oauth/callback
+      name: RaceTime OAuth Callback
+      scope: root  # Special scope - requires justification
+      reason: "OAuth2 callback URL required by RaceTime.gg"
+```
+
+Root-level routes require:
+1. A `reason` field in the manifest explaining why it's necessary
+2. Review by maintainers during plugin approval
+3. Cannot conflict with core application routes
 
 ### Plugin Route Registration
 
@@ -641,7 +667,7 @@ Plugins specify which routes they provide in their manifest:
 # manifest.yaml
 provides:
   pages:
-    # Global public pages
+    # Global public pages (preferred pattern)
     - path: /presets
       name: Public Preset Browser
       scope: global
@@ -651,10 +677,16 @@ provides:
       name: Preset Administration
       scope: admin
     
-    # Organization-scoped pages
+    # Organization-scoped pages (most common)
     - path: /org/{org_id}/presets
       name: Organization Presets
       scope: organization
+    
+    # Root-level route (AVOID - only for OAuth, webhooks, etc.)
+    - path: /racetime-oauth/callback
+      name: RaceTime OAuth Callback
+      scope: root
+      reason: "OAuth2 callback URL required by RaceTime.gg API"
   
   api_routes:
     # Public API
@@ -671,6 +703,12 @@ provides:
     - prefix: /api/org/{org_id}/presets
       scope: organization
       tags: [presets]
+    
+    # Root-level API (AVOID - only for webhooks, etc.)
+    - prefix: /webhook/racetime
+      scope: root
+      reason: "RaceTime.gg webhook endpoint"
+      tags: [webhooks]
 ```
 
 ### Route Provider Implementation
@@ -678,14 +716,16 @@ provides:
 ```python
 # application/plugins/base/route_provider.py
 
+from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 class RouteScope(Enum):
-    GLOBAL = "global"       # Public access, no org scope
-    ADMIN = "admin"         # Global admin access
-    ORGANIZATION = "organization"  # Org-scoped access
+    GLOBAL = "global"              # Public access, no org scope (under /{plugin_id})
+    ADMIN = "admin"                # Global admin access (under /admin/{plugin_id})
+    ORGANIZATION = "organization"  # Org-scoped access (under /org/{org_id}/{plugin_id})
+    ROOT = "root"                  # Root-level route (AVOID - only for OAuth, webhooks)
 
 class PageRoute(BaseModel):
     """Page route definition."""
@@ -693,12 +733,19 @@ class PageRoute(BaseModel):
     name: str
     scope: RouteScope
     requires_auth: bool = True
+    reason: Optional[str] = None  # Required if scope is ROOT
 
 class APIRoute(BaseModel):
     """API route definition."""
     prefix: str
     scope: RouteScope
     tags: List[str] = []
+    reason: Optional[str] = None  # Required if scope is ROOT
+    
+    def validate_root_scope(self):
+        """Ensure root-scoped routes have a reason."""
+        if self.scope == RouteScope.ROOT and not self.reason:
+            raise ValueError("Root-scoped routes must provide a 'reason' field")
 
 class RouteProvider(ABC):
     """Interface for plugins that provide routes."""
@@ -721,6 +768,7 @@ class RouteProvider(ABC):
 | **global** | `BasePage.simple_page()` | Public (rate limited) |
 | **admin** | `BasePage.admin_page()` | Requires SUPERADMIN |
 | **organization** | `BasePage.authenticated_page()` + org membership check | Requires org membership |
+| **root** | Varies (defined by plugin) | Varies (defined by plugin) |
 
 ### Example: Tournament Plugin Routes
 
@@ -755,6 +803,52 @@ class TournamentPlugin(BasePlugin, RouteProvider, APIProvider):
                 prefix="/api/org/{org_id}/tournament",
                 scope=RouteScope.ORGANIZATION,
                 tags=["tournaments", "matches"]
+            ),
+        ]
+```
+
+### Example: RaceTime Plugin with Root-Level OAuth Route
+
+```python
+# plugins/builtin/racetime/routes.py
+
+class RaceTimePlugin(BasePlugin, RouteProvider, APIProvider):
+    """
+    RaceTime plugin requires a root-level OAuth callback route
+    because RaceTime.gg's OAuth implementation requires a fixed callback URL.
+    """
+    
+    def get_page_routes(self) -> List[PageRoute]:
+        return [
+            # Org-scoped RaceTime configuration
+            PageRoute(
+                path="/org/{org_id}/racetime",
+                name="RaceTime Configuration",
+                scope=RouteScope.ORGANIZATION
+            ),
+            # Root-level OAuth callback (required by RaceTime.gg)
+            PageRoute(
+                path="/racetime-oauth/callback",
+                name="RaceTime OAuth Callback",
+                scope=RouteScope.ROOT,
+                reason="OAuth2 callback URL required by RaceTime.gg API"
+            ),
+        ]
+    
+    def get_api_routes(self) -> List[APIRoute]:
+        return [
+            # Org-scoped API
+            APIRoute(
+                prefix="/api/org/{org_id}/racetime",
+                scope=RouteScope.ORGANIZATION,
+                tags=["racetime"]
+            ),
+            # Root-level webhook (required by RaceTime.gg)
+            APIRoute(
+                prefix="/webhook/racetime",
+                scope=RouteScope.ROOT,
+                reason="Webhook endpoint for RaceTime.gg race events",
+                tags=["webhooks", "racetime"]
             ),
         ]
 ```
