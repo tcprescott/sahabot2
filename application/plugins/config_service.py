@@ -17,6 +17,9 @@ from application.plugins.exceptions import (
 
 logger = logging.getLogger(__name__)
 
+# Organization ID used for global (non-organization-specific) configuration
+GLOBAL_CONFIG_ORG_ID = 0
+
 
 class PluginConfigService:
     """
@@ -59,7 +62,7 @@ class PluginConfigService:
         config = self._get_schema_defaults(manifest.config_schema)
 
         # Merge global plugin config
-        global_config = PluginRegistry.get_config(plugin_id, 0)
+        global_config = PluginRegistry.get_config(plugin_id, GLOBAL_CONFIG_ORG_ID)
         config.update(global_config.settings)
 
         # Merge organization-specific config if provided
@@ -95,7 +98,7 @@ class PluginConfigService:
         self.validate_config(plugin_id, settings)
 
         # Get existing config
-        org_id = organization_id or 0
+        org_id = organization_id or GLOBAL_CONFIG_ORG_ID
         existing = PluginRegistry.get_config(plugin_id, org_id)
 
         # Merge with new settings

@@ -7,7 +7,7 @@ plugin metadata, dependencies, and contributions.
 
 from typing import Any, Dict, List, Optional
 from enum import Enum
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 
 
 class PluginType(str, Enum):
@@ -47,14 +47,12 @@ class PageDefinition(BaseModel):
     requires_auth: bool = True
     reason: Optional[str] = None
 
-    @field_validator("reason")
-    @classmethod
-    def validate_root_reason(cls, v: Optional[str], info) -> Optional[str]:
+    @model_validator(mode="after")
+    def validate_root_reason(self) -> "PageDefinition":
         """Ensure root-scoped routes have a reason."""
-        # Access other field values via info.data
-        if info.data.get("scope") == RouteScope.ROOT and not v:
+        if self.scope == RouteScope.ROOT and not self.reason:
             raise ValueError("Root-scoped routes must provide a 'reason' field")
-        return v
+        return self
 
 
 class APIRouteDefinition(BaseModel):

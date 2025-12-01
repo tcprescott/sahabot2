@@ -42,7 +42,13 @@ class TournamentPlugin(BasePlugin):
 
     @property
     def manifest(self) -> PluginManifest:
-        """Return the plugin manifest."""
+        """
+        Return the plugin manifest.
+
+        Note: This is a code-defined manifest for the skeleton implementation.
+        In a future phase, this will be loaded from manifest.yaml for consistency.
+        The manifest.yaml file serves as the source of truth for documentation.
+        """
         return PluginManifest(
             id="tournament",
             name="Tournament System",

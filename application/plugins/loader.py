@@ -21,8 +21,11 @@ from application.plugins.exceptions import (
 
 logger = logging.getLogger(__name__)
 
-# Base directory for plugins
-PLUGINS_BASE_DIR = Path(__file__).parent.parent.parent.parent / "plugins"
+# Base directory for plugins - resolved from the application root
+# Path(__file__) is application/plugins/loader.py
+# We need to go up to the repository root (4 levels) to find the plugins directory
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+PLUGINS_BASE_DIR = _REPO_ROOT / "plugins"
 BUILTIN_PLUGINS_DIR = PLUGINS_BASE_DIR / "builtin"
 EXTERNAL_PLUGINS_DIR = PLUGINS_BASE_DIR / "external"
 

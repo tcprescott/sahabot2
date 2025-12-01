@@ -13,7 +13,6 @@ from application.plugins.base.plugin import BasePlugin
 from application.plugins.manifest import PluginConfig, PluginManifest
 from application.plugins.exceptions import (
     PluginNotFoundError,
-    PluginAlreadyEnabledError,
     PluginDependencyError,
 )
 

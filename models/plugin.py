@@ -41,6 +41,7 @@ class Plugin(Model):
     installed_by = fields.ForeignKeyField(
         "models.User",
         null=True,
+        on_delete=fields.SET_NULL,
         related_name="installed_plugins",
         description="User who installed the plugin",
     )
@@ -66,6 +67,7 @@ class OrganizationPlugin(Model):
     id = fields.IntField(pk=True)
     organization = fields.ForeignKeyField(
         "models.Organization",
+        on_delete=fields.CASCADE,
         related_name="plugins",
         description="Organization this enablement applies to",
     )
@@ -76,6 +78,7 @@ class OrganizationPlugin(Model):
     access_granted_by = fields.ForeignKeyField(
         "models.User",
         null=True,
+        on_delete=fields.SET_NULL,
         related_name="granted_plugin_access",
         description="Admin who granted access",
     )
@@ -83,6 +86,7 @@ class OrganizationPlugin(Model):
     enabled_by = fields.ForeignKeyField(
         "models.User",
         null=True,
+        on_delete=fields.SET_NULL,
         related_name="enabled_plugins",
         description="User who enabled the plugin",
     )
