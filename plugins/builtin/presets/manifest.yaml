@@ -1,0 +1,64 @@
+id: presets
+name: Preset Management System
+version: 1.0.0
+description: Core preset storage, namespaces, and sharing functionality for randomizers
+author: SahaBot2 Team
+website: https://github.com/tcprescott/sahabot2
+
+type: builtin
+category: core
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins: []
+
+provides:
+  models:
+    - PresetNamespace
+    - RandomizerPreset
+
+  services:
+    - PresetNamespaceService
+    - RandomizerPresetService
+
+  api_routes:
+    - prefix: /api/presets
+      scope: global
+      tags:
+        - presets
+        - namespaces
+
+  events:
+    - PresetCreatedEvent
+    - PresetUpdatedEvent
+    - PresetDeletedEvent
+    - NamespaceCreatedEvent
+    - NamespaceUpdatedEvent
+
+permissions:
+  actions:
+    - preset:create
+    - preset:read
+    - preset:update
+    - preset:delete
+    - namespace:create
+    - namespace:read
+    - namespace:update
+    - namespace:delete
+
+config_schema:
+  type: object
+  properties:
+    max_presets_per_user:
+      type: integer
+      default: 100
+      description: Maximum number of presets per user
+    max_preset_size_kb:
+      type: integer
+      default: 100
+      description: Maximum size of preset YAML in kilobytes

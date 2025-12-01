@@ -1,0 +1,45 @@
+id: avianart
+name: Avianart Door Randomizer
+version: 1.0.0
+description: ALTTPR door randomizer seed generation via Avianart
+author: SahaBot2 Team
+website: https://avianart.games
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - AvianartService
+
+  api_routes:
+    - prefix: /api/randomizer/avianart
+      scope: global
+      tags:
+        - randomizer
+        - avianart
+        - door
+
+permissions:
+  actions:
+    - avianart:generate
+    - avianart:preset:read
+
+config_schema:
+  type: object
+  properties:
+    default_race:
+      type: boolean
+      default: true
+      description: Default race mode setting
