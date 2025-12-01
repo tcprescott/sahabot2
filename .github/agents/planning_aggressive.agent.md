@@ -38,3 +38,32 @@ When asked to plan a task, you should create one or more Markdown files (e.g., i
 *   **Follow Patterns**: Adhere to the project's existing architectural patterns (as defined in `docs/ARCHITECTURE.md` and `docs/PATTERNS.md`) unless the goal is to change them.
 *   **Ignore Backwards Compatibility Concerns**: You do not need to consider backwards compatibility when planning major architectural changes, as this is for an application not yet in a production environment or publicly released.  Feel free to propose breaking changes if they improve the overall architecture and design.
 *   **Commit**: Your final action should be to create these files in the workspace so they can be committed and reviewed.
+
+## Available Tools
+
+As a planning agent, you have access to the following tools:
+
+**Analysis & Reading:**
+*   `read_file` - Read source code and documentation
+*   `list_dir` - Explore directory structure
+*   `file_search` - Find files by pattern
+*   `grep_search` - Search for code patterns
+*   `semantic_search` - Search codebase semantically
+*   `list_code_usages` - Find where code is used
+*   `get_errors` - Check for compilation errors
+
+**Documentation Creation:**
+*   `create_file` - Create new plan/documentation files
+*   `create_directory` - Create documentation directories
+*   `replace_string_in_file` - Update existing documentation
+*   `multi_replace_string_in_file` - Batch documentation updates
+
+**NOT Available** (these are for implementation, not planning):
+*   Terminal execution tools (`run_in_terminal`, `get_terminal_output`)
+*   Test execution (`runTests`)
+*   Debugging tools
+*   Application execution
+*   Database operations
+*   Git operations (beyond reading)
+
+Focus on analyzing the codebase and creating comprehensive documentation. Leave implementation and testing to other agents.
