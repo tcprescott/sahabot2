@@ -1,10 +1,10 @@
 """
 Services for the Z1R plugin.
 
-This module re-exports Z1R-related services from the core application.
+This module provides Z1R-related services.
 """
 
-from application.services.randomizer.z1r_service import Z1RService
+from plugins.builtin.z1r.services.z1r_service import Z1RService
 
 __all__ = [
     "Z1RService",

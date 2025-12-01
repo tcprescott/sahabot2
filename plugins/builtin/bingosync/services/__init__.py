@@ -1,10 +1,10 @@
 """
 Services for the Bingosync plugin.
 
-This module re-exports Bingosync-related services from the core application.
+This module provides Bingosync-related services.
 """
 
-from application.services.randomizer.bingosync_service import BingosyncService
+from plugins.builtin.bingosync.services.bingosync_service import BingosyncService
 
 __all__ = [
     "BingosyncService",

@@ -2,37 +2,19 @@
 Randomizer service for coordinating different game randomizers.
 
 This service provides a unified interface for accessing various game randomizers.
+
+DEPRECATED: RandomizerResult class has moved to plugins.builtin._randomizer_base.
+Import from plugins.builtin._randomizer_base.result instead.
 """
 
 import logging
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 
+# Re-export RandomizerResult from plugin for backward compatibility
+from plugins.builtin._randomizer_base.result import RandomizerResult
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class RandomizerResult:
-    """
-    Result from a randomizer generation.
-
-    Attributes:
-        url: URL to access the generated seed
-        hash_id: Unique identifier/hash for the seed
-        settings: Dictionary of settings used to generate the seed
-        randomizer: Name of the randomizer used
-        permalink: Optional permalink to the seed
-        spoiler_url: Optional URL to spoiler log
-        metadata: Additional metadata specific to the randomizer
-    """
-
-    url: str
-    hash_id: str
-    settings: Dict[str, Any]
-    randomizer: str
-    permalink: Optional[str] = None
-    spoiler_url: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
 
 
 class RandomizerService:

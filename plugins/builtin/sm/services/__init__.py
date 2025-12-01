@@ -1,13 +1,11 @@
 """
 Services for the SM plugin.
 
-This module re-exports SM-related services from the core application
-for backwards compatibility and provides a unified import interface.
+This module provides SM-related services.
 """
 
-# Re-export from core services for backwards compatibility
-from application.services.randomizer.sm_service import SMService
-from application.services.randomizer.sm_defaults import (
+from plugins.builtin.sm.services.sm_service import SMService
+from plugins.builtin.sm.services.sm_defaults import (
     VARIA_DEFAULTS,
     DASH_DEFAULTS,
     get_varia_settings,

@@ -1,10 +1,10 @@
 """
 Services for the Avianart plugin.
 
-This module re-exports Avianart-related services from the core application.
+This module provides Avianart-related services.
 """
 
-from application.services.randomizer.avianart_service import AvianartService
+from plugins.builtin.avianart.services.avianart_service import AvianartService
 
 __all__ = [
     "AvianartService",

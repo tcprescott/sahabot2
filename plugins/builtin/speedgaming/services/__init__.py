@@ -1,11 +1,10 @@
 """
 SpeedGaming Plugin services.
 
-This module re-exports SpeedGaming-related services from the core application
-to provide a unified interface through the plugin system.
+This module provides SpeedGaming-related services.
 """
 
-from application.services.speedgaming.speedgaming_service import (
+from plugins.builtin.speedgaming.services.speedgaming_service import (
     SpeedGamingService,
     SpeedGamingEpisode,
     SpeedGamingEvent,
@@ -14,7 +13,7 @@ from application.services.speedgaming.speedgaming_service import (
     SpeedGamingCrewMember,
     SpeedGamingChannel,
 )
-from application.services.speedgaming.speedgaming_etl_service import (
+from plugins.builtin.speedgaming.services.speedgaming_etl_service import (
     SpeedGamingETLService,
 )
 
