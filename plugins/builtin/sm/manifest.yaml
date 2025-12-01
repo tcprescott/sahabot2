@@ -1,0 +1,58 @@
+id: sm
+name: Super Metroid Randomizer
+version: 1.0.0
+description: Super Metroid seed generation via VARIA and DASH randomizers
+author: SahaBot2 Team
+website: https://sm.samus.link
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - SMService
+
+  handlers:
+    - sm_race_handler
+
+  api_routes:
+    - prefix: /api/randomizer/sm
+      scope: global
+      tags:
+        - randomizer
+        - sm
+        - varia
+        - dash
+
+permissions:
+  actions:
+    - sm:generate
+    - sm:preset:read
+
+config_schema:
+  type: object
+  properties:
+    varia_baseurl:
+      type: string
+      default: "https://sm.samus.link"
+      description: Base URL for VARIA API
+    dash_baseurl:
+      type: string
+      default: "https://dashrando.net"
+      description: Base URL for DASH API
+    default_randomizer_type:
+      type: string
+      default: "varia"
+      enum: ["varia", "dash", "total", "multiworld"]
+      description: Default SM randomizer type

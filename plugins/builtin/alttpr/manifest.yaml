@@ -1,0 +1,58 @@
+id: alttpr
+name: A Link to the Past Randomizer
+version: 1.0.0
+description: ALTTPR seed generation with mystery mode and RaceTime.gg integration
+author: SahaBot2 Team
+website: https://alttpr.com
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - ALTTPRService
+    - ALTTPRMysteryService
+
+  handlers:
+    - alttpr_handler
+
+  api_routes:
+    - prefix: /api/randomizer/alttpr
+      scope: global
+      tags:
+        - randomizer
+        - alttpr
+
+permissions:
+  actions:
+    - alttpr:generate
+    - alttpr:mystery:generate
+    - alttpr:preset:read
+
+config_schema:
+  type: object
+  properties:
+    baseurl:
+      type: string
+      default: "https://alttpr.com"
+      description: Base URL for ALTTPR API
+    default_tournament_mode:
+      type: boolean
+      default: true
+      description: Default tournament mode for seed generation
+    default_spoilers:
+      type: string
+      default: "off"
+      enum: ["on", "off", "generate"]
+      description: Default spoiler setting

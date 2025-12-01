@@ -1,0 +1,36 @@
+id: aosr
+name: Aria of Sorrow Randomizer
+version: 1.0.0
+description: Castlevania Aria of Sorrow randomizer seed generation
+author: SahaBot2 Team
+website: https://aosrando.surge.sh
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - AOSRService
+
+  api_routes:
+    - prefix: /api/randomizer/aosr
+      scope: global
+      tags:
+        - randomizer
+        - aosr
+
+permissions:
+  actions:
+    - aosr:generate
+    - aosr:preset:read

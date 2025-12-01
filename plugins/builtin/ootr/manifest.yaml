@@ -1,0 +1,48 @@
+id: ootr
+name: Ocarina of Time Randomizer
+version: 1.0.0
+description: Ocarina of Time randomizer seed generation
+author: SahaBot2 Team
+website: https://ootrandomizer.com
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - OOTRService
+
+  api_routes:
+    - prefix: /api/randomizer/ootr
+      scope: global
+      tags:
+        - randomizer
+        - ootr
+
+permissions:
+  actions:
+    - ootr:generate
+    - ootr:preset:read
+
+config_schema:
+  type: object
+  properties:
+    default_version:
+      type: string
+      default: "6.1.0"
+      description: Default OoTR version
+    default_encrypt:
+      type: boolean
+      default: true
+      description: Default encryption setting

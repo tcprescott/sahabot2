@@ -1,0 +1,41 @@
+id: bingosync
+name: Bingosync
+version: 1.0.0
+description: Bingosync room creation and bingo card management
+author: SahaBot2 Team
+website: https://bingosync.com
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins: []
+
+provides:
+  services:
+    - BingosyncService
+
+  api_routes:
+    - prefix: /api/bingosync
+      scope: global
+      tags:
+        - bingosync
+
+permissions:
+  actions:
+    - bingosync:create_room
+    - bingosync:new_card
+
+config_schema:
+  type: object
+  properties:
+    default_nickname:
+      type: string
+      default: "SahaBot2"
+      description: Default nickname for room creation

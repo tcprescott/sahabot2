@@ -1,0 +1,51 @@
+id: smz3
+name: SMZ3 Combo Randomizer
+version: 1.0.0
+description: Super Metroid and A Link to the Past combo randomizer seed generation
+author: SahaBot2 Team
+website: https://samus.link
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - SMZ3Service
+
+  handlers:
+    - smz3_race_handler
+
+  api_routes:
+    - prefix: /api/randomizer/smz3
+      scope: global
+      tags:
+        - randomizer
+        - smz3
+
+permissions:
+  actions:
+    - smz3:generate
+    - smz3:preset:read
+
+config_schema:
+  type: object
+  properties:
+    baseurl:
+      type: string
+      default: "https://samus.link"
+      description: Base URL for SMZ3 API
+    default_tournament_mode:
+      type: boolean
+      default: true
+      description: Default tournament mode for seed generation

@@ -1,0 +1,36 @@
+id: smb3r
+name: Super Mario Bros 3 Randomizer
+version: 1.0.0
+description: Super Mario Bros 3 randomizer seed generation
+author: SahaBot2 Team
+website: https://smb3randomizer.com
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - SMB3RService
+
+  api_routes:
+    - prefix: /api/randomizer/smb3r
+      scope: global
+      tags:
+        - randomizer
+        - smb3r
+
+permissions:
+  actions:
+    - smb3r:generate
+    - smb3r:preset:read

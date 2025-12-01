@@ -1,0 +1,36 @@
+id: ffr
+name: Final Fantasy Randomizer
+version: 1.0.0
+description: Final Fantasy (NES) randomizer seed generation
+author: SahaBot2 Team
+website: https://finalfantasyrandomizer.com
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - FFRService
+
+  api_routes:
+    - prefix: /api/randomizer/ffr
+      scope: global
+      tags:
+        - randomizer
+        - ffr
+
+permissions:
+  actions:
+    - ffr:generate
+    - ffr:preset:read

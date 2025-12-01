@@ -1,0 +1,44 @@
+id: ctjets
+name: Chrono Trigger Jets of Time
+version: 1.0.0
+description: Chrono Trigger Jets of Time randomizer seed generation
+author: SahaBot2 Team
+website: https://ctjot.com
+
+type: builtin
+category: randomizer
+
+enabled_by_default: true
+private: false
+global_plugin: false
+
+requires:
+  sahabot2: ">=1.0.0"
+  python: ">=3.11"
+  plugins:
+    - id: presets
+      version: "*"
+
+provides:
+  services:
+    - CTJetsService
+
+  api_routes:
+    - prefix: /api/randomizer/ctjets
+      scope: global
+      tags:
+        - randomizer
+        - ctjets
+
+permissions:
+  actions:
+    - ctjets:generate
+    - ctjets:preset:read
+
+config_schema:
+  type: object
+  properties:
+    default_version:
+      type: string
+      default: "3_1_0"
+      description: Default CTJets version
