@@ -294,6 +294,78 @@ if view == "plugins":
 - Should see empty plugin list (no plugins yet)
 - Can enable/disable plugins per org (once plugins exist)
 
+### 1.6 Create DiscordBot Global Plugin
+
+**Duration**: 2-3 days
+**Risk**: Low
+
+Create the core Discord bot infrastructure as a global plugin. This is a special plugin that is always enabled and provides the bot infrastructure for other plugins.
+
+```
+plugins/builtin/discordbot/
+├── manifest.yaml
+├── __init__.py
+├── plugin.py               # DiscordBotPlugin(BasePlugin)
+├── client.py               # DiscordBot class (migrated from discordbot/client.py)
+├── lifecycle.py            # Bot start/stop management
+└── events/
+    ├── __init__.py
+    └── types.py            # BotReady, BotDisconnected events
+```
+
+**manifest.yaml**:
+```yaml
+id: discordbot
+name: Discord Bot
+version: 1.0.0
+description: Core Discord bot infrastructure for command handling and Discord API access
+author: SahaBot2 Team
+type: builtin
+category: global
+enabled_by_default: true
+private: false
+global: true  # Special flag: always enabled, not organization-scoped
+
+requires:
+  sahabot2: ">=1.0.0"
+  plugins: []  # No plugin dependencies
+
+provides:
+  services:
+    - DiscordBotService
+  
+  exports:
+    - get_bot_instance()
+    - DiscordBot class
+  
+  events:
+    - BotReadyEvent
+    - BotDisconnectedEvent
+```
+
+**Tasks**:
+
+1. [ ] Create plugin directory structure
+2. [ ] Create manifest.yaml with `global: true` flag
+3. [ ] Migrate `discordbot/client.py` to plugin
+4. [ ] Create bot lifecycle management service
+5. [ ] Update main.py to use plugin's bot startup
+6. [ ] Create BotReady and BotDisconnected events
+7. [ ] Implement DiscordBotPlugin class
+8. [ ] Register plugin with registry
+9. [ ] Integration testing
+
+**Verification**:
+```python
+# Test that DiscordBot plugin provides bot access
+from application.plugins import PluginRegistry
+
+discordbot = PluginRegistry.get('discordbot')
+bot = discordbot.get_bot_instance()
+assert bot is not None
+assert bot.is_ready
+```
+
 ## Phase 2: Tournament Plugin Creation
 
 ### 2.1 Create Plugin Structure

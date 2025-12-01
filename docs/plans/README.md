@@ -76,14 +76,15 @@ All plugins (built-in and external) are considered 100% trusted. Security featur
 
 | Plugin | Category | Description |
 |--------|----------|-------------|
+| DiscordBot | Global | Core Discord bot infrastructure (always enabled) |
 | Tournament | Competition | Live tournament management |
 | AsyncQualifier | Competition | Asynchronous qualifier races |
 | Presets | Core | Preset management system (namespaces, storage, sharing) |
 | RaceTime | Integration | RaceTime.gg bot management and race handlers |
 | SpeedGaming | Integration | SpeedGaming.org schedule sync and import |
-| DiscordEvents | Integration | Discord scheduled events for matches |
-| RacerVerification | Utility | Discord role verification based on race count |
-| Notifications | Utility | Event notifications via Discord DM |
+| DiscordEvents | Integration | Discord scheduled events for matches (depends on DiscordBot) |
+| RacerVerification | Utility | Discord role verification based on race count (depends on DiscordBot) |
+| Notifications | Utility | Event notifications via Discord DM (depends on DiscordBot) |
 | ALTTPR | Randomizer | A Link to the Past Randomizer (depends on Presets) |
 | SM | Randomizer | Super Metroid Randomizer (depends on Presets) |
 | SMZ3 | Randomizer | Super Metroid + ALTTP Combo (depends on Presets) |

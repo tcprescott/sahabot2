@@ -152,6 +152,7 @@ models/
 
 | Plugin | Category | Description | Key Features |
 |--------|----------|-------------|--------------|
+| **DiscordBot** | Global | Core Discord bot infrastructure | Bot lifecycle, command loading, presence, error handling |
 | **Tournament** | Competition | Live tournament management | Matches, scheduling, crew signups |
 | **AsyncQualifier** | Competition | Asynchronous qualifier races | Pools, permalinks, scoring, leaderboards |
 | **Presets** | Core | Preset management system | Namespaces, preset storage, permissions, sharing |
@@ -178,16 +179,19 @@ models/
 │                        Plugin Dependency Graph                           │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
+│  Global Plugins (always enabled, no organization scope):                 │
+│    - DiscordBot ─── required by all Discord-dependent plugins            │
+│                                                                          │
 │  Core Plugins (no dependencies):                                         │
 │    - Presets                                                             │
-│    - Notifications                                                       │
+│    - Notifications ─── requires: DiscordBot (for DM delivery)            │
 │    - Bingosync                                                           │
 │                                                                          │
 │  Integration Plugins:                                                    │
 │    - RaceTime (no deps)                                                  │
 │    - SpeedGaming (no deps)                                               │
-│    - DiscordEvents (no deps)                                             │
-│    - RacerVerification ─── requires: RaceTime                            │
+│    - DiscordEvents ─── requires: DiscordBot                              │
+│    - RacerVerification ─── requires: RaceTime, DiscordBot                │
 │                                                                          │
 │  Competition Plugins:                                                    │
 │    - Tournament ─────────── requires: RaceTime (optional)                │
@@ -197,7 +201,7 @@ models/
 │    - ALTTPR  ──┐                                                         │
 │    - SM      ──┼── requires: Presets                                     │
 │    - SMZ3    ──┤   optional: RaceTime (for race handlers)                │
-│    - OOTR    ──┤                                                         │
+│    - OOTR    ──┤   optional: DiscordBot (for Discord commands)           │
 │    - AOSR    ──┤                                                         │
 │    - Z1R     ──┤                                                         │
 │    - FFR     ──┤                                                         │
@@ -208,6 +212,18 @@ models/
 ```
 
 ### Plugin Descriptions
+
+#### Global Plugins
+
+**DiscordBot Plugin** provides:
+- Discord bot client singleton (`DiscordBot` class)
+- Bot lifecycle management (start, stop, ready detection)
+- Command tree and cog loading infrastructure
+- Command syncing with Discord API
+- Error handling and Sentry integration
+- Bot presence management
+
+The DiscordBot plugin is **global** (not organization-scoped) and is always enabled. Other plugins that need Discord functionality depend on this plugin.
 
 #### Core Plugins
 
