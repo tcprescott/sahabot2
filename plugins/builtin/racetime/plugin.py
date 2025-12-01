@@ -15,6 +15,7 @@ from application.plugins.manifest import (
     PluginType,
     PluginCategory,
     PluginProvides,
+    PluginRequirements,
     APIRouteDefinition,
     RouteScope,
 )
@@ -52,6 +53,11 @@ class RaceTimePlugin(BasePlugin):
             enabled_by_default=True,
             private=False,
             global_plugin=False,
+            requires=PluginRequirements(
+                sahabot2=">=1.0.0",
+                python=">=3.11",
+                plugins=[],
+            ),
             provides=PluginProvides(
                 models=[
                     "RacetimeBot",
