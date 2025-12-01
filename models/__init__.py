@@ -68,6 +68,12 @@ from models.authorization import (
     RolePolicy,
     UserPolicy,
 )
+from models.plugin import (
+    Plugin,
+    OrganizationPlugin,
+    PluginMigration,
+    PluginTypeDB,
+)
 
 __all__ = [
     "User",
@@ -127,6 +133,11 @@ __all__ = [
     "PolicyStatement",
     "RolePolicy",
     "UserPolicy",
+    # Plugin models
+    "Plugin",
+    "OrganizationPlugin",
+    "PluginMigration",
+    "PluginTypeDB",
     # Helper functions/constants
     "SYSTEM_USER_ID",
     "is_system_user_id",
