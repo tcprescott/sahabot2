@@ -252,17 +252,6 @@ class AsyncQualifierPlugin(BasePlugin):
         # In a future phase, they may be moved here
         return []
 
-    def get_discord_commands(self) -> List[Any]:
-        """
-        Return Discord command cogs to register.
-
-        Note: Async qualifier commands are in discordbot/commands/async_qualifier.py
-        In a future phase, they may be moved here.
-        """
-        # Commands are still in the core discordbot directory
-        # In a future phase, they may be moved here
-        return []
-
     def get_authorization_actions(self) -> List[str]:
         """Return authorization actions defined by this plugin."""
         return [

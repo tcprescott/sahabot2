@@ -160,9 +160,9 @@ class TestAsyncQualifierPlugin:
         assert "AsyncLiveRaceFinishedEvent" in event_names
         assert "AsyncLiveRaceCancelledEvent" in event_names
 
-    def test_get_discord_commands_returns_empty(self, plugin):
-        """Test that get_discord_commands returns empty (not migrated yet)."""
-        commands = plugin.get_discord_commands()
+    def test_get_discord_cog_returns_none(self, plugin):
+        """Test that get_discord_cog returns None (not migrated yet)."""
+        cog = plugin.get_discord_cog()
 
         # Commands not migrated yet
-        assert commands == []
+        assert cog is None
