@@ -27,12 +27,13 @@ provides:
   models:
     - NotificationSubscription
     - NotificationLog
+    - NotificationMethod
+    - NotificationEventType
+    - NotificationDeliveryStatus
 
   services:
     - NotificationService
     - NotificationProcessor
-
-  handlers:
     - BaseNotificationHandler
     - DiscordNotificationHandler
 

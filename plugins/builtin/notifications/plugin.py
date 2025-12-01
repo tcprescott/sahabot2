@@ -15,6 +15,7 @@ from application.plugins.manifest import (
     PluginType,
     PluginCategory,
     PluginProvides,
+    PluginRequirements,
     APIRouteDefinition,
     RouteScope,
 )
@@ -52,9 +53,25 @@ class NotificationsPlugin(BasePlugin):
             enabled_by_default=True,
             private=False,
             global_plugin=False,
+            requires=PluginRequirements(
+                sahabot2=">=1.0.0",
+                python=">=3.11",
+                plugins=[],
+            ),
             provides=PluginProvides(
-                models=["NotificationSubscription", "NotificationLog"],
-                services=["NotificationService", "NotificationProcessor"],
+                models=[
+                    "NotificationSubscription",
+                    "NotificationLog",
+                    "NotificationMethod",
+                    "NotificationEventType",
+                    "NotificationDeliveryStatus",
+                ],
+                services=[
+                    "NotificationService",
+                    "NotificationProcessor",
+                    "BaseNotificationHandler",
+                    "DiscordNotificationHandler",
+                ],
                 api_routes=[
                     APIRouteDefinition(
                         prefix="/api/user/notifications",
