@@ -1,10 +1,10 @@
 """
 Services for the SMB3R plugin.
 
-This module re-exports SMB3R-related services from the core application.
+This module provides SMB3R-related services.
 """
 
-from application.services.randomizer.smb3r_service import SMB3RService
+from plugins.builtin.smb3r.services.smb3r_service import SMB3RService
 
 __all__ = [
     "SMB3RService",
