@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import logging
 
 from models import User, SYSTEM_USER_ID
-from models.async_tournament import (
+from modules.async_qualifier.models.async_qualifier import (
     AsyncQualifierPool,
     AsyncQualifierPermalink,
     AsyncQualifierLiveRace,

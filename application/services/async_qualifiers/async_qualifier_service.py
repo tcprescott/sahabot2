@@ -12,7 +12,7 @@ import logging
 import asyncio
 
 from models import User
-from models.async_tournament import (
+from modules.async_qualifier.models.async_qualifier import (
     AsyncQualifier,
     AsyncQualifierPool,
     AsyncQualifierPermalink,

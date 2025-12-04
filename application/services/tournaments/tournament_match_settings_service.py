@@ -8,8 +8,10 @@ from typing import Optional, List
 import logging
 
 from models import User, SYSTEM_USER_ID
-from models.tournament_match_settings import TournamentMatchSettings
-from models.match_schedule import Match, MatchPlayers
+from modules.tournament.models.tournament_match_settings import (
+    TournamentMatchSettings,
+)
+from modules.tournament.models.match_schedule import Match, MatchPlayers
 from application.repositories.tournament_match_settings_repository import (
     TournamentMatchSettingsRepository,
 )

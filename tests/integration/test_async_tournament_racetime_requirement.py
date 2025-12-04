@@ -8,7 +8,7 @@ when the tournament has require_racetime_for_async_runs enabled.
 import pytest
 
 from models.user import User, Permission
-from models.async_tournament import AsyncQualifier
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier
 from models.organizations import Organization
 
 

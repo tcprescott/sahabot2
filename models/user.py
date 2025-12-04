@@ -13,10 +13,16 @@ from enum import IntEnum
 if TYPE_CHECKING:
     from .api_token import ApiToken
     from .audit_log import AuditLog
-    from .match_schedule import MatchPlayers, TournamentPlayers, Crew
+    from modules.tournament.models.match_schedule import (
+        MatchPlayers,
+        TournamentPlayers,
+        Crew,
+    )
     from .organizations import OrganizationMember
-    from .tournament_usage import TournamentUsage
-    from .tournament_match_settings import TournamentMatchSettings
+    from modules.tournament.models.tournament_usage import TournamentUsage
+    from modules.tournament.models.tournament_match_settings import (
+        TournamentMatchSettings,
+    )
 
 
 # Sentinel value for system/automation actions

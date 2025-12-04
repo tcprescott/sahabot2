@@ -8,7 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.async_tournament import AsyncQualifier
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier
 
 
 class TournamentSettingsView:

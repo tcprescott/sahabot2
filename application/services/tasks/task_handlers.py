@@ -11,7 +11,7 @@ import discord
 import httpx
 from datetime import datetime, timedelta, timezone
 from models.scheduled_task import ScheduledTask, TaskType
-from models.async_tournament import AsyncQualifier, AsyncQualifierRace
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier, AsyncQualifierRace
 from models import SYSTEM_USER_ID
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
 from application.services.async_qualifiers.async_qualifier_service import (
@@ -519,7 +519,7 @@ async def handle_cleanup_placeholder_users(task: ScheduledTask) -> None:
     try:
         from datetime import datetime, timezone, timedelta
         from models import User
-        from models.match_schedule import MatchPlayers, Crew
+        from modules.tournament.models.match_schedule import MatchPlayers, Crew
 
         # Calculate cutoff date
         cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_inactive)

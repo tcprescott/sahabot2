@@ -9,7 +9,7 @@ async def test_advance_match_status(db):
     """Test advancing match status through all stages."""
     from models import User, Organization
     from models.user import Permission
-    from models.match_schedule import Match, Tournament
+    from modules.tournament.models.match_schedule import Match, Tournament
     from application.services.tournaments.tournament_service import TournamentService
 
     # Create test data
@@ -68,7 +68,7 @@ async def test_revert_match_status(db):
     """Test reverting match status."""
     from models import User, Organization
     from models.user import Permission
-    from models.match_schedule import Match, Tournament
+    from modules.tournament.models.match_schedule import Match, Tournament
     from application.services.tournaments.tournament_service import TournamentService
 
     # Create test data
@@ -136,7 +136,7 @@ async def test_revert_with_racetime_room_fails(db):
     """Test that reverting fails when match has a RaceTime room."""
     from models import User, Organization
     from models.user import Permission
-    from models.match_schedule import Match, Tournament
+    from modules.tournament.models.match_schedule import Match, Tournament
     from application.services.tournaments.tournament_service import TournamentService
 
     # Create test data
@@ -201,7 +201,7 @@ async def test_sync_racetime_room_status(db):
     """Test manually syncing match status from RaceTime room."""
     from models import User, Organization
     from models.user import Permission
-    from models.match_schedule import Match, Tournament
+    from modules.tournament.models.match_schedule import Match, Tournament
     from application.services.tournaments.tournament_service import TournamentService
     from unittest.mock import AsyncMock, patch
 
@@ -271,7 +271,7 @@ async def test_sync_racetime_cancelled_unlinks_room(db):
     """Test that syncing a cancelled race unlinks the RaceTime room."""
     from models import User, Organization
     from models.user import Permission
-    from models.match_schedule import Match, Tournament
+    from modules.tournament.models.match_schedule import Match, Tournament
     from application.services.tournaments.tournament_service import TournamentService
     from unittest.mock import AsyncMock, patch
 

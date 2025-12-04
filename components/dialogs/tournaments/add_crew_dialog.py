@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Optional, Callable, Awaitable
 from nicegui import ui
 from models import User, Organization, CrewRole
-from models.match_schedule import Match
+from modules.tournament.models.match_schedule import Match
 from application.services.core.user_service import UserService
 from application.services.organizations.organization_service import OrganizationService
 from components.dialogs.common.base_dialog import BaseDialog

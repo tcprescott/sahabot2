@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import TYPE_CHECKING, Callable, Awaitable, Optional
 from nicegui import ui
-from models.match_schedule import Match
+from modules.tournament.models.match_schedule import Match
 from components.dialogs import MatchSeedDialog, EditMatchDialog
 from application.services.randomizer.randomizer_service import RandomizerService
 from config import Settings

@@ -8,10 +8,10 @@ from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 import logging
 
-from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
+from modules.tournament.models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
 
 if TYPE_CHECKING:
-    from models.match_schedule import Crew
+    from modules.tournament.models.match_schedule import Crew
 
 logger = logging.getLogger(__name__)
 
@@ -356,7 +356,7 @@ class TournamentRepository:
 
         Returns the Crew record if successful, None if already signed up.
         """
-        from models.match_schedule import Crew
+        from modules.tournament.models.match_schedule import Crew
 
         # Check if already signed up for this role
         existing = await Crew.filter(
@@ -397,7 +397,7 @@ class TournamentRepository:
         Returns:
             The Crew record if successful, None if already signed up.
         """
-        from models.match_schedule import Crew
+        from modules.tournament.models.match_schedule import Crew
 
         # Check if already signed up for this role
         existing = await Crew.filter(
@@ -431,7 +431,7 @@ class TournamentRepository:
 
         Returns True if removed, False if not found.
         """
-        from models.match_schedule import Crew
+        from modules.tournament.models.match_schedule import Crew
 
         crew = await Crew.filter(match_id=match_id, user_id=user_id, role=role).first()
         if not crew:
@@ -464,7 +464,7 @@ class TournamentRepository:
         Returns:
             The updated Crew record if successful, None if not found.
         """
-        from models.match_schedule import Crew
+        from modules.tournament.models.match_schedule import Crew
 
         crew = await Crew.filter(id=crew_id).first()
         if not crew:
@@ -486,7 +486,7 @@ class TournamentRepository:
         Returns:
             The updated Crew record if successful, None if not found.
         """
-        from models.match_schedule import Crew
+        from modules.tournament.models.match_schedule import Crew
 
         crew = await Crew.filter(id=crew_id).first()
         if not crew:
@@ -506,7 +506,7 @@ class TournamentRepository:
 
         Returns the MatchSeed instance.
         """
-        from models.match_schedule import MatchSeed
+        from modules.tournament.models.match_schedule import MatchSeed
 
         # Try to get existing seed
         seed = await MatchSeed.filter(match_id=match_id).first()
@@ -531,7 +531,7 @@ class TournamentRepository:
 
         Returns True if deleted, False if not found.
         """
-        from models.match_schedule import MatchSeed
+        from modules.tournament.models.match_schedule import MatchSeed
 
         seed = await MatchSeed.filter(match_id=match_id).first()
         if not seed:

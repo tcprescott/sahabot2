@@ -10,7 +10,7 @@ from typing import Optional
 from nicegui import ui
 from models import Organization, User, CrewRole
 from models.user import Permission
-from models.match_schedule import Match
+from modules.tournament.models.match_schedule import Match
 from components.data_table import ResponsiveTable, TableColumn
 from components.tournaments import MatchCellRenderers, MatchActions, CrewManagement
 from components.dialogs import (

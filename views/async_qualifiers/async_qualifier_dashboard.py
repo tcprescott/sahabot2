@@ -7,7 +7,7 @@ Shows a player's own races in an async qualifier with stats and progress.
 from __future__ import annotations
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncQualifier, AsyncQualifierRace
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier, AsyncQualifierRace
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.badge import Badge

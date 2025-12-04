@@ -5,7 +5,7 @@ from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 import logging
 
-from models.async_tournament import (
+from modules.async_qualifier.models.async_qualifier import (
     AsyncQualifier,
     AsyncQualifierPool,
     AsyncQualifierPermalink,

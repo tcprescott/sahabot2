@@ -13,7 +13,7 @@ from application.events.types import (
     RacetimeRaceStatusChangedEvent,
     MatchFinishedEvent,
 )
-from models.match_schedule import Match
+from modules.tournament.models.match_schedule import Match
 from models.racetime_room import RacetimeRoom
 
 logger = logging.getLogger(__name__)

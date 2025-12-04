@@ -8,7 +8,7 @@ from typing import Optional, List
 import logging
 
 from models import User
-from models.match_schedule import StreamChannel
+from modules.tournament.models.match_schedule import StreamChannel
 from application.repositories.stream_channel_repository import StreamChannelRepository
 from application.services.organizations.organization_service import OrganizationService
 

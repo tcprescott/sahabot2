@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Optional
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncQualifier, AsyncQualifierLiveRace
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier, AsyncQualifierLiveRace
 from components.card import Card
 from components.badge import Badge
 from components.empty_state import EmptyState

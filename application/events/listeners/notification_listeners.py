@@ -105,7 +105,7 @@ async def notify_match_settings_submitted(
     )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
-    from models.match_schedule import MatchPlayers
+    from modules.tournament.models.match_schedule import MatchPlayers
 
     notification_service = NotificationService()
     user_repo = UserRepository()
@@ -289,7 +289,7 @@ async def notify_crew_added_auto_approved(event: CrewAddedEvent) -> None:
     )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
-    from models.match_schedule import Match
+    from modules.tournament.models.match_schedule import Match
 
     # Only notify if auto-approved (admin added them directly)
     if not event.auto_approved:
@@ -365,7 +365,7 @@ async def notify_crew_approved(event: CrewApprovedEvent) -> None:
     )
     from application.repositories.user_repository import UserRepository
     from models.notification_subscription import NotificationEventType
-    from models.match_schedule import Match
+    from modules.tournament.models.match_schedule import Match
 
     notification_service = NotificationService()
     user_repo = UserRepository()

@@ -10,7 +10,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 
 from models import User
-from models.match_schedule import (
+from modules.tournament.models.match_schedule import (
     Tournament,
     Match,
     MatchPlayers,

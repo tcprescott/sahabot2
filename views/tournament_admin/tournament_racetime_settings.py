@@ -8,7 +8,7 @@ from __future__ import annotations
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.match_schedule import Tournament
+from modules.tournament.models.match_schedule import Tournament
 
 
 class TournamentRacetimeSettingsView:

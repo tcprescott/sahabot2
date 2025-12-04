@@ -7,7 +7,7 @@ Provides form for async qualifier configuration including Discord channel and ru
 from typing import Optional, Callable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models.async_tournament import AsyncQualifier
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier
 import logging
 
 logger = logging.getLogger(__name__)

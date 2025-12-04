@@ -7,7 +7,7 @@ Shows all races for a specific player in a tournament.
 from __future__ import annotations
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncQualifier
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs.async_qualifiers import RaceReattemptDialog

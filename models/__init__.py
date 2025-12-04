@@ -14,7 +14,7 @@ from models.user import (
 )
 from models.audit_log import AuditLog
 from models.api_token import ApiToken
-from models.match_schedule import (
+from modules.tournament.models import (
     Tournament,
     Match,
     MatchPlayers,
@@ -24,8 +24,17 @@ from models.match_schedule import (
     Crew,
     CrewRole,
     DiscordEventFilter,
+    TournamentMatchSettings,
+    TournamentUsage,
 )
-from models.tournament_match_settings import TournamentMatchSettings
+from modules.async_qualifier.models import (
+    AsyncQualifier,
+    AsyncQualifierPool,
+    AsyncQualifierPermalink,
+    AsyncQualifierRace,
+    AsyncQualifierLiveRace,
+    AsyncQualifierAuditLog,
+)
 from models.organizations import (
     Organization,
     OrganizationMember,
@@ -35,17 +44,8 @@ from models.organization_invite import OrganizationInvite
 from models.organization_request import OrganizationRequest
 from models.settings import GlobalSetting, OrganizationSetting
 from models.discord_guild import DiscordGuild
-from models.async_tournament import (
-    AsyncQualifier,
-    AsyncQualifierPool,
-    AsyncQualifierPermalink,
-    AsyncQualifierRace,
-    AsyncQualifierLiveRace,
-    AsyncQualifierAuditLog,
-)
 from models.scheduled_task import ScheduledTask, TaskType, ScheduleType
 from models.builtin_task_override import BuiltinTaskOverride
-from models.tournament_usage import TournamentUsage
 from models.randomizer_preset import RandomizerPreset
 from models.preset_namespace import PresetNamespace
 from models.preset_namespace_permission import PresetNamespacePermission

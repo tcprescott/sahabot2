@@ -9,7 +9,7 @@ from nicegui import ui
 import httpx
 
 from models import User
-from models.async_tournament import AsyncQualifier
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier
 from components.card import Card
 from components.empty_state import EmptyState
 from components.data_table import ResponsiveTable, TableColumn

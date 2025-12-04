@@ -6,7 +6,7 @@ from datetime import datetime
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
 from models import User
-from models.match_schedule import Tournament, StreamChannel
+from modules.tournament.models.match_schedule import Tournament, StreamChannel
 import logging
 
 logger = logging.getLogger(__name__)

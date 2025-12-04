@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any
 from nicegui import ui
 from models import Organization
-from models.async_tournament import AsyncQualifier
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier
 from models.discord_guild import DiscordGuild
 from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn

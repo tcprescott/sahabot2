@@ -7,7 +7,7 @@ Provides reusable rendering functions for table cells in match schedules.
 from __future__ import annotations
 import logging
 from nicegui import ui
-from models.match_schedule import Match
+from modules.tournament.models.match_schedule import Match
 from components.datetime_label import DateTimeLabel
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,7 @@ Shows all pools and their permalinks for a tournament with management UI.
 from __future__ import annotations
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncQualifier, AsyncQualifierPool
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier, AsyncQualifierPool
 from components.card import Card
 from components.dialogs.async_qualifiers import PoolDialog, PermalinkDialog
 from components.dialogs.common import ConfirmDialog

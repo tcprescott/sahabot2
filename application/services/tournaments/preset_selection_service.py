@@ -11,8 +11,10 @@ import re
 import logging
 from datetime import datetime
 
-from models.match_schedule import Match, Tournament
-from models.tournament_match_settings import TournamentMatchSettings
+from modules.tournament.models.match_schedule import Match, Tournament
+from modules.tournament.models.tournament_match_settings import (
+    TournamentMatchSettings,
+)
 from models.randomizer_preset import RandomizerPreset
 
 logger = logging.getLogger(__name__)

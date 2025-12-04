@@ -9,7 +9,13 @@ from datetime import datetime, timezone
 import logging
 
 from models import User, SYSTEM_USER_ID
-from models.match_schedule import Tournament, Match, MatchPlayers, TournamentPlayers
+from modules.tournament.models.match_schedule import (
+    Tournament,
+    Match,
+    MatchPlayers,
+    TournamentPlayers,
+    Crew,
+)
 from models.racetime_room import RacetimeRoom
 from application.repositories.tournament_repository import TournamentRepository
 from application.services.organizations.organization_service import OrganizationService
@@ -30,7 +36,7 @@ from application.events import (
 )
 
 if TYPE_CHECKING:
-    from models.match_schedule import Crew
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -1751,7 +1757,7 @@ class TournamentService:
 
         Users can remove their own signups.
         """
-        from models.match_schedule import Crew
+        # Crew model already imported at module level
 
         # Verify user is a member of the organization
         member = await self.org_service.get_member(organization_id, user.id)
@@ -1898,7 +1904,7 @@ class TournamentService:
         Raises:
             ValueError: If tournament schedule is read-only (SpeedGaming enabled)
         """
-        from models.match_schedule import Crew
+        # Crew model already imported at module level
 
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)
@@ -1963,7 +1969,7 @@ class TournamentService:
         Returns:
             The unapproved Crew record or None if unauthorized.
         """
-        from models.match_schedule import Crew
+        # Crew model already imported at module level
 
         # Check permission
         allowed = await self.org_service.user_can_approve_crew(user, organization_id)

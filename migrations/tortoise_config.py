@@ -11,24 +11,35 @@ from config import settings
 
 def get_model_modules():
     """
-    Automatically discover all model modules in the models/ directory.
+    Automatically discover all model modules in the models/ directory and
+    tournament modules under modules/tournament/models and async qualifier
+    modules under modules/async_qualifier/models.
 
     Returns:
-        List of model module paths (e.g., ['models.user', 'models.organizations', ...])
+        Sorted list of model module paths (e.g., ['models.user', 'modules.tournament.models.match_schedule', ...])
     """
-    models_dir = Path(__file__).parent.parent / "models"
-    model_modules = []
 
-    for file in models_dir.glob("*.py"):
-        # Skip __init__.py and any private files
-        if file.stem.startswith("_"):
+    project_root = Path(__file__).parent.parent
+    model_locations = [
+        (project_root / "models", "models"),
+        (project_root / "modules" / "tournament" / "models", "modules.tournament.models"),
+        (project_root / "modules" / "async_qualifier" / "models", "modules.async_qualifier.models"),
+    ]
+
+    model_modules: list[str] = []
+
+    for directory, module_prefix in model_locations:
+        if not directory.exists():
             continue
 
-        # Add the module path
-        model_modules.append(f"models.{file.stem}")
+        for file in directory.glob("*.py"):
+            # Skip __init__.py and any private files
+            if file.stem.startswith("_"):
+                continue
 
-    # Sort for consistency
-    model_modules.sort()
+            model_modules.append(f"{module_prefix}.{file.stem}")
+
+    model_modules = sorted(set(model_modules))
 
     # Always add aerich.models at the end
     model_modules.append("aerich.models")

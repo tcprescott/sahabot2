@@ -7,7 +7,7 @@ Provides form for permalink URL and notes with validation.
 from typing import Optional, Callable
 from nicegui import ui
 from components.dialogs.common.base_dialog import BaseDialog
-from models.async_tournament import AsyncQualifierPermalink
+from modules.async_qualifier.models.async_qualifier import AsyncQualifierPermalink
 import logging
 
 logger = logging.getLogger(__name__)

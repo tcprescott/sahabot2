@@ -7,7 +7,7 @@ Dialog to confirm re-attempting a race with warnings about limits.
 from __future__ import annotations
 from nicegui import ui
 from models import User
-from models.async_tournament import AsyncQualifierRace
+from modules.async_qualifier.models.async_qualifier import AsyncQualifierRace
 from components.dialogs.common.base_dialog import BaseDialog
 from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,

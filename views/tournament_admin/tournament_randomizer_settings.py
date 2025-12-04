@@ -9,7 +9,7 @@ import logging
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.match_schedule import Tournament
+from modules.tournament.models.match_schedule import Tournament
 from application.services.randomizer.randomizer_service import RandomizerService
 from application.services.randomizer.randomizer_preset_service import (
     RandomizerPresetService,

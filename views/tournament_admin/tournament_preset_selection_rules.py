@@ -10,7 +10,7 @@ from typing import List, Dict, Any, Optional, Callable
 from nicegui import ui
 from models import User
 from models.organizations import Organization
-from models.match_schedule import Tournament
+from modules.tournament.models.match_schedule import Tournament
 from models.randomizer_preset import RandomizerPreset
 from application.services.tournaments.preset_selection_service import (
     PresetSelectionService,

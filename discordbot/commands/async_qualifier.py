@@ -11,7 +11,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from models import User
-from models.async_tournament import AsyncQualifier, AsyncQualifierRace
+from modules.async_qualifier.models.async_qualifier import AsyncQualifier, AsyncQualifierRace
 from application.services.async_qualifiers.async_qualifier_service import (
     AsyncQualifierService,
 )
