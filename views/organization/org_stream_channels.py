@@ -12,7 +12,7 @@ from components.card import Card
 from components.data_table import ResponsiveTable, TableColumn
 from components.datetime_label import DateTimeLabel
 from components.dialogs import StreamChannelDialog, ConfirmDialog
-from application.services.tournaments.stream_channel_service import StreamChannelService
+from modules.tournament.services.stream_channel_service import StreamChannelService
 
 
 class OrganizationStreamChannelsView:

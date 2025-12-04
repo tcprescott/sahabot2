@@ -108,7 +108,7 @@ class RegisterPlayerDialog(BaseDialog):
         user_id = self.user_select.value
 
         try:
-            from application.services.tournaments.tournament_service import (
+            from modules.tournament.services.tournament_service import (
                 TournamentService,
             )
 

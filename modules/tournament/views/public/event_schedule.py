@@ -20,7 +20,7 @@ from components.dialogs import (
     CheckInDialog,
 )
 from components.dialogs.common import ConfirmDialog
-from application.services.tournaments.tournament_service import TournamentService
+from modules.tournament.services.tournament_service import TournamentService
 from application.services.organizations.organization_service import OrganizationService
 from config import Settings
 
@@ -833,7 +833,7 @@ class EventScheduleView:
                 # Load data async
                 async def load_data():
                     try:
-                        from application.services.tournaments.stream_channel_service import (
+                        from modules.tournament.services.stream_channel_service import (
                             StreamChannelService,
                         )
                         from application.services.organizations.organization_service import (
@@ -875,7 +875,7 @@ class EventScheduleView:
 
             async def _handle_create(self):
                 from datetime import datetime
-                from application.services.tournaments.tournament_service import (
+                from modules.tournament.services.tournament_service import (
                     TournamentService,
                 )
 

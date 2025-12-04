@@ -12,10 +12,10 @@ from modules.tournament.models.tournament_match_settings import (
     TournamentMatchSettings,
 )
 from modules.tournament.models.match_schedule import Match, MatchPlayers
-from application.repositories.tournament_match_settings_repository import (
+from modules.tournament.repositories.tournament_match_settings_repository import (
     TournamentMatchSettingsRepository,
 )
-from application.repositories.tournament_repository import TournamentRepository
+from modules.tournament.repositories.tournament_repository import TournamentRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import (
     AuthorizationServiceV2,

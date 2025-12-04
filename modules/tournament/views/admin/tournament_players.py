@@ -11,7 +11,7 @@ from models.organizations import Organization
 from modules.tournament.models.match_schedule import Tournament
 from components.data_table import ResponsiveTable, TableColumn
 from components.dialogs import RegisterPlayerDialog, ConfirmDialog
-from application.services.tournaments.tournament_service import TournamentService
+from modules.tournament.services.tournament_service import TournamentService
 import logging
 
 logger = logging.getLogger(__name__)

@@ -649,7 +649,7 @@ async def rejoin_open_racetime_rooms(bot: RacetimeBot) -> int:
         int: Number of rooms successfully rejoined
     """
     from models.racetime_room import RacetimeRoom
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
 
     logger.info("Rejoining open RaceTime rooms for category: %s", bot.category_slug)
 

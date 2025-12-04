@@ -28,9 +28,9 @@ from application.services.speedgaming.speedgaming_service import (
     SpeedGamingCrewMember,
     SpeedGamingChannel,
 )
-from application.repositories.tournament_repository import TournamentRepository
+from modules.tournament.repositories.tournament_repository import TournamentRepository
 from application.repositories.user_repository import UserRepository
-from application.repositories.stream_channel_repository import StreamChannelRepository
+from modules.tournament.repositories.stream_channel_repository import StreamChannelRepository
 
 logger = logging.getLogger(__name__)
 

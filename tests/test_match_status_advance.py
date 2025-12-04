@@ -10,7 +10,7 @@ async def test_advance_match_status(db):
     from models import User, Organization
     from models.user import Permission
     from modules.tournament.models.match_schedule import Match, Tournament
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
 
     # Create test data
     admin_user = await User.create(
@@ -69,7 +69,7 @@ async def test_revert_match_status(db):
     from models import User, Organization
     from models.user import Permission
     from modules.tournament.models.match_schedule import Match, Tournament
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
 
     # Create test data
     admin_user = await User.create(
@@ -137,7 +137,7 @@ async def test_revert_with_racetime_room_fails(db):
     from models import User, Organization
     from models.user import Permission
     from modules.tournament.models.match_schedule import Match, Tournament
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
 
     # Create test data
     from models.racetime_room import RacetimeRoom
@@ -202,7 +202,7 @@ async def test_sync_racetime_room_status(db):
     from models import User, Organization
     from models.user import Permission
     from modules.tournament.models.match_schedule import Match, Tournament
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
     from unittest.mock import AsyncMock, patch
 
     # Create test data
@@ -272,7 +272,7 @@ async def test_sync_racetime_cancelled_unlinks_room(db):
     from models import User, Organization
     from models.user import Permission
     from modules.tournament.models.match_schedule import Match, Tournament
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
     from unittest.mock import AsyncMock, patch
 
     # Create test data

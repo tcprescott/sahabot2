@@ -16,9 +16,9 @@ MOCK_PATH_MAPPINGS = {
     r"@patch\('application\.services\.discord_scheduled_event_service\.get_bot_instance'\)": r"@patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')",
     r"patch\('application\.services\.discord_scheduled_event_service\.get_bot_instance'\)": r"patch('application.services.discord.discord_scheduled_event_service.get_bot_instance')",
     # Tournament services
-    r"patch\('application\.services\.tournament_service\.Match'\)": r"patch('application.services.tournaments.tournament_service.Match')",
-    r"patch\('application\.services\.tournament_service\.RacetimeBot'\)": r"patch('application.services.tournaments.tournament_service.RacetimeBot')",
-    r"patch\('application\.services\.tournament_service\.aiohttp\.ClientSession'\)": r"patch('application.services.tournaments.tournament_service.aiohttp.ClientSession')",
+    r"patch\('application\.services\.tournament_service\.Match'\)": r"patch('modules.tournament.services.tournament_service.Match')",
+    r"patch\('application\.services\.tournament_service\.RacetimeBot'\)": r"patch('modules.tournament.services.tournament_service.RacetimeBot')",
+    r"patch\('application\.services\.tournament_service\.aiohttp\.ClientSession'\)": r"patch('modules.tournament.services.tournament_service.aiohttp.ClientSession')",
     # Task scheduler service
     r"@patch\('application\.services\.task_scheduler_service\.": r"@patch('application.services.tasks.task_scheduler_service.",
     r"patch\('application\.services\.task_scheduler_service\.": r"patch('application.services.tasks.task_scheduler_service.",

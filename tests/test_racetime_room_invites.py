@@ -9,7 +9,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from models import User, Permission
 from modules.tournament.models.match_schedule import Match, Tournament, MatchPlayers
-from application.services.tournaments.tournament_service import TournamentService
+from modules.tournament.services.tournament_service import TournamentService
 
 
 @pytest.mark.asyncio
@@ -103,11 +103,11 @@ async def test_create_room_invites_linked_players(db, admin_user, sample_organiz
 
     # Mock the service
     with patch(
-        "application.services.tournaments.tournament_service.Match"
+        "modules.tournament.services.tournament_service.Match"
     ) as MockMatch, patch("racetime.client.RacetimeBot") as MockBot, patch(
         "aiohttp.ClientSession"
     ) as MockSession, patch(
-        "application.services.tournaments.tournament_service.RacetimeRoom"
+        "modules.tournament.services.tournament_service.RacetimeRoom"
     ) as MockRacetimeRoom:
 
         # Mock the match to NOT have an existing racetime_room (hasattr check)
@@ -246,11 +246,11 @@ async def test_create_room_handles_invite_failure(db, admin_user, sample_organiz
     mock_bot_config.client_id = "test_client"
     # Mock the service
     with patch(
-        "application.services.tournaments.tournament_service.Match"
+        "modules.tournament.services.tournament_service.Match"
     ) as MockMatch, patch("racetime.client.RacetimeBot") as MockBot, patch(
         "aiohttp.ClientSession"
     ) as MockSession, patch(
-        "application.services.tournaments.tournament_service.RacetimeRoom"
+        "modules.tournament.services.tournament_service.RacetimeRoom"
     ) as MockRacetimeRoom:
 
         # Mock the match to NOT have an existing racetime_room (hasattr check)

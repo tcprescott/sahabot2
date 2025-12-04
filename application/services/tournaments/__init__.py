@@ -1,13 +1,21 @@
-"""Tournament management services."""
+"""Tournament management services (deprecated path).
 
-from application.services.tournaments.tournament_service import TournamentService
-from application.services.tournaments.tournament_usage_service import (
+This package now re-exports tournament services from
+``modules.tournament.services``. Prefer importing from the new module path.
+"""
+
+from modules.tournament.services import (  # type: ignore F401
+    TournamentService,
     TournamentUsageService,
+    StreamChannelService,
+    TournamentMatchSettingsService,
+    PresetSelectionService,
 )
-from application.services.tournaments.stream_channel_service import StreamChannelService
 
 __all__ = [
     "TournamentService",
     "TournamentUsageService",
     "StreamChannelService",
+    "TournamentMatchSettingsService",
+    "PresetSelectionService",
 ]

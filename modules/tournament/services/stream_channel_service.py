@@ -9,7 +9,7 @@ import logging
 
 from models import User
 from modules.tournament.models.match_schedule import StreamChannel
-from application.repositories.stream_channel_repository import StreamChannelRepository
+from modules.tournament.repositories.stream_channel_repository import StreamChannelRepository
 from application.services.organizations.organization_service import OrganizationService
 
 logger = logging.getLogger(__name__)

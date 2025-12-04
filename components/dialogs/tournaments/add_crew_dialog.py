@@ -162,7 +162,7 @@ class AddCrewDialog(BaseDialog):
         approved = self.approved_checkbox.value if self.approved_checkbox else True
 
         try:
-            from application.services.tournaments.tournament_service import (
+            from modules.tournament.services.tournament_service import (
                 TournamentService,
             )
 

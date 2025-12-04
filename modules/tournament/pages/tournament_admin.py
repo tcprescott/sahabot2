@@ -8,7 +8,7 @@ Provides detailed tournament management with dedicated pages for different aspec
 from nicegui import ui
 from components.base_page import BasePage
 from application.services.organizations.organization_service import OrganizationService
-from application.repositories.tournament_repository import TournamentRepository
+from modules.tournament.repositories.tournament_repository import TournamentRepository
 from modules.tournament.views.admin import (
     TournamentDiscordEventsView,
     TournamentOverviewView,

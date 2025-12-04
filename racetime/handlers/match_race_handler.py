@@ -68,7 +68,7 @@ class MatchRaceMixin:
 
         # Import here to avoid circular dependency:
         # TournamentService imports Match model which could import handlers
-        from application.services.tournaments.tournament_service import (
+        from modules.tournament.services.tournament_service import (
             TournamentService,
         )
 

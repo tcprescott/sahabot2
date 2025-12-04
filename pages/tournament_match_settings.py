@@ -14,7 +14,7 @@ from components.base_page import BasePage
 from components.dynamic_form_builder import DynamicFormBuilder
 from components.datetime_label import DateTimeLabel
 from middleware.auth import DiscordAuthService
-from application.services.tournaments.tournament_match_settings_service import (
+from modules.tournament.services.tournament_match_settings_service import (
     TournamentMatchSettingsService,
 )
 
@@ -36,6 +36,11 @@ def register():
 
         async def content(page: BasePage):
             """Render submission form content."""
+            # page.user is guaranteed by authenticated_page()
+            assert page.user is not None
+            if not page.user:
+                return
+
             # Get match details via service (includes authorization check)
             service = TournamentMatchSettingsService()
             match = await service.get_match_for_submission(page.user, match_id)
@@ -137,6 +142,12 @@ def register():
                                     return
 
                                 # Submit via service
+                                if page.user is None:
+                                    ui.notify(
+                                        "User session expired", color="negative"
+                                    )
+                                    return
+
                                 submission = await service.submit_settings(
                                     user=page.user,
                                     match_id=match_id,
@@ -207,4 +218,4 @@ def register():
                         if existing_submission.notes:
                             ui.label(f"Notes: {existing_submission.notes}")
 
-        await base.render(content)()
+        await base.render(content)

@@ -26,11 +26,11 @@ IMPORT_MAPPINGS: Dict[str, str] = {
     "application.services.organization_request_service": "application.services.organizations.organization_request_service",
     "application.services.feature_flag_service": "application.services.organizations.feature_flag_service",
     # Tournament services
-    "application.services.tournament_service": "application.services.tournaments.tournament_service",
+    "application.services.tournament_service": "modules.tournament.services.tournament_service",
     "application.services.async_tournament_service": "application.services.tournaments.async_tournament_service",
     "application.services.async_live_race_service": "application.services.tournaments.async_live_race_service",
-    "application.services.tournament_usage_service": "application.services.tournaments.tournament_usage_service",
-    "application.services.stream_channel_service": "application.services.tournaments.stream_channel_service",
+    "application.services.tournament_usage_service": "modules.tournament.services.tournament_usage_service",
+    "application.services.stream_channel_service": "modules.tournament.services.stream_channel_service",
     # Discord services
     "application.services.discord_service": "application.services.discord.discord_service",
     "application.services.discord_guild_service": "application.services.discord.discord_guild_service",

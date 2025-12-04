@@ -17,7 +17,7 @@ from api.schemas.tournament import (
     CrewApprovalRequest,
 )
 from api.deps import get_current_user, enforce_rate_limit
-from application.services.tournaments.tournament_service import TournamentService
+from modules.tournament.services.tournament_service import TournamentService
 from models import User
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])

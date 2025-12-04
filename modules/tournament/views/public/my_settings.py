@@ -9,7 +9,7 @@ from nicegui import ui
 from models import Organization, User
 from components.card import Card
 from components.datetime_label import DateTimeLabel
-from application.services.tournaments.tournament_service import TournamentService
+from modules.tournament.services.tournament_service import TournamentService
 
 
 class MySettingsView:

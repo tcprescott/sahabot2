@@ -102,7 +102,7 @@ class CreateMatchDialog(BaseDialog):
         async def load_data():
             """Load stream channels and players."""
             try:
-                from application.services.tournaments.stream_channel_service import (
+                from modules.tournament.services.stream_channel_service import (
                     StreamChannelService,
                 )
                 from application.services.organizations.organization_service import (
@@ -216,7 +216,7 @@ class CreateMatchDialog(BaseDialog):
 
         # Call the service to create the match
         try:
-            from application.services.tournaments.tournament_service import (
+            from modules.tournament.services.tournament_service import (
                 TournamentService,
             )
 

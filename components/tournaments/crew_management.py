@@ -14,7 +14,7 @@ from components.dialogs.tournaments import AddCrewDialog
 
 if TYPE_CHECKING:
     from models import User, Organization
-    from application.services.tournaments.tournament_service import TournamentService
+    from modules.tournament.services.tournament_service import TournamentService
 
 logger = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ processing RaceTime events with proper authorization checks.
 """
 
 from application.events import EventBus, RacetimeEntrantStatusChangedEvent
-from application.services.tournaments.tournament_service import TournamentService
+from modules.tournament.services.tournament_service import TournamentService
 from models import (
     SYSTEM_USER_ID,
     Permission,

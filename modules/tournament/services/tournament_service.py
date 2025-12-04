@@ -17,7 +17,7 @@ from modules.tournament.models.match_schedule import (
     Crew,
 )
 from models.racetime_room import RacetimeRoom
-from application.repositories.tournament_repository import TournamentRepository
+from modules.tournament.repositories.tournament_repository import TournamentRepository
 from application.services.organizations.organization_service import OrganizationService
 from application.services.authorization.authorization_service_v2 import (
     AuthorizationServiceV2,

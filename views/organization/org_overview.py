@@ -25,7 +25,7 @@ class OrganizationOverviewView:
         from application.services.organizations.organization_service import (
             OrganizationService,
         )
-        from application.services.tournaments.tournament_service import (
+        from modules.tournament.services.tournament_service import (
             TournamentService,
         )
         from application.services.async_qualifiers.async_qualifier_service import (

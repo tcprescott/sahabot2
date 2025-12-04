@@ -139,7 +139,7 @@ async def handle_cleanup_tournament_usage(task: ScheduledTask) -> None:
     Args:
         task: ScheduledTask to execute
     """
-    from application.services.tournaments.tournament_usage_service import (
+    from modules.tournament.services.tournament_usage_service import (
         TournamentUsageService,
     )
 

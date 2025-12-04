@@ -149,7 +149,7 @@ class TournamentRandomizerSettingsView:
             randomizer: Selected randomizer type
             preset_id: Selected preset ID (or None)
         """
-        from application.services.tournaments.tournament_service import (
+        from modules.tournament.services.tournament_service import (
             TournamentService,
         )
 

@@ -383,7 +383,7 @@ class TournamentRacetimeSettingsView:
             default_goal: Default race goal text
             racetime_bot_id: ID of the RaceTime bot to use (None for no bot)
         """
-        from application.services.tournaments.tournament_service import (
+        from modules.tournament.services.tournament_service import (
             TournamentService,
         )
 

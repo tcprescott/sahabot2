@@ -145,7 +145,7 @@ class TestMatchRaceMixin:
 
         # Mock the race_data method to test race finish processing
         with patch(
-            "application.services.tournaments.tournament_service.TournamentService.process_match_race_finish"
+            "modules.tournament.services.tournament_service.TournamentService.process_match_race_finish"
         ) as mock_process:
             mock_process.return_value = AsyncMock()
 

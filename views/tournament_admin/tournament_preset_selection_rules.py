@@ -12,9 +12,7 @@ from models import User
 from models.organizations import Organization
 from modules.tournament.models.match_schedule import Tournament
 from models.randomizer_preset import RandomizerPreset
-from application.services.tournaments.preset_selection_service import (
-    PresetSelectionService,
-)
+from modules.tournament.services.preset_selection_service import PresetSelectionService
 from application.services.randomizer.randomizer_preset_service import (
     RandomizerPresetService,
 )
