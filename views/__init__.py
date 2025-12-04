@@ -26,11 +26,14 @@ from views.organization import (
     OrganizationStreamChannelsView,
 )
 
-from views.tournament_admin import (
+from modules.tournament.views.admin import (
     TournamentOverviewView,
     TournamentPlayersView,
     TournamentRacetimeSettingsView,
     TournamentSettingsView,
+    TournamentDiscordEventsView,
+    TournamentRandomizerSettingsView,
+    TournamentPresetSelectionRulesView,
 )
 
 from views.user_profile import (
@@ -39,11 +42,12 @@ from views.user_profile import (
     UserOrganizationsView,
 )
 
-from views.tournaments import (
+from modules.tournament.views.public import (
     TournamentOrgSelectView,
     EventScheduleView,
     MyMatchesView,
     MySettingsView,
+    TournamentManagementView,
 )
 
 __all__ = [
@@ -63,6 +67,9 @@ __all__ = [
     "TournamentPlayersView",
     "TournamentRacetimeSettingsView",
     "TournamentSettingsView",
+    "TournamentDiscordEventsView",
+    "TournamentRandomizerSettingsView",
+    "TournamentPresetSelectionRulesView",
     # User Profile views
     "ProfileInfoView",
     "ApiKeysView",
@@ -72,4 +79,5 @@ __all__ = [
     "EventScheduleView",
     "MyMatchesView",
     "MySettingsView",
+    "TournamentManagementView",
 ]

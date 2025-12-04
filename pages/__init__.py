@@ -1,20 +1,17 @@
-"""
-Pages package for SahaBot2.
+"""Pages package for SahaBot2.
 
-This package contains all page modules.
+Exports NiceGUI page modules for registration.
 """
 
-# Import pages for registration
-from pages import (
+from . import (
     home,
     auth,
     admin,
     organization_admin,
-    tournament_admin,
     async_qualifier_admin,
-    tournaments,
     async_qualifiers,
     user_profile,
+    invite,
     racetime_oauth,
     twitch_oauth,
     discord_guild_callback,
@@ -27,11 +24,10 @@ __all__ = [
     "auth",
     "admin",
     "organization_admin",
-    "tournament_admin",
     "async_qualifier_admin",
-    "tournaments",
     "async_qualifiers",
     "user_profile",
+    "invite",
     "racetime_oauth",
     "twitch_oauth",
     "discord_guild_callback",
