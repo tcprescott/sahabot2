@@ -1,404 +1,62 @@
 # SahaBot2
 
-**SahasrahBot2** (SahaBot2) is a modern web application built with NiceGUI and Tortoise ORM, featuring Discord OAuth2 authentication and database-driven authorization.
+Multi-tenant NiceGUI + FastAPI application with Discord OAuth2, RaceTime.gg integration, and a policy-based authorization system backed by Tortoise ORM.
 
-## Features
+## Tech Stack
 
-- 🎨 **Mobile-First Responsive Design** - Fully functional on all device sizes
-- 🔐 **Discord OAuth2 Authentication** - Secure login via Discord with automatic token refresh
-- 🏁 **RaceTime.gg Integration** - Link your RaceTime.gg account for race tracking
-- 📺 **Twitch Integration** - Link Twitch accounts for stream integration
-- 📊 **Sentry.io Integration** - Error tracking and performance monitoring (optional)
-- 🗄️ **Database-Driven Authorization** - Flexible permission system
-- 🏗️ **Clean Architecture** - Separation of concerns with service and repository layers
-- 💅 **External CSS** - No inline styling, human-friendly class names
-- ⚡ **Async/Await** - Modern asynchronous Python throughout
-- 📝 **High Code Quality** - Comprehensive docstrings and type hints
-- 🛡️ **Enterprise Security** - HTTPS enforcement, security headers, CSRF protection, input validation
+- FastAPI (async) + NiceGUI (UI)
+- Tortoise ORM + MySQL
+- Discord OAuth2 + embedded Discord.py bot
+- APScheduler task scheduler
+- External CSS/JS only (no inline styles)
 
 ## Architecture
 
-### Core Principles
-
-1. **Mobile-First Responsive Design** - Application is fully functional on mobile with feature parity
-2. **Separation of Concerns** - Business logic in services, data access in repositories, UI is presentation only
-3. **External CSS** - All styling in external CSS files with semantic class names
-4. **Discord OAuth2 Authentication** - All users authenticate via Discord
-5. **Database-Driven Authorization** - Permissions stored and enforced server-side
-6. **High Code Quality** - Consistent async/await usage, comprehensive documentation
-
-### Project Structure
-
-```
-sahabot2/
-├── main.py                 # Application entry point
-├── frontend.py             # Frontend route registration
-├── config.py               # Configuration management
-├── database.py             # Database initialization
-├── models/                 # Database models
-│   ├── __init__.py
-│   ├── user.py             # User model and Permission enum
-│   └── audit_log.py        # Audit log model
-├── components/             # Reusable UI components
-│   ├── __init__.py
-│   └── base_page.py        # Base page template
-├── application/
-│   ├── services/           # Business logic layer
-│   │   ├── user_service.py
-│   │   ├── authorization_service.py
-│   │   └── audit_service.py
-│   └── repositories/       # Data access layer
-│       ├── user_repository.py
-│       └── audit_repository.py
-├── middleware/
-│   └── auth.py             # Discord OAuth2 authentication
-├── pages/                  # NiceGUI pages
-│   ├── home.py
-│   ├── auth.py
-│   └── admin.py
-├── static/
-│   └── css/
-│       └── main.css        # Application styles
-└── migrations/             # Database migrations
-    └── tortoise_config.py
-```
-
-## Installation
-
-### Prerequisites
-
-- Python 3.11+
-- Poetry (Python package manager)
-- MySQL database
-
-### Setup
-
-1. **Clone the repository**
-   ```bash
-   cd sahabot2
-   ```
-
-2. **Install dependencies**
-   ```bash
-   poetry install
-   ```
-
-3. **Configure environment**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
-
-4. **Set up database**
-   
-   Create a MySQL database:
-   ```sql
-   CREATE DATABASE sahabot2;
-   CREATE USER 'sahabot2'@'localhost' IDENTIFIED BY 'your_password';
-   GRANT ALL PRIVILEGES ON sahabot2.* TO 'sahabot2'@'localhost';
-   ```
-
-5. **Configure Discord OAuth2**
-
-   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
-   - Create a new application
-   - Add OAuth2 redirect URL to match your `BASE_URL`: `{BASE_URL}/auth/callback`
-     - Development: `http://localhost:8080/auth/callback`
-     - Production: `https://yourdomain.com/auth/callback`
-   - Copy Client ID and Client Secret to `.env`
-
-6. **Configure RaceTime.gg OAuth2 (Optional)**
-
-   For users to link their RaceTime.gg accounts:
-   - Go to [RaceTime.gg Developer Portal](https://racetime.gg/account/dev)
-   - Create a new OAuth2 application
-   - Set redirect URI to match your `BASE_URL`: `{BASE_URL}/racetime/link/callback`
-     - Development: `http://localhost:8080/racetime/link/callback`
-     - Production: `https://yourdomain.com/racetime/link/callback`
-   - Copy Client ID and Client Secret to `.env`:
-     ```env
-     RACETIME_CLIENT_ID=your_client_id
-     RACETIME_CLIENT_SECRET=your_client_secret
-     ```
-
-7. **Configure Twitch OAuth2 (Optional)**
-
-   For users to link their Twitch accounts:
-   - Go to [Twitch Developer Console](https://dev.twitch.tv/console/apps)
-   - Create a new application
-   - Set OAuth redirect URL to match your `BASE_URL`: `{BASE_URL}/twitch/link/callback`
-     - Development: `http://localhost:8080/twitch/link/callback`
-     - Production: `https://yourdomain.com/twitch/link/callback`
-   - Copy Client ID and Client Secret to `.env`:
-     ```env
-     TWITCH_CLIENT_ID=your_twitch_client_id
-     TWITCH_CLIENT_SECRET=your_twitch_client_secret
-     ```
-
-8. **Configure Sentry.io (Optional)**
-
-   For error tracking and performance monitoring:
-   - Create a free account at [Sentry.io](https://sentry.io)
-   - Create a new project
-   - Copy the DSN to `.env`:
-     ```env
-     SENTRY_DSN=https://your_key@sentry.io/your_project_id
-     SENTRY_ENVIRONMENT=development
-     ```
-
-   See [docs/integrations/SENTRY.md](docs/integrations/SENTRY.md) for detailed configuration.
-
-9. **Initialize database migrations**
-   ```bash
-   poetry run aerich init-db
-   ```
-
-## Development
-
-### Running the Application
-
-**Development mode** (auto-reload enabled):
-```bash
-./start.sh dev
-# or
-poetry run python main.py
-```
-
-**Production mode**:
-```bash
-./start.sh prod
-```
-
-The application will be available at:
-- Development: http://localhost:8080
-- Production: http://localhost:80
-
-### Database Migrations
-
-**Create a migration after model changes**:
-```bash
-poetry run aerich migrate --name "description_of_changes"
-```
-
-**Apply migrations**:
-```bash
-poetry run aerich upgrade
-```
-
-**Rollback migration**:
-```bash
-poetry run aerich downgrade
-```
-
-### Mock Data Generation
-
-For testing and development, you can generate realistic mock data:
-
-```bash
-# Quick start with small preset (20 users, 3 orgs, 5 tournaments)
-poetry run python tools/generate_mock_data.py --preset small
-
-# Use different presets
-poetry run python tools/generate_mock_data.py --preset tiny     # Minimal
-poetry run python tools/generate_mock_data.py --preset medium   # Moderate
-poetry run python tools/generate_mock_data.py --preset large    # Extensive
-
-# Custom configuration
-poetry run python tools/generate_mock_data.py --users 50 --orgs 5 --tournaments 10
-
-# Clear existing data first (WARNING: destructive!)
-poetry run python tools/generate_mock_data.py --preset small --clear-existing
-```
-
-The tool generates:
-- **Users** with different permission levels (SUPERADMIN, ADMIN, MODERATOR, USER)
-- **Organizations** with members and permission structures
-- **Tournaments** with scheduled matches, players, and results
-- **Async Qualifiers** with pools, permalinks, and race submissions
-- **Matches** with realistic scheduling, player assignments, and completion states
-
-See [`tools/README.md`](tools/README.md) for detailed documentation.
-
-### Policy Checks
-
-Run the configuration policy checks locally to ensure no direct environment access is used (all settings must come from `config.py`):
-
-```bash
-python tools/check_config_policy.py
-```
-
-These checks also run in CI for every push and pull request.
-
-### Adding New Features
-
-#### Adding a New Page
-
-1. Create page module in `pages/` directory
-2. Define page with `@ui.page('/path')` decorator
-3. Register page in `frontend.py`
-4. Add CSS classes to `static/css/main.css`
-
-#### Adding Business Logic
-
-1. Create service class in `application/services/`
-2. Create repository class in `application/repositories/` for data access
-3. Use services in UI pages, never access ORM directly from UI
-
-#### Adding Authorization
-
-1. Define permission checks in `AuthorizationService`
-2. Use `DiscordAuthService.require_permission()` in pages
-3. Conditionally render UI elements based on user permissions
-
-## Configuration
-
-Configuration is managed through environment variables in `.env`:
-
-All configuration is loaded centrally via `config.py` using Pydantic Settings. Do not read environment variables directly in application code, and never hard-code secrets or tokens. Import values from `from config import settings` and use `settings.<FIELD>` instead.
-
-### Required Settings
-
-#### Database
-- `DB_HOST` - Database host (default: localhost)
-- `DB_PORT` - Database port (default: 3306)
-- `DB_USER` - Database username (default: sahabot2)
-- `DB_PASSWORD` - Database password
-- `DB_NAME` - Database name (default: sahabot2)
-
-#### Discord OAuth2
-- `DISCORD_CLIENT_ID` - Discord application client ID
-- `DISCORD_CLIENT_SECRET` - Discord application client secret
-- `DISCORD_REDIRECT_URI` - OAuth2 redirect URI (default: http://localhost:8080/auth/callback)
-- `DISCORD_GUILD_ID` - Optional Discord guild ID
-
-#### Discord Bot
-- `DISCORD_BOT_TOKEN` - Discord bot token
-- `DISCORD_BOT_ENABLED` - Enable/disable Discord bot (default: True)
-
-#### Application
-- `SECRET_KEY` - Secret key for session encryption
-- `ENVIRONMENT` - Environment (development/production, default: development)
-- `DEBUG` - Debug mode (True/False, default: True)
-- `BASE_URL` - Base URL for the application (default: http://localhost:8080)
-
-#### Server
-- `HOST` - Server host (default: 0.0.0.0)
-- `PORT` - Server port (default: 8080)
-
-### Optional Settings
-
-#### RaceTime.gg OAuth2 (User Account Linking)
-- `RACETIME_CLIENT_ID` - RaceTime.gg OAuth2 client ID
-- `RACETIME_CLIENT_SECRET` - RaceTime.gg OAuth2 client secret
-- `RACETIME_URL` - RaceTime.gg base URL (default: https://racetime.gg)
-
-**Note**: RaceTime bot configurations are now managed through the database and admin UI. The legacy `RACETIME_BOTS` environment variable is deprecated. See [RaceTime Bot Migration](docs/archive/migrations/RACETIME_BOT_MIGRATION.md) for details.
-
-#### Twitch OAuth2 (User Account Linking)
-- `TWITCH_CLIENT_ID` - Twitch OAuth2 client ID
-- `TWITCH_CLIENT_SECRET` - Twitch OAuth2 client secret
-
-See [docs/integrations/TWITCH_INTEGRATION.md](docs/integrations/TWITCH_INTEGRATION.md) for setup details.
-
-#### API Rate Limiting
-- `API_RATE_LIMIT_WINDOW_SECONDS` - Rate limit window in seconds (default: 60)
-- `API_DEFAULT_RATE_LIMIT_PER_MINUTE` - Default requests per minute (default: 60)
-
-#### Randomizer Configuration
-- `ALTTPR_BASEURL` - ALttPR base URL (default: https://alttpr.com)
-- `OOTR_API_KEY` - OoTR API key for seed generation (optional)
-
-#### Sentry.io (Error Tracking)
-- `SENTRY_DSN` - Sentry project DSN (optional, enables Sentry when set)
-- `SENTRY_ENVIRONMENT` - Environment name for error grouping (default: value of ENVIRONMENT)
-- `SENTRY_RELEASE` - Release version identifier (auto-detected from git if not set)
-- `SENTRY_TRACES_SAMPLE_RATE` - Performance monitoring sample rate 0.0-1.0 (default: 0.1)
-- `SENTRY_PROFILES_SAMPLE_RATE` - Profiling sample rate 0.0-1.0 (default: 0.1)
-
-See [docs/integrations/SENTRY.md](docs/integrations/SENTRY.md) for detailed configuration and best practices.
-
-## API Documentation
-
-All API endpoints are mounted under `/api` and are part of the presentation layer. They must only call into the service layer and never access ORM models directly.
-
-### Interactive Documentation
-
-When running in development mode, interactive API documentation is available:
-- **Swagger UI**: http://localhost:8080/docs (interactive, test endpoints directly)
-- **ReDoc**: http://localhost:8080/redoc (detailed documentation with examples)
-
-> **Note**: In production mode, API docs are disabled for security. Set `DEBUG=True` in `.env` to enable them.
-
-### Authentication
-
-API endpoints use **Bearer token authentication**. Tokens are associated with Discord users and inherit their permissions.
-
-To authenticate API requests, include your token in the Authorization header:
-```
-Authorization: Bearer YOUR_TOKEN_HERE
-```
-
-You can test authentication directly in the Swagger UI by clicking the "Authorize" button and entering your token.
-
-### Available Endpoints
-
-#### Health
-- `GET /api/health` — Health check (no authentication required)
-
-#### Users
-- `GET /api/users/me` — Get current authenticated user profile
-- `GET /api/users` — List all users (requires ADMIN permission)
-- `GET /api/users/search?q=<query>` — Search users by username (requires MODERATOR permission)
-
-All user endpoints require Bearer token authentication and are rate limited.
-
-### Rate Limiting
-
-API requests are rate limited per-user using a sliding window (default 60 requests per 60 seconds). A user's limit can be customized via the `api_rate_limit_per_minute` field; otherwise, the default from settings is used. When exceeded, the API returns HTTP 429 with a `Retry-After` header indicating when to retry.
-
-### Response Formats
-
-All API responses use JSON format with consistent schemas:
-
-**Success Response Example**:
-```json
-{
-  "items": [...],
-  "count": 10
-}
-```
-
-**Error Response Example**:
-```json
-{
-  "detail": "Error message here"
-}
-```
-
-### Permission Levels
-
-- **USER** (0) - Default permission; can access `/api/users/me`
-- **MODERATOR** (50) - Can search users
-- **ADMIN** (100) - Can list all users
-- **SUPERADMIN** (200) - Full access (future endpoints)
-
-## Testing
-
-### Running Tests
-
-Run tests with pytest:
-```bash
-poetry run pytest
-```
-
-### Test Environment Setup
-
-For automated testing without MySQL or external services (ideal for CI/CD and GitHub Coding Agent):
-
-```bash
-# Quick setup with test environment
-poetry run python setup_test_env.py
-
+- Four layers: **UI/API/Bot → Services → Repositories → Models** (never skip layers).
+- Multi-tenant: every action is scoped to an organization; server-side membership checks are mandatory.
+- Authentication: Discord OAuth2; sessions via NiceGUI storage.
+- Authorization: policy framework + `Permission` enum in UI, `UIAuthorizationHelper` for org-scoped checks (deprecated `AuthorizationService` is removed).
+- Events: all create/update/delete operations emit events via `application.events.EventBus` with a real `user_id` (or `SYSTEM_USER_ID`).
+- Time: always use timezone-aware datetimes (`datetime.now(timezone.utc)`), never `utcnow()`.
+- Logging: `logging` with lazy `%` formatting, no `print()` in app code.
+
+## Documentation
+
+- Main index: `docs/README.md`
+- Key guides: `docs/ARCHITECTURE.md`, `docs/PATTERNS.md`, `docs/ADDING_FEATURES.md`, `docs/core/BASEPAGE_GUIDE.md`
+- Authorization migration: `docs/operations/AUTHORIZATION_MIGRATION.md`
+- Event system: `docs/systems/EVENT_SYSTEM.md`
+- Full route list: `docs/ROUTE_HIERARCHY.md`
+- Historical project summaries moved to `docs/archive/root/`
+
+## Quick Start
+
+1) **Prerequisites**: Python 3.11+, Poetry, MySQL.
+2) **Install**: `poetry install`
+3) **Configure**: `cp .env.example .env` and fill required values (see `docs/reference/ENVIRONMENT_VARIABLES.md`).
+4) **Database (first run)**: `poetry run aerich init-db`
+5) **Migrations (after model changes)**: `poetry run aerich migrate --name "description"` then `poetry run aerich upgrade`
+
+## Run
+
+- Development (auto-reload): `./start.sh dev`
+- Production: `./start.sh prod`
+- Tests: `poetry run pytest`
+- Policy/config check: `python tools/check_config_policy.py`
+- Mock data (optional): `poetry run python tools/generate_mock_data.py --preset small`
+
+## Conventions
+
+- UI never touches ORM; all data flows through services and repositories.
+- External links must use `new_tab=True` (NiceGUI links); external CSS/JS only.
+- Emit events after successful writes; never emit with `user_id=None`.
+- Follow component/layout patterns in `docs/core/COMPONENTS_GUIDE.md` and `docs/core/BASEPAGE_GUIDE.md`.
+- Keep secrets in `.env`; use `config.settings` instead of `os.environ`.
+
+## Support
+
+- Security notes: see `SECURITY.md`.
+- For architecture questions start with `docs/ARCHITECTURE.md`; for day-to-day patterns use `docs/PATTERNS.md`.
 # Or manually
 cp .env.test .env
 poetry install

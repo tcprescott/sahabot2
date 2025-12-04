@@ -2,13 +2,12 @@
 
 This document provides a comprehensive overview of all routes in the SahaBot2 application, including both UI pages (NiceGUI) and REST API endpoints (FastAPI).
 
-**Last Updated**: November 10, 2025 (Updated for tournament/async qualifier domain separation)
+**Last Updated**: December 4, 2025 (Dedicated routes, no dynamic view parameters)
 
 > **⚠️ Important**: This document must be kept up-to-date whenever routes are added, removed, or modified. When making changes to routes:
 > - **Adding routes**: Add the new route to the appropriate section
 > - **Removing routes**: Remove the route from this document
 > - **Changing paths**: Update the path in the corresponding table
-> - **Adding views**: Document available views for dynamic content pages
 > - **Update the "Last Updated" date** at the top of this file
 
 ---
@@ -45,7 +44,8 @@ Routes accessible without authentication.
 | Route | Description | File |
 |-------|-------------|------|
 | `/` | Home page - shows welcome for guests, dashboard for authenticated users | `pages/home.py` |
-| `/{view}` | Home page with dynamic view (overview, presets, organizations) | `pages/home.py` |
+| `/presets` | Public presets view | `pages/home.py` |
+| `/organizations` | Organizations landing (public view) | `pages/home.py` |
 | `/privacy` | Privacy policy page | `pages/privacy.py` |
 | `/invite/{slug}` | Organization invitation acceptance page | `pages/invite.py` |
 
@@ -65,19 +65,15 @@ Routes for authenticated users to manage their profile and settings.
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/profile` | User profile page (default view: profile info) | `pages/user_profile.py` |
-| `/profile/{view}` | User profile with specific view | `pages/user_profile.py` |
-
-**Available Profile Views**:
-- `profile` - Profile information
-- `settings` - Profile settings
-- `notifications` - Notification preferences
-- `api-keys` - API key management
-- `organizations` - Organization memberships
-- `preset-namespaces` - Preset namespace management
-- `racetime` - RaceTime.gg account linking
-- `twitch` - Twitch account linking
-- `racer-verification` - Racer verification status
+| `/profile` | Profile overview | `pages/user_profile.py` |
+| `/profile/settings` | Profile settings | `pages/user_profile.py` |
+| `/profile/notifications` | Notification preferences | `pages/user_profile.py` |
+| `/profile/api-keys` | API key management | `pages/user_profile.py` |
+| `/profile/organizations` | Organization memberships | `pages/user_profile.py` |
+| `/profile/preset-namespaces` | Preset namespace management | `pages/user_profile.py` |
+| `/profile/racetime` | RaceTime.gg account linking | `pages/user_profile.py` |
+| `/profile/twitch` | Twitch account linking | `pages/user_profile.py` |
+| `/profile/racer-verification` | Racer verification status | `pages/user_profile.py` |
 
 ### Admin Routes
 
@@ -85,21 +81,17 @@ Routes for system administrators (requires ADMIN or SUPERADMIN permission).
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/admin` | Admin dashboard (default view: overview) | `pages/admin.py` |
-| `/admin/{view}` | Admin dashboard with specific view | `pages/admin.py` |
-
-**Available Admin Views**:
-- `overview` - Dashboard and statistics
-- `users` - User management
-- `organizations` - Organization management
-- `org-requests` - Organization creation requests
-- `racetime-bots` - RaceTime bot management
-- `presets` - Randomizer preset management
-- `namespaces` - Preset namespace management
-- `scheduled-tasks` - Task scheduler management
-- `audit-logs` - System-wide audit logs
-- `logs` - Application logs viewer
-- `settings` - Application settings
+| `/admin` | Admin overview | `pages/admin.py` |
+| `/admin/users` | User management | `pages/admin.py` |
+| `/admin/organizations` | Organization management | `pages/admin.py` |
+| `/admin/org-requests` | Organization creation requests | `pages/admin.py` |
+| `/admin/racetime-bots` | RaceTime bot management | `pages/admin.py` |
+| `/admin/presets` | Randomizer preset management | `pages/admin.py` |
+| `/admin/namespaces` | Preset namespace management | `pages/admin.py` |
+| `/admin/scheduled-tasks` | Global scheduled tasks | `pages/admin.py` |
+| `/admin/audit-logs` | System-wide audit logs | `pages/admin.py` |
+| `/admin/logs` | Application logs viewer | `pages/admin.py` |
+| `/admin/settings` | Application settings | `pages/admin.py` |
 
 ### Organization Routes
 
@@ -109,27 +101,25 @@ Routes for organization members and administrators.
 |-------|-------------|------|
 | `/org/{organization_id}` | Organization overview page | `pages/tournaments.py` |
 | `/org/{organization_id}/tournament` | Organization tournament list | `pages/tournaments.py` |
+| `/org/{organization_id}/tournament/my-matches` | Player matches in organization | `pages/tournaments.py` |
+| `/org/{organization_id}/tournament/my-settings` | Tournament settings for player | `pages/tournaments.py` |
 
 **Organization Administration**:
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/orgs/{organization_id}/admin` | Organization admin page (default view: overview) | `pages/organization_admin.py` |
-| `/orgs/{organization_id}/admin/{view}` | Organization admin with specific view | `pages/organization_admin.py` |
-
-**Available Organization Admin Views**:
-- `overview` - Organization overview
-- `members` - Member management
-- `permissions` - Permission management
-- `stream_channels` - Stream channel configuration
-- `tournaments` - Tournament management
-- `async_tournaments` - Async Qualifier management
-- `race_room_profiles` - RaceTime room profile management
-- `discord_servers` - Discord server integration
-- `racer_verification` - Racer verification configuration
-- `scheduled_tasks` - Organization-scoped scheduled tasks
-- `audit_logs` - Organization audit logs
-- `settings` - Organization settings
+| `/orgs/{organization_id}/admin` | Organization admin overview | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/members` | Member management | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/permissions` | Permission management | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/settings` | Organization settings | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/tournaments` | Tournament management | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/async-qualifiers` | Async qualifier management | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/stream-channels` | Stream channel configuration | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/scheduled-tasks` | Organization scheduled tasks | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/discord-servers` | Discord server integration | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/race-room-profiles` | RaceTime room profile management | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/racer-verification` | Racer verification configuration | `pages/organization_admin.py` |
+| `/orgs/{organization_id}/admin/audit-logs` | Organization audit logs | `pages/organization_admin.py` |
 
 ### Tournament Routes
 
@@ -137,18 +127,14 @@ Routes for tournament management and viewing.
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/org/{organization_id}/tournament/{tournament_id}/admin` | Tournament admin page (default view: overview) | `pages/tournament_admin.py` |
-| `/org/{organization_id}/tournament/{tournament_id}/admin/{view}` | Tournament admin with specific view | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin` | Tournament admin overview | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin/players` | Player management | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin/racetime` | RaceTime settings | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin/discord-events` | Discord event integration | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin/randomizer-settings` | Randomizer configuration | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin/preset-rules` | Preset selection rules | `pages/tournament_admin.py` |
+| `/org/{organization_id}/tournament/{tournament_id}/admin/settings` | Tournament settings | `pages/tournament_admin.py` |
 | `/tournaments/matches/{match_id}/submit` | Match settings submission page | `pages/tournament_match_settings.py` |
-
-**Available Tournament Admin Views**:
-- `overview` - Tournament overview
-- `players` - Player management
-- `racetime` - RaceTime settings
-- `discord-events` - Discord event integration
-- `randomizer-settings` - Randomizer configuration
-- `preset-rules` - Preset selection rules
-- `settings` - Tournament settings
 
 ### Async Qualifier Routes
 
@@ -159,28 +145,19 @@ Routes for asynchronous qualifier management.
 | Route | Description | File |
 |-------|-------------|------|
 | `/org/{organization_id}/async` | Organization async qualifier list | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{tournament_id}` | Async qualifier dashboard | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{tournament_id}/leaderboard` | Qualifier leaderboard | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{tournament_id}/pools` | Qualifier pools | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{tournament_id}/player/{player_id}` | Player profile in qualifier | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{tournament_id}/permalink/{permalink_id}` | Permalink to specific race result | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{tournament_id}/review` | Race review interface | `pages/async_qualifiers.py` |
 
 **Async Qualifier Administration**:
 
 | Route | Description | File |
 |-------|-------------|------|
-| `/org/{organization_id}/async/{qualifier_id}/admin` | Async qualifier admin (default view: overview) | `pages/async_qualifier_admin.py` |
-| `/org/{organization_id}/async/{qualifier_id}/admin/{view}` | Async qualifier admin with specific view | `pages/async_qualifier_admin.py` |
-
-**Available Async Qualifier Admin Views**:
-- `overview` - Qualifier dashboard
-- `settings` - Qualifier settings
-
-**Async Qualifier Public Views**:
-
-| Route | Description | File |
-|-------|-------------|------|
-| `/org/{organization_id}/async/{qualifier_id}` | Async qualifier dashboard | `pages/async_qualifiers.py` |
-| `/org/{organization_id}/async/{qualifier_id}/leaderboard` | Qualifier leaderboard | `pages/async_qualifiers.py` |
-| `/org/{organization_id}/async/{qualifier_id}/pools` | Qualifier pools | `pages/async_qualifiers.py` |
-| `/org/{organization_id}/async/{qualifier_id}/player/{player_id}` | Player profile in qualifier | `pages/async_qualifiers.py` |
-| `/org/{organization_id}/async/{qualifier_id}/review` | Race review interface | `pages/async_qualifiers.py` |
-| `/org/{organization_id}/async/{qualifier_id}/permalink/{permalink_id}` | Permalink to specific race result | `pages/async_qualifiers.py` |
+| `/org/{organization_id}/async/{qualifier_id}/admin` | Async qualifier admin overview | `pages/async_qualifier_admin.py` |
+| `/org/{organization_id}/async/{qualifier_id}/admin/{view}` | Async qualifier admin view | `pages/async_qualifier_admin.py` |
 
 ### OAuth Callback Routes
 

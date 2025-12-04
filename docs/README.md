@@ -6,11 +6,9 @@ Welcome to the SahaBot2 documentation! This directory contains all technical doc
 
 ### 📢 Latest Updates
 
-**November 10, 2025 - Architecture Update**
-- **[Architecture Update - November 2025](ARCHITECTURE_UPDATE_NOVEMBER_2025.md)** - Dynamic content loading removal and transition guide
 - Updated **[BasePage Guide](core/BASEPAGE_GUIDE.md)** - Multi-page pattern examples
 - Updated **[Adding Features Guide](ADDING_FEATURES.md)** - New page creation patterns
-- See **[Dynamic Content Removal - Complete](../DYNAMIC_CONTENT_REMOVAL_COMPLETE.md)** for implementation details
+- Historical architecture and initiative summaries are now in `archive/root`
 
 ### 🎯 Getting Started
 
@@ -101,10 +99,8 @@ Phase 1 documentation initiative completed with 8 comprehensive reference guides
 - **[DEPLOYMENT_GUIDE.md](operations/DEPLOYMENT_GUIDE.md)** - Complete deployment lifecycle for all environments
 
 #### 📊 Phase 1 Summary & Review Documents
-- **[Phase 1 Visual Summary](PHASE_1_VISUAL_SUMMARY.md)** - At-a-glance overview with charts and statistics
-- **[Phase 1 Completion Summary](PHASE_1_COMPLETION_SUMMARY.md)** - Detailed summary of deliverables and metrics
 - **[Phase 1 Quick Reference](PHASE_1_QUICK_REFERENCE.md)** - Navigation shortcuts and "I need to..." paths
-- **[Phase 1 Review Checklist](PHASE_1_REVIEW_CHECKLIST.md)** - How to review and provide feedback
+- Historical Phase 1 summaries and visuals moved to `archive/root`
 
 #### 📋 Documentation Analysis (Pre-Phase 1)
 - **[Documentation Gap Analysis](DOCUMENTATION_GAP_ANALYSIS.md)** - Analysis of missing/incomplete documentation
@@ -115,9 +111,19 @@ Phase 1 documentation initiative completed with 8 comprehensive reference guides
 
 Current planning and reorganization documents:
 
-- **[Data Migration Plan](DATA_MIGRATION_PLAN.md)** - Strategy and implementation plan for migrating data from original SahasrahBot
 - **[Copilot Instructions Reorganization](COPILOT_INSTRUCTIONS_REORGANIZATION.md)** - Plan for streamlining copilot instructions
 - **[Documentation Cleanup Analysis](DOCS_CLEANUP_ANALYSIS.md)** - Analysis of documentation reorganization
+
+### 🗂️ Archived & Historical
+
+Archived planning and summary documents live in `archive/root/`:
+- `ARCHITECTURE_UPDATE_NOVEMBER_2025.md`
+- `AUTHORIZATION_REDESIGN.md`
+- `DATA_MIGRATION_PLAN.md`
+- `FEATURE_COMPARISON.md`
+- `PHASE_1_COMPLETION_SUMMARY.md`
+- `PHASE_1_REVIEW_CHECKLIST.md`
+- `PHASE_1_VISUAL_SUMMARY.md`
 - **[Documentation Gap Analysis](DOCUMENTATION_GAP_ANALYSIS.md)** - Comprehensive analysis of all undocumented services, APIs, and models
 - **[Documentation Checklist](DOCUMENTATION_CHECKLIST.md)** - Complete tracking list for documentation work (100+ items to document)
 

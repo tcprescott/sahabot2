@@ -2,6 +2,7 @@
 """Test script to simulate scheduler execution."""
 import asyncio
 import logging
+import pytest
 from datetime import datetime, timezone
 from database import init_db, close_db
 from application.services.tasks.task_scheduler_service import TaskSchedulerService
@@ -14,9 +15,11 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def test_scheduler():
+@pytest.mark.asyncio
+async def test_scheduler(db):
     """Test if scheduler logic works."""
-    await init_db()
+    # Use the test database fixture instead of init_db
+    # await init_db()  # Don't call this, use the db fixture
 
     print("\n" + "=" * 80)
     print("TESTING SCHEDULER LOGIC")
@@ -83,7 +86,7 @@ async def test_scheduler():
             print(f"  Error: {task_info['last_error']}")
         print()
 
-    await close_db()
+    # await close_db()  # Don't close, the fixture handles cleanup
 
 
 if __name__ == "__main__":
