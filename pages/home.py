@@ -12,7 +12,7 @@ Routes:
 from nicegui import ui
 from components import BasePage
 from views.home import OverviewView, WelcomeView, PresetsView
-from views.tournaments import TournamentOrgSelectView
+from modules.tournament.views.public import TournamentOrgSelectView
 from middleware.auth import DiscordAuthService
 
 

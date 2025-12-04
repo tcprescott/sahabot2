@@ -30,7 +30,9 @@ class TournamentMatchSettings(Model):
     """
 
     id = fields.IntField(pk=True)
-    match = fields.ForeignKeyField("models.Match", related_name="settings_submissions")
+    match: fields.ForeignKeyRelation["Match"] = fields.ForeignKeyField(
+        "models.Match", related_name="settings_submissions"
+    )
 
     # Game number in match series (1, 2, 3, etc. for best-of-N matches)
     game_number = fields.SmallIntField(default=1)
@@ -44,7 +46,7 @@ class TournamentMatchSettings(Model):
 
     # Submission tracking
     submitted = fields.BooleanField(default=True)  # Always true on creation
-    submitted_by = fields.ForeignKeyField(
+    submitted_by: fields.ForeignKeyRelation["User"] = fields.ForeignKeyField(
         "models.User", related_name="tournament_settings_submissions"
     )
     submitted_at = fields.DatetimeField(auto_now_add=True)
@@ -72,4 +74,4 @@ class TournamentMatchSettings(Model):
 
     def __str__(self) -> str:
         """String representation."""
-        return f"Settings for Match {self.match_id} Game {self.game_number}"
+        return f"Settings for Match {self.match.id} Game {self.game_number}"

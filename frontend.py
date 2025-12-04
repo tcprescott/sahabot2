@@ -13,11 +13,8 @@ from pages import (
     auth,
     admin,
     organization_admin,
-    tournament_admin,
     async_qualifier_admin,
-    tournaments,
     async_qualifiers,
-    tournament_match_settings,
     user_profile,
     invite,
     racetime_oauth,
@@ -25,6 +22,11 @@ from pages import (
     discord_guild_callback,
     privacy,
     test,
+)
+from modules.tournament.pages import (
+    tournament_admin,
+    tournament_match_settings,
+    tournaments,
 )
 
 logger = logging.getLogger(__name__)

@@ -3,6 +3,8 @@
 Contains org-scoped business logic, authorization checks, and scoring algorithms.
 """
 
+# pyright: reportAttributeAccessIssue=false
+
 from __future__ import annotations
 from typing import Optional, List, Tuple
 from datetime import datetime, timedelta, timezone
@@ -11,7 +13,7 @@ from functools import cached_property
 import logging
 import asyncio
 
-from models import User
+from models import User, SYSTEM_USER_ID
 from modules.async_qualifier.models.async_qualifier import (
     AsyncQualifier,
     AsyncQualifierPool,
@@ -25,6 +27,7 @@ from application.services.organizations.organization_service import Organization
 from application.services.authorization.authorization_service_v2 import (
     AuthorizationServiceV2,
 )
+from application.services.discord.discord_guild_service import DiscordGuildService
 from application.events import (
     EventBus,
     TournamentCreatedEvent,
@@ -42,6 +45,12 @@ MAX_POOL_IMBALANCE = 3
 
 # Lock for score calculation to prevent concurrent calculations
 score_calculation_lock = asyncio.Lock()
+
+
+def _get_actor_user_id(user: Optional[User]) -> int:
+    """Return the acting user ID, falling back to SYSTEM_USER_ID for system actions."""
+
+    return user.id if user else SYSTEM_USER_ID
 
 
 @dataclass
@@ -114,7 +123,7 @@ class AsyncQualifierService:
         return await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("async_tournament", "manage"),
-            resource=self.auth.get_resource_identifier("async_tournament", "*"),
+            resource=self.auth.get_resource_identifier("async_tournament", None),
             organization_id=organization_id,
         )
 
@@ -134,7 +143,7 @@ class AsyncQualifierService:
         return await self.auth.can(
             user,
             action=self.auth.get_action_for_operation("async_race", "review"),
-            resource=self.auth.get_resource_identifier("async_race", "*"),
+            resource=self.auth.get_resource_identifier("async_race", None),
             organization_id=organization_id,
         )
 
@@ -219,6 +228,7 @@ class AsyncQualifierService:
             Tuple of (tournament, warnings) where warnings contains any permission issues
         """
         warnings: List[str] = []
+        actor_user_id = _get_actor_user_id(user)
 
         if not await self.can_manage_async_tournaments(user, organization_id):
             logger.warning(
@@ -231,10 +241,6 @@ class AsyncQualifierService:
         # Check Discord channel permissions if a channel is specified
         if discord_channel_id:
             try:
-                from application.services.discord.discord_guild_service import (
-                    DiscordGuildService,
-                )
-
                 discord_service = DiscordGuildService()
                 perm_check = (
                     await discord_service.check_async_tournament_channel_permissions(
@@ -274,19 +280,19 @@ class AsyncQualifierService:
             )
 
         await self.repo.create_audit_log(
-            qualifier_id=tournament.id,
+            tournament_id=tournament.id,
             action="create_tournament",
             details=f"Created tournament '{name}'",
-            user_id=user.id if user else None,
+            user_id=actor_user_id,
         )
 
         # Emit tournament created event
         event = TournamentCreatedEvent(
             entity_id=tournament.id,
-            user_id=user.id if user else None,
+            user_id=actor_user_id,
             organization_id=organization_id,
-            qualifier_name=name,
-            qualifier_type="async",
+            tournament_name=name,
+            tournament_type="async",
         )
         await EventBus.emit(event)
         logger.debug("Emitted TournamentCreatedEvent for tournament %s", tournament.id)
@@ -325,10 +331,6 @@ class AsyncQualifierService:
         # Check Discord channel permissions if channel is being updated
         if channel_changed and fields["discord_channel_id"]:
             try:
-                from application.services.discord.discord_guild_service import (
-                    DiscordGuildService,
-                )
-
                 discord_service = DiscordGuildService()
                 perm_check = (
                     await discord_service.check_async_tournament_channel_permissions(
@@ -362,10 +364,10 @@ class AsyncQualifierService:
         tournament = await self.repo.update(qualifier_id, organization_id, **fields)
         if tournament:
             await self.repo.create_audit_log(
-                qualifier_id=qualifier_id,
+                tournament_id=qualifier_id,
                 action="update_tournament",
                 details=f"Updated tournament with fields: {', '.join(fields.keys())}",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return tournament, warnings
@@ -384,7 +386,7 @@ class AsyncQualifierService:
 
         # Audit log before delete
         await self.repo.create_audit_log(
-            qualifier_id=qualifier_id,
+            tournament_id=qualifier_id,
             action="delete_tournament",
             details=f"Deleted tournament {qualifier_id}",
             user_id=user.id if user else None,
@@ -416,10 +418,10 @@ class AsyncQualifierService:
         )
         if pool:
             await self.repo.create_audit_log(
-                qualifier_id=qualifier_id,
+                tournament_id=qualifier_id,
                 action="create_pool",
                 details=f"Created pool '{name}'",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return pool
@@ -439,10 +441,10 @@ class AsyncQualifierService:
         pool = await self.repo.update_pool(pool_id, organization_id, **fields)
         if pool:
             await self.repo.create_audit_log(
-                qualifier_id=pool.qualifier_id,
+                tournament_id=pool.tournament_id,
                 action="update_pool",
                 details=f"Updated pool '{pool.name}'",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return pool
@@ -464,16 +466,16 @@ class AsyncQualifierService:
         if not pool:
             return False
 
-        qualifier_id = pool.qualifier_id
+        qualifier_id = pool.tournament_id
         pool_name = pool.name
 
         success = await self.repo.delete_pool(pool_id, organization_id)
         if success:
             await self.repo.create_audit_log(
-                qualifier_id=qualifier_id,
+                tournament_id=qualifier_id,
                 action="delete_pool",
                 details=f"Deleted pool '{pool_name}'",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return success
@@ -517,10 +519,10 @@ class AsyncQualifierService:
         if permalink:
             pool = await AsyncQualifierPool.get(id=pool_id)
             await self.repo.create_audit_log(
-                qualifier_id=pool.qualifier_id,
+                tournament_id=pool.tournament_id,
                 action="create_permalink",
                 details=f"Created permalink in pool '{pool.name}'",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return permalink
@@ -543,10 +545,10 @@ class AsyncQualifierService:
         if permalink:
             pool = await AsyncQualifierPool.get(id=permalink.pool_id)
             await self.repo.create_audit_log(
-                qualifier_id=pool.qualifier_id,
+                tournament_id=pool.tournament_id,
                 action="update_permalink",
                 details=f"Updated permalink in pool '{pool.name}'",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return permalink
@@ -569,15 +571,15 @@ class AsyncQualifierService:
             return False
 
         pool = await AsyncQualifierPool.get(id=permalink.pool_id)
-        qualifier_id = pool.qualifier_id
+        qualifier_id = pool.tournament_id
 
         success = await self.repo.delete_permalink(permalink_id, organization_id)
         if success:
             await self.repo.create_audit_log(
-                qualifier_id=qualifier_id,
+                tournament_id=qualifier_id,
                 action="delete_permalink",
                 details=f"Deleted permalink from pool '{pool.name}'",
-                user_id=user.id if user else None,
+                user_id=_get_actor_user_id(user),
             )
 
         return success
@@ -642,7 +644,7 @@ class AsyncQualifierService:
 
         return (
             await AsyncQualifierRace.filter(
-                permalink_id=permalink_id, qualifier_id=qualifier_id
+                permalink_id=permalink_id, tournament_id=qualifier_id
             )
             .prefetch_related("user")
             .all()
@@ -658,7 +660,7 @@ class AsyncQualifierService:
 
         return await AsyncQualifierRace.filter(
             user_id=user.id,
-            qualifier_id=qualifier_id,
+            tournament_id=qualifier_id,
             status__in=["pending", "in_progress"],
         ).all()
 
@@ -692,7 +694,7 @@ class AsyncQualifierService:
             return None
 
         race = await self.repo.create_race(
-            qualifier_id=qualifier_id,
+            tournament_id=qualifier_id,
             organization_id=organization_id,
             permalink_id=permalink_id,
             user_id=user.id,
@@ -701,10 +703,10 @@ class AsyncQualifierService:
 
         if race:
             await self.repo.create_audit_log(
-                qualifier_id=qualifier_id,
+                tournament_id=qualifier_id,
                 action="create_race",
                 details=f"User {user.discord_username} created race {race.id}",
-                user_id=user.id,
+                user_id=_get_actor_user_id(user),
             )
 
         return race
@@ -733,10 +735,10 @@ class AsyncQualifierService:
 
         if race:
             await self.repo.create_audit_log(
-                qualifier_id=race.qualifier_id,
+                tournament_id=race.tournament_id,
                 action="start_race",
                 details=f"Race {race_id} started",
-                user_id=user.id,
+                user_id=_get_actor_user_id(user),
             )
 
         return race
@@ -765,10 +767,10 @@ class AsyncQualifierService:
 
         if race:
             await self.repo.create_audit_log(
-                qualifier_id=race.qualifier_id,
+                tournament_id=race.tournament_id,
                 action="finish_race",
                 details=f"Race {race_id} finished with time {race.elapsed_time_formatted}",
-                user_id=user.id,
+                user_id=_get_actor_user_id(user),
             )
 
             # Emit race submitted event
@@ -776,7 +778,7 @@ class AsyncQualifierService:
                 entity_id=race.id,
                 user_id=user.id,
                 organization_id=organization_id,
-                qualifier_id=race.qualifier_id,
+                tournament_id=race.tournament_id,
                 permalink_id=race.permalink_id,
                 racer_user_id=user.id,
                 time_seconds=(
@@ -818,10 +820,10 @@ class AsyncQualifierService:
 
         if race:
             await self.repo.create_audit_log(
-                qualifier_id=race.qualifier_id,
+                tournament_id=race.tournament_id,
                 action="forfeit_race",
                 details=f"Race {race_id} forfeited",
-                user_id=user.id,
+                user_id=_get_actor_user_id(user),
             )
 
         return race
@@ -953,9 +955,9 @@ class AsyncQualifierService:
         await tournament.fetch_related("pools")
 
         # Get all user IDs who have participated
-        all_races = await AsyncQualifierRace.filter(qualifier_id=qualifier_id).values(
-            "user_id"
-        )
+        all_races = await AsyncQualifierRace.filter(
+            tournament_id=qualifier_id
+        ).values("user_id")
         user_ids = list(set(r["user_id"] for r in all_races))
 
         # Batch fetch all users to avoid N+1 queries
@@ -971,7 +973,7 @@ class AsyncQualifierService:
                 pool_races = (
                     await AsyncQualifierRace.filter(
                         user_id=user_id,
-                        qualifier_id=qualifier_id,
+                        tournament_id=qualifier_id,
                         permalink__pool_id=pool.id,
                         status__in=["finished", "forfeit", "disqualified"],
                         reattempted=False,
@@ -1043,7 +1045,7 @@ class AsyncQualifierService:
             return []
 
         return await self.repo.get_review_queue(
-            qualifier_id=qualifier_id,
+            tournament_id=qualifier_id,
             organization_id=organization_id,
             status=status,
             review_status=review_status,
@@ -1152,12 +1154,14 @@ class AsyncQualifierService:
         if elapsed_time_seconds is not None:
             elapsed_time_override = timedelta(seconds=elapsed_time_seconds)
 
+        actor_user_id = _get_actor_user_id(user)
+
         # Update review
         updated_race = await self.repo.update_race_review(
             race_id=race_id,
             organization_id=organization_id,
             review_status=review_status,
-            reviewer_id=user.id if user else None,
+            reviewer_id=actor_user_id,
             reviewer_notes=reviewer_notes,
             elapsed_time_override=elapsed_time_override,
         )
@@ -1165,32 +1169,32 @@ class AsyncQualifierService:
         if updated_race:
             # Create audit log
             await self.repo.create_audit_log(
-                qualifier_id=updated_race.qualifier_id,
+                tournament_id=updated_race.tournament_id,
                 action="review_race",
                 details=f"Race {race_id} reviewed: {review_status}",
-                user_id=user.id if user else None,
+                user_id=actor_user_id,
             )
 
             # Emit race review event
             if review_status == "accepted":
                 event = RaceApprovedEvent(
                     entity_id=race_id,
-                    user_id=user.id if user else None,
+                    user_id=actor_user_id,
                     organization_id=organization_id,
-                    qualifier_id=updated_race.qualifier_id,
+                    tournament_id=updated_race.tournament_id,
                     racer_user_id=updated_race.user_id,
-                    reviewer_user_id=user.id if user else None,
+                    reviewer_user_id=actor_user_id,
                 )
                 await EventBus.emit(event)
                 logger.debug("Emitted RaceApprovedEvent for race %s", race_id)
             elif review_status == "rejected":
                 event = RaceRejectedEvent(
                     entity_id=race_id,
-                    user_id=user.id if user else None,
+                    user_id=actor_user_id,
                     organization_id=organization_id,
-                    qualifier_id=updated_race.qualifier_id,
+                    tournament_id=updated_race.tournament_id,
                     racer_user_id=updated_race.user_id,
-                    reviewer_user_id=user.id if user else None,
+                    reviewer_user_id=actor_user_id,
                     reason=reviewer_notes,
                 )
                 await EventBus.emit(event)
@@ -1334,7 +1338,7 @@ class AsyncQualifierService:
             action_desc = ", ".join(action_parts) if action_parts else "submission"
 
             await self.repo.create_audit_log(
-                qualifier_id=updated_race.qualifier_id,
+                tournament_id=updated_race.tournament_id,
                 action="update_race_submission",
                 details=f"Race {race_id} submission updated: {action_desc}",
                 user_id=user.id,
@@ -1345,7 +1349,7 @@ class AsyncQualifierService:
                 entity_id=race_id,
                 user_id=user.id,
                 organization_id=organization_id,
-                qualifier_id=updated_race.qualifier_id,
+                tournament_id=updated_race.tournament_id,
                 racer_user_id=updated_race.user_id,
             )
             await EventBus.emit(event)
@@ -1481,7 +1485,7 @@ class AsyncQualifierService:
         # Create audit log
         await race.fetch_related("tournament")
         await self.repo.create_audit_log(
-            qualifier_id=race.qualifier_id,
+            tournament_id=race.tournament_id,
             action="mark_race_reattempted",
             details=f"User {user.id} marked race {race_id} as reattempted",
             user_id=user.id,

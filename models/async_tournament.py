@@ -83,6 +83,9 @@ class AsyncQualifierPool(Model):
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
 
+    # Convenience FK attribute added by Tortoise
+    tournament_id: int
+
     # related fields (reverse relations)
     permalinks: fields.ReverseRelation["AsyncQualifierPermalink"]
 
@@ -109,6 +112,9 @@ class AsyncQualifierPermalink(Model):
     par_updated_at = fields.DatetimeField(null=True)
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
+
+    # Convenience FK attribute added by Tortoise
+    pool_id: int
 
     # related fields (reverse relations)
     races: fields.ReverseRelation["AsyncQualifierRace"]
@@ -184,6 +190,12 @@ class AsyncQualifierRace(Model):
     review_request_reason = fields.TextField(
         null=True
     )  # User's reason for requesting review
+
+    # Convenience FK attributes added by Tortoise
+    tournament_id: int
+    permalink_id: int
+    user_id: int
+    live_race_id: int | None
 
     created_at = fields.DatetimeField(auto_now_add=True)
     updated_at = fields.DatetimeField(auto_now=True)
